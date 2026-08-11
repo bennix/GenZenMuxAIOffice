@@ -56,7 +56,6 @@ import {
   defaultAiSettings,
   resolveAiSettings,
   streamZenMux,
-  type AiProviderId,
   type AiSettings,
   type AiStreamChunk,
   type LegacyAiSettings,
