@@ -5483,6 +5483,32 @@ body.vib .slide-list {
   color: var(--text-dim);
 }
 
+.eq-live-preview {
+  box-sizing: border-box;
+  min-height: 88px;
+  margin-top: 10px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  font-size: 24px;
+}
+
+.eq-preview-hint {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.eq-preview-error {
+  color: var(--slides-error);
+  font-size: 12px;
+  word-break: break-word;
+}
+
 /* Starting up (while pending file parsing): lightweight placeholder, don't flash the start screen */
 .start-booting {
   justify-content: center;

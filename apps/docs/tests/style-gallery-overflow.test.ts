@@ -127,6 +127,7 @@ function ribbonProps(editor: Editor) {
     splitView: false,
     onSplitView: noop,
     onPagePreview: noop,
+    onAiReview: noop,
   }
 }
 

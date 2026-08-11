@@ -11,14 +11,18 @@
     "./screentip.css": "./src/screentip.css"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "react": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
-    "typescript": "^5.9.3"
+    "@types/react-dom": "^19.2.3",
+    "react-dom": "^19.2.4",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   },
   "dependencies": {
     "@genoffice/pptx-render": "*"

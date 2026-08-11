@@ -87,6 +87,7 @@ import * as tableActions from './table-actions'
 import * as styleActions from './style-actions'
 import { handleGlobalKeydown } from './keyboard-actions'
 import { buildCtxItems } from './context-menu-items'
+import { latexFromEquationDescr } from './latex-equation'
 
 const _IS_MAC = navigator.platform.toLowerCase().includes('mac')
 
@@ -424,6 +425,7 @@ export function App() {
   const [linkDialog, setLinkDialog] = useState<LinkDialogState | null>(null)
   const [hfDialog, setHfDialog] = useState<HfDialogState | null>(null)
   const [eqDialogOpen, setEqDialogOpen] = useState(false)
+  const [eqEditTarget, setEqEditTarget] = useState<{ sourceId: string; latex: string } | null>(null)
   const recorderRef = useRef<{ rec: MediaRecorder; stream: MediaStream } | null>(null)
   const [recording, setRecording] = useState(false)
   // ── Layout picking: layout list + slide size (loaded after the file opens) ─────────────────
@@ -1090,8 +1092,11 @@ export function App() {
     [],
   )
   const insertEquation = useCallback(
-    (text: string) => insertActions.insertEquation(ctxRef.current, text),
-    [],
+    async (latex: string) => {
+      await insertActions.insertEquation(ctxRef.current, latex, eqEditTarget?.sourceId)
+      setEqEditTarget(null)
+    },
+    [eqEditTarget],
   )
   const insertMediaFile = useCallback(
     (kind: 'video' | 'audio') => insertActions.insertMediaFile(ctxRef.current, kind),
@@ -2467,7 +2472,10 @@ export function App() {
         currentSlide={current}
         currentBgColor={slide?.background.kind === 'solid' ? slide.background.color : undefined}
         onOpenHeaderFooter={() => void openHeaderFooter()}
-        onOpenEquation={() => setEqDialogOpen(true)}
+        onOpenEquation={() => {
+          setEqEditTarget(null)
+          setEqDialogOpen(true)
+        }}
         onInsertMedia={(kind) => void insertMediaFile(kind)}
         onInsertModel3d={() => void insertModel3dFile()}
         recording={recording}
@@ -2927,6 +2935,18 @@ export function App() {
                                 void onTableRowResize(id, row, hPx)
                               }
                               onPlayMedia={(id) => void startMediaPlayback(id)}
+                              onEditEquation={(id) => {
+                                const node = slide.nodes.find(
+                                  (candidate) => candidate.sourceId === id,
+                                )
+                                const latex =
+                                  node?.type === 'picture'
+                                    ? latexFromEquationDescr((node as PictureRenderNode).descr)
+                                    : null
+                                if (!latex) return
+                                setEqEditTarget({ sourceId: id, latex })
+                                setEqDialogOpen(true)
+                              }}
                               onContextMenu={onCanvasContextMenu}
                               onMarqueeSelect={setSelectedIds}
                               onDuplicateTo={(id, dx, dy) => void duplicateSelected([id], dx, dy)}
@@ -3301,8 +3321,12 @@ export function App() {
       )}
       {eqDialogOpen && (
         <EquationDialog
-          onInsert={(text) => void insertEquation(text)}
-          onClose={() => setEqDialogOpen(false)}
+          initialLatex={eqEditTarget?.latex}
+          onInsert={(latex) => void insertEquation(latex)}
+          onClose={() => {
+            setEqDialogOpen(false)
+            setEqEditTarget(null)
+          }}
         />
       )}
 

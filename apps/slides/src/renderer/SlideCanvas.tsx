@@ -261,6 +261,8 @@ interface Props {
   onEditTableCell: (sourceId: string, row: number, col: number) => void
   /** Double-click an audio/video element: trigger the playback overlay */
   onPlayMedia?: (sourceId: string) => void
+  /** Double-click an editor-created LaTeX picture: reopen its source editor. */
+  onEditEquation?: (sourceId: string) => void
   /** Right-click: hit element gives sourceId, blank area gives null; table hits include cell model coordinates */
   onContextMenu: (
     sourceId: string | null,
@@ -402,6 +404,7 @@ export function SlideCanvas({
   onTableColResize,
   onTableRowResize,
   onPlayMedia,
+  onEditEquation,
   onContextMenu,
   images,
   editingText,
@@ -780,6 +783,7 @@ export function SlideCanvas({
             onTransform={onTransform}
             onEditTableCell={onEditTableCell}
             onPlayMedia={onPlayMedia}
+            onEditEquation={onEditEquation}
             onDragGuides={(g, sp) => {
               setGuides(g)
               setSpacing(sp ?? [])
@@ -1295,6 +1299,7 @@ interface NodeProps {
   onTransform: Props['onTransform']
   onEditTableCell: Props['onEditTableCell']
   onPlayMedia?: Props['onPlayMedia']
+  onEditEquation?: Props['onEditEquation']
   onDragGuides: (g: Guide[], spacing?: SpacingIndicator[]) => void
   snapTargets: (excludeIds: string[]) => SnapTarget[]
   /** Neighbor boxes for equal-spacing snapping (excluding the dragged selection) */
@@ -1336,6 +1341,7 @@ function NodeView({
   onTransform,
   onEditTableCell,
   onPlayMedia,
+  onEditEquation,
   onDragGuides,
   snapTargets,
   spacingBoxes,
@@ -1590,6 +1596,7 @@ function NodeView({
               onTransform={onTransform}
               onEditTableCell={onEditTableCell}
               onPlayMedia={onPlayMedia}
+              onEditEquation={onEditEquation}
               onDragGuides={onDragGuides}
               snapTargets={snapTargets}
               images={images}
@@ -1645,6 +1652,10 @@ function NodeView({
   }
   // Audio/video (image is the poster frame): double-click opens the playback overlay
   const isMedia = node.type === 'picture' && !!(node as PictureRenderNode).media && !!onPlayMedia
+  const isLatexEquation =
+    node.type === 'picture' &&
+    !!(node as PictureRenderNode).descr?.startsWith('genoffice-latex:') &&
+    !!onEditEquation
   // Empty placeholder: canvas draws a gray click hint (edit canvas only, not in thumbnails/export)
   const phPrompt = (() => {
     if (node.type !== 'shape' && node.type !== 'text') return null
@@ -1680,7 +1691,12 @@ function NodeView({
                   onDblClick: () => onPlayMedia!(node.sourceId),
                   onDblTap: () => onPlayMedia!(node.sourceId),
                 }
-              : {})}
+              : isLatexEquation && !insideGroupId
+                ? {
+                    onDblClick: () => onEditEquation!(node.sourceId),
+                    onDblTap: () => onEditEquation!(node.sourceId),
+                  }
+                : {})}
     >
       {/* group children don't take hits (listening=false); add a transparent hit area so the whole group can be selected/dragged */}
       {node.type === 'group' && <Rect width={box.w} height={box.h} fill="transparent" />}

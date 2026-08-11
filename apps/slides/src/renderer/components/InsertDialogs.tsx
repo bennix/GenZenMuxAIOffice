@@ -2,10 +2,11 @@
  * The Insert tab's three dialogs: hyperlink / header & footer / equation.
  * Reuses SettingsModal's .modal-backdrop/.modal styles.
  */
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import type { LinkTargetOp } from '../../shared/ipc'
 import { EQUATION_GALLERY } from '../insert-presets'
 import { useI18n } from '../i18n/locale'
+import { latexToMathML } from '../latex-equation'
 
 // ── Hyperlink ─────────────────────────────────────────────────────────────
 
@@ -196,13 +197,23 @@ export function HeaderFooterDialog({ initial, onApply, onClose }: HeaderFooterDi
 // ── Equation ───────────────────────────────────────────────────────
 
 interface EquationDialogProps {
-  onInsert: (text: string) => void
+  onInsert: (latex: string) => void
   onClose: () => void
+  initialLatex?: string
 }
 
-export function EquationDialog({ onInsert, onClose }: EquationDialogProps) {
+export function EquationDialog({ onInsert, onClose, initialLatex = '' }: EquationDialogProps) {
   const { t } = useI18n()
-  const [text, setText] = useState('')
+  const [latex, setLatex] = useState(initialLatex)
+  const preview = useMemo(() => {
+    if (!latex.trim()) return null
+    try {
+      return { mathml: latexToMathML(latex) }
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : String(error) }
+    }
+  }, [latex])
+  const valid = preview !== null && 'mathml' in preview
 
   // Esc closes
   useEffect(() => {
@@ -218,29 +229,38 @@ export function EquationDialog({ onInsert, onClose }: EquationDialogProps) {
         <div className="eq-gallery">
           {EQUATION_GALLERY.map((eq) => (
             <button
-              key={eq.text}
+              key={eq.latex}
               className="eq-item"
               data-tip={eq.label}
-              onClick={() => setText(eq.text)}
+              onClick={() => setLatex(eq.latex)}
             >
-              <span className="eq-preview">{eq.text}</span>
+              <span className="eq-preview">{eq.latex}</span>
               <span className="eq-label">{eq.label}</span>
             </button>
           ))}
         </div>
         <label>
-          {t('ribbonDlgEquationLabel')}
+          LaTeX
           <input
             type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && text.trim() && onInsert(text.trim())}
-            placeholder={t('ribbonDlgEquationPlaceholder')}
+            value={latex}
+            onChange={(e) => setLatex(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && valid && onInsert(latex.trim())}
+            placeholder="e.g. x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}"
           />
         </label>
+        <div className="eq-live-preview">
+          {preview === null ? (
+            <span className="eq-preview-hint">LaTeX preview</span>
+          ) : 'error' in preview ? (
+            <span className="eq-preview-error">{preview.error}</span>
+          ) : (
+            <span dangerouslySetInnerHTML={{ __html: preview.mathml }} />
+          )}
+        </div>
         <div className="modal-actions">
           <button onClick={onClose}>{t('ribbonCancel')}</button>
-          <button className="primary" disabled={!text.trim()} onClick={() => onInsert(text.trim())}>
+          <button className="primary" disabled={!valid} onClick={() => onInsert(latex.trim())}>
             {t('ribbonInsert')}
           </button>
         </div>

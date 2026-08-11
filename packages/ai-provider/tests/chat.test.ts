@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { chatForProvider } from '../src/chat'
+import { chatForProvider, chatZenMux } from '../src/chat'
 import { errorResponse, jsonResponse } from './test-utils'
 
 afterEach(() => {
@@ -97,6 +97,25 @@ describe('chatForProvider', () => {
         headers: expect.objectContaining({ Authorization: 'Bearer zen-key' }),
       }),
     )
+  })
+
+  it('zenmux sends review images as OpenAI-compatible multimodal parts', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ choices: [{ message: { content: 'ok' } }] }))
+    vi.stubGlobal('fetch', fetchMock)
+    await chatZenMux(
+      { apiKey: 'zen-key', model: 'z-ai/glm-5v-turbo' },
+      'sys',
+      'review the figure',
+      [{ mime: 'image/png', base64: 'aGVsbG8=' }],
+    )
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit
+    const body = JSON.parse(String(init.body))
+    expect(body.messages[1].content).toEqual([
+      { type: 'text', text: 'review the figure' },
+      { type: 'image_url', image_url: { url: 'data:image/png;base64,aGVsbG8=' } },
+    ])
   })
 
   it('custom: uses the configured base URL', async () => {

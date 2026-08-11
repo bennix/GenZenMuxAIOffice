@@ -319,31 +319,34 @@ export function chartSampleData(kind: ChartPresetDef['kind']): {
   }
 }
 
-// ── Equation templates (Unicode math text, inserted as Cambria Math text boxes) ─────────────
+// ── Equation templates (LaTeX, rendered to editable equation pictures) ──────────────────────
 
 export interface EquationDef {
   label: string
-  text: string
+  latex: string
 }
 
-const eq = (key: StringKey, text: string): EquationDef => ({
-  text,
+const eq = (key: StringKey, latex: string): EquationDef => ({
+  latex,
   get label() {
     return t(key)
   },
 })
 
 export const EQUATION_GALLERY: EquationDef[] = [
-  eq('ribbonEqQuadratic', 'x = (−b ± √(b² − 4ac)) / 2a'),
-  eq('ribbonEqPythagorean', 'a² + b² = c²'),
-  eq('ribbonEqEuler', 'e^(iπ) + 1 = 0'),
-  eq('ribbonEqMassEnergy', 'E = mc²'),
-  eq('ribbonEqCircleArea', 'A = πr²'),
-  eq('ribbonEqArithSum', '∑ₖ₌₁ⁿ k = n(n+1)/2'),
-  eq('ribbonEqGaussian', '∫₋∞^∞ e^(−x²) dx = √π'),
-  eq('ribbonEqNaturalLog', 'lim(x→∞) (1 + 1/x)ˣ = e'),
-  eq('ribbonEqMean', 'x̄ = (1/n) ∑ᵢ xᵢ'),
-  eq('ribbonEqStdDev', 'σ = √( ∑(xᵢ − μ)² / n )'),
-  eq('ribbonEqFourier', 'F(ω) = ∫₋∞^∞ f(t) e^(−iωt) dt'),
-  eq('ribbonEqNormalDist', 'f(x) = (1/(σ√(2π))) e^(−(x−μ)²/2σ²)'),
+  eq('ribbonEqQuadratic', 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}'),
+  eq('ribbonEqPythagorean', 'a^2 + b^2 = c^2'),
+  eq('ribbonEqEuler', 'e^{i\\pi} + 1 = 0'),
+  eq('ribbonEqMassEnergy', 'E = mc^2'),
+  eq('ribbonEqCircleArea', 'A = \\pi r^2'),
+  eq('ribbonEqArithSum', '\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}'),
+  eq('ribbonEqGaussian', '\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}'),
+  eq('ribbonEqNaturalLog', '\\lim_{x \\to \\infty} (1 + \\frac{1}{x})^x = e'),
+  eq('ribbonEqMean', '\\bar{x} = \\frac{1}{n} \\sum_i x_i'),
+  eq('ribbonEqStdDev', '\\sigma = \\sqrt{\\frac{\\sum (x_i - \\mu)^2}{n}}'),
+  eq('ribbonEqFourier', 'F(\\omega) = \\int_{-\\infty}^{\\infty} f(t)e^{-i\\omega t}dt'),
+  eq(
+    'ribbonEqNormalDist',
+    'f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}}e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}',
+  ),
 ]

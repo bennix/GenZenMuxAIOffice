@@ -162,6 +162,7 @@ interface RibbonProps {
   darkCanvas: boolean
   onDarkCanvas: (v: boolean) => void
   onAiPreset: (instruction: string) => void
+  onAiReview: () => void
   /** external request (e.g. native menu Page Setup) to switch to a specific tab */
   tabRequest?: { tab: string; nonce: number } | null
   header: HeaderFooter | null
@@ -623,6 +624,7 @@ function RibbonInner({
   darkCanvas,
   onDarkCanvas,
   onAiPreset,
+  onAiReview,
   tabRequest,
   header,
   onHeader,
@@ -2940,6 +2942,7 @@ function RibbonInner({
             dropdown={dropdown}
             setDropdown={setDropdown}
             onAiPreset={onAiPreset}
+            onAiReview={onAiReview}
             commentCount={commentCount}
             onShowComments={onShowComments}
             canComment={canComment}

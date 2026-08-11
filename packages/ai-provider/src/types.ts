@@ -68,6 +68,8 @@ export interface AiChatRequest {
   settings: AiSettings
   system: string
   user: string
+  /** Optional multimodal evidence supplied to ZenMux as OpenAI-compatible image_url parts. */
+  images?: AiImageReference[]
 }
 
 export interface AiChatResponse {

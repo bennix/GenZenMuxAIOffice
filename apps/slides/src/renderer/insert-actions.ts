@@ -6,6 +6,7 @@
  */
 import type { InsertKind, LinkTargetOp } from '../shared/ipc'
 import type { ActionCtx } from './action-context'
+import { latexEquationDescr, renderLatexEquationPng } from './latex-equation'
 import { applySelectionLink, saveEditSelection, selectionLink } from './TextEditOverlay'
 import { FIT_WIDTH } from './app-constants'
 import type { WordArtPreset } from '@genoffice/ui'
@@ -374,32 +375,57 @@ export async function applyHf(
   }
 }
 
-/** Equations: approximated as Cambria Math italic text (Unicode math symbols) for pptx compatibility. */
-export async function insertEquation(ctx: ActionCtx, text: string): Promise<void> {
+/** Equations: rasterized MathML for broad PPTX compatibility; LaTeX source stays in cNvPr metadata. */
+export async function insertEquation(
+  ctx: ActionCtx,
+  latex: string,
+  editSourceId?: string,
+): Promise<void> {
   ctx.setEqDialogOpen(false)
   const { slide, current } = ctx
   if (!slide) return
-  const w = 420
-  const h = 84
-  const r = await window.slidesApi.addElement({
-    slideIndex: current,
-    kind: 'textbox',
-    xPx: Math.round((slide.widthPx - w) / 2),
-    yPx: Math.round((slide.heightPx - h) / 2),
-    wPx: w,
-    hPx: h,
-    fitWidthPx: FIT_WIDTH,
-    paragraphs: [
-      {
-        align: 'center',
-        runs: [{ text, fontSize: 28, italic: true, fontFamily: 'Cambria Math' }],
-      },
-    ],
-  })
-  if (r) {
-    ctx.applySlide(current, r.slide)
-    ctx.setSelectedIds([r.sourceId])
-    ctx.setStatus(t('appStatusEquationInserted'))
+  try {
+    const rendered = await renderLatexEquationPng(latex)
+    const descr = latexEquationDescr(latex)
+    if (editSourceId) {
+      const updated = await window.slidesApi.replacePictureBytes({
+        slideIndex: current,
+        sourceId: editSourceId,
+        base64: rendered.base64,
+        ext: 'png',
+        descr,
+      })
+      if (updated && !('error' in updated)) {
+        ctx.applySlide(current, updated)
+        ctx.setSelectedIds([editSourceId])
+        ctx.setDirty(true)
+        ctx.setStatus(t('appStatusEquationInserted'))
+      }
+      return
+    }
+    const scale = Math.min(1, (slide.widthPx * 0.72) / rendered.widthPx)
+    const w = Math.max(48, rendered.widthPx * scale)
+    const h = Math.max(48, rendered.heightPx * scale)
+    const r = await window.slidesApi.addImageBytes({
+      slideIndex: current,
+      base64: rendered.base64,
+      ext: 'png',
+      xPx: Math.round((slide.widthPx - w) / 2),
+      yPx: Math.round((slide.heightPx - h) / 2),
+      wPx: w,
+      hPx: h,
+      fitWidthPx: FIT_WIDTH,
+      name: 'LaTeX Equation',
+      descr,
+    })
+    if (r && !('error' in r)) {
+      ctx.applySlide(current, r.slide)
+      ctx.setSelectedIds([r.sourceId])
+      ctx.setDirty(true)
+      ctx.setStatus(t('appStatusEquationInserted'))
+    }
+  } catch (error) {
+    ctx.setStatus(error instanceof Error ? error.message : String(error))
   }
 }
 

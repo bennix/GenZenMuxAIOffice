@@ -146,6 +146,26 @@
   word-break: break-all;
 }
 
+.set-about-credit {
+  margin: 2px 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.set-about-credit strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.set-about-credit p {
+  margin: 6px 0 0;
+}
+
 .set-select {
   flex-shrink: 0;
   min-width: 160px;

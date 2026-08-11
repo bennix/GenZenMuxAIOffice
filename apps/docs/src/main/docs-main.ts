@@ -2638,7 +2638,7 @@ export function registerAiIpc(): void {
   )
 
   ipcMain.handle('ai:chat', async (_event, request: AiChatRequest) => {
-    const { settings, system, user } = request
+    const { settings, system, user, images } = request
     const config = settings.providers?.zenmux
     if (!config?.apiKey) {
       return {
@@ -2648,7 +2648,7 @@ export function registerAiIpc(): void {
     }
     if (!config.model) return { ok: false, error: tm('errNoModel') }
     try {
-      return await chatZenMux(config, system, user)
+      return await chatZenMux(config, system, user, images)
     } catch (err) {
       return { ok: false, error: String(err) }
     }

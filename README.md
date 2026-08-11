@@ -2,10 +2,10 @@
 
 **The world's first full-featured open-source AI Office suite.**
 
-[![License: Apache-2.0](https://img.shields.io/github/license/genspark-ai/genoffice)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/genspark-ai/genoffice)](https://github.com/genspark-ai/genoffice/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/genspark-ai/genoffice/total)](https://github.com/genspark-ai/genoffice/releases)
-[![GitHub stars](https://img.shields.io/github/stars/genspark-ai/genoffice?style=flat)](https://github.com/genspark-ai/genoffice/stargazers)
+[![License: Apache-2.0](https://img.shields.io/github/license/bennix/GenZenMuxAIOffice)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/bennix/GenZenMuxAIOffice)](https://github.com/bennix/GenZenMuxAIOffice/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/bennix/GenZenMuxAIOffice/total)](https://github.com/bennix/GenZenMuxAIOffice/releases)
+[![GitHub stars](https://img.shields.io/github/stars/bennix/GenZenMuxAIOffice?style=flat)](https://github.com/bennix/GenZenMuxAIOffice/stargazers)
 ![Platforms: macOS | Windows | Linux](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)
 
 GenOffice is a free, open-source alternative to Microsoft Office for macOS,
@@ -15,6 +15,15 @@ formats — Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`) — and edits
 PDF and Markdown too: a word processor, spreadsheet, presentation editor,
 PDF editor, and Markdown editor as six Electron apps sharing one engine
 layer.
+
+> **AI 适配与修改 / AI adaptation and modifications**<br>
+> 由复旦大学计算与智能创新学院徐志平完成 AI 适配与修改，并重新制作 macOS DMG。<br>
+> AI adaptation and modifications by Zhiping Xu, College of Computer Science and Artificial
+> Intelligence, Fudan University; macOS DMG rebuilt for this release.
+
+Apple Silicon Mac 用户可从
+[最新 Release 下载签名并经 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.2-arm64.dmg)。
+AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。
 
 [![Meet GenOffice — the world's first full-featured open-source AI Office (video)](https://img.youtube.com/vi/B2pLdMX95v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=B2pLdMX95v4)
 

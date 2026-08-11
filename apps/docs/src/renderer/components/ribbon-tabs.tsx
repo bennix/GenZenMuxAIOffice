@@ -494,6 +494,7 @@ export type RevisionDisplayMode = 'all' | 'none' | 'original'
 
 interface ReviewTabProps extends TabProps {
   onAiPreset: (instruction: string) => void
+  onAiReview: () => void
   commentCount: number
   onShowComments: () => void
   /** create a comment on the current selection (disabled when selection is empty) */
@@ -518,6 +519,7 @@ export function ReviewTab({
   dropdown,
   setDropdown,
   onAiPreset,
+  onAiReview,
   commentCount,
   onShowComments,
   canComment,
@@ -563,6 +565,17 @@ export function ReviewTab({
               </span>
             </span>
             <span>{t('ribbonEditorBtn')}</span>
+          </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="AI Review Committee — ZenMux"
+            onClick={onAiReview}
+          >
+            <span className="rb-big-icon ai-review-ribbon-icon" aria-hidden="true">
+              AI
+            </span>
+            <span>AI {t('ribbonTabReview')}</span>
           </button>
         </div>
         <div className="ribbon-group-label">{t('ribbonGroupProofing')}</div>

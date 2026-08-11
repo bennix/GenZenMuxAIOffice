@@ -30,6 +30,7 @@ import { asianCharCount, countWords, nonAsianWordCount } from './word-count'
 import { toRoman } from './note-format'
 import { CommentsPanel } from './components/CommentsPanel'
 import { EquationModal } from './components/EquationModal'
+import { AiReviewCommitteeModal } from './components/AiReviewCommitteeModal'
 import { HeaderFooterArea } from './components/HeaderFooterArea'
 import { PaginationPreview } from './components/PaginationPreview'
 import {
@@ -305,6 +306,7 @@ export function App() {
   const [_recent, setRecent] = useState<string[]>([])
   const [settings, setSettings] = useState<AiSettings>(DEFAULT_SETTINGS)
   const [showAi, setShowAi] = useState(() => localStorage.getItem('aidocs.showAi') !== '0')
+  const [showAiReview, setShowAiReview] = useState(false)
   /** Increments on every open/new document: AiPanel remounts by key to reset the conversation and history (save path changes don't bump it, so the session continues) */
   const [aiPanelKey, setAiPanelKey] = useState(0)
   const [ribbonTabRequest, setRibbonTabRequest] = useState<{ tab: string; nonce: number } | null>(
@@ -2606,6 +2608,7 @@ export function App() {
       setShowAi(true)
       setAiPreset({ text, nonce: Date.now(), autoRun: true })
     },
+    onAiReview: () => setShowAiReview(true),
     onHeader: (next: HeaderFooter) => {
       setHeader(next)
       setHeaderDirty(true)
@@ -3100,6 +3103,13 @@ export function App() {
       {showLinkModal && <LinkInsertModal editor={editor} onClose={() => setShowLinkModal(false)} />}
       {showEquationModal && editor && (
         <EquationModal editor={editor} onClose={() => setShowEquationModal(false)} />
+      )}
+      {showAiReview && editor && (
+        <AiReviewCommitteeModal
+          editor={editor}
+          settings={settings}
+          onClose={() => setShowAiReview(false)}
+        />
       )}
       {eqEditTarget && editor && (
         <EquationModal

@@ -260,6 +260,7 @@ function ribbonProps(editor: Editor, formatState: RibbonFormatState) {
     splitView: false,
     onSplitView: noop,
     onPagePreview: noop,
+    onAiReview: noop,
   }
 }
 

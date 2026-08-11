@@ -69,6 +69,46 @@
   color-scheme: light;
 }
 
+/* Shared GFM table treatment for AI replies in every editor. */
+.ai-md-table-wrap {
+  max-width: 100%;
+  margin: 0 0 16px;
+  overflow-x: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+}
+
+.ai-md table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: normal;
+  font-size: 0.92em;
+}
+
+.ai-md th,
+.ai-md td {
+  min-width: 72px;
+  padding: 8px 10px;
+  border-right: 1px solid var(--color-border-default);
+  border-bottom: 1px solid var(--color-border-default);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ai-md th {
+  background: var(--color-bg-subtle);
+  font-weight: 650;
+}
+
+.ai-md tr:last-child td {
+  border-bottom: 0;
+}
+
+.ai-md th:last-child,
+.ai-md td:last-child {
+  border-right: 0;
+}
+
 [data-theme='dark'] {
   --surface: #1e1e1e;
   --surface-subtle: #2a2a2a;

@@ -117,6 +117,19 @@ describe('replacePictureBytes', () => {
     expect(pic2.srcRect).toBeUndefined()
   })
 
+  it('updates editable picture metadata and preserves it after save → reopen', async () => {
+    const { opened, slide, pic } = await openWithPicture()
+    const descr = 'genoffice-latex:%5Cfrac%7Ba%7D%7Bb%7D'
+    expect(replacePictureBytes(opened, slide, pic.id, GIF_1PX, 'gif', { descr })).toBe(true)
+    expect(pic.descr).toBe(descr)
+
+    const reopened = await openPptx(await savePptx(opened))
+    const pic2 = reopened.deck.slides[0]!.elements.find(
+      (e) => e.type === 'picture',
+    ) as PictureElement
+    expect(pic2.descr).toBe(descr)
+  })
+
   it('keeps stroke and z-order: the element is mutated, not re-added', async () => {
     const { opened, slide, pic } = await openWithPicture()
     pic.stroke = { fill: { type: 'solid', color: '#C43E1C' }, width: 12700 }

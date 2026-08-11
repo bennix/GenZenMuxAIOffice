@@ -441,6 +441,11 @@ export function SettingsModal({
                     {isChinese ? '使用邀请链接注册 ZenMux' : 'Create one with the ZenMux invite'}
                   </button>
                 </div>
+                <div className="set-ai-help">
+                  {isChinese
+                    ? '提示：AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。'
+                    : 'Note: AI features depend on network access. Network or proxy conditions may affect availability, speed, and results.'}
+                </div>
                 <label className="set-ai-field" htmlFor="set-zenmux-url">
                   <span>Base URL</span>
                   <input
@@ -546,6 +551,16 @@ export function SettingsModal({
               <>
                 <h3 className="set-pane-title">{t('setSecAbout')}</h3>
                 <Field label={t('versionLabel')} value={appVersion || '—'} />
+                <div className="set-about-credit">
+                  <strong>AI 适配与修改 / AI adaptation and modifications</strong>
+                  <p>
+                    由复旦大学计算与智能创新学院徐志平完成 AI 适配与修改，并重新制作 macOS DMG。
+                  </p>
+                  <p>
+                    AI adaptation and modifications by Zhiping Xu, College of Computer Science and
+                    Artificial Intelligence, Fudan University; macOS DMG rebuilt for this release.
+                  </p>
+                </div>
                 <div className="set-field">
                   <div className="set-field-text">
                     <label className="set-field-label" htmlFor="set-channel">

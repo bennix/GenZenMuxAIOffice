@@ -4781,6 +4781,176 @@ body.docs-crop-active
   font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 }
 
+/* Strict multi-model review committee */
+.ai-review-ribbon-icon {
+  color: var(--word-blue);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.ai-review-backdrop {
+  z-index: 1200;
+}
+
+.modal.ai-review-modal {
+  width: min(980px, 92vw);
+  max-width: 980px;
+  height: min(780px, 88vh);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ai-review-header {
+  padding: 18px 22px 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.ai-review-header h2 {
+  margin: 0 0 5px;
+}
+
+.ai-review-header p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ai-review-close {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.ai-review-close:hover:not(:disabled) {
+  background: var(--color-bg-subtle);
+}
+
+.ai-review-options {
+  padding: 12px 22px;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.ai-review-options label {
+  min-width: 190px;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.ai-review-options select {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.ai-review-warning {
+  margin: 12px 22px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--docs-ai-error-bg);
+  color: var(--docs-ai-error);
+  font-size: 12px;
+}
+
+.ai-review-results {
+  flex: 1;
+  min-height: 0;
+  padding: 16px 22px 24px;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.ai-review-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-page);
+}
+
+.ai-review-card.featured {
+  grid-column: 1 / -1;
+  border-color: var(--word-blue);
+}
+
+.ai-review-card header {
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 10px;
+  align-items: center;
+}
+
+.ai-review-card header span {
+  grid-column: 1;
+  color: var(--color-text-secondary);
+  font:
+    11px/1.3 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  word-break: break-all;
+}
+
+.ai-review-card header em {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.ai-review-card .status-running,
+.ai-review-card .status-pending {
+  color: var(--word-blue);
+}
+
+.ai-review-card .status-error,
+.ai-review-error {
+  color: var(--docs-ai-error);
+}
+
+.ai-review-card .ai-md {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.ai-review-empty {
+  grid-column: 1 / -1;
+  padding: 48px 20px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .ai-review-results {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-review-card.featured {
+    grid-column: 1;
+  }
+}
+
 /* User pill: gray, fully rounded (no tail) */
 .ai-msg-user {
   align-self: flex-end;

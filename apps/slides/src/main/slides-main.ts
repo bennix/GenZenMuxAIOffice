@@ -2787,6 +2787,7 @@ export function registerSlidesIpc(): void {
         cy: Math.max(1, toEmu(op.hPx)),
       },
       ...(op.name ? { name: op.name } : {}),
+      ...(op.descr ? { descr: op.descr } : {}),
     })
     if (!el) {
       session.undoStack.pop()
@@ -2809,7 +2810,9 @@ export function registerSlidesIpc(): void {
       op.sourceId,
       new Uint8Array(Buffer.from(op.base64, 'base64')),
       op.ext,
-      op.keepSrcRect ? { keepSrcRect: true } : undefined,
+      op.keepSrcRect || op.descr
+        ? { keepSrcRect: op.keepSrcRect, ...(op.descr ? { descr: op.descr } : {}) }
+        : undefined,
     )
     if (!ok) {
       session.undoStack.pop()

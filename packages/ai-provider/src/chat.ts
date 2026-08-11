@@ -1,6 +1,6 @@
 import { httpBodyDetail } from './http-error'
 import { GENSPARK_LLM_BASE_URLS, ZENMUX_BASE_URL } from './providers'
-import type { AiChatResponse, AiProviderConfig, AiProviderId } from './types'
+import type { AiChatResponse, AiImageReference, AiProviderConfig, AiProviderId } from './types'
 import { AI_CHAT_RESPONSE_TIMEOUT_MS, createStreamWatchdog, type StreamWatchdog } from './watchdog'
 
 async function chatAnthropic(
@@ -85,7 +85,17 @@ async function chatOpenAiCompatible(
   config: AiProviderConfig,
   system: string,
   user: string,
+  images: AiImageReference[] = [],
 ): Promise<AiChatResponse> {
+  const userContent = images.length
+    ? [
+        { type: 'text', text: user },
+        ...images.map((image) => ({
+          type: 'image_url',
+          image_url: { url: `data:${image.mime};base64,${image.base64}` },
+        })),
+      ]
+    : user
   const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
     signal: wd.signal,
@@ -97,7 +107,7 @@ async function chatOpenAiCompatible(
       model: config.model,
       messages: [
         { role: 'system', content: system },
-        { role: 'user', content: user },
+        { role: 'user', content: userContent },
       ],
       temperature: 0.3,
     }),
@@ -122,10 +132,11 @@ export function chatZenMux(
   config: AiProviderConfig,
   system: string,
   user: string,
+  images: AiImageReference[] = [],
   signal?: AbortSignal,
 ): Promise<AiChatResponse> {
   const wd = createStreamWatchdog(signal, AI_CHAT_RESPONSE_TIMEOUT_MS)
-  return wd.guard(() => chatOpenAiCompatible(wd, ZENMUX_BASE_URL, config, system, user))
+  return wd.guard(() => chatOpenAiCompatible(wd, ZENMUX_BASE_URL, config, system, user, images))
 }
 
 /** route a one-shot (non-streaming, non-tool-calling) chat call by provider id */

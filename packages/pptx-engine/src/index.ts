@@ -793,7 +793,7 @@ export function replacePictureBytes(
   sourceId: string,
   bytes: Uint8Array,
   ext: string,
-  opts?: { keepSrcRect?: boolean },
+  opts?: { keepSrcRect?: boolean; descr?: string },
 ): boolean {
   const el = slide.elements.find((e) => e.id === sourceId && e.type === 'picture')
   if (!el) return false
@@ -820,6 +820,22 @@ export function replacePictureBytes(
   if (!opts?.keepSrcRect) {
     xml = xml.replace(/<a:srcRect\b[^>]*\/>|<a:srcRect\b[^>]*>[\s\S]*?<\/a:srcRect>/, '')
     delete pic.srcRect
+  }
+  if (opts?.descr) {
+    const descr = opts.descr
+    const cNvPr = /<p:cNvPr\b[^>]*\/?>(?:<\/p:cNvPr>)?/.exec(xml)
+    if (!cNvPr) return false
+    let tag = cNvPr[0]
+    if (/\sdescr="[^"]*"/.test(tag)) {
+      tag = tag.replace(/\sdescr="[^"]*"/, ` descr="${escapeXmlAttr(descr)}"`)
+    } else {
+      tag = tag.replace(
+        /\s*\/?>(?:<\/p:cNvPr>)?$/,
+        (end) => ` descr="${escapeXmlAttr(descr)}"${end}`,
+      )
+    }
+    xml = xml.slice(0, cNvPr.index) + tag + xml.slice(cNvPr.index + cNvPr[0].length)
+    pic.descr = descr
   }
   pic.mediaRef = added.mediaPath
   delete pic.dataUrl // the media resolver re-derives it from the new mediaRef

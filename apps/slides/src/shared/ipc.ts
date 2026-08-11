@@ -799,6 +799,8 @@ export interface AddImageBytesOp {
   hPx: number
   fitWidthPx: number
   name?: string
+  /** Editable object metadata stored in p:cNvPr descr (used by LaTeX equations). */
+  descr?: string
 }
 
 /** Swap a picture's backing image in place: frame, z-order, border and effects survive. */
@@ -810,6 +812,8 @@ export interface ReplacePictureBytesOp {
   ext: string
   /** Keep the crop window — only valid when the new image shares the old one's pixel geometry (e.g. background removal) */
   keepSrcRect?: boolean
+  /** Replace editable object metadata together with the image bytes. */
+  descr?: string
 }
 
 /** Insert renderer-recorded media bytes (screen-recording webm etc.). */
