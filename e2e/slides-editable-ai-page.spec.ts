@@ -43,9 +43,9 @@ test('AI HTML page lands as separate editable PowerPoint objects', async () => {
     expect(result).toHaveProperty('slides')
     const slides = await editorPage.evaluate(() => window.slidesApi.getRenderSlides())
     expect(slides).toHaveLength(1)
-    expect(slides![0]!.elements.filter((element) => element.type === 'picture')).toHaveLength(0)
+    expect(slides![0]!.nodes.filter((element) => element.type === 'picture')).toHaveLength(0)
     expect(
-      slides![0]!.elements.filter((element) => element.type === 'text' || element.type === 'shape')
+      slides![0]!.nodes.filter((element) => element.type === 'text' || element.type === 'shape')
         .length,
     ).toBeGreaterThanOrEqual(3)
   } finally {
