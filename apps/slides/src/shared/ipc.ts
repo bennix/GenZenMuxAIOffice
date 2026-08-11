@@ -1356,14 +1356,14 @@ export interface SlidesApi {
     url: string
     keepSrcRect?: boolean
   }) => Promise<RenderSlide | null>
-  /** gsk (Genspark) AI image generation/editing, returns the image URL (error prompts login when logged out) */
+  /** ZenMux AI image generation/editing */
   generateImage: (op: {
     prompt: string
     model?: string
     referenceImageUrls?: string[]
     aspectRatio?: string
     imageSize?: string
-  }) => Promise<{ url?: string; error?: string }>
+  }) => Promise<{ base64?: string; mime?: string; url?: string; error?: string }>
   /** gsk (Genspark) media analysis: image/audio/video content understanding, returns analysis text */
   analyzeMedia: (op: {
     mediaUrls: string[]

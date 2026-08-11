@@ -80,6 +80,7 @@ const api: DesktopApi = {
     ipcRenderer.invoke('ai:web-search', query, maxResults),
   imageSearch: (query: string, maxResults?: number) =>
     ipcRenderer.invoke('ai:image-search', query, maxResults),
+  generateImage: (op) => ipcRenderer.invoke('ai:generate-image', op),
   fetchImage: (url: string) => ipcRenderer.invoke('ai:fetch-image', url),
   pickAttachments: () => ipcRenderer.invoke('files:pick'),
   addAttachmentPaths: (paths: string[]) => ipcRenderer.invoke('files:add', paths),

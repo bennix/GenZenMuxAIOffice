@@ -286,7 +286,7 @@ interface DocStats {
 }
 
 const DEFAULT_SETTINGS: AiSettings = {
-  provider: 'anthropic',
+  provider: 'zenmux',
   providers: Object.fromEntries(
     AI_PROVIDERS.map((p) => [
       p.id,

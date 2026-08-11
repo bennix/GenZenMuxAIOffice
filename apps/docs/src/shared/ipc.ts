@@ -237,6 +237,13 @@ export interface DesktopApi {
     /** failure reason when method === 'error' */
     error?: string
   }>
+  generateImage(op: {
+    prompt: string
+    model?: string
+    referenceImageUrls?: string[]
+    aspectRatio?: string
+    imageSize?: string
+  }): Promise<{ base64?: string; mime?: string; url?: string; error?: string }>
   fetchImage(url: string): Promise<{ base64: string; mime: string } | null>
   /** file picker for chat attachments (multi-select) */
   pickAttachments(): Promise<AttachmentAddResult | null>

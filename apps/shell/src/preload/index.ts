@@ -14,6 +14,7 @@ import type {
   UiLanguage,
 } from '../shared/home-api'
 import { HOME_CHANNELS, PROJECT_CHANNELS } from '../shared/home-api'
+import type { AiSettings } from '@genoffice/ai-provider'
 import type { TabsApi, TabSummary } from '../shared/tabs-api'
 import { TABS_CHANNELS } from '../shared/tabs-api'
 
@@ -187,6 +188,15 @@ const homeApi: HomeApi = {
   },
   async openCreditUsage() {
     await ipcRenderer.invoke(HOME_CHANNELS.openCreditUsage)
+  },
+  async getAiSettings() {
+    return (await ipcRenderer.invoke('ai:get-settings')) as AiSettings
+  },
+  async setAiSettings(settings) {
+    await ipcRenderer.invoke('ai:set-settings', settings)
+  },
+  async openZenMuxInvite() {
+    await ipcRenderer.invoke(HOME_CHANNELS.openZenMuxInvite)
   },
   async cloudProjectsCached() {
     const result: unknown = await ipcRenderer.invoke(HOME_CHANNELS.cloudProjectsCached)

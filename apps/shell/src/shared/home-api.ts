@@ -1,4 +1,5 @@
 import type { UpdateChannel } from './update-api'
+import type { AiSettings } from '@genoffice/ai-provider'
 
 /** UI language; kept self-contained here (mirrors Lang in @genoffice/i18n) */
 export type UiLanguage =
@@ -128,6 +129,12 @@ export interface HomeApi {
   openGenTeam(): Promise<void>
   /** open the Genspark credit-usage page in the default browser */
   openCreditUsage(): Promise<void>
+  /** read the persistent ZenMux AI configuration */
+  getAiSettings(): Promise<AiSettings>
+  /** persist the ZenMux AI configuration in userData/ai-settings.json */
+  setAiSettings(settings: AiSettings): Promise<void>
+  /** open the ZenMux invitation page in the default browser */
+  openZenMuxInvite(): Promise<void>
   /** locally stored full cloud project list (instant; null when no store or logged out) */
   cloudProjectsCached(): Promise<CloudProjectsSnapshot | null>
   /** sync the full list from Genspark and return it (1 request when nothing changed); null when the sync failed */
@@ -258,6 +265,7 @@ export const HOME_CHANNELS = {
   pickDefaultSaveDir: 'home:pick-default-save-dir',
   openGenTeam: 'home:open-genteam',
   openCreditUsage: 'home:open-credit-usage',
+  openZenMuxInvite: 'home:open-zenmux-invite',
   cloudProjects: 'home:cloud-projects',
   cloudProjectsCached: 'home:cloud-projects-cached',
   openCloudProject: 'home:open-cloud-project',

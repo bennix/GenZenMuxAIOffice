@@ -11,6 +11,7 @@ import {
   AiCreditsError,
   AiTimeoutError,
   defaultAiSettings,
+  generateZenMuxImage,
   resolveAiSettings,
   streamForProvider,
   type AiSettings,
@@ -24,8 +25,6 @@ import {
   webSearch,
   imageSearch,
   ensureGenofficeLogin,
-  gskApiKey,
-  gskGenerateImage,
   gskAnalyzeMedia,
   gskLoginInfo,
   hasGskAuth,
@@ -59,8 +58,8 @@ export function registerAiIpc(): void {
   ipcMain.handle('ai:get-settings', (): AiSettings => {
     const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(AI_SETTINGS_PATH(), {})
     const settings = resolveAiSettings(stored, defaultAiSettings())
-    // AI features all go through Genspark (gsk login); stored settings that chose another provider are normalized back
-    settings.provider = 'genspark'
+    // Text AI is served exclusively through ZenMux's OpenAI-compatible endpoint.
+    settings.provider = 'zenmux'
     return settings
   })
 
@@ -88,11 +87,7 @@ export function registerAiIpc(): void {
     const tools = request.tools ?? []
     const maxTokens = request.maxTokens ?? 8192
     const provider = settings.provider
-    let config = settings.providers?.[provider]
-    // The genspark key never enters the settings file; it is fetched from the gsk login state per request
-    if (provider === 'genspark' && config && !config.apiKey) {
-      config = { ...config, apiKey: gskApiKey() }
-    }
+    const config = settings.providers?.[provider]
     const send = (chunk: AiStreamChunk) => {
       if (!event.sender.isDestroyed()) event.sender.send('ai:stream-chunk', chunk)
     }
@@ -168,15 +163,7 @@ export function registerAiIpc(): void {
       return { images: [], method: 'error', error: String(err) }
     }
   })
-}
 
-// ── ai:* handlers unique to slides ──────────────────────────────────────
-// Must be registered inside registerSlidesIpc (not registerAiIpc): in shell aggregate mode the
-// generic ai:* channels are registered by docs-main.registerAiIpc, and slides' registerAiIpc is
-// never called; docs does not have these channels, so putting them in the wrong place raises
-// "No handler registered".
-export function registerSlidesOnlyAiIpc(): void {
-  // gsk (Genspark CLI) capabilities: AI image generation / media analysis. Returns an error prompt when not logged in.
   ipcMain.handle(
     'ai:generate-image',
     async (
@@ -189,24 +176,60 @@ export function registerSlidesOnlyAiIpc(): void {
         imageSize?: string
       },
     ) => {
-      if (!hasGskAuth()) return { error: tm('errGskCli') }
+      const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(AI_SETTINGS_PATH(), {})
+      const config = resolveAiSettings(stored, defaultAiSettings()).providers.zenmux
+      if (!config.apiKey) return { error: tm('errNoApiKey', { provider: 'ZenMux' }) }
+      const model = op.model ? String(op.model) : config.imageModel
+      if (!model) return { error: tm('errNoModel') }
       try {
-        const r = await gskGenerateImage({
+        const referenceImages = []
+        for (const source of Array.isArray(op.referenceImageUrls) ? op.referenceImageUrls : []) {
+          const resp = await fetchRemoteImage(String(source))
+          if (!resp?.ok) continue
+          const mime = resp.headers.get('content-type')?.split(';')[0] || 'image/png'
+          referenceImages.push({
+            base64: Buffer.from(await resp.arrayBuffer()).toString('base64'),
+            mime,
+          })
+        }
+        return await generateZenMuxImage({
+          apiKey: config.apiKey,
+          model,
           prompt: String(op.prompt),
-          model: op.model ? String(op.model) : undefined,
-          referenceImageUrls: Array.isArray(op.referenceImageUrls)
-            ? op.referenceImageUrls.map(String)
-            : undefined,
           aspectRatio: op.aspectRatio ? String(op.aspectRatio) : undefined,
           imageSize: op.imageSize ? String(op.imageSize) : undefined,
+          referenceImages,
         })
-        return { url: r.url }
       } catch (err) {
         return { error: err instanceof Error ? err.message : String(err) }
       }
     },
   )
+}
 
+// ── ai:* handlers unique to slides ──────────────────────────────────────
+// Must be registered inside registerSlidesIpc (not registerAiIpc): in shell aggregate mode the
+// generic ai:* channels are registered by docs-main.registerAiIpc, and slides' registerAiIpc is
+// never called; docs does not have these channels, so putting them in the wrong place raises
+// "No handler registered".
+async function readImageSource(source: string): Promise<{ buf: Buffer; ext: string } | null> {
+  const dataUrl = /^data:(image\/(?:png|jpeg|gif|webp));base64,([A-Za-z0-9+/=]+)$/.exec(source)
+  if (dataUrl) {
+    const buf = Buffer.from(dataUrl[2], 'base64')
+    if (!buf.length || buf.length > 25 * 1024 * 1024) return null
+    const ext = dataUrl[1] === 'image/jpeg' ? 'jpg' : dataUrl[1].slice('image/'.length)
+    return { buf, ext }
+  }
+  const resp = await fetchRemoteImage(source)
+  if (!resp?.ok) return null
+  const buf = Buffer.from(await resp.arrayBuffer())
+  const ct = resp.headers.get('content-type') ?? ''
+  return { buf, ext: ct.includes('png') ? 'png' : ct.includes('gif') ? 'gif' : 'jpg' }
+}
+
+export function registerSlidesOnlyAiIpc(): void {
+  // Media analysis remains a Genspark CLI capability. Image generation is on the
+  // shared ZenMux ai:generate-image channel registered above (or by docs in shell mode).
   ipcMain.handle(
     'ai:analyze-media',
     async (_event, op: { mediaUrls: string[]; requirements: string }) => {
@@ -247,11 +270,9 @@ export function registerSlidesOnlyAiIpc(): void {
         // search results), so refuse non-http schemes and private/link-local
         // targets; redirects are followed manually so every hop is validated.
         // fetchRemoteImage adds CDN-friendly headers and transient-error retries.
-        const resp = await fetchRemoteImage(String(op.url))
-        if (!resp || !resp.ok) return null
-        const buf = Buffer.from(await resp.arrayBuffer())
-        const ct = resp.headers.get('content-type') ?? ''
-        const ext = ct.includes('png') ? 'png' : ct.includes('gif') ? 'gif' : 'jpg'
+        const image = await readImageSource(String(op.url))
+        if (!image) return null
+        const { buf, ext } = image
         const baseWidthPx = session.opened.deck.size.cx / EMU_PER_PX_96
         const scale = op.fitWidthPx / baseWidthPx
         const toEmu = (px: number) => Math.round((px / scale) * EMU_PER_PX_96)
@@ -289,11 +310,9 @@ export function registerSlidesOnlyAiIpc(): void {
       const slide = session.opened.deck.slides[op.slideIndex]
       if (!slide) return null
       try {
-        const resp = await fetchRemoteImage(String(op.url))
-        if (!resp || !resp.ok) return null
-        const buf = Buffer.from(await resp.arrayBuffer())
-        const ct = resp.headers.get('content-type') ?? ''
-        const ext = ct.includes('png') ? 'png' : ct.includes('gif') ? 'gif' : 'jpg'
+        const image = await readImageSource(String(op.url))
+        if (!image) return null
+        const { buf, ext } = image
         pushHistory(session)
         const ok = replacePictureBytes(
           session.opened,

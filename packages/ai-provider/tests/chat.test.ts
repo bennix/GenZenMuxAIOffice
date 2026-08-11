@@ -76,6 +76,29 @@ describe('chatForProvider', () => {
     )
   })
 
+  it('zenmux uses the fixed OpenAI-compatible endpoint', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ choices: [{ message: { content: 'ok' } }] }))
+    vi.stubGlobal('fetch', fetchMock)
+    await chatForProvider(
+      'zenmux',
+      {
+        apiKey: 'zen-key',
+        model: 'openai/gpt-5.4',
+        baseUrl: 'https://ignored.example.com/v1',
+      },
+      'sys',
+      'hi',
+    )
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://zenmux.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer zen-key' }),
+      }),
+    )
+  })
+
   it('custom: uses the configured base URL', async () => {
     const fetchMock = vi
       .fn()

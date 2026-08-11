@@ -1,6 +1,7 @@
 import type { AgentMessage, AgentToolCall, AgentToolDef } from '@genoffice/agent-core'
 
-export type AiProviderId = 'genspark' | 'anthropic' | 'gemini' | 'deepseek' | 'openai' | 'custom'
+export type AiProviderId =
+  'zenmux' | 'genspark' | 'anthropic' | 'gemini' | 'deepseek' | 'openai' | 'custom'
 
 /** Genspark account status (gsk login state; the sole auth source for AI features) */
 export interface GenSparkAccountStatus {
@@ -11,8 +12,35 @@ export interface GenSparkAccountStatus {
 export interface AiProviderConfig {
   apiKey: string
   model: string
+  /** user-added model ids shown alongside the provider's built-in models */
+  models?: string[] | undefined
+  /** image-generation model (ZenMux only) */
+  imageModel?: string | undefined
+  /** user-added image model ids shown alongside the built-in image models */
+  imageModels?: string[] | undefined
   /** only used by the custom (OpenAI-compatible) provider */
   baseUrl?: string | undefined
+}
+
+export interface AiImageReference {
+  base64: string
+  mime: string
+}
+
+export interface AiImageGenerateOptions {
+  apiKey: string
+  model: string
+  prompt: string
+  aspectRatio?: string | undefined
+  imageSize?: string | undefined
+  referenceImages?: AiImageReference[] | undefined
+  signal?: AbortSignal | undefined
+}
+
+export interface AiGeneratedImage {
+  base64?: string | undefined
+  mime: string
+  url?: string | undefined
 }
 
 export interface AiProviderMeta {

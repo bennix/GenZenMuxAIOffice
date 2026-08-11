@@ -1,15 +1,25 @@
 import { describe, expect, it } from 'vitest'
-import { AI_PROVIDERS, defaultAiSettings, resolveAiSettings } from '../src/providers'
+import {
+  AI_PROVIDERS,
+  ZENMUX_BASE_URL,
+  ZENMUX_DEFAULT_IMAGE_MODEL,
+  ZENMUX_MODELS,
+  defaultAiSettings,
+  resolveAiSettings,
+} from '../src/providers'
 
 describe('defaultAiSettings', () => {
   it('gives every provider its default model and an empty key by default', () => {
     const settings = defaultAiSettings()
-    expect(settings.provider).toBe('genspark')
+    expect(settings.provider).toBe('zenmux')
     for (const meta of AI_PROVIDERS) {
       expect(settings.providers[meta.id].apiKey).toBe('')
       expect(settings.providers[meta.id].model).toBe(meta.defaultModel)
     }
     expect(settings.providers.custom.baseUrl).toBe('')
+    expect(settings.providers.zenmux.baseUrl).toBe(ZENMUX_BASE_URL)
+    expect(settings.providers.zenmux.model).toBe(ZENMUX_MODELS[0])
+    expect(settings.providers.zenmux.imageModel).toBe(ZENMUX_DEFAULT_IMAGE_MODEL)
     expect(settings.providers.anthropic.baseUrl).toBeUndefined()
   })
 
@@ -58,8 +68,31 @@ describe('resolveAiSettings', () => {
       defaults,
     )
     expect(resolved.provider).toBe('gemini')
-    expect(resolved.providers.gemini).toEqual({ apiKey: 'stored-gemini-key', model: 'gemini-2.5-pro' })
+    expect(resolved.providers.gemini).toEqual({
+      apiKey: 'stored-gemini-key',
+      model: 'gemini-2.5-pro',
+    })
     // provider not mentioned in stored.providers keeps the computed default
     expect(resolved.providers.anthropic.apiKey).toBe('preset-key')
+  })
+
+  it('preserves user-added ZenMux models', () => {
+    const resolved = resolveAiSettings(
+      {
+        provider: 'zenmux',
+        providers: {
+          zenmux: {
+            apiKey: 'zen-key',
+            model: 'vendor/new-model',
+            models: ['vendor/new-model'],
+            baseUrl: ZENMUX_BASE_URL,
+          },
+        } as never,
+      },
+      defaultAiSettings(),
+    )
+    expect(resolved.providers.zenmux.models).toEqual(['vendor/new-model'])
+    expect(resolved.providers.zenmux.model).toBe('vendor/new-model')
+    expect(resolved.providers.zenmux.imageModel).toBe(ZENMUX_DEFAULT_IMAGE_MODEL)
   })
 })

@@ -11,6 +11,13 @@ import { auditSlideLayout, formatAudit } from './layout-audit'
 import { runLayoutScript, type LayoutScriptElement, type SlideStylePatch } from './layout-script'
 import { t } from '../i18n/locale'
 
+const generatedImages = new Map<string, string>()
+
+function resolveGeneratedImageUrl(url: string): string | null {
+  if (/^https?:\/\//.test(url)) return url
+  return generatedImages.get(url) ?? null
+}
+
 /**
  * Slides capability as an AgentSkill: deck outline context + three tools (read structure /
  * read one slide / edit element text). Changes go through the existing slides:edit-text IPC;
@@ -267,7 +274,7 @@ Native tools (only for modifying/refining existing pages, not for generating fro
 Search and images:
 - Use web_search when you need current information/data/fact-checking; search before writing anything uncertain, don't fabricate. When generating a whole deck, a round of searching for real material first is recommended.
 - **Figure provenance is enforced at the tool layer**: add_chart / edit_chart (with series) and data-dense generate_deck / regenerate_slide briefs refuse to run without a dataSource declaration; 'search' is only accepted after an actual web_search in this conversation. Fabricating precise numbers (¥21.8-style precision) and delivering them as fact is the worst failure mode — when no real data is available, use dataSource:'sample' and tell the user explicitly that the figures are illustrative.
-- image_search for images (English keywords) → get imageUrl. **Two usages**: 1) when redoing a page via regenerate_slide, pass the imageUrl in image_urls; 2) when adding an image to an existing page, use insert_web_image to insert at a position. (generate_deck searches images internally; no advance search needed for a whole new deck.)
+- For a custom 16:9 illustration/background, use generate_image → insert_web_image. For a real existing photo/reference, use image_search (English keywords) → get imageUrl. (generate_deck searches existing images internally; no advance image_search needed for a whole new deck.)
 - Travel, product, people, and brand decks get images by default without the user asking; mind whitespace between images and text, no overlap.
 - Editing an EXISTING picture: crop_image (non-destructive srcRect), set_picture_opacity, replace_image (in-place swap keeping frame/z-order/border). For "remove this image's background / upscale / edit this image": run generate_image with referenceImageUrls pointing at a source URL you have (an image_search result or one the user provided — embedded picture bytes are not addressable by URL), then replace_image with the returned URL. Never delete+reinsert a picture to change its content — that loses z-order and effects.
 
@@ -506,7 +513,7 @@ const TOOLS: AgentToolDef[] = [
   {
     name: 'generate_image',
     description:
-      'AI image generation/editing (Genspark). Text-to-image, or pass referenceImageUrls for image editing; returns an image URL. NEW imagery: insert with insert_web_image. Editing an EXISTING slide picture (background removal/upscaling/etc.): swap it in place with replace_image — do not insert a duplicate. Use for custom illustrations/icons/backgrounds, style-consistent imagery; for real photos/screenshots still use image_search.',
+      'Generate or edit an image with the ZenMux image model configured in Settings. Returns a short image reference. Insert new imagery with insert_web_image; for an existing slide picture, use replace_image to preserve its frame and effects. PPT imagery defaults to 16:9.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -518,7 +525,7 @@ const TOOLS: AgentToolDef[] = [
         model: {
           type: 'string',
           description:
-            'Optional, defaults to the general model. Specify only for special purposes: fal-bria-rmbg=background removal, fal-ai/recraft-clarity-upscale=upscale, flux-pro/outpaint=outpaint, fal-ai/image-editing/text-removal=remove text watermark',
+            'Optional ZenMux provider/model id; omit to use the image model from Settings',
         },
         referenceImageUrls: {
           type: 'array',
@@ -2053,16 +2060,24 @@ async function executeTool(
         prompt,
         model: call.input.model ? String(call.input.model) : undefined,
         referenceImageUrls: refs,
-        aspectRatio: call.input.aspectRatio ? String(call.input.aspectRatio) : undefined,
+        aspectRatio: call.input.aspectRatio ? String(call.input.aspectRatio) : '16:9',
       })
-      if (!r.url) return fail(t('aiFailGenImage'), r.error ?? 'Generation failed')
+      let imageUrl = r.url
+      if (r.base64) {
+        const dataUrl = `data:${r.mime || 'image/png'};base64,${r.base64}`
+        imageUrl = `genoffice-generated://${crypto.randomUUID()}`
+        generatedImages.set(imageUrl, dataUrl)
+      }
+      if (!imageUrl) return fail(t('aiFailGenImage'), r.error ?? 'Generation failed')
       const display: ToolDisplay = {
         kind: 'images',
-        items: [{ url: r.url, title: prompt.slice(0, 60) }],
+        items: [
+          { url: resolveGeneratedImageUrl(imageUrl) ?? imageUrl, title: prompt.slice(0, 60) },
+        ],
       }
       return {
         output:
-          `Image generated, URL: ${r.url}\n` +
+          `Image generated, reference: ${imageUrl}\n` +
           'New imagery: insert it with insert_web_image. If this edits an existing slide picture (e.g. background removal), swap it in place with replace_image instead.',
         mutated: false,
         summary: t('aiSumGenImage', {
@@ -2095,8 +2110,9 @@ async function executeTool(
       const idx = Number(call.input.slideIndex)
       if (!slides[idx])
         return fail(t('aiFailInsertImage'), `slideIndex out of range (0-${slides.length - 1})`)
-      const url = String(call.input.url ?? '')
-      if (!/^https?:\/\//.test(url)) return fail(t('aiFailInsertImage'), 'Invalid url')
+      const requestedUrl = String(call.input.url ?? '')
+      const url = resolveGeneratedImageUrl(requestedUrl)
+      if (!url) return fail(t('aiFailInsertImage'), 'Invalid or expired image reference')
       const r = await window.slidesApi.insertImageUrl({
         slideIndex: idx,
         url,
@@ -2186,8 +2202,9 @@ async function executeTool(
         }
       }
 
-      const url = String(call.input.url ?? '')
-      if (!/^https?:\/\//.test(url)) return fail(t(failKey), 'Invalid url')
+      const requestedUrl = String(call.input.url ?? '')
+      const url = resolveGeneratedImageUrl(requestedUrl)
+      if (!url) return fail(t(failKey), 'Invalid or expired image reference')
       const updated = await window.slidesApi.replacePictureUrl({
         slideIndex: idx,
         sourceId,

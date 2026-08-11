@@ -1,5 +1,22 @@
 import type { AiProviderId, AiProviderMeta, AiSettings, LegacyAiSettings } from './types'
 
+export const ZENMUX_BASE_URL = 'https://zenmux.ai/api/v1'
+export const ZENMUX_INVITE_URL = 'https://zenmux.ai/invite/GBQMC5'
+export const ZENMUX_MODELS = [
+  'anthropic/claude-sonnet-4.6',
+  'z-ai/glm-5v-turbo',
+  'openai/gpt-5.4',
+] as const
+
+export const ZENMUX_IMAGE_MODELS = [
+  'openai/gpt-image-2',
+  'google/gemini-3.1-flash-image',
+  'google/gemini-3-pro-image',
+  'qwen/qwen-image-2.0-pro',
+  'z-ai/glm-image',
+] as const
+export const ZENMUX_DEFAULT_IMAGE_MODEL = ZENMUX_IMAGE_MODELS[0]
+
 /**
  * Genspark server-side LLM proxy endpoints. All three protocols share the
  * api_key from the gsk login; model ids follow the proxy's own naming scheme,
@@ -25,6 +42,14 @@ export function gensparkAttributionHeaders(baseUrl?: string): Record<string, str
 }
 
 export const AI_PROVIDERS: AiProviderMeta[] = [
+  {
+    id: 'zenmux',
+    label: 'ZenMux',
+    models: [...ZENMUX_MODELS],
+    defaultModel: ZENMUX_MODELS[0],
+    keyPlaceholder: 'ZenMux API Key',
+    needsBaseUrl: true,
+  },
   {
     id: 'genspark',
     label: 'Genspark',
@@ -104,7 +129,9 @@ export function defaultAiSettings(
       baseUrl: meta.needsBaseUrl ? '' : undefined,
     }
   }
-  return { provider: 'genspark', providers }
+  providers.zenmux.baseUrl = ZENMUX_BASE_URL
+  providers.zenmux.imageModel = ZENMUX_DEFAULT_IMAGE_MODEL
+  return { provider: 'zenmux', providers }
 }
 
 /**
@@ -127,8 +154,10 @@ export function resolveAiSettings(
     }
     return defaults
   }
-  return {
+  const resolved = {
     provider: stored.provider ?? defaults.provider,
     providers: { ...defaults.providers, ...stored.providers },
   }
+  resolved.providers.zenmux.imageModel ??= ZENMUX_DEFAULT_IMAGE_MODEL
+  return resolved
 }

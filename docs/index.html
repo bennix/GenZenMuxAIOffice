@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="GenOffice — 由 ZenMux 驱动的本地 AI 文档、表格与演示文稿工作台。"
+    />
+    <meta name="theme-color" content="#f1efe7" />
+    <title>GenOffice — ZenMux AI Office for macOS</title>
+    <style>
+      :root {
+        --paper: #f1efe7;
+        --ink: #161714;
+        --muted: #66685f;
+        --line: #c9c7bc;
+        --blue: #2357ff;
+        --acid: #d8ff42;
+        --panel: rgba(255, 255, 255, 0.5);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          linear-gradient(90deg, transparent 49.8%, rgba(22, 23, 20, 0.06) 50%, transparent 50.2%),
+          radial-gradient(circle at 75% 18%, rgba(35, 87, 255, 0.12), transparent 29rem),
+          var(--paper);
+        font-family: "Avenir Next", Avenir, "PingFang SC", sans-serif;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      nav {
+        height: 84px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .wordmark {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+      }
+
+      .mark {
+        width: 31px;
+        height: 31px;
+        display: grid;
+        place-items: center;
+        color: white;
+        background: var(--blue);
+        border-radius: 8px 8px 8px 2px;
+        font-size: 13px;
+      }
+
+      .nav-link {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .hero {
+        min-height: 680px;
+        padding: 74px 0 58px;
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr;
+        gap: 56px;
+        align-items: end;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 28px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 38px;
+        height: 9px;
+        background: var(--acid);
+        border: 1px solid var(--ink);
+      }
+
+      h1 {
+        margin: 0;
+        font-family: "Iowan Old Style", "Songti SC", Georgia, serif;
+        font-size: clamp(74px, 12vw, 164px);
+        font-weight: 400;
+        line-height: 0.73;
+        letter-spacing: -0.085em;
+      }
+
+      h1 span {
+        display: block;
+        margin-left: 0.34em;
+        color: var(--blue);
+        font-style: italic;
+      }
+
+      .hero-copy {
+        padding-bottom: 6px;
+      }
+
+      .hero-copy h2 {
+        margin: 0 0 22px;
+        max-width: 460px;
+        font-size: clamp(27px, 3vw, 42px);
+        font-weight: 600;
+        line-height: 1.08;
+        letter-spacing: -0.045em;
+      }
+
+      .hero-copy p {
+        margin: 0 0 32px;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.75;
+      }
+
+      .download {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        min-width: 290px;
+        padding: 17px 18px 17px 22px;
+        color: white;
+        background: var(--ink);
+        border: 1px solid var(--ink);
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: 700;
+        transition:
+          transform 180ms ease,
+          box-shadow 180ms ease;
+      }
+
+      .download:hover {
+        transform: translate(-4px, -4px);
+        box-shadow: 7px 7px 0 var(--blue);
+      }
+
+      .download b {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        color: var(--ink);
+        background: var(--acid);
+        border-radius: 50%;
+      }
+
+      .meta {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .manifesto {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border: 1px solid var(--line);
+        background: var(--panel);
+        backdrop-filter: blur(18px);
+      }
+
+      .feature {
+        min-height: 260px;
+        padding: 32px;
+        border-right: 1px solid var(--line);
+      }
+
+      .feature:last-child {
+        border-right: 0;
+      }
+
+      .feature-num {
+        display: block;
+        margin-bottom: 54px;
+        color: var(--blue);
+        font-family: "Iowan Old Style", Georgia, serif;
+        font-size: 23px;
+        font-style: italic;
+      }
+
+      .feature h3 {
+        margin: 0 0 12px;
+        font-size: 20px;
+        letter-spacing: -0.03em;
+      }
+
+      .feature p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .models {
+        padding: 110px 0;
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 60px;
+      }
+
+      .models h2 {
+        margin: 0;
+        font-family: "Iowan Old Style", "Songti SC", Georgia, serif;
+        font-size: clamp(44px, 6vw, 78px);
+        font-weight: 400;
+        line-height: 0.98;
+        letter-spacing: -0.055em;
+      }
+
+      .model-list {
+        border-top: 1px solid var(--ink);
+      }
+
+      .model {
+        padding: 21px 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        border-bottom: 1px solid var(--line);
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+        font-size: 14px;
+      }
+
+      .model span:last-child {
+        color: var(--muted);
+      }
+
+      footer {
+        padding: 30px 0 46px;
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+        font-size: 13px;
+      }
+
+      @media (max-width: 780px) {
+        .hero {
+          min-height: auto;
+          grid-template-columns: 1fr;
+          padding-top: 54px;
+        }
+
+        h1 {
+          font-size: clamp(70px, 23vw, 120px);
+        }
+
+        .manifesto,
+        .models {
+          grid-template-columns: 1fr;
+        }
+
+        .feature {
+          min-height: 220px;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .feature:last-child {
+          border-bottom: 0;
+        }
+
+        .models {
+          padding: 80px 0;
+        }
+
+        footer {
+          flex-direction: column;
+          gap: 10px;
+        }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .hero > * {
+          animation: rise 700ms both cubic-bezier(0.2, 0.75, 0.25, 1);
+        }
+
+        .hero-copy {
+          animation-delay: 140ms;
+        }
+
+        @keyframes rise {
+          from {
+            opacity: 0;
+            transform: translateY(24px);
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <nav>
+        <div class="wordmark"><span class="mark">G/O</span> GenOffice</div>
+        <a class="nav-link" href="https://github.com/bennix/GenZenMuxAIOffice">Source on GitHub ↗</a>
+      </nav>
+
+      <main>
+        <section class="hero">
+          <div>
+            <div class="eyebrow">ZenMux native office suite</div>
+            <h1>Gen<span>Office</span></h1>
+          </div>
+          <div class="hero-copy">
+            <h2>让文档、表格与演示文稿，拥有同一个 AI 工作台。</h2>
+            <p>
+              一款独立的 macOS 办公应用。API Key 只保存在本机；文本生成与 PPT、Word
+              配图统一通过 ZenMux 调用。
+            </p>
+            <a
+              class="download"
+              href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.0-arm64.dmg"
+            >
+              下载 macOS DMG <b>↓</b>
+            </a>
+            <div class="meta">Apple Silicon · macOS · Developer ID 签名</div>
+          </div>
+        </section>
+
+        <section class="manifesto" aria-label="产品特点">
+          <article class="feature">
+            <span class="feature-num">01</span>
+            <h3>本地优先</h3>
+            <p>ZenMux API Key 在设置页加密遮罩显示，并永久保存在当前 Mac。</p>
+          </article>
+          <article class="feature">
+            <span class="feature-num">02</span>
+            <h3>真正的办公文件</h3>
+            <p>在一个应用中处理 Word、Excel、PowerPoint、PDF 与 Markdown。</p>
+          </article>
+          <article class="feature">
+            <span class="feature-num">03</span>
+            <h3>AI 原生配图</h3>
+            <p>PPT 默认生成 16:9 横图，Word 默认生成 3:2 配图，并可自定义图像模型。</p>
+          </article>
+        </section>
+
+        <section class="models">
+          <h2>一个入口，<br />多种模型。</h2>
+          <div class="model-list">
+            <div class="model"><span>anthropic/claude-sonnet-4.6</span><span>TEXT</span></div>
+            <div class="model"><span>z-ai/glm-5v-turbo</span><span>VISION</span></div>
+            <div class="model"><span>openai/gpt-5.4</span><span>TEXT</span></div>
+            <div class="model"><span>openai/gpt-image-2</span><span>IMAGE</span></div>
+            <div class="model"><span>google/gemini-3.1-flash-image</span><span>IMAGE</span></div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>GenOffice · Powered by ZenMux</span>
+        <span>Apache-2.0 · Built for macOS</span>
+      </footer>
+    </div>
+  </body>
+</html>

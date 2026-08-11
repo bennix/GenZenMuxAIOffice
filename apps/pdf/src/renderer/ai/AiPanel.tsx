@@ -288,12 +288,12 @@ export function AiPanel({
         onPointerDown={startResize}
         role="separator"
         aria-orientation="vertical"
-        aria-label="Genspark"
+        aria-label="ZenMux"
       />
       <header className="ai-panel-header">
         <span className="ai-panel-title">
           <GensparkMark size={22} />
-          Genspark
+          ZenMux
         </span>
         <div className="ai-panel-header-actions">
           {chat.length > 0 && (

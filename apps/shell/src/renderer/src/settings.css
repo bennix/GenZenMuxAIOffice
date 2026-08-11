@@ -161,6 +161,72 @@
   cursor: pointer;
 }
 
+.set-ai-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.set-input {
+  width: 100%;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+}
+
+.set-input:focus {
+  outline: none;
+  border-color: var(--color-btn-primary);
+}
+
+.set-input[readonly] {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.set-ai-help {
+  margin: -7px 0 16px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.set-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-btn-primary);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.set-ai-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.set-ai-add-row .set-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.set-saved {
+  align-self: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .set-btn {
   flex-shrink: 0;
   height: 30px;

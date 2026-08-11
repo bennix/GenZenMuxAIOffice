@@ -1255,22 +1255,6 @@ export function AiPanel({
             }
             return next
           })
-          // Signed-out failures get an inline sign-in button; detected via
-          // gsk status rather than matching the localized error text
-          void window.slidesApi
-            .aiGskStatus()
-            .then((status) => {
-              if (status.loggedIn) return
-              setChat((prev) => {
-                const next = [...prev]
-                const last = next.at(-1)
-                if (last?.role === 'assistant' && last.error) {
-                  next[next.length - 1] = { ...last, loginRequired: true }
-                }
-                return next
-              })
-            })
-            .catch(() => {})
           void finishHistoryBatch().finally(() => setBusy(false))
         },
       },
@@ -1684,12 +1668,12 @@ export function AiPanel({
         onPointerDown={startResize}
         role="separator"
         aria-orientation="vertical"
-        aria-label="Genspark AI"
+        aria-label="ZenMux AI"
       />
       <div className="ai-panel-header">
         <span className="ai-panel-title">
           <GensparkMark size={22} />
-          {t('aiPanelTitle')}
+          ZenMux
         </span>
         <div className="ai-panel-header-actions">
           {chat.length > 0 && (

@@ -138,6 +138,31 @@ export const AGENT_TOOLS: AgentToolDef[] = [
     },
   },
   {
+    name: 'generate_image',
+    description:
+      'Generate a custom illustration with the ZenMux image model configured in Settings and insert it into the Word document. Word imagery defaults to a 3:2 landscape composition.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Detailed description of the image; English usually gives the best results',
+        },
+        model: {
+          type: 'string',
+          description:
+            'Optional ZenMux provider/model id; omit to use the image model from Settings',
+        },
+        aspectRatio: {
+          type: 'string',
+          description: 'Aspect ratio; defaults to 3:2 for Word',
+        },
+        maxWidthPx: { type: 'integer', description: 'maximum inserted width (px), default 480' },
+      },
+      required: ['prompt'],
+    },
+  },
+  {
     name: 'insert_chart',
     description:
       'Insert a chart (saved as a native Word chart). Data must be real: from the document content or web_search results — do not make up numbers.',
@@ -283,6 +308,49 @@ function imageSizeOf(dataUrl: string): Promise<{ width: number; height: number }
   })
 }
 
+async function insertImageBytes(
+  editor: Editor,
+  image: { base64: string; mime: string },
+  maxWidthPx: number,
+  label: string,
+  signal?: AbortSignal,
+): Promise<ToolExecution> {
+  const dataUrl = `data:${image.mime};base64,${image.base64}`
+  try {
+    const natural = await imageSizeOf(dataUrl)
+    if (signal?.aborted)
+      return fail(t('aiSumInsertImage'), 'stopped by the user; the image was not inserted')
+    const scale = Math.min(1, maxWidthPx / natural.width)
+    const w = Math.round(natural.width * scale)
+    const h = Math.round(natural.height * scale)
+    const userEditedDuringFetch = editedExternally(editor)
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'docProtected',
+        attrs: {
+          docxIndex: null,
+          blockType: 'image',
+          label,
+          imageDataUrl: dataUrl,
+          imageWidthPx: w,
+          imageHeightPx: h,
+          genImage: { base64: image.base64, mime: image.mime, widthPx: w, heightPx: h },
+        },
+      })
+      .run()
+    if (!userEditedDuringFetch) markDocSeen(editor)
+    return {
+      output: `Generated and inserted the image (${w}×${h}px).`,
+      mutated: true,
+      summary: t('aiSumInsertWebImage'),
+    }
+  } catch {
+    return fail(t('aiSumInsertImage'), 'the image could not be decoded')
+  }
+}
+
 /** Async tools: web search / image search / insert web image. */
 async function executeAsyncTool(
   editor: Editor,
@@ -342,44 +410,31 @@ async function executeAsyncTool(
         return fail(t('aiSumInsertImage'), 'stopped by the user; the image was not inserted')
       if (!fetched)
         return fail(t('aiSumInsertImage'), 'download failed (the image may not be accessible)')
-      const dataUrl = `data:${fetched.mime};base64,${fetched.base64}`
       const maxW = Number(call.input.maxWidthPx) || 480
-      try {
-        const natural = await imageSizeOf(dataUrl)
-        if (signal?.aborted)
-          return fail(t('aiSumInsertImage'), 'stopped by the user; the image was not inserted')
-        const scale = Math.min(1, maxW / natural.width)
-        const w = Math.round(natural.width * scale)
-        const h = Math.round(natural.height * scale)
-        // The download can take long: user edits made meanwhile must keep the
-        // freshness baseline stale, so only our own insertion may mark the doc
-        // seen. Checked right before the write — there is no async gap after.
-        const userEditedDuringFetch = editedExternally(editor)
-        editor
-          .chain()
-          .focus()
-          .insertContent({
-            type: 'docProtected',
-            attrs: {
-              docxIndex: null,
-              blockType: 'image',
-              label: 'Image (web)',
-              imageDataUrl: dataUrl,
-              imageWidthPx: w,
-              imageHeightPx: h,
-              genImage: { base64: fetched.base64, mime: fetched.mime, widthPx: w, heightPx: h },
-            },
-          })
-          .run()
-        if (!userEditedDuringFetch) markDocSeen(editor)
-        return {
-          output: `Inserted the image (${w}×${h}px).`,
-          mutated: true,
-          summary: t('aiSumInsertWebImage'),
-        }
-      } catch {
-        return fail(t('aiSumInsertImage'), 'the image could not be decoded')
-      }
+      return insertImageBytes(editor, fetched, maxW, 'Image (web)', signal)
+    }
+    case 'generate_image': {
+      const prompt = String(call.input.prompt ?? '').trim()
+      if (!prompt) return fail(t('aiSumInsertImage'), 'prompt must not be empty')
+      const generated = await window.desktop.generateImage({
+        prompt,
+        model: call.input.model ? String(call.input.model) : undefined,
+        aspectRatio: call.input.aspectRatio ? String(call.input.aspectRatio) : '3:2',
+      })
+      if (signal?.aborted)
+        return fail(t('aiSumInsertImage'), 'stopped by the user; the image was not inserted')
+      let image = generated.base64
+        ? { base64: generated.base64, mime: generated.mime || 'image/png' }
+        : null
+      if (!image && generated.url) image = await window.desktop.fetchImage(generated.url)
+      if (!image) return fail(t('aiSumInsertImage'), generated.error ?? 'image generation failed')
+      return insertImageBytes(
+        editor,
+        image,
+        Number(call.input.maxWidthPx) || 480,
+        'Image (ZenMux)',
+        signal,
+      )
     }
     default:
       return fail(t('aiSumUnknownTool'), call.name)
@@ -404,7 +459,12 @@ export function executeTool(
   // synchronously (doesn't break existing tests). No settle here: marking the doc
   // seen after the long download would baptize user edits made meanwhile —
   // insert_image maintains the baseline itself right at its synchronous write.
-  if (call.name === 'web_search' || call.name === 'image_search' || call.name === 'insert_image') {
+  if (
+    call.name === 'web_search' ||
+    call.name === 'image_search' ||
+    call.name === 'insert_image' ||
+    call.name === 'generate_image'
+  ) {
     return executeAsyncTool(editor, call, signal)
   }
   return settle(executeSyncTool(editor, call, numIds, track))

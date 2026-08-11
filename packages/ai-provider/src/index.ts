@@ -9,13 +9,22 @@ export type {
   AiStreamRequest,
   GenSparkAccountStatus,
   LegacyAiSettings,
+  AiGeneratedImage,
+  AiImageGenerateOptions,
+  AiImageReference,
 } from './types'
 export {
   AI_PROVIDERS,
   GENSPARK_LLM_BASE_URLS,
+  ZENMUX_BASE_URL,
+  ZENMUX_INVITE_URL,
+  ZENMUX_DEFAULT_IMAGE_MODEL,
+  ZENMUX_IMAGE_MODELS,
+  ZENMUX_MODELS,
   defaultAiSettings,
   resolveAiSettings,
 } from './providers'
+export { generateZenMuxImage } from './images'
 export { chatForProvider } from './chat'
 export { AiCreditsError, sseLines, streamForProvider } from './stream'
 export type { StreamCallbacks } from './stream'

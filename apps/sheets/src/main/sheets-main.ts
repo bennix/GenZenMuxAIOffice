@@ -65,7 +65,6 @@ import {
 import { csvToXlsxBuffer, decodeCsvBuffer } from '../gateway/csv-import'
 import {
   ensureGenofficeLogin,
-  gskApiKey,
   gskLoginInfo,
   hasGskAuth,
   setGskProxyUrl,
@@ -2117,9 +2116,8 @@ export function registerSheetsAiIpc(): void {
     sessionFor(event)
     const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
     const settings = resolveAiSettings(stored, defaultAiSettings())
-    // AI features all go through Genspark (gsk login); legacy settings that chose
-    // another provider are reset
-    settings.provider = 'genspark'
+    // Text AI is served exclusively through ZenMux's OpenAI-compatible endpoint.
+    settings.provider = 'zenmux'
     return settings
   })
 
@@ -2149,10 +2147,7 @@ export function registerSheetsAiIpc(): void {
     sessionFor(event)
     const request = aiChatRequestSchema.parse(input)
     const provider = request.settings.provider as AiProviderId
-    let config = request.settings.providers[provider]
-    if (provider === 'genspark' && config && !config.apiKey) {
-      config = { ...config, apiKey: gskApiKey() }
-    }
+    const config = request.settings.providers[provider]
     if (!config?.apiKey) {
       return {
         ok: false,
@@ -2174,12 +2169,7 @@ export function registerSheetsAiIpc(): void {
     const tools = request.tools ?? []
     const maxTokens = request.maxTokens ?? 8192
     const provider = request.settings.provider as AiProviderId
-    let config = request.settings.providers[provider]
-    // Genspark's key never enters the settings file; it is read from the gsk
-    // login state per request
-    if (provider === 'genspark' && config && !config.apiKey) {
-      config = { ...config, apiKey: gskApiKey() }
-    }
+    const config = request.settings.providers[provider]
     const send = (chunk: AiStreamChunk) => {
       if (!event.sender.isDestroyed()) event.sender.send(IPC_CHANNELS.aiStreamChunk, chunk)
     }

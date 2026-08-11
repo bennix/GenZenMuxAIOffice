@@ -35,6 +35,7 @@ import menuMdIcon2x from './assets/menu-md@2x.png?asset'
 import menuHomeIcon1x from './assets/menu-home.png?asset'
 import menuHomeIcon2x from './assets/menu-home@2x.png?asset'
 import { createI18n, isLang, normalizeLang, setUiLang, type Lang } from '@genoffice/i18n'
+import { ZENMUX_INVITE_URL } from '@genoffice/ai-provider'
 import {
   DEFAULT_SAVE_DIR_KEY,
   appMenuLabels,
@@ -2039,6 +2040,12 @@ function registerHomeIpc(): void {
 
   ipcMain.handle(HOME_CHANNELS.openCreditUsage, () => {
     shell.openExternal(CREDIT_USAGE_URL).catch(() => {
+      // no browser handler available; nothing actionable for the user here
+    })
+  })
+
+  ipcMain.handle(HOME_CHANNELS.openZenMuxInvite, () => {
+    shell.openExternal(ZENMUX_INVITE_URL).catch(() => {
       // no browser handler available; nothing actionable for the user here
     })
   })

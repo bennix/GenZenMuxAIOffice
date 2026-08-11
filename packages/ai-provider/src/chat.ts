@@ -1,5 +1,5 @@
 import { httpBodyDetail } from './http-error'
-import { GENSPARK_LLM_BASE_URLS, gensparkAttributionHeaders } from './providers'
+import { GENSPARK_LLM_BASE_URLS, ZENMUX_BASE_URL, gensparkAttributionHeaders } from './providers'
 import type { AiChatResponse, AiProviderConfig, AiProviderId } from './types'
 import { AI_CHAT_RESPONSE_TIMEOUT_MS, createStreamWatchdog, type StreamWatchdog } from './watchdog'
 
@@ -133,6 +133,8 @@ export async function chatForProvider(
   const wd = createStreamWatchdog(signal, AI_CHAT_RESPONSE_TIMEOUT_MS)
   return wd.guard(() => {
     switch (provider) {
+      case 'zenmux':
+        return chatOpenAiCompatible(wd, ZENMUX_BASE_URL, config, system, user)
       case 'genspark':
         if (config.model.startsWith('claude')) {
           return chatAnthropic(wd, config, system, user, GENSPARK_LLM_BASE_URLS.anthropic)

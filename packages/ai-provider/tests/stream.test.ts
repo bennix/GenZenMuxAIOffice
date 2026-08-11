@@ -649,6 +649,31 @@ describe('streamForProvider: openai-compatible', () => {
     )
   })
 
+  it('routes ZenMux to its fixed OpenAI-compatible endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse(sseStream(['data: [DONE]'])))
+    vi.stubGlobal('fetch', fetchMock)
+    const { cb } = collector()
+    await streamForProvider(
+      'zenmux',
+      {
+        apiKey: 'zen-key',
+        model: 'z-ai/glm-5v-turbo',
+        baseUrl: 'https://ignored.example.com/v1',
+      },
+      'sys',
+      [],
+      [],
+      100,
+      cb,
+    ).catch(() => {})
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://zenmux.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer zen-key' }),
+      }),
+    )
+  })
+
   it('uses the configured base URL for the custom provider', async () => {
     const fetchMock = vi.fn().mockResolvedValue(okResponse(sseStream(['data: [DONE]'])))
     vi.stubGlobal('fetch', fetchMock)

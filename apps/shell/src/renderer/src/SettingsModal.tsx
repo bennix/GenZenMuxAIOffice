@@ -3,6 +3,12 @@ import type { ReactNode } from 'react'
 import { useI18n } from './locale'
 import type { StringKey } from './locale'
 import type { AccountStatus, UiTheme } from '../../shared/home-api'
+import {
+  ZENMUX_BASE_URL,
+  ZENMUX_IMAGE_MODELS,
+  ZENMUX_MODELS,
+  type AiSettings,
+} from '@genoffice/ai-provider'
 import './settings.css'
 
 // ── Settings modal (opened from the account menu) ─────────
@@ -44,10 +50,11 @@ const CHANNEL_OPTIONS = [
   { value: 'beta', labelKey: 'channelBeta' },
 ] as const satisfies readonly { value: 'stable' | 'beta'; labelKey: StringKey }[]
 
-type SectionId = 'account' | 'general' | 'about'
+type SectionId = 'account' | 'ai' | 'general' | 'about'
 
-const SECTIONS: readonly { id: SectionId; labelKey: StringKey }[] = [
+const SECTIONS: readonly { id: SectionId; labelKey?: StringKey }[] = [
   { id: 'account', labelKey: 'setSecAccount' },
+  { id: 'ai' },
   { id: 'general', labelKey: 'setSecGeneral' },
   { id: 'about', labelKey: 'setSecAbout' },
 ]
@@ -77,6 +84,18 @@ function SectionIcon({ id }: { id: SectionId }) {
         />
         <circle cx="11.5" cy="5" r="1.7" stroke="currentColor" strokeWidth="1.3" />
         <circle cx="4.5" cy="11" r="1.7" stroke="currentColor" strokeWidth="1.3" />
+      </svg>
+    )
+  }
+  if (id === 'ai') {
+    return (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M8 1.8l1.1 3.1L12.2 6l-3.1 1.1L8 10.2 6.9 7.1 3.8 6l3.1-1.1L8 1.8zM12.4 10l.6 1.7 1.7.6-1.7.6-.6 1.7-.6-1.7-1.7-.6 1.7-.6.6-1.7z"
+          stroke="currentColor"
+          strokeWidth="1.1"
+          strokeLinejoin="round"
+        />
       </svg>
     )
   }
@@ -148,6 +167,15 @@ export function SettingsModal({
   const [saveDir, setSaveDir] = useState('')
   const [channel, setChannel] = useState<'stable' | 'beta'>('stable')
   const [appVersion, setAppVersion] = useState('')
+  const [aiSettings, setAiSettings] = useState<AiSettings | null>(null)
+  const [apiKey, setApiKey] = useState('')
+  const [model, setModel] = useState<string>(ZENMUX_MODELS[0])
+  const [models, setModels] = useState<string[]>([...ZENMUX_MODELS])
+  const [newModel, setNewModel] = useState('')
+  const [imageModel, setImageModel] = useState<string>(ZENMUX_IMAGE_MODELS[0])
+  const [imageModels, setImageModels] = useState<string[]>([...ZENMUX_IMAGE_MODELS])
+  const [newImageModel, setNewImageModel] = useState('')
+  const [aiSaved, setAiSaved] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -162,6 +190,21 @@ export function SettingsModal({
     })
     void window.aiOffice.getAppVersion?.().then((v) => {
       if (alive && v) setAppVersion(v)
+    })
+    void window.aiOffice.getAiSettings?.().then((settings) => {
+      if (!alive) return
+      const config = settings.providers.zenmux
+      const savedModels = config.models ?? []
+      setAiSettings(settings)
+      setApiKey(config.apiKey)
+      setModel(config.model || ZENMUX_MODELS[0])
+      setModels([...new Set([...ZENMUX_MODELS, ...savedModels, config.model].filter(Boolean))])
+      const savedImageModels = config.imageModels ?? []
+      const activeImageModel = config.imageModel || ZENMUX_IMAGE_MODELS[0]
+      setImageModel(activeImageModel)
+      setImageModels([
+        ...new Set([...ZENMUX_IMAGE_MODELS, ...savedImageModels, activeImageModel].filter(Boolean)),
+      ])
     })
     return () => {
       alive = false
@@ -191,6 +234,49 @@ export function SettingsModal({
 
   const loggedIn = status?.loggedIn ?? false
   const email = status?.email ?? ''
+  const isChinese = lang === 'zh' || lang === 'zh-TW'
+  const aiLabel = isChinese ? 'AI 模型' : 'AI Models'
+
+  const addModel = () => {
+    const next = newModel.trim()
+    if (!next) return
+    setModels((current) => (current.includes(next) ? current : [...current, next]))
+    setModel(next)
+    setNewModel('')
+    setAiSaved(false)
+  }
+
+  const addImageModel = () => {
+    const next = newImageModel.trim()
+    if (!next) return
+    setImageModels((current) => (current.includes(next) ? current : [...current, next]))
+    setImageModel(next)
+    setNewImageModel('')
+    setAiSaved(false)
+  }
+
+  const saveAiSettings = () => {
+    if (!aiSettings) return
+    const next: AiSettings = {
+      ...aiSettings,
+      provider: 'zenmux',
+      providers: {
+        ...aiSettings.providers,
+        zenmux: {
+          apiKey: apiKey.trim(),
+          model,
+          models,
+          imageModel,
+          imageModels,
+          baseUrl: ZENMUX_BASE_URL,
+        },
+      },
+    }
+    void window.aiOffice.setAiSettings(next).then(() => {
+      setAiSettings(next)
+      setAiSaved(true)
+    })
+  }
 
   return (
     <div
@@ -223,7 +309,7 @@ export function SettingsModal({
                 onClick={() => setSection(s.id)}
               >
                 <SectionIcon id={s.id} />
-                {t(s.labelKey)}
+                {s.labelKey ? t(s.labelKey) : aiLabel}
               </button>
             ))}
           </nav>
@@ -327,6 +413,134 @@ export function SettingsModal({
                     </button>
                   }
                 />
+              </>
+            )}
+            {section === 'ai' && (
+              <>
+                <h3 className="set-pane-title">ZenMux</h3>
+                <label className="set-ai-field" htmlFor="set-zenmux-key">
+                  <span>{isChinese ? 'API Key（本机永久保存）' : 'API Key (saved locally)'}</span>
+                  <input
+                    id="set-zenmux-key"
+                    className="set-input"
+                    type="password"
+                    autoComplete="off"
+                    value={apiKey}
+                    placeholder="ZenMux API Key"
+                    onChange={(e) => {
+                      setApiKey(e.target.value)
+                      setAiSaved(false)
+                    }}
+                  />
+                </label>
+                <div className="set-ai-help">
+                  {isChinese ? '没有 API Key？' : "Don't have an API Key?"}{' '}
+                  <button
+                    className="set-link"
+                    onClick={() => void window.aiOffice.openZenMuxInvite()}
+                  >
+                    {isChinese ? '使用邀请链接注册 ZenMux' : 'Create one with the ZenMux invite'}
+                  </button>
+                </div>
+                <label className="set-ai-field" htmlFor="set-zenmux-url">
+                  <span>Base URL</span>
+                  <input
+                    id="set-zenmux-url"
+                    className="set-input"
+                    value={ZENMUX_BASE_URL}
+                    readOnly
+                  />
+                </label>
+                <label className="set-ai-field" htmlFor="set-zenmux-model">
+                  <span>{isChinese ? '当前模型' : 'Active model'}</span>
+                  <select
+                    id="set-zenmux-model"
+                    className="set-input"
+                    value={model}
+                    onChange={(e) => {
+                      setModel(e.target.value)
+                      setAiSaved(false)
+                    }}
+                  >
+                    {models.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="set-ai-field">
+                  <label htmlFor="set-zenmux-new-model">
+                    {isChinese ? '增加模型名称' : 'Add model name'}
+                  </label>
+                  <div className="set-ai-add-row">
+                    <input
+                      id="set-zenmux-new-model"
+                      className="set-input"
+                      value={newModel}
+                      placeholder="provider/model-name"
+                      onChange={(e) => setNewModel(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') addModel()
+                      }}
+                    />
+                    <button className="set-btn" onClick={addModel} disabled={!newModel.trim()}>
+                      {isChinese ? '增加' : 'Add'}
+                    </button>
+                  </div>
+                </div>
+                <label className="set-ai-field" htmlFor="set-zenmux-image-model">
+                  <span>{isChinese ? '配图模型（PPT / Word）' : 'Image model (PPT / Word)'}</span>
+                  <select
+                    id="set-zenmux-image-model"
+                    className="set-input"
+                    value={imageModel}
+                    onChange={(e) => {
+                      setImageModel(e.target.value)
+                      setAiSaved(false)
+                    }}
+                  >
+                    {imageModels.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="set-ai-field">
+                  <label htmlFor="set-zenmux-new-image-model">
+                    {isChinese ? '增加配图模型名称' : 'Add image model name'}
+                  </label>
+                  <div className="set-ai-add-row">
+                    <input
+                      id="set-zenmux-new-image-model"
+                      className="set-input"
+                      value={newImageModel}
+                      placeholder="provider/image-model-name"
+                      onChange={(e) => setNewImageModel(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') addImageModel()
+                      }}
+                    />
+                    <button
+                      className="set-btn"
+                      onClick={addImageModel}
+                      disabled={!newImageModel.trim()}
+                    >
+                      {isChinese ? '增加' : 'Add'}
+                    </button>
+                  </div>
+                </div>
+                <div className="set-pane-footer">
+                  {aiSaved && <span className="set-saved">{isChinese ? '已保存' : 'Saved'}</span>}
+                  <button
+                    className="set-btn primary"
+                    onClick={saveAiSettings}
+                    disabled={!aiSettings || !model}
+                  >
+                    {isChinese ? '保存' : 'Save'}
+                  </button>
+                </div>
               </>
             )}
             {section === 'about' && (

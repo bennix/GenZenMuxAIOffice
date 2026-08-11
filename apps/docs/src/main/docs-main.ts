@@ -39,6 +39,7 @@ import {
   AiTimeoutError,
   chatForProvider,
   defaultAiSettings,
+  generateZenMuxImage,
   resolveAiSettings,
   streamForProvider,
   type AiChatRequest,
@@ -50,7 +51,6 @@ import {
 } from '@genoffice/ai-provider'
 import {
   ensureGenofficeLogin,
-  gskApiKey,
   gskLoginInfo,
   hasGskAuth,
   webSearch,
@@ -2485,8 +2485,8 @@ export function registerAiIpc(): void {
   ipcMain.handle('ai:get-settings', (): AiSettings => {
     const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
     const settings = resolveAiSettings(stored, defaultAiSettings())
-    // AI features all go through Genspark (gsk login); legacy settings with another provider are reset
-    settings.provider = 'genspark'
+    // Text AI is served exclusively through ZenMux's OpenAI-compatible endpoint.
+    settings.provider = 'zenmux'
     return settings
   })
 
@@ -2514,11 +2514,7 @@ export function registerAiIpc(): void {
     const tools = request.tools ?? []
     const maxTokens = request.maxTokens ?? 8192
     const provider = settings.provider
-    let config = settings.providers?.[provider]
-    // the genspark key never enters the settings file; requests take it from the gsk login state
-    if (provider === 'genspark' && config && !config.apiKey) {
-      config = { ...config, apiKey: gskApiKey() }
-    }
+    const config = settings.providers?.[provider]
     const send = (chunk: AiStreamChunk) => {
       if (!event.sender.isDestroyed()) event.sender.send('ai:stream-chunk', chunk)
     }
@@ -2621,13 +2617,53 @@ export function registerAiIpc(): void {
     },
   )
 
+  ipcMain.handle(
+    'ai:generate-image',
+    async (
+      _event,
+      op: {
+        prompt: string
+        model?: string
+        referenceImageUrls?: string[]
+        aspectRatio?: string
+        imageSize?: string
+      },
+    ) => {
+      const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
+      const settings = resolveAiSettings(stored, defaultAiSettings())
+      const config = settings.providers.zenmux
+      if (!config.apiKey) return { error: tm('errNoApiKey', { provider: 'ZenMux' }) }
+      const model = op.model ? String(op.model) : config.imageModel
+      if (!model) return { error: tm('errNoModel') }
+      try {
+        const referenceImages = []
+        for (const url of Array.isArray(op.referenceImageUrls) ? op.referenceImageUrls : []) {
+          const resp = await fetchRemoteImage(String(url))
+          if (!resp?.ok) continue
+          const mime = resp.headers.get('content-type')?.split(';')[0] || 'image/png'
+          referenceImages.push({
+            base64: Buffer.from(await resp.arrayBuffer()).toString('base64'),
+            mime,
+          })
+        }
+        return await generateZenMuxImage({
+          apiKey: config.apiKey,
+          model,
+          prompt: String(op.prompt),
+          aspectRatio: op.aspectRatio ? String(op.aspectRatio) : undefined,
+          imageSize: op.imageSize ? String(op.imageSize) : undefined,
+          referenceImages,
+        })
+      } catch (err) {
+        return { error: err instanceof Error ? err.message : String(err) }
+      }
+    },
+  )
+
   ipcMain.handle('ai:chat', async (_event, request: AiChatRequest) => {
     const { settings, system, user } = request
     const provider = settings.provider
-    let config = settings.providers?.[provider]
-    if (provider === 'genspark' && config && !config.apiKey) {
-      config = { ...config, apiKey: gskApiKey() }
-    }
+    const config = settings.providers?.[provider]
     if (!config?.apiKey) {
       return {
         ok: false,
