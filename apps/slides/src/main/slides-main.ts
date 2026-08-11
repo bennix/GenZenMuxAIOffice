@@ -24,7 +24,6 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
 import { userInfo } from 'node:os'
 import { dirname, join } from 'node:path'
-import PptxGenJS from 'pptxgenjs'
 import {
   appMenuLabels,
   configuredDefaultSaveDir,
@@ -156,6 +155,7 @@ import { refineComplexWidths, shapedMetricsReady } from './shaped-metrics'
 import { applyEditParagraphs, collectParagraphFormatPatches, levelsChanged } from './edit-text'
 import { cfbKind, isCfbHeader } from './cfb-sniff'
 import { unplayableAudioCodec } from './mp4-audio-sniff'
+import { buildEditableSlidePptx, type EditableHtmlPage } from './html-to-editable-pptx'
 import type {
   AddChartOp,
   AddCommentOp,
@@ -1307,10 +1307,12 @@ export function registerSlidesIpc(): void {
         })
       | { error: string }
     > => {
-      // ZenMux returns HTML; rendering and PPTX packaging happen entirely on this Mac. A strict
-      // CSP prevents generated markup from executing code or reading local files. Each rendered
-      // page is stored as a full-slide image so browser typography/CSS remain visually faithful.
-      const renderHtmlPage = async (rawHtml: string): Promise<{ bytes: Uint8Array }> => {
+      // ZenMux returns HTML; Chromium computes the layout locally, then the measured text,
+      // shapes and images are written as separate native PowerPoint objects. The HTML is only a
+      // layout intermediate — never flatten the whole page into a screenshot.
+      const renderHtmlPage = async (
+        rawHtml: string,
+      ): Promise<{ bytes: Uint8Array; imageFailures: string[] }> => {
         if (!/<html\b/i.test(rawHtml) || !/<\/html>/i.test(rawHtml)) {
           throw new Error('invalid generated slide HTML')
         }
@@ -1346,33 +1348,103 @@ export function registerSlidesIpc(): void {
             ]).then(() => document.fonts && document.fonts.ready).catch(() => undefined)`,
             true,
           )
-          const captured = await win.webContents.capturePage()
-          const png = captured.resize({ width: 1280, height: 720, quality: 'best' }).toPNG()
-          const pptx = new PptxGenJS()
-          pptx.layout = 'LAYOUT_WIDE'
-          pptx.author = 'GenZenMux AI Office'
-          pptx.subject = 'Generated locally with ZenMux'
-          const slide = pptx.addSlide()
-          slide.background = { color: 'FFFFFF' }
-          slide.addImage({
-            data: `data:image/png;base64,${png.toString('base64')}`,
-            x: 0,
-            y: 0,
-            w: 13.333333,
-            h: 7.5,
+          const page = (await win.webContents.executeJavaScript(
+            `(() => {
+              const parseColor = (value) => {
+                const m = String(value || '').match(/rgba?\\(\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*(\\d+(?:\\.\\d+)?)(?:\\s*[,/]\\s*(\\d*(?:\\.\\d+)?))?\\s*\\)/i);
+                if (!m) return null;
+                const hex = [m[1], m[2], m[3]].map((v) => Math.max(0, Math.min(255, Math.round(Number(v)))).toString(16).padStart(2, '0')).join('').toUpperCase();
+                const alpha = m[4] == null || m[4] === '' ? 1 : Math.max(0, Math.min(1, Number(m[4])));
+                return { hex, transparency: Math.round((1 - alpha) * 100) };
+              };
+              const visible = (el) => {
+                const s = getComputedStyle(el);
+                const r = el.getBoundingClientRect();
+                return s.display !== 'none' && s.visibility !== 'hidden' && Number(s.opacity) > 0 && r.width > 0.5 && r.height > 0.5 && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
+              };
+              const bodyStyle = getComputedStyle(document.body);
+              const htmlStyle = getComputedStyle(document.documentElement);
+              const bg = parseColor(bodyStyle.backgroundColor);
+              const htmlBg = parseColor(htmlStyle.backgroundColor);
+              const marked = Array.from(document.querySelectorAll('[data-pptx-kind]')).filter(visible);
+              const hasMarked = marked.length > 0;
+              const elements = Array.from(document.body.querySelectorAll('*')).filter(visible);
+              const semanticText = new Set(['H1','H2','H3','H4','H5','H6','P','LI','TD','TH','BLOCKQUOTE','FIGCAPTION','LABEL','SPAN','STRONG','EM','SMALL']);
+              const nodes = [];
+              for (const el of elements) {
+                if (nodes.length >= 500) break;
+                const s = getComputedStyle(el);
+                const r = el.getBoundingClientRect();
+                const kind = el.getAttribute('data-pptx-kind');
+                const fill = parseColor(s.backgroundColor);
+                const line = parseColor(s.borderTopColor);
+                const lineWidth = parseFloat(s.borderTopWidth) || 0;
+                const x = Math.max(0, r.left);
+                const y = Math.max(0, r.top);
+                const w = Math.min(innerWidth, r.right) - x;
+                const h = Math.min(innerHeight, r.bottom) - y;
+                if (w <= 0 || h <= 0) continue;
+                const shouldShape = kind === 'shape' || (!hasMarked && ((fill && fill.transparency < 99) || lineWidth > 0));
+                if (shouldShape) nodes.push({ kind:'shape', x, y, w, h, fill:fill?.hex, fillTransparency:fill?.transparency, lineColor:line?.hex, lineTransparency:line?.transparency, lineWidth, radius:parseFloat(s.borderTopLeftRadius) || 0, opacity:Number(s.opacity) || 1 });
+                if ((kind === 'image' || !kind) && el.tagName === 'IMG') {
+                  nodes.push({ kind:'image', x, y, w, h, src:el.currentSrc || el.src, objectFit:['cover','contain','fill'].includes(s.objectFit) ? s.objectFit : 'fill', opacity:Number(s.opacity) || 1 });
+                  continue;
+                }
+                const text = String(el.innerText || '').replace(/\\s+\\n/g, '\\n').trim();
+                const hasSemanticChild = Array.from(el.children).some((child) => semanticText.has(child.tagName) && String(child.innerText || '').trim());
+                const shouldText = kind === 'text' || (!kind && text && (semanticText.has(el.tagName) || el.children.length === 0) && !hasSemanticChild);
+                if (!shouldText || !text) continue;
+                const color = parseColor(s.color);
+                const weight = Number(s.fontWeight) || (s.fontWeight === 'bold' ? 700 : 400);
+                const align = s.textAlign === 'center' ? 'center' : (s.textAlign === 'right' || s.textAlign === 'end' ? 'right' : 'left');
+                const valign = s.display.includes('flex') && s.alignItems === 'center' ? 'middle' : 'top';
+                nodes.push({ kind:'text', x, y, w, h, text:el.tagName === 'LI' && !text.startsWith('•') ? '• ' + text : text, color:color?.hex, fontFace:s.fontFamily.split(',')[0].replace(/["']/g, '').trim(), fontSize:parseFloat(s.fontSize) || 18, bold:weight >= 600, italic:s.fontStyle === 'italic', underline:s.textDecorationLine.includes('underline'), align, valign, lineHeight:parseFloat(s.lineHeight) || undefined, charSpacing:parseFloat(s.letterSpacing) || undefined, opacity:Number(s.opacity) || 1 });
+              }
+              return { width: innerWidth, height: innerHeight, background: (bg && bg.transparency < 100 ? bg.hex : htmlBg?.hex) || 'FFFFFF', nodes };
+            })()`,
+            true,
+          )) as EditableHtmlPage
+          if (!page.nodes.some((node) => node.kind === 'text')) {
+            throw new Error('generated slide contains no editable text objects')
+          }
+          return await buildEditableSlidePptx(page, async (src) => {
+            if (!src) return null
+            try {
+              const image = src.startsWith('data:')
+                ? nativeImage.createFromDataURL(src)
+                : await (async () => {
+                    if (!/^https?:\/\//i.test(src)) return nativeImage.createEmpty()
+                    const response = await electronSession.defaultSession.fetch(src)
+                    if (!response.ok) return nativeImage.createEmpty()
+                    const bytes = Buffer.from(await response.arrayBuffer())
+                    if (bytes.length === 0 || bytes.length > 25_000_000)
+                      return nativeImage.createEmpty()
+                    return nativeImage.createFromBuffer(bytes)
+                  })()
+              if (image.isEmpty()) return null
+              return `data:image/png;base64,${image.toPNG().toString('base64')}`
+            } catch {
+              return null
+            }
           })
-          const bytes = await pptx.write({ outputType: 'nodebuffer' })
-          return { bytes: new Uint8Array(bytes as Buffer) }
         } finally {
           if (!win.isDestroyed()) win.destroy()
         }
       }
-      const assembleDeck = async (): Promise<{ bytes: Uint8Array }> => {
+      const assembleDeck = async (): Promise<{
+        bytes: Uint8Array
+        imageFailures: { page: number; url: string }[]
+      }> => {
         const perPage = await Promise.all(pagesHtml.map(renderHtmlPage))
         const base = await openPptx(perPage[0]!.bytes)
         for (const one of perPage.slice(1)) await mergeSlideFromPptx(base, one.bytes)
         for (const s of base.deck.slides) promoteSlideBackground(s, base.deck.size)
-        return { bytes: await savePptx(base) }
+        return {
+          bytes: await savePptx(base),
+          imageFailures: perPage.flatMap((one, index) =>
+            one.imageFailures.map((url) => ({ page: index + 1, url })),
+          ),
+        }
       }
 
       try {
@@ -1392,12 +1464,16 @@ export function registerSlidesIpc(): void {
           pushHistory(existing)
           let merged = 0
           let lastErr: string | undefined
+          const imageFailures: { page: number; url: string }[] = []
           for (const html of pagesHtml) {
             try {
               const one = await renderHtmlPage(html)
               const slide = await mergeSlideFromPptx(opened, one.bytes)
               if (slide) {
                 promoteSlideBackground(slide, opened.deck.size)
+                imageFailures.push(
+                  ...one.imageFailures.map((url) => ({ page: beforeCount + merged + 1, url })),
+                )
                 merged += 1
               } else lastErr = tm('errMergeFailed')
             } catch (pageErr) {
@@ -1428,6 +1504,7 @@ export function registerSlidesIpc(): void {
             ...(lastErr && merged < pagesHtml.length
               ? { fallbackReason: tm('errPartialAppend', { reason: lastErr }) }
               : {}),
+            ...(imageFailures.length ? { imageFailures } : {}),
           }
         }
 
@@ -1479,6 +1556,11 @@ export function registerSlidesIpc(): void {
             size: { cx: existing.opened.deck.size.cx, cy: existing.opened.deck.size.cy },
             defaultFont: deckDefaultFont(existing.opened),
             replacedIndex: atIndex,
+            ...(one.imageFailures.length
+              ? {
+                  imageFailures: one.imageFailures.map((url) => ({ page: atIndex + 1, url })),
+                }
+              : {}),
           }
         }
 
@@ -1529,11 +1611,16 @@ export function registerSlidesIpc(): void {
             size: { cx: existing.opened.deck.size.cx, cy: existing.opened.deck.size.cy },
             defaultFont: deckDefaultFont(existing.opened),
             insertedIndex: atIndex,
+            ...(one.imageFailures.length
+              ? {
+                  imageFailures: one.imageFailures.map((url) => ({ page: atIndex + 1, url })),
+                }
+              : {}),
           }
         }
 
         // replace mode: assemble the whole batch into one multi-page pptx as the new deck base.
-        const { bytes } = await assembleDeck()
+        const { bytes, imageFailures } = await assembleDeck()
         const opened = await openPptx(bytes)
         // With per-page conversion + merging, stored PageVisualData is no longer needed; append reads the opened deck directly.
         const replaceSession: Session = {
@@ -1553,6 +1640,7 @@ export function registerSlidesIpc(): void {
           slides: buildAllRenderSlides(opened, fitWidthPx),
           size: { cx: opened.deck.size.cx, cy: opened.deck.size.cy },
           defaultFont: deckDefaultFont(opened),
+          ...(imageFailures.length ? { imageFailures } : {}),
         }
       } catch (err) {
         return { error: err instanceof Error ? err.message : String(err) }

@@ -929,7 +929,10 @@ export function AiPanel({
           'You are a world-class presentation designer and HTML author. Create exactly one polished presentation slide as a complete, self-contained HTML document. ' +
           'Output HTML only: no Markdown, no code fence, no explanation. The viewport is exactly 1280x720. ' +
           'Use semantic HTML and inline CSS in a <style> tag. The body must be margin:0, width:1280px, height:720px, overflow:hidden. ' +
-          'Use only system fonts. Do not use JavaScript, SVG, iframes, forms, external CSS, icon libraries, or CSS-generated placeholder illustrations. ' +
+          'Every visible item must be a real DOM element marked data-pptx-kind="text", "shape", or "image" so it can become a separate editable PowerPoint object. ' +
+          'Use data-pptx-kind="text" for each title, paragraph, label, number, and table cell; "shape" for cards, lines, bars, and decorative blocks; and "image" only on actual <img> elements. ' +
+          'Use absolute pixel positioning. Do not use CSS transforms, gradients, filters, pseudo-elements, canvas, JavaScript, SVG, iframes, forms, external CSS, icon libraries, CSS background images, or CSS-generated placeholder illustrations. ' +
+          'Use only system fonts. Keep text separate from its background card so both remain independently editable. ' +
           'Keep every visible element inside the canvas. Make text concise and readable: title 42-64px, body at least 18px, strong contrast, generous spacing. ' +
           'Use the supplied image URLs exactly when useful; use object-fit:cover and a graceful CSS color block when an image cannot load. ' +
           'Preserve all supplied facts, names, and figures; never invent precise data.'
