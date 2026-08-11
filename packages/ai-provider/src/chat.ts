@@ -1,5 +1,5 @@
 import { httpBodyDetail } from './http-error'
-import { GENSPARK_LLM_BASE_URLS, ZENMUX_BASE_URL, gensparkAttributionHeaders } from './providers'
+import { GENSPARK_LLM_BASE_URLS, ZENMUX_BASE_URL } from './providers'
 import type { AiChatResponse, AiProviderConfig, AiProviderId } from './types'
 import { AI_CHAT_RESPONSE_TIMEOUT_MS, createStreamWatchdog, type StreamWatchdog } from './watchdog'
 
@@ -19,7 +19,6 @@ async function chatAnthropic(
       'anthropic-version': '2023-06-01',
       // Fetch in the Electron main process goes through Chromium's network stack; this header avoids 403.
       'anthropic-dangerous-direct-browser-access': 'true',
-      ...gensparkAttributionHeaders(baseUrl),
     },
     body: JSON.stringify({
       model: config.model,
@@ -58,7 +57,6 @@ async function chatGemini(
     headers: {
       'Content-Type': 'application/json',
       'x-goog-api-key': config.apiKey,
-      ...gensparkAttributionHeaders(baseUrl),
     },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
@@ -94,7 +92,6 @@ async function chatOpenAiCompatible(
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${config.apiKey}`,
-      ...gensparkAttributionHeaders(baseUrl),
     },
     body: JSON.stringify({
       model: config.model,
@@ -118,6 +115,17 @@ async function chatOpenAiCompatible(
 const OPENAI_COMPATIBLE_BASE_URLS: Partial<Record<AiProviderId, string>> = {
   deepseek: 'https://api.deepseek.com/v1',
   openai: 'https://api.openai.com/v1',
+}
+
+/** ZenMux-only one-shot entry used by every editor in this distribution. */
+export function chatZenMux(
+  config: AiProviderConfig,
+  system: string,
+  user: string,
+  signal?: AbortSignal,
+): Promise<AiChatResponse> {
+  const wd = createStreamWatchdog(signal, AI_CHAT_RESPONSE_TIMEOUT_MS)
+  return wd.guard(() => chatOpenAiCompatible(wd, ZENMUX_BASE_URL, config, system, user))
 }
 
 /** route a one-shot (non-streaming, non-tool-calling) chat call by provider id */

@@ -113,13 +113,12 @@ export interface DeckAccess {
    * On search failure returns an empty array (fail-open; doesn't block the main generation path).
    */
   searchImages?(query: string, maxResults: number): Promise<string[]>
-  /** Whether cloud single-page generation is available (kill switch + gsk login state) */
+  /** Whether ZenMux single-page generation is available (requires the saved ZenMux API key). */
   isCloudPageGenEnabled?(): Promise<boolean>
   /**
-   * Cloud single-page generation (gsk slide_generate), used by generate_deck's self-driven
-   * pipeline: given the unified style + this page's brief/layout/images, the cloud service
-   * writes the HTML and converts it to a one-slide pptx. Returns a marker string that goes
-   * into a generateFromHtml pagesHtml slot.
+   * ZenMux single-page generation used by generate_deck's self-driven pipeline: given the
+   * unified style + this page's brief/layout/images, ZenMux writes the HTML and the app
+   * renders it locally. Returns HTML in the marker field for the existing landing pipeline.
    */
   generatePageCloud?(args: {
     pageIndex: number
@@ -543,14 +542,14 @@ const TOOLS: AgentToolDef[] = [
   {
     name: 'analyze_media',
     description:
-      'Analyze media content (Genspark): understand images/audio/video. Pass media URLs (or local file paths) and analysis requirements; returns analysis text. Video supports extracting key points, structure, and time ranges — good for turning user material into usable deck content.',
+      'Analyze images with the configured ZenMux multimodal model. Pass image URLs (or local image paths) and analysis requirements; returns factual analysis text for use in the deck.',
     inputSchema: {
       type: 'object',
       properties: {
         mediaUrls: {
           type: 'array',
           items: { type: 'string' },
-          description: 'List of media URLs or local file paths',
+          description: 'List of image URLs or local image file paths',
         },
         requirements: {
           type: 'string',
@@ -2312,7 +2311,7 @@ async function executeTool(
       const regenImages = Array.isArray(call.input.image_urls)
         ? (call.input.image_urls as unknown[]).map(String).filter((u) => /^https?:\/\//.test(u))
         : []
-      // Cloud generation, one retry then give up (same semantics as generate_deck pages)
+      // ZenMux generation, one retry then give up (same semantics as generate_deck pages)
       const backoff = access.retryBackoffMs ?? 2000
       let marker: string | null = null
       let lastErr = ''
@@ -2336,7 +2335,7 @@ async function executeTool(
       if (!marker)
         return fail(
           t('aiFailRegen'),
-          `Cloud page generation failed (2 attempts): ${lastErr}. This is usually a temporary cloud service error — do not keep calling regenerate_slide in a loop. Instead, make the requested changes in place with execute_slide_script / set_element_* (group children are editable too), or tell the user to retry in a few minutes. The page was not modified.`,
+          `ZenMux page generation failed (2 attempts): ${lastErr}. Do not keep calling regenerate_slide in a loop. Instead, make the requested changes in place with execute_slide_script / set_element_*, or tell the user to verify the ZenMux API Key and retry. The page was not modified.`,
         )
       const r = await access.regenerateSlide(idx, marker)
       if (!r.ok)
@@ -2347,7 +2346,7 @@ async function executeTool(
       if (state) state.htmlGenerated = true
       return {
         output:
-          `Redid page ${idx + 1} in place from the brief via cloud generation (other pages untouched; the user can undo). Fine-tune afterwards with execute_slide_script / set_element_* tools.` +
+          `Redid page ${idx + 1} in place from the brief via ZenMux generation and local rendering (other pages untouched; the user can undo).` +
           imageFailNote(r.imageFailures),
         mutated: true,
         summary: t('aiSumRegen', { n: idx + 1 }),
@@ -2373,11 +2372,11 @@ async function executeTool(
     case 'generate_deck': {
       // ── Self-driven pipeline:
       //   1) Plan: use pages if passed; with topic, the tool plans the outline via LLM (batched recursion over threshold) — fixes missing pages at the input side.
-      //   2) Generate: batched concurrent cloud page generation (gsk slide_generate, one retry per page), **each batch lands immediately → frontend shows pages one by one**.
+      //   2) Generate: batched concurrent ZenMux HTML generation (one retry per page), then local rendering; each batch lands immediately.
       if (!access.generatePageCloud || !(await access.isCloudPageGenEnabled?.().catch(() => false)))
         return fail(
           t('aiFailGenDeck'),
-          'Cloud slide generation is unavailable — sign in to Genspark (gsk) first',
+          'ZenMux slide generation is unavailable — add a ZenMux API Key in Settings first',
         )
       if (!access.generateFromHtml)
         return fail(
@@ -2685,8 +2684,7 @@ async function executeTool(
       const deckName = String(pages[0]?.title ?? '').trim() || topic || coreHook
 
       // ── Step 2: generate page by page + land as we go (frontend shows pages one by one).
-      // The cloud service (gsk slide_generate) writes each page's HTML and converts it to a
-      // one-slide pptx; genOne returns a marker and landing reads the bytes.
+      // ZenMux writes each page's HTML; the app converts it locally to a one-slide PPTX.
       // Land strictly in page order: nextToLand pointer; a page lands only when its marker is ready, keeping page order intact.
       const htmlByIndex: (string | null)[] = new Array(total).fill(null)
       // Per-page completion flags (aligned with pages; same reference as state.pageDone, used by buildContext progress injection)

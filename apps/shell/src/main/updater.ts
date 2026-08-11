@@ -322,7 +322,7 @@ const RECHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
 // code-signing identity (Apple Team ID) change, which Squirrel.Mac rejects
 // on every retry while the error looks like a download failure to the user.
 const MANUAL_FALLBACK_AFTER = 2
-const DOWNLOAD_PAGE_URL = 'https://github.com/genspark-ai/genoffice/releases/latest'
+const DOWNLOAD_PAGE_URL = 'https://github.com/bennix/GenZenMuxAIOffice/releases/latest'
 
 let started = false
 // version the user declined this session — don't nag again until next launch

@@ -4,7 +4,7 @@
  * to avoid renderer CORS), search tools, and the slides-only ai:* channels
  * (image generation, media analysis, style templates).
  */
-import { app, ipcMain, shell } from 'electron'
+import { app, ipcMain } from 'electron'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
@@ -13,22 +13,14 @@ import {
   defaultAiSettings,
   generateZenMuxImage,
   resolveAiSettings,
-  streamForProvider,
+  streamZenMux,
   type AiSettings,
   type AiStreamChunk,
   type AiStreamRequest,
-  type GenSparkAccountStatus,
   type LegacyAiSettings,
 } from '@genoffice/ai-provider'
 import { fetchRemoteImage } from '@genoffice/electron-utils'
-import {
-  webSearch,
-  imageSearch,
-  ensureGenofficeLogin,
-  gskAnalyzeMedia,
-  gskLoginInfo,
-  hasGskAuth,
-} from '@genoffice/ai-search'
+import { webSearch, imageSearch } from '@genoffice/ai-search'
 import { addPicture, replacePictureBytes } from '@genoffice/pptx-engine'
 import { EMU_PER_PX_96 } from '@genoffice/pptx-render'
 import { tm } from './i18n-main'
@@ -63,31 +55,16 @@ export function registerAiIpc(): void {
     return settings
   })
 
-  // Genspark account (gsk login state): the auth source for AI features; when logged out the frontend uses this to guide login
-  ipcMain.handle(
-    'ai:gsk-status',
-    async (_event, withEmail?: boolean): Promise<GenSparkAccountStatus> => {
-      if (!hasGskAuth()) return { loggedIn: false }
-      if (!withEmail) return { loggedIn: true }
-      const info = await gskLoginInfo()
-      return info?.email ? { loggedIn: true, email: info.email } : { loggedIn: true }
-    },
-  )
-
-  ipcMain.handle('ai:gsk-login', () => {
-    ensureGenofficeLogin((url) => void shell.openExternal(url))
-  })
-
   ipcMain.handle('ai:set-settings', (_event, settings: AiSettings) => {
-    writeJson(AI_SETTINGS_PATH(), settings)
+    writeJson(AI_SETTINGS_PATH(), { ...settings, provider: 'zenmux' })
   })
 
   ipcMain.handle('ai:stream', async (event, request: AiStreamRequest) => {
     const { requestId, settings, system, messages } = request
     const tools = request.tools ?? []
     const maxTokens = request.maxTokens ?? 8192
-    const provider = settings.provider
-    const config = settings.providers?.[provider]
+    const provider = 'zenmux' as const
+    const config = settings.providers?.zenmux
     const send = (chunk: AiStreamChunk) => {
       if (!event.sender.isDestroyed()) event.sender.send('ai:stream-chunk', chunk)
     }
@@ -95,7 +72,7 @@ export function registerAiIpc(): void {
       send({
         requestId,
         type: 'error',
-        error: provider === 'genspark' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
+        error: tm('errNoApiKey', { provider: 'ZenMux' }),
       })
       return
     }
@@ -114,7 +91,7 @@ export function registerAiIpc(): void {
       send({ requestId, type: 'ping' })
     }
     try {
-      await streamForProvider(provider, config, system, messages, tools, maxTokens, {
+      await streamZenMux(config, system, messages, tools, maxTokens, {
         signal: controller.signal,
         onDelta: (text) => send({ requestId, type: 'delta', text }),
         onToolCall: (toolCall) => send({ requestId, type: 'tool-call', toolCall }),
@@ -228,17 +205,62 @@ async function readImageSource(source: string): Promise<{ buf: Buffer; ext: stri
 }
 
 export function registerSlidesOnlyAiIpc(): void {
-  // Media analysis remains a Genspark CLI capability. Image generation is on the
-  // shared ZenMux ai:generate-image channel registered above (or by docs in shell mode).
+  // Media understanding uses the configured ZenMux multimodal chat model. Image generation is
+  // on the shared ZenMux ai:generate-image channel registered above (or by docs in shell mode).
   ipcMain.handle(
     'ai:analyze-media',
     async (_event, op: { mediaUrls: string[]; requirements: string }) => {
-      if (!hasGskAuth()) return { error: tm('errGskCli') }
+      const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(AI_SETTINGS_PATH(), {})
+      const config = resolveAiSettings(stored, defaultAiSettings()).providers.zenmux
+      if (!config.apiKey) return { error: tm('errNoApiKey', { provider: 'ZenMux' }) }
       try {
-        const text = await gskAnalyzeMedia({
-          mediaUrls: (op.mediaUrls ?? []).map(String),
-          requirements: String(op.requirements ?? ''),
-        })
+        const images: Array<{ base64: string; mime: string }> = []
+        const unsupported: string[] = []
+        for (const source of (op.mediaUrls ?? []).map(String).slice(0, 8)) {
+          let buf: Buffer | null = null
+          let mime = 'image/jpeg'
+          if (/^https?:\/\//i.test(source)) {
+            const resp = await fetchRemoteImage(source)
+            if (resp?.ok) {
+              mime = resp.headers.get('content-type')?.split(';')[0] || mime
+              buf = Buffer.from(await resp.arrayBuffer())
+            }
+          } else if (existsSync(source)) {
+            const ext = source.split('.').pop()?.toLowerCase()
+            if (ext && ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+              mime = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`
+              buf = readFileSync(source)
+            }
+          }
+          if (buf && mime.startsWith('image/') && buf.length <= 20 * 1024 * 1024) {
+            images.push({ base64: buf.toString('base64'), mime })
+          } else {
+            unsupported.push(source)
+          }
+        }
+        let text = ''
+        const controller = new AbortController()
+        await streamZenMux(
+          config,
+          'You analyze user-provided media for use in professional presentations. Be factual, structured, and concise. Do not claim to have inspected any item that was not provided as an image.',
+          [
+            {
+              role: 'user',
+              text: `${String(op.requirements ?? '')}${unsupported.length ? `\n\nItems not directly viewable by this model: ${unsupported.join(', ')}` : ''}`,
+              images,
+            },
+          ],
+          [],
+          4096,
+          {
+            signal: controller.signal,
+            onDelta: (delta) => {
+              text += delta
+            },
+            onToolCall: () => undefined,
+          },
+        )
+        if (!text.trim()) return { error: 'ZenMux returned no media analysis' }
         return { text }
       } catch (err) {
         return { error: err instanceof Error ? err.message : String(err) }

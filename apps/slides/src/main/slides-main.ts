@@ -20,11 +20,11 @@ import {
 import type { WebContents } from 'electron'
 import { execFile } from 'node:child_process'
 import { readFile, writeFile, rm, stat, mkdir, open } from 'node:fs/promises'
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
 import { userInfo } from 'node:os'
 import { dirname, join } from 'node:path'
-import { gskApiKey, gskSlideGenerate, setGskProxyUrl } from '@genoffice/ai-search'
+import PptxGenJS from 'pptxgenjs'
 import {
   appMenuLabels,
   configuredDefaultSaveDir,
@@ -262,10 +262,6 @@ let slideClipboard: { bundle: SlideBundle; png?: string } | null = null
 /** The immediately preceding slide paste per webContents, so the paste-options floater can redo it with another mode. */
 const lastSlidePaste = new Map<number, { afterIndex: number; undoLen: number }>()
 
-// Cloud-generated single-page pptx: marker strings travel in pagesHtml slots; only paths issued
-// by slides:cloud-page-generate are readable (the renderer can't point the reader at arbitrary files)
-const CLOUD_PAGE_PREFIX = 'cloudpptx:'
-const issuedCloudPages = new Set<string>()
 import { registerPresenterIpc } from './presenter-show'
 import { registerAttachmentIpc } from './attachments-ipc'
 
@@ -1292,58 +1288,6 @@ export function registerSlidesIpc(): void {
     )
     return rebuildSlide(session, op.slideIndex)
   })
-  // ── Cloud single-page generation (gsk slide_generate): brief → cloud HTML+conversion → one-slide
-  // pptx saved to a temp file. Returns a marker string that flows through the same pagesHtml slots
-  // as locally generated HTML; slides:html-to-pptx recognizes it and reads the bytes instead of
-  // converting. Enabled when gsk is logged in; GENOFFICE_CLOUD_SLIDE=0 is the kill switch.
-  const cloudSlideEnabled = () => process.env.GENOFFICE_CLOUD_SLIDE !== '0' && !!gskApiKey()
-
-  ipcMain.handle('slides:cloud-gen-status', () => ({ enabled: cloudSlideEnabled() }))
-
-  ipcMain.handle(
-    'slides:cloud-page-generate',
-    async (
-      _e,
-      op: {
-        brief: string
-        title?: string
-        styleSkill?: string
-        deckContext?: Record<string, unknown>
-        images?: { url: string; caption?: string }[]
-        width?: number
-        height?: number
-      },
-    ): Promise<{ ok: boolean; marker?: string; error?: string }> => {
-      if (!cloudSlideEnabled()) return { ok: false, error: 'cloud slide generation is disabled' }
-      try {
-        // ultra = opus-class model, matching the local path's quality tier; GENOFFICE_CLOUD_SLIDE_TIER=standard opts down
-        const tier = process.env.GENOFFICE_CLOUD_SLIDE_TIER === 'standard' ? 'standard' : 'ultra'
-        const started = Date.now()
-        const { bytes, model } = await gskSlideGenerate({
-          tier,
-          brief: String(op.brief ?? ''),
-          title: op.title ? String(op.title) : undefined,
-          styleSkill: op.styleSkill ? String(op.styleSkill) : undefined,
-          deckContext: op.deckContext,
-          images: Array.isArray(op.images) ? op.images : undefined,
-          width: op.width,
-          height: op.height,
-        })
-        console.log(
-          `[cloud-slide] page generated: tier=${tier} model=${model} bytes=${bytes.length} ms=${Date.now() - started}`,
-        )
-        const dir = join(app.getPath('temp'), 'genoffice-cloud-pages')
-        mkdirSync(dir, { recursive: true })
-        const path = join(dir, `${randomUUID()}.pptx`)
-        await writeFile(path, bytes)
-        issuedCloudPages.add(path)
-        return { ok: true, marker: CLOUD_PAGE_PREFIX + path }
-      } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : String(err) }
-      }
-    },
-  )
-
   ipcMain.handle(
     'slides:html-to-pptx',
     async (
@@ -1363,20 +1307,68 @@ export function registerSlidesIpc(): void {
         })
       | { error: string }
     > => {
-      // Every page arrives as a cloud marker (cloudpptx:<path> written by
-      // slides:cloud-page-generate, pointing at a one-slide pptx temp file); this handler only
-      // reads and lands the bytes.
-      // replace: assemble the whole batch into one multi-page pptx as the new deck base.
-      // append: merge the "new pages" one by one into the existing deck via mergeSlideFromPptx
-      // (earlier pages are untouched).
-      const readCloudPage = async (marker: string): Promise<{ bytes: Uint8Array }> => {
-        if (!marker.startsWith(CLOUD_PAGE_PREFIX)) throw new Error('expected a cloud page marker')
-        const path = marker.slice(CLOUD_PAGE_PREFIX.length)
-        if (!issuedCloudPages.has(path)) throw new Error('unknown cloud page marker')
-        return { bytes: new Uint8Array(await readFile(path)) }
+      // ZenMux returns HTML; rendering and PPTX packaging happen entirely on this Mac. A strict
+      // CSP prevents generated markup from executing code or reading local files. Each rendered
+      // page is stored as a full-slide image so browser typography/CSS remain visually faithful.
+      const renderHtmlPage = async (rawHtml: string): Promise<{ bytes: Uint8Array }> => {
+        if (!/<html\b/i.test(rawHtml) || !/<\/html>/i.test(rawHtml)) {
+          throw new Error('invalid generated slide HTML')
+        }
+        const csp =
+          '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src https: data:; style-src \'unsafe-inline\'; font-src data:;">'
+        const html = rawHtml
+          .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '')
+          .replace(/<meta\b[^>]*http-equiv=["']?Content-Security-Policy["']?[^>]*>/gi, '')
+          .replace(/<head([^>]*)>/i, `<head$1>${csp}`)
+        const win = new BrowserWindow({
+          show: false,
+          width: 1280,
+          height: 720,
+          useContentSize: true,
+          backgroundColor: '#ffffff',
+          webPreferences: {
+            offscreen: true,
+            sandbox: true,
+            contextIsolation: true,
+            nodeIntegration: false,
+            webSecurity: true,
+          },
+        })
+        try {
+          await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+          await win.webContents.executeJavaScript(
+            `Promise.race([
+              Promise.all(Array.from(document.images).map((img) => img.complete ? null : new Promise((resolve) => {
+                img.addEventListener('load', resolve, { once: true });
+                img.addEventListener('error', resolve, { once: true });
+              }))),
+              new Promise((resolve) => setTimeout(resolve, 8000))
+            ]).then(() => document.fonts && document.fonts.ready).catch(() => undefined)`,
+            true,
+          )
+          const captured = await win.webContents.capturePage()
+          const png = captured.resize({ width: 1280, height: 720, quality: 'best' }).toPNG()
+          const pptx = new PptxGenJS()
+          pptx.layout = 'LAYOUT_WIDE'
+          pptx.author = 'GenZenMux AI Office'
+          pptx.subject = 'Generated locally with ZenMux'
+          const slide = pptx.addSlide()
+          slide.background = { color: 'FFFFFF' }
+          slide.addImage({
+            data: `data:image/png;base64,${png.toString('base64')}`,
+            x: 0,
+            y: 0,
+            w: 13.333333,
+            h: 7.5,
+          })
+          const bytes = await pptx.write({ outputType: 'nodebuffer' })
+          return { bytes: new Uint8Array(bytes as Buffer) }
+        } finally {
+          if (!win.isDestroyed()) win.destroy()
+        }
       }
       const assembleDeck = async (): Promise<{ bytes: Uint8Array }> => {
-        const perPage = await Promise.all(pagesHtml.map(readCloudPage))
+        const perPage = await Promise.all(pagesHtml.map(renderHtmlPage))
         const base = await openPptx(perPage[0]!.bytes)
         for (const one of perPage.slice(1)) await mergeSlideFromPptx(base, one.bytes)
         for (const s of base.deck.slides) promoteSlideBackground(s, base.deck.size)
@@ -1402,7 +1394,7 @@ export function registerSlidesIpc(): void {
           let lastErr: string | undefined
           for (const html of pagesHtml) {
             try {
-              const one = await readCloudPage(html)
+              const one = await renderHtmlPage(html)
               const slide = await mergeSlideFromPptx(opened, one.bytes)
               if (slide) {
                 promoteSlideBackground(slide, opened.deck.size)
@@ -1457,7 +1449,7 @@ export function registerSlidesIpc(): void {
           if (!html || pagesHtml.length !== 1) {
             return { error: tm('errReplaceNeedsOne') }
           }
-          const one = await readCloudPage(html)
+          const one = await renderHtmlPage(html)
           pushHistory(existing)
           const rollback = () => {
             const snap = existing.undoStack.pop()
@@ -1507,7 +1499,7 @@ export function registerSlidesIpc(): void {
           if (!html || pagesHtml.length !== 1) {
             return { error: tm('errInsertNeedsOne') }
           }
-          const one = await readCloudPage(html)
+          const one = await renderHtmlPage(html)
           pushHistory(existing)
           const rollback = () => {
             const snap = existing.undoStack.pop()
@@ -3987,9 +3979,6 @@ export function installSlidesMenu(): void {
  */
 async function applyMainProcessProxy(): Promise<void> {
   const setDispatcher = async (proxyUrl: string) => {
-    // spawned gsk CLI children do their own fetch and never see the
-    // dispatcher below — forward the proxy to them via env
-    setGskProxyUrl(proxyUrl)
     try {
       const { ProxyAgent, setGlobalDispatcher } = await import('undici')
       setGlobalDispatcher(new ProxyAgent(proxyUrl))
@@ -4013,9 +4002,8 @@ async function applyMainProcessProxy(): Promise<void> {
   // No environment variables: read the system proxy (requires app ready)
   try {
     await app.whenReady()
-    // PAC/rule proxies answer per-host: probe the host the login flow, the
-    // Genspark LLM proxy and the gsk CLI actually target
-    const resolved = await electronSession.defaultSession.resolveProxy('https://www.genspark.ai/')
+    // PAC/rule proxies answer per-host: probe the ZenMux API used by all AI requests.
+    const resolved = await electronSession.defaultSession.resolveProxy('https://zenmux.ai/api/v1')
     // resolveProxy returns strings like "PROXY 127.0.0.1:1087" or "DIRECT"
     const m = /PROXY\s+([^;]+)/i.exec(resolved || '')
     if (m) {

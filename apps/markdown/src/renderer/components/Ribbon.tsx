@@ -4,7 +4,7 @@ import type { Editor } from '@tiptap/core'
 import { useEditorState } from '@tiptap/react'
 import { useI18n } from '../i18n/locale'
 import type { StringKey } from '../i18n/locale'
-import { GensparkMark } from '../ai/AiPanel'
+import { ZenMuxMark } from '../ai/AiPanel'
 import { liftFromList } from '../editor/slashCommand'
 import {
   IconBullets,
@@ -279,9 +279,9 @@ export function Ribbon({
               onClick={onToggleAi}
             >
               <span className="rb-big-icon">
-                <GensparkMark size={26} />
+                <ZenMuxMark size={26} />
               </span>
-              <span>Genspark AI</span>
+              <span>ZenMux AI</span>
             </button>
             {aiPresets.map(({ kind, btn, prompt }) => (
               <button

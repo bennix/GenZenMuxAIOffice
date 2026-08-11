@@ -4,7 +4,7 @@ import { SHAPE_GALLERY_GROUPS, ShapePreview } from '@genoffice/ui'
 
 import {
   CaretIcon,
-  GensparkMark,
+  ZenMuxMark,
   RIBBON_GLYPH_ICONS,
   RedoIcon,
   SaveIcon,
@@ -2138,10 +2138,10 @@ function Ribbon({
           onClick={onAiToggle}
         >
           <span className="tool-icon-row">
-            <GensparkMark size={26} />
+            <ZenMuxMark size={26} />
           </span>
           <span>
-            <strong>Genspark AI</strong>
+            <strong>ZenMux AI</strong>
           </span>
         </button>
         <button

@@ -1,6 +1,6 @@
 import type { AgentMessage, AgentToolCall, AgentToolDef } from '@genoffice/agent-core'
 import { httpBodyDetail } from './http-error'
-import { GENSPARK_LLM_BASE_URLS, ZENMUX_BASE_URL, gensparkAttributionHeaders } from './providers'
+import { GENSPARK_LLM_BASE_URLS, ZENMUX_BASE_URL } from './providers'
 import type { AiProviderConfig, AiProviderId } from './types'
 import { createStreamWatchdog, type StreamWatchdog } from './watchdog'
 
@@ -120,8 +120,8 @@ function creditsNoticeText(value: unknown): string | null {
   if (typeof value === 'string') {
     const t = value.toLowerCase()
     const credits =
-      t.includes('genspark.ai/pricing') ||
-      (t.includes('credit') && (t.includes('exhausted') || t.includes('insufficient')))
+      (t.includes('credit') && (t.includes('exhausted') || t.includes('insufficient'))) ||
+      (t.includes('quota') && (t.includes('out of') || t.includes('insufficient')))
     return credits ? value : null
   }
   if (Array.isArray(value) || (value && typeof value === 'object')) {
@@ -283,7 +283,6 @@ async function anthropicTurn(
         // browser-semantics headers; Anthropic rejects those with 403 "Request not allowed". This
         // header is the official opt-in for direct access from browser/Electron environments.
         'anthropic-dangerous-direct-browser-access': 'true',
-        ...gensparkAttributionHeaders(baseUrl),
       },
       body: JSON.stringify({
         model: config.model,
@@ -512,7 +511,6 @@ async function geminiTurn(
     headers: {
       'Content-Type': 'application/json',
       'x-goog-api-key': config.apiKey,
-      ...gensparkAttributionHeaders(baseUrl),
     },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
@@ -725,7 +723,6 @@ async function openAiCompatibleTurn(
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${config.apiKey}`,
-      ...gensparkAttributionHeaders(baseUrl),
     },
     body: JSON.stringify({
       model: config.model,
@@ -840,6 +837,18 @@ async function openAiCompatibleTurn(
 const OPENAI_COMPATIBLE_BASE_URLS: Partial<Record<AiProviderId, string>> = {
   deepseek: 'https://api.deepseek.com/v1',
   openai: 'https://api.openai.com/v1',
+}
+
+/** ZenMux-only streaming entry used by every editor in this distribution. */
+export function streamZenMux(
+  config: AiProviderConfig,
+  system: string,
+  messages: AgentMessage[],
+  tools: AgentToolDef[],
+  maxTokens: number,
+  cb: StreamCallbacks,
+): Promise<void> {
+  return streamOpenAiCompatible(ZENMUX_BASE_URL, config, system, messages, tools, maxTokens, cb)
 }
 
 /** route a streaming, tool-calling-capable turn by provider id */

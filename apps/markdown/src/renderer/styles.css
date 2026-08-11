@@ -841,15 +841,15 @@ body {
   white-space: nowrap;
 }
 
-/* Genspark brand logo (shared by the collapsed entry and the AI panel title) */
-.genspark-badge {
+/* ZenMux brand logo (shared by the collapsed entry and the AI panel title) */
+.zenmux-badge {
   display: block;
   width: 22px;
   height: 22px;
   border-radius: 50%;
 }
 
-.ai-panel-title .genspark-badge {
+.ai-panel-title .zenmux-badge {
   width: 18px;
   height: 18px;
 }

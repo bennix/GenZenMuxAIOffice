@@ -17,13 +17,14 @@ import {
   type PageProgressItem,
 } from './slides-skill'
 import { extractJsonObject, parseOutlineJson } from './outline-json'
+import { extractSlideHtml } from './slide-html'
 import { createFilesSkill } from './files-skill'
 import { createElectronTransport } from './transport'
 import { renderSlidesToPngBase64 } from '../export-render'
 import { isQcEnabled, mergeQcPages, qcSlidePage, QC_MAX_PAGES } from './slide-qc'
 import { useI18n, t as tGlobal, aiLangDirective, type TFunc } from '../i18n/locale'
 import { Markdown } from '@genoffice/ui'
-import { GensparkMark } from '../components/icons'
+import { ZenMuxMark } from '../components/icons'
 import sendEnterOn from '../assets/send-enter-on.png'
 import sendEnterOff from '../assets/send-enter-off.png'
 import sendStop from '../assets/send-stop.png'
@@ -65,7 +66,7 @@ const PASTE_MIME_EXT: Record<string, string> = {
   'image/webp': 'webp',
 }
 
-/** File-type icons for attachment cards (Genspark attachment icon set); exts the
+/** File-type icons for attachment cards (ZenMux attachment icon set); exts the
  *  attachment allowlist doesn't accept yet are mapped ahead so they light up when added */
 const ATTACHMENT_CARD_ICON_GROUPS: [icon: string, exts: string[]][] = [
   [fileWordIcon, ['doc', 'docx']],
@@ -232,7 +233,7 @@ interface ChatEntry {
   streaming?: boolean
   /** the run failed and this user message was rolled back out of the model context */
   undelivered?: boolean
-  /** the run failed because Genspark is signed out — render an inline sign-in button */
+  /** the run failed because ZenMux is signed out — render an inline sign-in button */
   loginRequired?: boolean
   tools?: ToolActivity[]
   /** Generation progress card (only one per turn, replaced in real time) */
@@ -371,7 +372,7 @@ export function AiPanel({
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
   const [attachNotice, setAttachNotice] = useState<string | null>(null)
-  /** data-URL previews for image attachments, keyed by path (Genspark composer thumbnails) */
+  /** data-URL previews for image attachments, keyed by path (ZenMux composer thumbnails) */
   const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({})
   /** image paths with a read already issued — one readAttachmentImage per attach, even while pending */
   const previewRequestedRef = useRef(new Set<string>())
@@ -918,40 +919,42 @@ export function AiPanel({
         })
       },
       isCloudPageGenEnabled: async () => {
-        try {
-          return !!(await window.slidesApi.cloudGenStatus())?.enabled
-        } catch {
-          return false
-        }
+        return Boolean(settingsRef.current.providers.zenmux?.apiKey)
       },
-      // Cloud single-page generation (gsk slide_generate): the cloud service owns HTML writing +
-      // pptx conversion; the deck-level style/outline stay local.
+      // ZenMux writes one self-contained HTML page. The main process renders that HTML locally
+      // and packages the result into PPTX, so page generation has no account/service dependency
+      // beyond the ZenMux key saved in Settings.
       generatePageCloud: async (args) => {
-        try {
-          const briefParts = [args.brief]
-          if (args.layout) briefParts.push(`Layout intent: ${args.layout}`)
-          if (args.context)
-            briefParts.push(
-              `Reference material (all real names/figures/facts come from here; do not invent):\n${args.context.slice(0, 4000)}`,
-            )
-          const res = await window.slidesApi.cloudGeneratePage({
-            brief: briefParts.join('\n\n'),
-            title: args.title,
-            styleSkill: args.style,
-            deckContext: {
-              ...(args.topic ? { topic: args.topic } : {}),
-              core_hook: args.coreHook,
-              page_index: args.pageIndex,
-              total_pages: args.totalPages,
-            },
-            images: args.images.map((u) => ({ url: u })),
-            width: args.canvasW,
-            height: args.canvasH,
-          })
-          return res ?? { ok: false, error: tGlobal('aiErrUnknown') }
-        } catch (e) {
-          return { ok: false, error: e instanceof Error ? e.message : String(e) }
-        }
+        const system =
+          'You are a world-class presentation designer and HTML author. Create exactly one polished presentation slide as a complete, self-contained HTML document. ' +
+          'Output HTML only: no Markdown, no code fence, no explanation. The viewport is exactly 1280x720. ' +
+          'Use semantic HTML and inline CSS in a <style> tag. The body must be margin:0, width:1280px, height:720px, overflow:hidden. ' +
+          'Use only system fonts. Do not use JavaScript, SVG, iframes, forms, external CSS, icon libraries, or CSS-generated placeholder illustrations. ' +
+          'Keep every visible element inside the canvas. Make text concise and readable: title 42-64px, body at least 18px, strong contrast, generous spacing. ' +
+          'Use the supplied image URLs exactly when useful; use object-fit:cover and a graceful CSS color block when an image cannot load. ' +
+          'Preserve all supplied facts, names, and figures; never invent precise data.'
+        const user = [
+          `Slide ${args.pageIndex} of ${args.totalPages}`,
+          args.topic ? `Presentation topic: ${args.topic}` : '',
+          `Narrative hook: ${args.coreHook}`,
+          `Title: ${args.title}`,
+          `Content brief: ${args.brief}`,
+          args.layout ? `Layout intent: ${args.layout}` : '',
+          `Design system:\n${args.style}`,
+          args.context
+            ? `Reference material (source of truth):\n${args.context.slice(0, 4000)}`
+            : '',
+          args.images.length ? `Approved image URLs:\n${args.images.join('\n')}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n\n')
+        const result = await runLlmOnce(system, user, undefined, true, args.signal, 8192)
+        if (!result.ok || !result.text)
+          return { ok: false, error: result.error ?? tGlobal('aiErrEmptyOutput') }
+        const html = extractSlideHtml(result.text)
+        return html
+          ? { ok: true, marker: html }
+          : { ok: false, error: 'ZenMux returned an invalid HTML slide' }
       },
       // ── In-tool planning: given topic+page count, the LLM produces a structured outline (batched recursion scheduled by the skill).
       // Fixes "missing pages at the input side" at the root: the main agent doesn't hand-write dozens of pages of pages JSON.
@@ -1641,7 +1644,7 @@ export function AiPanel({
         aria-label={t('appAiRailExpand')}
         onClick={onExpand}
       >
-        <GensparkMark size={22} />
+        <ZenMuxMark size={22} />
       </button>
     )
   }
@@ -1672,7 +1675,7 @@ export function AiPanel({
       />
       <div className="ai-panel-header">
         <span className="ai-panel-title">
-          <GensparkMark size={22} />
+          <ZenMuxMark size={22} />
           ZenMux
         </span>
         <div className="ai-panel-header-actions">
@@ -1787,11 +1790,6 @@ export function AiPanel({
               {entry.tools && entry.tools.length > 0 && <ToolChipList tools={entry.tools} />}
               {entry.error && (
                 <div className="ai-msg-error">{t('aiMsgError', { error: entry.error })}</div>
-              )}
-              {entry.loginRequired && (
-                <button className="ai-login-btn" onClick={() => void window.slidesApi.aiGskLogin()}>
-                  {t('aiGskLoginBtn')}
-                </button>
               )}
               {entry.deckProgress && <DeckProgressCard progress={entry.deckProgress} />}
               {showToolbar && (

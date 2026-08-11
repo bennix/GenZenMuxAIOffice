@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/genspark-ai/genoffice.git"
+    "url": "git+https://github.com/bennix/GenZenMuxAIOffice.git"
   },
   "workspaces": [
     "apps/*",
@@ -37,9 +37,7 @@
     "dist:win": "npm run notices && npm run build:all && npm run dist:win -w @genoffice/shell",
     "dist:linux": "npm run notices && npm run build:all && npm run dist:linux -w @genoffice/shell"
   },
-  "dependencies": {
-    "ws": "^8.21.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",

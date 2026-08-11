@@ -762,23 +762,6 @@ describe('streamForProvider: genspark', () => {
     )
   })
 
-  it('stamps X-Agent-Type on all three proxy routes for billing attribution', async () => {
-    for (const model of ['claude-opus-4-7', 'gemini-3-flash-preview', 'gpt-5.2']) {
-      const fetchMock = vi.fn().mockResolvedValue(okResponse(sseStream([])))
-      vi.stubGlobal('fetch', fetchMock)
-      const { cb } = collector()
-      await streamForProvider('genspark', { apiKey: 'gsk-k', model }, 'sys', [], [], 100, cb).catch(
-        () => {},
-      )
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          headers: expect.objectContaining({ 'X-Agent-Type': 'genoffice' }),
-        }),
-      )
-    }
-  })
-
   it('never sends X-Agent-Type to direct vendor APIs', async () => {
     for (const [provider, model] of [
       ['anthropic', 'claude-opus-4-7'],

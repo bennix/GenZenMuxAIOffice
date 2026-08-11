@@ -53,7 +53,6 @@ const CHANNEL_OPTIONS = [
 type SectionId = 'account' | 'ai' | 'general' | 'about'
 
 const SECTIONS: readonly { id: SectionId; labelKey?: StringKey }[] = [
-  { id: 'account', labelKey: 'setSecAccount' },
   { id: 'ai' },
   { id: 'general', labelKey: 'setSecGeneral' },
   { id: 'about', labelKey: 'setSecAbout' },
@@ -144,7 +143,7 @@ export interface SettingsModalProps {
   onOpenLoginUrl: () => void
   onCopyLoginUrl: () => void
   onClose: () => void
-  /** closes the modal and launches the Genspark login flow (progress shows on the account entry) */
+  /** closes the modal and launches the ZenMux login flow (progress shows on the account entry) */
   onLogin: () => void
   onLogout: () => void
 }
@@ -162,7 +161,7 @@ export function SettingsModal({
   onLogout,
 }: SettingsModalProps) {
   const { lang, setLang, t } = useI18n()
-  const [section, setSection] = useState<SectionId>('account')
+  const [section, setSection] = useState<SectionId>('ai')
   const [theme, setTheme] = useState<UiTheme>('system')
   const [saveDir, setSaveDir] = useState('')
   const [channel, setChannel] = useState<'stable' | 'beta'>('stable')
@@ -355,7 +354,7 @@ export function SettingsModal({
                         </>
                       )}
                       <button className="set-btn primary" onClick={onLogin}>
-                        {loginWaiting ? t('waitingShort') : t('loginGenspark')}
+                        {loginWaiting ? t('waitingShort') : t('loginZenMux')}
                       </button>
                     </>
                   )}

@@ -292,7 +292,7 @@ export function AiPanel({
       />
       <header className="ai-panel-header">
         <span className="ai-panel-title">
-          <GensparkMark size={22} />
+          <ZenMuxMark size={22} />
           ZenMux
         </span>
         <div className="ai-panel-header-actions">
@@ -576,9 +576,9 @@ function IconCollapse(): ReactElement {
   )
 }
 
-/** Genspark brand mark (rounded-square sparkle badge), inline so it renders
+/** ZenMux brand mark (rounded-square sparkle badge), inline so it renders
  * crisply at device resolution instead of going through <img> rasterization */
-export function GensparkMark({ size = 18 }: { size?: number }): React.JSX.Element {
+export function ZenMuxMark({ size = 18 }: { size?: number }): React.JSX.Element {
   return (
     <svg
       width={size}

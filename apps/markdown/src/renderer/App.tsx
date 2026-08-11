@@ -18,7 +18,7 @@ import { Ribbon } from './components/Ribbon'
 import { SlashMenu, type SlashMenuHandle } from './components/SlashMenu'
 import { TableMenu } from './components/TableMenu'
 import { FrontmatterPanel } from './components/FrontmatterPanel'
-import { AiPanel, GensparkMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
+import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
 import { DOCX_MAX_IMAGE_PX, exportDocxBytes } from './export/docxExport'
 import { buildPrintHtml } from './export/printHtml'
 import { resolveImageSrc } from './editor/localImage'
@@ -390,7 +390,7 @@ export default function App() {
               aria-label={t('aiOpenAssistant')}
               onClick={() => setAiOpen(true)}
             >
-              <GensparkMark size={22} />
+              <ZenMuxMark size={22} />
             </button>
           )}
           {/* mounted only after the file is loaded so chat history resolves against the real path */}

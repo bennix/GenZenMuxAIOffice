@@ -142,22 +142,6 @@ describe('chatForProvider', () => {
     )
   })
 
-  it('genspark: stamps X-Agent-Type; direct vendors do not get it', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockImplementation(async () => jsonResponse({ content: [{ type: 'text', text: 'ok' }] }))
-    vi.stubGlobal('fetch', fetchMock)
-    await chatForProvider('genspark', { apiKey: 'gsk-k', model: 'claude-opus-4-7' }, 'sys', 'hi')
-    expect((fetchMock.mock.calls[0]![1].headers as Record<string, string>)['X-Agent-Type']).toBe(
-      'genoffice',
-    )
-    fetchMock.mockClear()
-    await chatForProvider('anthropic', { apiKey: 'k', model: 'claude-opus-4-7' }, 'sys', 'hi')
-    expect(
-      (fetchMock.mock.calls[0]![1].headers as Record<string, string>)['X-Agent-Type'],
-    ).toBeUndefined()
-  })
-
   it('treats an empty response body as an error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ choices: [{ message: {} }] })))
     const result = await chatForProvider(

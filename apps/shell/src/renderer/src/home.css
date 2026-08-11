@@ -1,7 +1,7 @@
 /* Shared chrome/AI-panel tokens come from @genoffice/ui/tokens.css (imported
  * before this file in main.tsx); only shell-specific tokens live here. */
 :root {
-  /* Genspark DS v4.1: guide/onboarding accent is the brand blue */
+  /* ZenMux DS v4.1: guide/onboarding accent is the brand blue */
   --accent: #0f7fff;
   --accent-hover: #0e72e5;
   --modal-width-sm: 480px;
@@ -164,7 +164,7 @@ body.vib .home {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- bottom-left account entry (today = Genspark login, later = signup/account system) ---- */
+/* ---- bottom-left account entry (today = ZenMux login, later = signup/account system) ---- */
 /* clicking it opens the settings modal (settings.css) directly, which hosts
    login/logout plus preferences (language / theme / save location / update channel) */
 
@@ -1397,7 +1397,7 @@ body.vib .home {
   padding-top: 1px;
 }
 
-/* ── Cloud (Genspark web) projects ── */
+/* ── Cloud (ZenMux web) projects ── */
 
 /* fixed header: the content column never scrolls; only .cloud-scroll does */
 .content:has(.cloud-projects) {

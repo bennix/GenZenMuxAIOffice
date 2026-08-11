@@ -12,7 +12,13 @@ import {
   showSaveDialogWithMemory,
 } from '@genoffice/electron-utils'
 import { createI18n, getUiLang } from '@genoffice/i18n'
-import { gskGenerateImage, hasGskAuth } from '@genoffice/ai-search'
+import {
+  defaultAiSettings,
+  generateZenMuxImage,
+  resolveAiSettings,
+  type AiSettings,
+  type LegacyAiSettings,
+} from '@genoffice/ai-provider'
 import { PDF_CHANNELS } from '../shared/ipc'
 import type {
   ExportImagesRequest,
@@ -566,23 +572,33 @@ function registerPdfIpc(): void {
     },
   )
 
-  // pdf-owned (unlike ai:image-search / ai:fetch-image, which the shell registers app-wide):
-  // slides' ai:generate-image is only registered once a slides view exists, so pdf needs its own
+  // PDF owns this channel because a PDF tab may be opened before any slides view exists.
   ipcMain.handle(
     PDF_CHANNELS.generateImage,
     async (_e, op: { prompt?: unknown; aspectRatio?: unknown }) => {
-      if (!hasGskAuth())
-        return {
-          error: 'Genspark account is not logged in on this machine; ask the user to log in first',
-        }
       const prompt = String(op?.prompt ?? '').trim()
       if (!prompt) return { error: 'prompt must not be empty' }
       try {
-        const r = await gskGenerateImage({
+        let stored: Partial<AiSettings> & LegacyAiSettings = {}
+        const settingsPath = join(app.getPath('userData'), 'ai-settings.json')
+        if (existsSync(settingsPath)) {
+          stored = JSON.parse(await readFile(settingsPath, 'utf8')) as typeof stored
+        }
+        const config = resolveAiSettings(stored, defaultAiSettings()).providers.zenmux
+        if (!config.apiKey) return { error: 'Add a ZenMux API Key in Settings first' }
+        const model = config.imageModel
+        if (!model) return { error: 'Select a ZenMux image model in Settings first' }
+        const r = await generateZenMuxImage({
+          apiKey: config.apiKey,
+          model,
           prompt,
           aspectRatio: op?.aspectRatio ? String(op.aspectRatio) : undefined,
         })
-        return { url: r.url }
+        return r.url
+          ? { url: r.url }
+          : r.base64
+            ? { url: `data:${r.mime};base64,${r.base64}` }
+            : { error: 'ZenMux returned no image' }
       } catch (err) {
         return { error: err instanceof Error ? err.message : String(err) }
       }

@@ -36,24 +36,19 @@ describe('resolveAiSettings', () => {
     expect(resolveAiSettings({}, defaults)).toEqual(defaults)
   })
 
-  it('migrates the pre-provider single-endpoint shape into the custom provider', () => {
+  it('ignores pre-provider credentials from arbitrary external endpoints', () => {
     const defaults = defaultAiSettings()
     const resolved = resolveAiSettings(
       { apiKey: 'legacy-key', model: 'legacy-model', baseUrl: 'https://legacy.example.com/v1' },
       defaults,
     )
+    expect(resolved).toEqual(defaults)
+    expect(resolved.provider).toBe('zenmux')
     expect(resolved.providers.custom).toEqual({
-      apiKey: 'legacy-key',
-      model: 'legacy-model',
-      baseUrl: 'https://legacy.example.com/v1',
+      apiKey: '',
+      model: '',
+      baseUrl: '',
     })
-    // untouched providers keep their defaults
-    expect(resolved.providers.anthropic).toEqual(defaults.providers.anthropic)
-  })
-
-  it('defaults the legacy base URL to the OpenAI endpoint when omitted', () => {
-    const resolved = resolveAiSettings({ apiKey: 'legacy-key' }, defaultAiSettings())
-    expect(resolved.providers.custom.baseUrl).toBe('https://api.openai.com/v1')
   })
 
   it('merges stored multi-provider settings over the defaults, provider by provider', () => {

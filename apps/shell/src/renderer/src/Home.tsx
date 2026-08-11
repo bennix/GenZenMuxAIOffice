@@ -394,7 +394,7 @@ function ProjectPanel({ projects, selectedId, onSelect, onRefresh }: ProjectPane
 }
 
 // ── Account entry (bottom-left) ──────────────────────────
-// Currently the Genspark (gsk) login entry; to be upgraded to a signup/account system later.
+// Currently the ZenMux (gsk) login entry; to be upgraded to a signup/account system later.
 // Clicking it opens the settings modal directly (SettingsModal.tsx), which hosts
 // login/logout plus preferences (language, theme, save location, update channel).
 
@@ -578,10 +578,10 @@ function AccountEntry({
         aria-expanded={settingsOpen}
         data-tip={
           loggedIn
-            ? email || t('loggedInGenspark')
+            ? email || t('loggedInZenMux')
             : waiting
               ? t('waitingLogin')
-              : (errorText ?? t('loginGenspark'))
+              : (errorText ?? t('loginZenMux'))
         }
         aria-label={t('settings')}
       >
@@ -647,7 +647,44 @@ function AccountEntry({
   )
 }
 
-// ── Cloud (Genspark web) projects view ──────────────────
+/** Settings-only entry for the ZenMux build. It deliberately has no web-account lifecycle. */
+function SettingsEntry() {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="account-entry">
+      {open && (
+        <SettingsModal
+          status={null}
+          loggingOut={false}
+          loginWaiting={false}
+          loginUrl={null}
+          urlCopied={false}
+          onOpenLoginUrl={() => undefined}
+          onCopyLoginUrl={() => undefined}
+          onClose={() => setOpen(false)}
+          onLogin={() => undefined}
+          onLogout={() => undefined}
+        />
+      )}
+      <button
+        className="account-btn"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        data-tip={t('settings')}
+        aria-label={t('settings')}
+      >
+        <span className="account-avatar">⚙</span>
+        <span className="account-text">
+          <span className="account-name">{t('settings')}</span>
+        </span>
+      </button>
+    </div>
+  )
+}
+
+// ── Cloud (ZenMux web) projects view ──────────────────
 
 /** kind filter segments; labels shared with the recents type filter */
 const CLOUD_FILTERS = [
@@ -822,7 +859,7 @@ function CloudProjectsView() {
         <p className="empty proj-empty">
           <span className="empty-hint">{t('cloudLoginHint')}</span>
           <button className="btn btn-secondary" disabled={loginWaiting} onClick={startLogin}>
-            {loginWaiting ? t('waitingShort') : t('loginGenspark')}
+            {loginWaiting ? t('waitingShort') : t('loginZenMux')}
           </button>
         </p>
       )
@@ -1000,7 +1037,7 @@ export function Home() {
   const [navCounts, setNavCounts] = useState({ recent: 0, starred: 0 })
   const [loadingMore, setLoadingMore] = useState(false)
   const [view, setView] = useState<'recent' | 'starred'>('recent')
-  // Genspark web projects take over the content area (like a selected project)
+  // ZenMux web projects take over the content area (like a selected project)
   const [cloudMode, setCloudMode] = useState(false)
   const [filter, setFilter] = useState('all')
   const [rowMenu, setRowMenu] = useState<string | null>(null)
@@ -1009,7 +1046,7 @@ export function Home() {
   const [confirmDelete, setConfirmDelete] = useState<string[] | null>(null)
   // name in the greeting; omitted when logged out
   const [accountName, setAccountName] = useState('')
-  // Genspark Projects is web-account data, so its nav entry only shows when logged in
+  // ZenMux Projects is web-account data, so its nav entry only shows when logged in
   const [loggedIn, setLoggedIn] = useState(false)
   // single source of account state: AccountEntry reports every change (initial
   // load, login, logout), keeping the greeting name and the nav entry in sync
@@ -1976,7 +2013,7 @@ export function Home() {
           </>
         )}
 
-        <AccountEntry onStatusChange={handleAccountStatus} />
+        <SettingsEntry />
       </aside>
 
       {selectedProjectId ? (

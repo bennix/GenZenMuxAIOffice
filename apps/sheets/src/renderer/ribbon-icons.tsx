@@ -698,9 +698,9 @@ export const RIBBON_GLYPH_ICONS: Record<string, ReactElement> = {
   ),
 }
 
-/** Genspark brand mark (rounded-square sparkle badge), inline so it renders
+/** ZenMux brand mark (rounded-square sparkle badge), inline so it renders
  * crisply at device resolution instead of going through <img> rasterization */
-export function GensparkMark({ size = 18 }: { readonly size?: number }): ReactElement {
+export function ZenMuxMark({ size = 18 }: { readonly size?: number }): ReactElement {
   return (
     <svg
       width={size}

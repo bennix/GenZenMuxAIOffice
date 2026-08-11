@@ -51,21 +51,6 @@ export const AI_PROVIDERS: AiProviderMeta[] = [
     needsBaseUrl: true,
   },
   {
-    id: 'genspark',
-    label: 'Genspark',
-    models: [
-      'claude-opus-4-7',
-      'claude-opus-4-8',
-      'claude-sonnet-4-6',
-      'claude-haiku-4-5',
-      'gpt-5.2',
-      'gemini-3.1-pro-preview',
-      'gemini-3-flash-preview',
-    ],
-    defaultModel: 'claude-opus-4-7',
-    keyPlaceholder: 'Not required - sign in to Genspark',
-  },
-  {
     id: 'anthropic',
     label: 'Claude',
     models: [
@@ -145,13 +130,8 @@ export function resolveAiSettings(
   defaults: AiSettings,
 ): AiSettings {
   if (!stored.providers) {
-    if (stored.apiKey) {
-      defaults.providers.custom = {
-        apiKey: stored.apiKey,
-        model: stored.model ?? '',
-        baseUrl: stored.baseUrl ?? 'https://api.openai.com/v1',
-      }
-    }
+    // Pre-provider credentials belonged to arbitrary external endpoints and must never be
+    // mistaken for a ZenMux key. Keep the ZenMux defaults and let the user enter a key once.
     return defaults
   }
   const resolved = {

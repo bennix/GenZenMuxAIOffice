@@ -537,15 +537,15 @@ button {
   box-shadow: var(--docs-shadow-badge);
 }
 
-/* Genspark brand logo (Ribbon AI button and AI panel title) */
-.genspark-badge {
+/* ZenMux brand logo (Ribbon AI button and AI panel title) */
+.zenmux-badge {
   display: block;
   width: 22px;
   height: 22px;
   border-radius: 50%;
 }
 
-.ai-panel-title .genspark-badge {
+.ai-panel-title .zenmux-badge {
   width: 18px;
   height: 18px;
 }
@@ -710,7 +710,7 @@ button {
   background: var(--active-bg);
 }
 
-/* The Genspark AI entry keeps a black label even while the panel is open. */
+/* The ZenMux AI entry keeps a black label even while the panel is open. */
 .rb-big.ai-entry.active {
   color: var(--text);
 }
@@ -1195,7 +1195,7 @@ button {
 }
 
 /* line spacing dropdown */
-/* Home-tab Genspark AI entry: black circular "+" badge with a dropdown caret,
+/* Home-tab ZenMux AI entry: black circular "+" badge with a dropdown caret,
    brand label below (mirrors the sheets Home ribbon). */
 /* AI feature buttons next to the entry: purple glyphs, label below */
 .ai-feature-icon {
@@ -5606,7 +5606,7 @@ body.docs-crop-active
 .ai-attachments {
   display: flex;
   gap: 8px;
-  /* single row inside the prompt box, above the textarea (Genspark composer style):
+  /* single row inside the prompt box, above the textarea (ZenMux composer style):
      extra images run past the box edge and scroll horizontally.
      scroll (not auto) + zero bottom padding: the always-present 4px scrollbar lane
      doubles as the bottom padding, so overflowing never grows the strip and
@@ -5714,7 +5714,7 @@ body.docs-crop-active
   background: var(--bg-content);
 }
 
-/* the type icon sits in its own bordered white tile, like the Genspark card */
+/* the type icon sits in its own bordered white tile, like the ZenMux card */
 .ai-attachment-card-icon {
   display: flex;
   flex-shrink: 0;
@@ -6038,7 +6038,7 @@ body.docs-crop-active
   background: var(--surface);
 }
 
-/* Genspark DS modal footer buttons: secondary = bg-subtle, primary = black (#232425) */
+/* ZenMux DS modal footer buttons: secondary = bg-subtle, primary = black (#232425) */
 .modal-actions button {
   display: inline-flex;
   align-items: center;
