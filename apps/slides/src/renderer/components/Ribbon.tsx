@@ -83,6 +83,7 @@ import iconCrop from '../assets/icon-crop.png'
 import { ChartTypeDialog } from './ChartTypeDialog'
 import {
   BIG,
+  FONT_SIZES,
   Group,
   RbCaret,
   closeSiblingPanels,
@@ -921,6 +922,22 @@ export function Ribbon({
   const [lastBulletColor, setLastBulletColor] = useState('#C43E1C')
   // Font-size combobox draft: non-null while the input is focused (typed but not yet applied)
   const [sizeDraft, setSizeDraft] = useState<string | null>(null)
+  const selectedSizeStepRef = useRef<{ pending: number | null; timer: number | null }>({
+    pending: null,
+    timer: null,
+  })
+  useEffect(() => {
+    if (selectedSizeStepRef.current.timer === null) {
+      selectedSizeStepRef.current.pending = curFontSizePt
+    }
+  }, [curFontSizePt])
+  useEffect(
+    () => () => {
+      if (selectedSizeStepRef.current.timer !== null)
+        window.clearTimeout(selectedSizeStepRef.current.timer)
+    },
+    [],
+  )
   // Font-family combobox draft: free-typed names cover weight variants absent from the list
   const [fontDraft, setFontDraft] = useState<string | null>(null)
   // Custom font colors picked via the native picker, persisted for reuse
@@ -1208,21 +1225,46 @@ export function Ribbon({
     return true
   }
 
+  const queueSelectedFontStep = (dir: 1 | -1) => {
+    const state = selectedSizeStepRef.current
+    const current = state.pending ?? curFontSizePt ?? 18
+    const max = FONT_SIZES[FONT_SIZES.length - 1]!
+    let next: number
+    if (dir > 0)
+      next = current >= max ? Math.min(400, current + 10) : FONT_SIZES.find((s) => s > current)!
+    else if (current > max) next = Math.max(max, current - 10)
+    else next = [...FONT_SIZES].reverse().find((s) => s < current) ?? FONT_SIZES[0]!
+    state.pending = next
+    setSizeDraft(String(next))
+    if (state.timer !== null) window.clearTimeout(state.timer)
+    state.timer = window.setTimeout(() => {
+      state.timer = null
+      const finalSize = state.pending
+      if (finalSize !== null) onFontSize(finalSize)
+      setSizeDraft(null)
+    }, 120)
+  }
+
   // Format buttons use onMouseDown+preventDefault, avoiding stealing contentEditable focus and triggering a commit
-  const fmtBtn = (cmd: FormatCmd, label: ReactNode, title: string, className?: string) => (
-    <button
-      className={`rb-icon${className ? ` ${className}` : ''}`}
-      disabled={!editing}
-      data-tip={editing ? title : t('ribbonEditableHint', { title })}
-      aria-label={title}
-      onMouseDown={(e) => {
-        e.preventDefault()
-        if (editing) onFormat(cmd)
-      }}
-    >
-      {label}
-    </button>
-  )
+  const fmtBtn = (cmd: FormatCmd, label: ReactNode, title: string, className?: string) => {
+    const selectedSizeCommand = cmd === 'fontSizeUp' || cmd === 'fontSizeDown'
+    const enabled = editing || (hasTextSelection && selectedSizeCommand)
+    return (
+      <button
+        className={`rb-icon${className ? ` ${className}` : ''}`}
+        disabled={!enabled}
+        data-tip={enabled ? title : t('ribbonEditableHint', { title })}
+        aria-label={title}
+        onMouseDown={(e) => {
+          e.preventDefault()
+          if (editing) onFormat(cmd)
+          else if (selectedSizeCommand) queueSelectedFontStep(cmd === 'fontSizeUp' ? 1 : -1)
+        }}
+      >
+        {label}
+      </button>
+    )
+  }
 
   const tabCtx: RibbonTabCtx = {
     aiOpen,

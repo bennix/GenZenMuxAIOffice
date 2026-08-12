@@ -158,6 +158,24 @@ describe('deck outline main fills', () => {
     const skill = createSlidesSkill(access(slide))
     expect(skill.buildContext!()).not.toContain('main fills')
   })
+
+  it('includes full selected element content and makes it the default edit target', () => {
+    const slide = slideOf([
+      shape('selected-title', box(100, 50, 700, 90), {
+        fill: { kind: 'solid', color: '#F5F5F5' },
+        runs: [{ text: 'Full selected title', color: '#112233' }],
+      }),
+      shape('other', box(100, 180, 700, 90), {
+        runs: [{ text: 'Unselected body', color: '#445566' }],
+      }),
+    ])
+    const selectedAccess = { ...access(slide), getSelectedIds: () => ['selected-title'] }
+    const context = createSlidesSkill(selectedAccess).buildContext!()
+    expect(context).toContain('default target for edit')
+    expect(context).toContain('Full selected-element context')
+    expect(context).toContain('selected-title | shape | pos(100,50) size 700×90')
+    expect(context).toContain('Full selected title')
+  })
 })
 
 describe('layout-script els colors', () => {

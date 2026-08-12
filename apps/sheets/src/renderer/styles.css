@@ -4665,3 +4665,30 @@ textarea:focus {
 #univer-container.sheet-shape-drawing * {
   cursor: crosshair !important;
 }
+.ai-composer-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 7px;
+}
+
+.ai-scope-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-brand-secondary) 10%, transparent);
+  color: var(--color-brand-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ai-scope-hint::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}

@@ -83,6 +83,28 @@ describe('buildWorkbookContext', () => {
     expect(text).toContain('Current selection: B2:C4')
   })
 
+  it('includes selected cell values and formulas as the default edit context', () => {
+    const text = buildWorkbookContext(
+      fakeDeps({
+        readCells: (addresses) =>
+          Object.fromEntries(
+            addresses.map((address) => [
+              address,
+              address === 'B2'
+                ? { value: 'Draft heading' }
+                : address === 'C2'
+                  ? { value: 42, formula: '=SUM(C3:C4)' }
+                  : { value: null },
+            ]),
+          ),
+      }),
+    )
+    expect(text).toContain('default target for edit')
+    expect(text).toContain('Selected cell content (6 cells)')
+    expect(text).toContain('B2: Draft heading')
+    expect(text).toContain('C2: 42 [formula: =SUM(C3:C4)]')
+  })
+
   it('lists merged ranges and charts when present', () => {
     const deps = fakeDeps({
       getActiveSheetInfo: () => ({

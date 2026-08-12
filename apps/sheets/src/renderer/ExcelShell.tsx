@@ -188,6 +188,8 @@ interface ExcelShellProps {
   readonly onGetAnchorValue: () => number | string | null
   /// A1 label of the active cell, echoed live by the Name Box.
   readonly activeCellA1: string
+  /// Full active selection (for example B2:D8), displayed as the AI context scope.
+  readonly selectionRangeA1: string
   /// Name Box / Go To jump; returns an error message, or null on success.
   readonly onGoToReference: (ref: string) => string | null
   readonly onListDefinedNames: () => readonly { name: string; ref: string }[]
@@ -247,6 +249,7 @@ export function ExcelShell({
   onGetActiveCell,
   onGetAnchorValue,
   activeCellA1,
+  selectionRangeA1,
   onGoToReference,
   onListDefinedNames,
   onApplyFormula,
@@ -445,6 +448,7 @@ export function ExcelShell({
           onUndo={onUndo}
           onExpand={() => setIsCopilotOpen(true)}
           onCollapse={() => setIsCopilotOpen(false)}
+          selectionRangeA1={selectionRangeA1}
         />
         <div className="sheet-main">
           {/* Excel's formula-bar row, Name Box only for now (fx bar TBD). */}
@@ -1014,6 +1018,46 @@ function Ribbon({
   const [fontColor, setFontColor] = useState('#C00000')
   const [fillColor, setFillColor] = useState('#FFF2CC')
   const [borderColor, setBorderColor] = useState('#000000')
+  // Keep rapid A+/A- clicks responsive without firing several stale-size workbook writes.
+  // The field shows the optimistic size immediately; one trailing command applies the final size.
+  const [fontSizePreview, setFontSizePreview] = useState<number | null>(null)
+  const fontSizePendingRef = useRef<number | null>(null)
+  const fontSizeTimerRef = useRef<number | null>(null)
+  const applyFontSize = (size: number): void => {
+    if (!Number.isFinite(size) || size < 1 || size > 409) return
+    if (fontSizeTimerRef.current !== null) {
+      window.clearTimeout(fontSizeTimerRef.current)
+      fontSizeTimerRef.current = null
+    }
+    fontSizePendingRef.current = size
+    setFontSizePreview(size)
+    onCommand(`font-size:${size}`)
+  }
+  const queueFontSizeStep = (direction: 1 | -1): void => {
+    const base = fontSizePendingRef.current ?? selectionFormat?.fontSize ?? 11
+    const next = stepFontSize(base, direction)
+    fontSizePendingRef.current = next
+    setFontSizePreview(next)
+    if (fontSizeTimerRef.current !== null) window.clearTimeout(fontSizeTimerRef.current)
+    fontSizeTimerRef.current = window.setTimeout(() => {
+      fontSizeTimerRef.current = null
+      const finalSize = fontSizePendingRef.current
+      if (finalSize !== null) onCommand(`font-size:${finalSize}`)
+    }, 120)
+  }
+  useEffect(() => {
+    const actual = selectionFormat?.fontSize ?? 11
+    if (fontSizeTimerRef.current === null) {
+      fontSizePendingRef.current = actual
+      setFontSizePreview(null)
+    }
+  }, [selectionFormat?.fontSize])
+  useEffect(
+    () => () => {
+      if (fontSizeTimerRef.current !== null) window.clearTimeout(fontSizeTimerRef.current)
+    },
+    [],
+  )
   const { families: systemFontFamilies, load: loadSystemFonts } = useSystemFontFamilies()
   // Large menu button: a native select stretched invisibly over the tool,
   // each option carrying its full command string.
@@ -2117,6 +2161,7 @@ function Ribbon({
   const fontSizes = [9, 10, 11, 12, 14, 16, 18, 22, 26]
   const echoFamily = selectionFormat?.fontFamily ?? 'Aptos'
   const echoSize = selectionFormat?.fontSize ?? 11
+  const displaySize = fontSizePreview ?? echoSize
   const fontGroups = fontFamilyGroups(systemFontFamilies, echoFamily)
   const familyOptions = [
     ...fontGroups.common.map((family) => ({ value: family, label: family })),
@@ -2126,9 +2171,9 @@ function Ribbon({
       sep: index === 0,
     })),
   ]
-  const sizeOptions = fontSizes.includes(echoSize)
+  const sizeOptions = fontSizes.includes(displaySize)
     ? fontSizes
-    : [...fontSizes, echoSize].sort((a, b) => a - b)
+    : [...fontSizes, displaySize].sort((a, b) => a - b)
   return (
     <div className="ribbon">
       <RibbonGroup label={t('appGroupAiAssistant')}>
@@ -2263,27 +2308,26 @@ function Ribbon({
               className="select-like font-size"
               label="Font size"
               data-tip={t('appFontSizeTip')}
-              value={String(echoSize)}
+              value={String(displaySize)}
               options={sizeOptions.map((size) => ({ value: String(size), label: String(size) }))}
-              onPick={(value) => onCommand(`font-size:${value}`)}
+              onPick={(value) => applyFontSize(Number(value))}
               commit={(text) => {
                 const size = Number(text.replace(',', '.'))
                 // Excel's font-size bounds
-                if (Number.isFinite(size) && size >= 1 && size <= 409)
-                  onCommand(`font-size:${size}`)
+                if (Number.isFinite(size) && size >= 1 && size <= 409) applyFontSize(size)
               }}
             />
             <button
               data-tip={t('appIncreaseFontSize')}
               aria-label={t('appIncreaseFontSize')}
-              onClick={() => onCommand(`font-size:${stepFontSize(echoSize, 1)}`)}
+              onClick={() => queueFontSizeStep(1)}
             >
               <ToolSymbol symbol="A↑" />
             </button>
             <button
               data-tip={t('appDecreaseFontSize')}
               aria-label={t('appDecreaseFontSize')}
-              onClick={() => onCommand(`font-size:${stepFontSize(echoSize, -1)}`)}
+              onClick={() => queueFontSizeStep(-1)}
             >
               <ToolSymbol symbol="A↓" />
             </button>

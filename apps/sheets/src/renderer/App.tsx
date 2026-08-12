@@ -435,6 +435,8 @@ export function App(): React.JSX.Element {
   /// A1 label of the active cell, echoed live by the Name Box. Updated from
   /// the same SelectionChanged refresh that keeps selectionFormat current.
   const [activeCellA1, setActiveCellA1] = useState('')
+  /// Full active range shown by the AI panel and captured as the default AI context.
+  const [selectionRangeA1, setSelectionRangeA1] = useState('')
   /// Non-null while the Advanced Filter dialog is open: the column choices
   /// sampled from the active filter range's header row.
   const [advancedFilterColumns, setAdvancedFilterColumns] = useState<
@@ -2726,9 +2728,11 @@ export function App(): React.JSX.Element {
     if (!range) {
       setSelectionFormat(null)
       setActiveCellA1('')
+      setSelectionRangeA1('')
       return
     }
     setActiveCellA1(`${columnLetter(range.getColumn())}${range.getRow() + 1}`)
+    setSelectionRangeA1(range.getA1Notation())
     let pattern: string
     try {
       pattern = range.getNumberFormat()
@@ -3174,6 +3178,7 @@ export function App(): React.JSX.Element {
         onGetActiveCell={() => activeCellLabelImpl(dataToolsContext())}
         onGetAnchorValue={anchorCellValue}
         activeCellA1={activeCellA1}
+        selectionRangeA1={selectionRangeA1}
         onGoToReference={(ref) => goToReferenceImpl(dataToolsContext(), ref)}
         onListDefinedNames={() => listDefinedNamesImpl(dataToolsContext())}
         onApplyFormula={(formula) => handleApplyFormulaImpl(dataToolsContext(), formula)}

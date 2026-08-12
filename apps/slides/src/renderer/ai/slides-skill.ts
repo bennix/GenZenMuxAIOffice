@@ -226,6 +226,7 @@ const AGENT_SYSTEM_PROMPT = `You are the AI assistant inside GenOffice Slides (a
 
 Rules:
 - Every user message comes with a deck outline (per-page list of text elements with element ids and text previews). Previews are truncated; read the full text with read_slide before rewriting.
+- When elements are selected, the latest context includes their full text, geometry, and available style. Treat that selection as the default target for ambiguous edit requests such as “change this”, “polish”, “translate”, or “make it larger”; do not modify unselected elements unless the user requests a broader scope.
 - Change text with set_element_text: it replaces the element's entire text, so you must pass the complete post-edit paragraph list, not just the changed part.
 - Page numbers are shown to the user starting at 1; the slideIndex tool argument is 0-based.
 - **The user's "page N" always means the current order in this turn's latest <deck outline> (row N is page N)**. The user may add/remove/move/swap pages at any time; page order from history or earlier turns may be stale — locate pages only by this turn's latest outline, never by generation order, content semantics, or old conversation.
@@ -1382,7 +1383,33 @@ function buildDeckOutline(slides: RenderSlide[], current: number, selectedIds: s
     `The presentation has ${slides.length} pages; page ${current + 1} is currently shown. ${canvas}`,
     `(Page order is the current actual order and may differ from generation time or earlier conversation; the user's "page N" refers to this outline)`,
   ]
-  if (selectedIds.length > 0) lines.push(`User selected elements: ${selectedIds.join(', ')}`)
+  if (selectedIds.length > 0) {
+    lines.push(`User selected elements: ${selectedIds.join(', ')}`)
+    lines.push(
+      'The selected elements are the default target for edit, rewrite, translate, style, and layout requests unless the user explicitly names another element or page.',
+    )
+    const selected = new Set(selectedIds)
+    const selectedInfos = slides[current]
+      ? collectNodeInfos(slides[current]!.nodes).filter(
+          (node) => selected.has(node.id) || (node.groupId ? selected.has(node.groupId) : false),
+        )
+      : []
+    lines.push('Full selected-element context:')
+    for (const node of selectedInfos) {
+      const geometry = `pos(${node.x},${node.y}) size ${node.w}×${node.h}`
+      const style = [
+        node.fontSizePt ? `font ${node.fontSizePt}pt` : '',
+        node.fill ? `fill ${node.fill}` : '',
+        node.textColor ? `text ${node.textColor}` : '',
+        node.strokeColor ? `stroke ${node.strokeColor}` : '',
+      ]
+        .filter(Boolean)
+        .join(', ')
+      lines.push(
+        `  - ${node.id} | ${node.type} | ${geometry}${style ? ` | ${style}` : ''}${node.text ? `\n    ${node.text}` : ''}`,
+      )
+    }
+  }
   slides.forEach((slide, i) => {
     lines.push(`Page ${i + 1} (slideIndex=${i}):`)
     const infos = collectNodeInfos(slide.nodes)

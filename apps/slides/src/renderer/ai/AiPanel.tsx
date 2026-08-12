@@ -1913,6 +1913,13 @@ export function AiPanel({
         <div className="ai-composer">
           {attachNotice && <div className="ai-attach-notice">{attachNotice}</div>}
           <div className="ai-input-box">
+            {selectedIds.length > 0 && (
+              <div className="ai-composer-top">
+                <span className="ai-scope-hint">
+                  {t('aiScopeSelection', { count: selectedIds.length })}
+                </span>
+              </div>
+            )}
             {attachments.length > 0 && (
               <div className="ai-attachments" onScroll={onAttachmentsScroll}>
                 {attachments.map((a) =>

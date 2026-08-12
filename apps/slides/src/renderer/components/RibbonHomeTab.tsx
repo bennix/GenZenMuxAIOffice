@@ -477,17 +477,21 @@ export function RibbonHomeTab({ rb }: { rb: RibbonTabCtx }) {
                     closePanels(['font'])
                     setFontOpen(true)
                   }}
-                  onBlur={() => {
+                  onBlur={(e) => {
+                    if (e.currentTarget.dataset.cancelCommit !== 'true' && fontDraft !== null) {
+                      commitFontDraft()
+                    }
+                    delete e.currentTarget.dataset.cancelCommit
                     setFontDraft(null)
                     setFontFilter('')
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
-                      commitFontDraft()
                       e.currentTarget.blur()
                     } else if (e.key === 'Escape') {
                       e.preventDefault()
+                      e.currentTarget.dataset.cancelCommit = 'true'
                       e.currentTarget.blur()
                     }
                   }}
@@ -576,14 +580,20 @@ export function RibbonHomeTab({ rb }: { rb: RibbonTabCtx }) {
                     e.target.select()
                   }}
                   onChange={(e) => setSizeDraft(e.target.value)}
-                  onBlur={() => setSizeDraft(null)}
+                  onBlur={(e) => {
+                    if (e.currentTarget.dataset.cancelCommit !== 'true' && sizeDraft !== null) {
+                      commitSizeDraft()
+                    }
+                    delete e.currentTarget.dataset.cancelCommit
+                    setSizeDraft(null)
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
-                      commitSizeDraft()
                       e.currentTarget.blur()
                     } else if (e.key === 'Escape') {
                       e.preventDefault()
+                      e.currentTarget.dataset.cancelCommit = 'true'
                       e.currentTarget.blur()
                     }
                   }}

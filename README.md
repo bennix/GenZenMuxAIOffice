@@ -22,7 +22,7 @@ layer.
 > Intelligence, Fudan University; macOS DMG rebuilt for this release.
 
 Apple Silicon Mac 用户可从
-[最新 Release 下载签名并经 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.3-arm64.dmg)。
+[最新 Release 下载签名并经 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.4-arm64.dmg)。
 AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。
 
 [![Meet GenOffice — the world's first full-featured open-source AI Office (video)](https://img.youtube.com/vi/B2pLdMX95v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=B2pLdMX95v4)
@@ -38,6 +38,7 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 - **PowerPoint-compatible presentations** — in-house `.pptx` engine with masters, layouts, smart guides, non-destructive crop.
 - **Markdown to Word, fully local** — the same OOXML engine, no Pandoc, no cloud.
 - **AI that edits documents** — block-level edits with snapshots and diffs, document-aware agents.
+- **Selection-aware AI editing** — select Word text, Excel cells, or PowerPoint objects and ask AI to modify only that content.
 - **Agent tools built in** — web/image search, image generation, media analysis.
 - **Light / dark / system themes.**
 - **macOS, Windows, Linux.**

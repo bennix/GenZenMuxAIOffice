@@ -207,6 +207,7 @@ export function AiChatPanel({
   onUndo,
   onExpand,
   onCollapse,
+  selectionRangeA1,
 }: {
   readonly isOpen: boolean
   /** the workbook has cells with content — empty workbooks get "build me a sheet" copy instead */
@@ -235,6 +236,8 @@ export function AiChatPanel({
   readonly onUndo: () => void
   readonly onExpand: () => void
   readonly onCollapse: () => void
+  /** The cells that will be supplied to AI as its default context and edit target. */
+  readonly selectionRangeA1: string
 }): React.JSX.Element {
   const { t } = useI18n()
   const chatRef = useRef<HTMLDivElement | null>(null)
@@ -604,74 +607,85 @@ export function AiChatPanel({
         {attachNotice && <div className="ai-attach-notice">{attachNotice}</div>}
         <AiComposer
           header={
-            attachments.length > 0 && (
-              <div className="ai-attachments" onScroll={onAttachmentsScroll}>
-                {attachments.map((attachment) =>
-                  ATTACHMENT_IMAGE_EXTS.has(attachment.ext) ? (
-                    <span
-                      key={attachment.path}
-                      className="ai-attachment-thumb"
-                      data-tip={attachment.path}
-                    >
-                      {attachmentPreviews[attachment.path] ? (
-                        <img src={attachmentPreviews[attachment.path]} alt={attachment.name} />
-                      ) : (
-                        <span className="ai-attachment-thumb-pending" aria-hidden>
-                          <img src={fileImageIcon} alt="" />
-                        </span>
-                      )}
-                      <button
-                        className="ai-attachment-thumb-remove"
-                        onClick={() => onRemoveAttachment(attachment.path)}
-                        data-tip={t('aiRemoveAttachment')}
-                        aria-label={t('aiRemoveAttachment')}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 32 32" aria-hidden>
-                          <path
-                            d="M24 9.4L22.6 8L16 14.6L9.4 8L8 9.4l6.6 6.6L8 22.6L9.4 24l6.6-6.6l6.6 6.6l1.4-1.4l-6.6-6.6L24 9.4z"
-                            fill="currentColor"
-                            stroke="currentColor"
-                            strokeWidth="0.25"
-                          />
-                        </svg>
-                      </button>
+            (selectionRangeA1 || attachments.length > 0) && (
+              <>
+                {selectionRangeA1 && (
+                  <div className="ai-composer-top">
+                    <span className="ai-scope-hint">
+                      {t('aiToolReadRangeOf', { range: selectionRangeA1 })}
                     </span>
-                  ) : (
-                    <span
-                      key={attachment.path}
-                      className="ai-attachment-card"
-                      data-tip={attachment.path}
-                    >
-                      <span className="ai-attachment-card-icon">
-                        <AttachmentCardIcon ext={attachment.ext} />
-                      </span>
-                      <span className="ai-attachment-card-meta">
-                        <span className="ai-attachment-card-name">
-                          {truncateCardName(attachment.name)}
-                        </span>
-                        <span className="ai-attachment-card-size">
-                          {formatAttachmentSize(attachment.sizeBytes)}
-                        </span>
-                      </span>
-                      <button
-                        className="ai-attachment-thumb-remove"
-                        onClick={() => onRemoveAttachment(attachment.path)}
-                        data-tip={t('aiRemoveAttachment')}
-                        aria-label={t('aiRemoveAttachment')}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 32 32" aria-hidden>
-                          <path
-                            d="M24 9.4L22.6 8L16 14.6L9.4 8L8 9.4l6.6 6.6L8 22.6L9.4 24l6.6-6.6l6.6 6.6l1.4-1.4l-6.6-6.6L24 9.4z"
-                            fill="currentColor"
-                            stroke="currentColor"
-                            strokeWidth="0.25"
-                          />
-                        </svg>
-                      </button>
-                    </span>
-                  ),
+                  </div>
                 )}
-              </div>
+                {attachments.length > 0 && (
+                  <div className="ai-attachments" onScroll={onAttachmentsScroll}>
+                    {attachments.map((attachment) =>
+                      ATTACHMENT_IMAGE_EXTS.has(attachment.ext) ? (
+                        <span
+                          key={attachment.path}
+                          className="ai-attachment-thumb"
+                          data-tip={attachment.path}
+                        >
+                          {attachmentPreviews[attachment.path] ? (
+                            <img src={attachmentPreviews[attachment.path]} alt={attachment.name} />
+                          ) : (
+                            <span className="ai-attachment-thumb-pending" aria-hidden>
+                              <img src={fileImageIcon} alt="" />
+                            </span>
+                          )}
+                          <button
+                            className="ai-attachment-thumb-remove"
+                            onClick={() => onRemoveAttachment(attachment.path)}
+                            data-tip={t('aiRemoveAttachment')}
+                            aria-label={t('aiRemoveAttachment')}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 32 32" aria-hidden>
+                              <path
+                                d="M24 9.4L22.6 8L16 14.6L9.4 8L8 9.4l6.6 6.6L8 22.6L9.4 24l6.6-6.6l6.6 6.6l1.4-1.4l-6.6-6.6L24 9.4z"
+                                fill="currentColor"
+                                stroke="currentColor"
+                                strokeWidth="0.25"
+                              />
+                            </svg>
+                          </button>
+                        </span>
+                      ) : (
+                        <span
+                          key={attachment.path}
+                          className="ai-attachment-card"
+                          data-tip={attachment.path}
+                        >
+                          <span className="ai-attachment-card-icon">
+                            <AttachmentCardIcon ext={attachment.ext} />
+                          </span>
+                          <span className="ai-attachment-card-meta">
+                            <span className="ai-attachment-card-name">
+                              {truncateCardName(attachment.name)}
+                            </span>
+                            <span className="ai-attachment-card-size">
+                              {formatAttachmentSize(attachment.sizeBytes)}
+                            </span>
+                          </span>
+                          <button
+                            className="ai-attachment-thumb-remove"
+                            onClick={() => onRemoveAttachment(attachment.path)}
+                            data-tip={t('aiRemoveAttachment')}
+                            aria-label={t('aiRemoveAttachment')}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 32 32" aria-hidden>
+                              <path
+                                d="M24 9.4L22.6 8L16 14.6L9.4 8L8 9.4l6.6 6.6L8 22.6L9.4 24l6.6-6.6l6.6 6.6l1.4-1.4l-6.6-6.6L24 9.4z"
+                                fill="currentColor"
+                                stroke="currentColor"
+                                strokeWidth="0.25"
+                              />
+                            </svg>
+                          </button>
+                        </span>
+                      ),
+                    )}
+                  </div>
+                )}
+              </>
             )
           }
           value={prompt}

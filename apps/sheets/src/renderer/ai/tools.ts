@@ -90,6 +90,10 @@ const MAX_READBACK_FORMULAS = 10
 /** Read-back after write: wait time (ms) for Univer's async formula recalc */
 const FORMULA_RECALC_DELAY_MS = 300
 const MAX_READ_FORMAT_CELLS = 200
+/** Selected cells travel with every AI turn so short "polish this" requests do not need a
+ *  preliminary tool call. Keep the inline context bounded; larger selections are still
+ *  addressable through read_range in chunks. */
+const MAX_SELECTION_CONTEXT_CELLS = 500
 
 export const WORKBOOK_TOOLS: AgentToolDef[] = [
   {
@@ -254,6 +258,40 @@ export function buildWorkbookContext(deps: SheetsSkillDeps): string {
   }
   if (info.selection) {
     lines.push(`Current selection: ${info.selection}`)
+    lines.push(
+      'The current selection is the default target for edit, rewrite, translate, format, and analysis requests unless the user explicitly names another range.',
+    )
+    try {
+      const bounds = parseRange(info.selection)
+      const total = rangeCellCount(bounds)
+      const addresses: string[] = []
+      for (let row = bounds.startRow; row <= bounds.endRow; row += 1) {
+        for (let column = bounds.startColumn; column <= bounds.endColumn; column += 1) {
+          if (addresses.length >= MAX_SELECTION_CONTEXT_CELLS) break
+          addresses.push(formatAddress(row, column))
+        }
+        if (addresses.length >= MAX_SELECTION_CONTEXT_CELLS) break
+      }
+      const cells = deps.readCells(addresses)
+      const selected = addresses.map((address) => {
+        const cell = cells[address]
+        if (!cell) return `${address}: (blank)`
+        const value = cell.value === null ? '' : String(cell.value)
+        const formula = cell.formula ? ` [formula: ${cell.formula}]` : ''
+        return `${address}: ${escapeCellText(value)}${formula}`
+      })
+      lines.push(
+        `Selected cell content (${addresses.length}${total > addresses.length ? ` of ${total}` : ''} cells):`,
+        ...selected,
+      )
+      if (total > addresses.length) {
+        lines.push(
+          `Selection context was clipped at ${MAX_SELECTION_CONTEXT_CELLS} cells; read the remaining selected range with read_range before modifying it.`,
+        )
+      }
+    } catch {
+      lines.push('Selected cell content could not be decoded; use read_range on the selection.')
+    }
   }
   if (info.loadedRange) {
     lines.push(`Currently loaded viewport: ${info.loadedRange} (not the worksheet data extent)`)
