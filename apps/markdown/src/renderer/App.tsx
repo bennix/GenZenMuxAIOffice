@@ -20,6 +20,8 @@ import { SlashMenu, type SlashMenuHandle } from './components/SlashMenu'
 import { TableMenu } from './components/TableMenu'
 import { FrontmatterPanel } from './components/FrontmatterPanel'
 import { EquationDialog, type MarkdownEquationTarget } from './components/EquationDialog'
+import { MermaidDialog } from './components/MermaidDialog'
+import { AiReviewCommitteeModal } from './components/AiReviewCommitteeModal'
 import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
 import { DOCX_MAX_IMAGE_PX, exportDocxBytes } from './export/docxExport'
 import { buildPrintHtml } from './export/printHtml'
@@ -88,6 +90,8 @@ export default function App() {
   const [autoSave, setAutoSave] = useState(() => localStorage.getItem('mdapp.autoSave') === '1')
   const [equationOpen, setEquationOpen] = useState(false)
   const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
+  const [mermaidOpen, setMermaidOpen] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
 
   const statusRef = useRef<LoadStatus>('loading')
   const dirtyRef = useRef(false)
@@ -97,6 +101,7 @@ export default function App() {
   const filePathRef = useRef<string | null>(null)
   const slashMenuRef = useRef<SlashMenuHandle>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const saveUntitledRef = useRef<(() => Promise<boolean>) | null>(null)
 
   const markDirty = useCallback(() => {
     if (statusRef.current !== 'ready' || dirtyRef.current) return
@@ -108,6 +113,10 @@ export default function App() {
 
   const insertImage = useCallback(() => {
     void (async () => {
+      if (!filePathRef.current) {
+        const saved = await saveUntitledRef.current?.()
+        if (!saved) return
+      }
       const relPath = await window.markdownApi.pickImage()
       const current = editorRef.current
       if (relPath && current) current.chain().focus().setImage({ src: relPath }).run()
@@ -123,8 +132,7 @@ export default function App() {
     }
     return buildExtensions({
       slashController: controller,
-      slashItems: () =>
-        buildSlashItems({ insertImage: filePathRef.current ? insertImage : undefined }),
+      slashItems: () => buildSlashItems({ insertImage, insertMermaid: () => setMermaidOpen(true) }),
     })
   }, [insertImage])
 
@@ -249,6 +257,7 @@ export default function App() {
       savingRef.current = false
     }
   }, [])
+  saveUntitledRef.current = () => doSave('save')
 
   const runExport = useCallback(async (format: ExportFormat) => {
     const current = editorRef.current
@@ -386,11 +395,23 @@ export default function App() {
         onSave={() => void doSave('save')}
         autoSave={autoSave}
         onToggleAutoSave={setAutoSave}
-        imageEnabled={Boolean(filePath)}
+        imageEnabled
         onInsertImage={insertImage}
         onInsertEquation={() => {
           setEquationTarget(undefined)
           setEquationOpen(true)
+        }}
+        onInsertMermaid={() => setMermaidOpen(true)}
+        onReview={() => setReviewOpen(true)}
+        onTranslate={(language) => {
+          const selection = editor && editor.state.selection.from !== editor.state.selection.to
+          const target = language === 'zh' ? '简体中文' : 'English'
+          const scope = selection ? '当前选中的内容' : '全文'
+          setAiOpen(true)
+          setAiPreset((prev) => ({
+            text: `将${scope}翻译为${target}。直接在文档中替换原内容，保持 Markdown 标题、列表、表格、链接、图片、LaTeX 公式和 Mermaid fenced code 的结构与语义不变；不要翻译代码、URL、公式命令或 Mermaid 语法。`,
+            nonce: (prev?.nonce ?? 0) + 1,
+          }))
         }}
         frontmatterOpen={fmOpen}
         onToggleFrontmatter={() => setFmOpen((v) => !v)}
@@ -454,6 +475,12 @@ export default function App() {
             setEquationTarget(undefined)
           }}
         />
+      )}
+      {mermaidOpen && editor && (
+        <MermaidDialog editor={editor} onClose={() => setMermaidOpen(false)} />
+      )}
+      {reviewOpen && editor && (
+        <AiReviewCommitteeModal editor={editor} onClose={() => setReviewOpen(false)} />
       )}
     </div>
   )

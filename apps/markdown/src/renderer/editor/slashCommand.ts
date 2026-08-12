@@ -54,7 +54,10 @@ function blockChain(editor: Editor, range: Range) {
   return editor.chain().focus()
 }
 
-export function buildSlashItems(extra?: { insertImage?: () => void }): SlashItem[] {
+export function buildSlashItems(extra?: {
+  insertImage?: () => void
+  insertMermaid?: () => void
+}): SlashItem[] {
   const items: SlashItem[] = [
     {
       id: 'paragraph',
@@ -132,6 +135,17 @@ export function buildSlashItems(extra?: { insertImage?: () => void }): SlashItem
       run: (e, r) => {
         chain(e, r).run()
         extra.insertImage!()
+      },
+    })
+  }
+  if (extra?.insertMermaid) {
+    items.push({
+      id: 'mermaid',
+      labelKey: 'styleCodeBlock',
+      keywords: ['diagram', 'flowchart', 'graph'],
+      run: (e, r) => {
+        chain(e, r).run()
+        extra.insertMermaid!()
       },
     })
   }

@@ -43,3 +43,12 @@ export {
   createStreamWatchdog,
 } from './watchdog'
 export type { StreamWatchdog } from './watchdog'
+export {
+  REVIEW_PROFILES,
+  availableReviewModels,
+  assignReviewModels,
+  settingsForReviewModel,
+  reviewerSystemPrompt,
+  chairSystemPrompt,
+} from './review-committee'
+export type { ReviewLanguage, ReviewProfile } from './review-committee'

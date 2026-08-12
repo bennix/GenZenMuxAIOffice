@@ -275,6 +275,20 @@ export function RecommendedChartsDialog({
   readonly onClose: () => void
 }): React.JSX.Element {
   const { t } = useI18n()
+  const allKinds: RecommendedKind[] = [
+    ...recommendations.items.map((item) => item.kind),
+    ...([
+      'column',
+      'bar',
+      'line',
+      'area',
+      'pie',
+      'doughnut',
+      'scatter',
+      'radar',
+      'combo',
+    ] as RecommendedKind[]),
+  ].filter((kind, index, values) => values.indexOf(kind) === index)
   return (
     <div className="dialog-backdrop" onClick={onClose}>
       <div
@@ -287,20 +301,23 @@ export function RecommendedChartsDialog({
         <section className="dialog-body">
           <p className="dialog-note">{t('dlgRecoNote')}</p>
           <div className="recommended-charts-grid">
-            {recommendations.items.map((item) => (
-              <button
-                key={item.kind}
-                type="button"
-                onClick={() => {
-                  onPick(item.kind)
-                  onClose()
-                }}
-              >
-                <ChartPreview kind={item.kind} parsed={recommendations.parsed} />
-                <strong>{t(KIND_LABEL[item.kind])}</strong>
-                <span>{t(REASON_LABEL[item.reason])}</span>
-              </button>
-            ))}
+            {allKinds.map((kind) => {
+              const item = recommendations.items.find((candidate) => candidate.kind === kind)
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => {
+                    onPick(kind)
+                    onClose()
+                  }}
+                >
+                  <ChartPreview kind={kind} parsed={recommendations.parsed} />
+                  <strong>{t(KIND_LABEL[kind])}</strong>
+                  <span>{item ? t(REASON_LABEL[item.reason]) : t('dlgRecoReasonComparison')}</span>
+                </button>
+              )
+            })}
           </div>
         </section>
         <div className="dialog-actions">

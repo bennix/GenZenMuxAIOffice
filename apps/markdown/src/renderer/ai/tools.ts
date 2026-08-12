@@ -52,8 +52,13 @@ function serializeBlocks(editor: Editor, from: number, to: number): string {
 function selectionMarkdown(editor: Editor): string {
   const { from, to } = editor.state.selection
   if (from === to) return ''
-  const text = editor.state.doc.textBetween(from, to, '\n')
-  return text.length > SELECTION_MAX_CHARS ? `${text.slice(0, SELECTION_MAX_CHARS)}…` : text
+  const content = editor.state.selection.content().content.toJSON() as JSONContent[]
+  const markdown =
+    editor.markdown?.serialize({ type: 'doc', content }) ??
+    editor.state.doc.textBetween(from, to, '\n')
+  return markdown.length > SELECTION_MAX_CHARS
+    ? `${markdown.slice(0, SELECTION_MAX_CHARS)}…`
+    : markdown
 }
 
 /** Per-turn context: numbered block skeleton + selection, same shape as the docs agent */

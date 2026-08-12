@@ -77,6 +77,19 @@ describe('markdown round-trip for GFM nodes', () => {
     expect(stable).toBe(true)
   })
 
+  it('Mermaid remains standard editable fenced Markdown across a round-trip', () => {
+    const md = '```mermaid\nflowchart TD\n  开始 --> 判断{条件}\n  判断 -->|是| 完成\n```'
+    const parsed = editor.markdown!.parse(md)
+    const code = parsed.content?.find((node) => node.type === 'codeBlock')
+    const { out, stable } = roundTrip(editor, md)
+
+    expect(code?.attrs?.language).toBe('mermaid')
+    expect(code?.content?.[0]?.text).toContain('判断 -->|是| 完成')
+    expect(out).toContain('```mermaid\nflowchart TD')
+    expect(out).toContain('判断 -->|是| 完成')
+    expect(stable).toBe(true)
+  })
+
   it('inline and multi-line block equations preserve editable LaTeX', () => {
     const md =
       'Energy is $E = mc^2$.\n\n$$\n\\begin{aligned}\na &= b + c \\\\\\nd &= e - f\n\\end{aligned}\n$$'

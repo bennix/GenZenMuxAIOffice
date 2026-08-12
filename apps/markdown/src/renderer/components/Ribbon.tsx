@@ -31,6 +31,9 @@ interface Props {
   imageEnabled: boolean
   onInsertImage: () => void
   onInsertEquation: () => void
+  onInsertMermaid: () => void
+  onTranslate: (language: 'zh' | 'en') => void
+  onReview: () => void
   frontmatterOpen: boolean
   onToggleFrontmatter: () => void
   aiOpen: boolean
@@ -151,6 +154,9 @@ export function Ribbon({
   imageEnabled,
   onInsertImage,
   onInsertEquation,
+  onInsertMermaid,
+  onTranslate,
+  onReview,
   frontmatterOpen,
   onToggleFrontmatter,
   aiOpen,
@@ -303,6 +309,41 @@ export function Ribbon({
                 <span>{t(btn)}</span>
               </button>
             ))}
+            <button
+              type="button"
+              className="rb-big ai-entry"
+              disabled={off || state?.empty}
+              onClick={onReview}
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon">✓</span>
+              </span>
+              <span>{navigator.language.startsWith('zh') ? 'AI 审稿' : 'AI Review'}</span>
+            </button>
+            <span className="rb-translate">
+              <button
+                type="button"
+                className="rb-big ai-entry"
+                disabled={off || state?.empty}
+                onClick={() => onTranslate(navigator.language.startsWith('zh') ? 'en' : 'zh')}
+              >
+                <span className="rb-big-icon">
+                  <span className="ai-feature-icon">译</span>
+                </span>
+                <span>{navigator.language.startsWith('zh') ? '翻译' : 'Translate'}</span>
+              </button>
+              <select
+                aria-label="Translation language"
+                onChange={(e) => onTranslate(e.target.value as 'zh' | 'en')}
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  {navigator.language.startsWith('zh') ? '目标语言' : 'Target'}
+                </option>
+                <option value="zh">中文</option>
+                <option value="en">English</option>
+              </select>
+            </span>
           </div>
         </div>
 
@@ -429,6 +470,15 @@ export function Ribbon({
           </IconBtn>
           <IconBtn title={t('insertImage')} disabled={off || !imageEnabled} onClick={onInsertImage}>
             <IconPicture size={ICON} />
+          </IconBtn>
+          <IconBtn
+            title={
+              navigator.language.startsWith('zh') ? '插入 Mermaid 图形' : 'Insert Mermaid diagram'
+            }
+            disabled={off}
+            onClick={onInsertMermaid}
+          >
+            <span className="rb-glyph">◇</span>
           </IconBtn>
           <IconBtn
             title={

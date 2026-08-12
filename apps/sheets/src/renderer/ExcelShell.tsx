@@ -409,7 +409,35 @@ export function ExcelShell({
             else if (command === 'consolidate-open') setShowConsolidateDialog(true)
             else if (command === 'goto-open') setShowGoTo(true)
             else if (command === 'header-footer-open') setShowHeaderFooter(true)
-            else if (command === 'ai-open-panel') setIsCopilotOpen(true)
+            else if (command.startsWith('ai-analysis:')) {
+              const chinese = navigator.language.toLowerCase().startsWith('zh')
+              const methods: Record<string, string> = chinese
+                ? {
+                    descriptive: '描述统计与数据质量分析',
+                    correlation: '相关性、协方差与变量关系分析',
+                    regression: '线性或多元回归分析',
+                    timeseries: '时间序列、趋势、季节性与移动平均分析',
+                    group: '分组汇总、透视与交叉分析',
+                    outlier: '异常值、分布、分位数与箱线图方法分析',
+                    forecast: '预测、置信区间与情景分析',
+                  }
+                : {
+                    descriptive: 'descriptive statistics and data-quality analysis',
+                    correlation: 'correlation, covariance, and variable-relationship analysis',
+                    regression: 'linear or multiple regression analysis',
+                    timeseries: 'time-series, trend, seasonality, and moving-average analysis',
+                    group: 'grouped summaries, pivot, and cross analysis',
+                    outlier: 'outlier, distribution, quantile, and box-plot-method analysis',
+                    forecast: 'forecasting, confidence intervals, and scenario analysis',
+                  }
+              const method = methods[command.slice('ai-analysis:'.length)] ?? command
+              setIsCopilotOpen(true)
+              onSend(
+                chinese
+                  ? `请对当前选区（若只有一个单元格则使用当前连续数据区域）进行${method}。先识别字段类型并检查缺失、重复和异常值；说明方法假设，给出关键统计量和可复核结论。需要输出时在新工作表生成分析结果表；适合可视化时基于现有列插入可编辑的原生 Excel 图表，使用清晰的中文标题、坐标轴、图例、数据标签和数字格式。不得捏造数据。AI 功能可能受网络或代理状态影响。`
+                  : `Run ${method} on the current selection (or its surrounding data region). Identify field types and data-quality issues first, explain assumptions, and produce reproducible statistics and conclusions. Put output tables in a new sheet when needed and insert editable native Excel charts from existing fields when useful. Never invent data. Network or proxy conditions may affect AI.`,
+              )
+            } else if (command === 'ai-open-panel') setIsCopilotOpen(true)
             else if (command === 'ai-toggle-panel') setIsCopilotOpen((v) => !v)
             else if (command === 'chart-element-title') setChartTextTarget('title')
             else if (command === 'chart-element-axis-cat') setChartTextTarget('axis-category')
@@ -1845,8 +1873,66 @@ function Ribbon({
   }
 
   if (activeTab === 'Data') {
+    const chinese = navigator.language.toLowerCase().startsWith('zh')
+    const analysisPrompt = (method: string): string =>
+      `${chinese ? '请对当前选区（若只有一个单元格则分析当前连续数据区域）执行' : 'Analyze the current selection (or the surrounding data region when one cell is selected) using'}${method}。` +
+      (chinese
+        ? '先识别字段类型并检查缺失值、重复值和异常值；给出方法假设、关键结果与可复核解释。需要输出时，在新工作表生成分析结果表；适合可视化时，基于现有列插入可编辑的原生 Excel 图表，并使用清晰的中文标题、轴标签、图例和数字格式。不得捏造数据。'
+        : ' First identify field types and check missing values, duplicates, and outliers. Explain assumptions and reproducible findings. Put outputs in a new sheet when needed; when visualization helps, insert an editable native Excel chart based on existing fields with clear titles, axes, legends, and number formats. Never invent data.')
     return (
       <div className="ribbon">
+        <RibbonGroup label={chinese ? '数据分析' : 'Data Analysis'}>
+          {largeMenu(
+            chinese ? '分析工具' : 'Analysis Tools',
+            '∑',
+            chinese
+              ? '基于当前选区或字段运行常用分析'
+              : 'Run a common method on the current selection or fields',
+            [
+              {
+                value: 'ai-analysis:descriptive',
+                label: chinese ? '描述统计与数据质量' : 'Descriptive statistics & quality',
+              },
+              {
+                value: 'ai-analysis:correlation',
+                label: chinese ? '相关性与协方差' : 'Correlation & covariance',
+              },
+              {
+                value: 'ai-analysis:regression',
+                label: chinese ? '线性/多元回归' : 'Linear / multiple regression',
+              },
+              {
+                value: 'ai-analysis:timeseries',
+                label: chinese ? '时间序列与趋势' : 'Time series & trend',
+              },
+              {
+                value: 'ai-analysis:group',
+                label: chinese ? '分组汇总与交叉分析' : 'Grouped & cross analysis',
+              },
+              {
+                value: 'ai-analysis:outlier',
+                label: chinese ? '异常值与分布分析' : 'Outliers & distributions',
+              },
+              {
+                value: 'ai-analysis:forecast',
+                label: chinese ? '预测与情景分析' : 'Forecast & scenarios',
+              },
+            ],
+          )}
+          <RibbonButton
+            large
+            label={chinese ? '智能可视化' : 'Smart Visualization'}
+            detail={
+              chinese
+                ? '分析字段并推荐、插入可编辑图表'
+                : 'Analyze fields and insert an editable recommended chart'
+            }
+            symbol="📊"
+            onClick={() =>
+              onAiRun(analysisPrompt(chinese ? '智能可视化分析' : 'smart visualization analysis'))
+            }
+          />
+        </RibbonGroup>
         <RibbonGroup label={t('appPivotTable')}>
           <RibbonButton
             large

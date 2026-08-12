@@ -1854,7 +1854,9 @@ function BarChart({
                     fill={seriesColor(series, seriesIndex)}
                     {...barStroke(seriesIndex, index)}
                     onClick={pickBar ? (event) => pickBar(event, seriesIndex, index) : undefined}
-                  />
+                  >
+                    <title>{`${categories[index] ?? index + 1} · ${series.name}: ${formatAxisValue(series.values[index] ?? 0, series.numberFormat)}`}</title>
+                  </rect>
                 )
               })}
               {dataLabels === 'value' &&
@@ -1949,7 +1951,9 @@ function BarChart({
                   fill={seriesColor(series, seriesIndex)}
                   {...barStroke(seriesIndex, index)}
                   onClick={pickBar ? (event) => pickBar(event, seriesIndex, index) : undefined}
-                />
+                >
+                  <title>{`${categories[index] ?? index + 1} · ${series.name}: ${formatAxisValue(series.values[index] ?? 0, series.numberFormat)}`}</title>
+                </rect>
               )
             })}
             {showValueLabels &&
@@ -2663,7 +2667,9 @@ function ScatterChart({
                     }
                   : undefined
               }
-            />
+            >
+              <title>{`${series.name}: (${formatScatterTick(xValues[index] ?? 0, categoryFormat)}, ${formatAxisValue(value, series.numberFormat)})`}</title>
+            </circle>
           ))}
           {dataLabels === 'value' &&
             series.values.map((value, index) => (
@@ -2886,7 +2892,9 @@ function PieChart({
                     }
                   : undefined
               }
-            />
+            >
+              <title>{`${categories[slice.index] ?? slice.index + 1}: ${formatAxisValue(values[slice.index] ?? 0, series.numberFormat)} (${((Math.max(values[slice.index] ?? 0, 0) / total) * 100).toFixed(1)}%)`}</title>
+            </path>
           )
         })}
         {labels.map((label) => (
