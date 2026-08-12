@@ -27,6 +27,9 @@ export async function webSearch(
   answer?: string
   method: string
 }> {
+  const marketQuote = await tryMarketQuote(query)
+  if (marketQuote) return marketQuote
+
   const key = SERPER_KEY()
   if (key) {
     try {
@@ -63,6 +66,89 @@ export async function webSearch(
     }
   }
   return { ...(await duckWebSearch(query, maxResults)), method: 'duckduckgo' }
+}
+
+const MARKET_INTENT =
+  /(?:股价|股票价格|行情|市价|stock\s*(?:price|quote)|share\s*price|market\s*price|ticker)/i
+
+async function tryMarketQuote(query: string): Promise<{
+  results: WebSearchResult[]
+  answer: string
+  method: string
+} | null> {
+  if (!MARKET_INTENT.test(query)) return null
+  try {
+    const symbol = await resolveMarketSymbol(query)
+    if (!symbol) return null
+    const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1m&range=1d`
+    const response = await fetchWithTimeout(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 GenOffice/1.0' },
+    })
+    if (!response.ok) return null
+    const root = asRecord(await response.json())
+    const result = asRecord(firstArrayItem(asRecord(root.chart).result))
+    const meta = asRecord(result.meta)
+    const price = finiteNumber(meta.regularMarketPrice)
+    if (price === null) return null
+    const resolvedSymbol = String(meta.symbol ?? symbol).toUpperCase()
+    const name = String(meta.longName ?? meta.shortName ?? resolvedSymbol)
+    const currency = String(meta.currency ?? '')
+    const exchange = String(meta.fullExchangeName ?? meta.exchangeName ?? '')
+    const epoch = finiteNumber(meta.regularMarketTime)
+    const quotedAt = epoch === null ? undefined : new Date(epoch * 1000).toISOString()
+    const sourceUrl = `https://finance.yahoo.com/quote/${encodeURIComponent(resolvedSymbol)}/`
+    const details = [
+      `${name} (${resolvedSymbol}): ${price}${currency ? ` ${currency}` : ''}`,
+      exchange ? `Exchange: ${exchange}` : '',
+      quotedAt ? `Quote time: ${quotedAt}` : '',
+      'Market quotes may be delayed; this is not investment advice.',
+    ].filter(Boolean)
+    return {
+      answer: details.join('\n'),
+      results: [
+        {
+          title: `${name} (${resolvedSymbol}) market quote — Yahoo Finance`,
+          url: sourceUrl,
+          snippet: details.join(' '),
+          ...(quotedAt ? { publishedAt: quotedAt } : {}),
+        },
+      ],
+      method: 'yahoo-finance',
+    }
+  } catch {
+    return null
+  }
+}
+
+async function resolveMarketSymbol(query: string): Promise<string> {
+  const explicit = /(?:NASDAQ|NYSE|AMEX)\s*[:：]\s*([A-Z][A-Z0-9.-]{0,9})/i.exec(query)?.[1]
+  if (explicit) return explicit.toUpperCase()
+  const token = /\b[A-Z]{1,5}(?:[.-][A-Z])?\b/.exec(query)?.[0]
+  if (token && !['PRICE', 'STOCK', 'QUOTE', 'SHARE', 'MARKET'].includes(token)) return token
+
+  const company = query.replace(MARKET_INTENT, ' ').replace(/\s+/g, ' ').trim()
+  if (!company) return ''
+  const response = await fetchWithTimeout(
+    `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(company)}&quotesCount=8&newsCount=0`,
+    { headers: { 'User-Agent': 'Mozilla/5.0 GenOffice/1.0' } },
+  )
+  if (!response.ok) return ''
+  const data = asRecord(await response.json())
+  const quotes = Array.isArray(data.quotes) ? data.quotes : []
+  const match = quotes
+    .map(asRecord)
+    .find((quote) =>
+      ['EQUITY', 'ETF', 'INDEX', 'MUTUALFUND'].includes(String(quote.quoteType ?? '')),
+    )
+  return String(match?.symbol ?? '').toUpperCase()
+}
+
+function firstArrayItem(value: unknown): unknown {
+  return Array.isArray(value) ? value[0] : undefined
+}
+
+function finiteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
 // ── Image search ────────────────────────────────────────────────────

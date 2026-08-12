@@ -70,6 +70,56 @@ describe('webSearch (Serper)', () => {
   })
 })
 
+describe('webSearch (market quote)', () => {
+  it('resolves a company and returns a timestamped structured quote', async () => {
+    mockFetch((url) => {
+      if (url.includes('/v1/finance/search')) {
+        return {
+          ok: true,
+          json: { quotes: [{ symbol: 'GOOGL', quoteType: 'EQUITY' }] },
+        }
+      }
+      expect(url).toContain('/v8/finance/chart/GOOGL')
+      return {
+        ok: true,
+        json: {
+          chart: {
+            result: [
+              {
+                meta: {
+                  symbol: 'GOOGL',
+                  longName: 'Alphabet Inc.',
+                  currency: 'USD',
+                  fullExchangeName: 'NasdaqGS',
+                  regularMarketPrice: 343.8,
+                  regularMarketTime: 1786478401,
+                },
+              },
+            ],
+          },
+        },
+      }
+    })
+    const r = await webSearch('谷歌 Alphabet 股价', 6)
+    expect(r.method).toBe('yahoo-finance')
+    expect(r.answer).toContain('343.8 USD')
+    expect(r.answer).toContain('Quote time:')
+    expect(r.results[0]).toMatchObject({
+      title: expect.stringContaining('Alphabet Inc.'),
+      url: 'https://finance.yahoo.com/quote/GOOGL/',
+    })
+  })
+
+  it('does not call finance endpoints for ordinary research', async () => {
+    process.env.SERPER_API_KEY = 'test-key'
+    mockFetch((url) => {
+      expect(url).toBe('https://google.serper.dev/search')
+      return { ok: true, json: { organic: [{ title: 'A', link: 'https://a.com' }] } }
+    })
+    expect((await webSearch('Alphabet company history', 3)).method).toBe('serper')
+  })
+})
+
 describe('imageSearch (Serper)', () => {
   it('parses images + filters copyright hosts', async () => {
     process.env.SERPER_API_KEY = 'test-key'
