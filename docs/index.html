@@ -8,7 +8,7 @@
       content="GenOffice — 由 ZenMux 驱动的本地 AI 文档、表格与演示文稿工作台。"
     />
     <meta name="theme-color" content="#f1efe7" />
-    <title>GenOffice — ZenMux AI Office for macOS</title>
+    <title>GenOffice — ZenMux AI Office for macOS & Windows</title>
     <style>
       :root {
         --paper: #f1efe7;
@@ -80,6 +80,22 @@
         font-size: 13px;
         letter-spacing: 0.08em;
         text-transform: uppercase;
+      }
+
+      .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .nav-download {
+        padding: 9px 13px;
+        color: white;
+        background: var(--blue);
+        border-radius: 4px;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: none;
       }
 
       .hero {
@@ -203,6 +219,88 @@
         backdrop-filter: blur(18px);
       }
 
+      .platforms {
+        padding: 34px 0 72px;
+      }
+
+      .platforms-head {
+        margin-bottom: 22px;
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .platforms h2 {
+        margin: 0;
+        font-family: 'Iowan Old Style', 'Songti SC', Georgia, serif;
+        font-size: clamp(38px, 5vw, 64px);
+        font-weight: 400;
+        letter-spacing: -0.055em;
+      }
+
+      .release-version {
+        color: var(--muted);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 12px;
+      }
+
+      .platform-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        border: 1px solid var(--ink);
+      }
+
+      .platform-card {
+        min-height: 250px;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        border-right: 1px solid var(--ink);
+        background: rgba(255, 255, 255, 0.52);
+      }
+
+      .platform-card:last-child {
+        border-right: 0;
+        color: white;
+        background: var(--blue);
+      }
+
+      .platform-label {
+        margin-bottom: 38px;
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .platform-card h3 {
+        margin: 0 0 10px;
+        font-size: clamp(27px, 3vw, 39px);
+        letter-spacing: -0.045em;
+      }
+
+      .platform-card p {
+        margin: 0 0 24px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .platform-card:last-child p {
+        color: rgba(255, 255, 255, 0.78);
+      }
+
+      .platform-card .download {
+        width: 100%;
+        margin-top: auto;
+      }
+
+      .platform-card:last-child .download {
+        color: var(--ink);
+        background: var(--acid);
+      }
+
       .feature {
         min-height: 260px;
         padding: 32px;
@@ -278,6 +376,20 @@
       }
 
       @media (max-width: 780px) {
+        nav {
+          height: auto;
+          min-height: 84px;
+          gap: 14px;
+        }
+
+        .nav-actions {
+          gap: 10px;
+        }
+
+        .nav-actions .nav-link:not(.nav-download) {
+          display: none;
+        }
+
         .hero {
           min-height: auto;
           grid-template-columns: 1fr;
@@ -289,8 +401,24 @@
         }
 
         .manifesto,
-        .models {
+        .models,
+        .platform-grid {
           grid-template-columns: 1fr;
+        }
+
+        .platform-card {
+          min-height: 230px;
+          border-right: 0;
+          border-bottom: 1px solid var(--ink);
+        }
+
+        .platform-card:last-child {
+          border-bottom: 0;
+        }
+
+        .platforms-head {
+          align-items: flex-start;
+          flex-direction: column;
         }
 
         .feature {
@@ -335,9 +463,16 @@
     <div class="shell">
       <nav>
         <div class="wordmark"><span class="mark">G/O</span> GenOffice</div>
-        <a class="nav-link" href="https://github.com/bennix/GenZenMuxAIOffice"
-          >Source on GitHub ↗</a
-        >
+        <div class="nav-actions">
+          <a class="nav-link" href="https://github.com/bennix/GenZenMuxAIOffice"
+            >Source on GitHub ↗</a
+          >
+          <a
+            class="nav-link nav-download"
+            href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.9-x64.exe"
+            >Windows 下载 ↓</a
+          >
+        </div>
       </nav>
 
       <main>
@@ -370,6 +505,37 @@
               macOS：Apple Silicon · Developer ID 签名与 Apple 公证<br />Windows：Windows 10/11 x64
               · 暂未 Authenticode 签名，SmartScreen 可能提示未知发布者
             </div>
+          </div>
+        </section>
+
+        <section class="platforms" id="downloads" aria-label="平台下载">
+          <div class="platforms-head">
+            <h2>选择你的平台。</h2>
+            <div class="release-version">CURRENT RELEASE · v0.6.9</div>
+          </div>
+          <div class="platform-grid">
+            <article class="platform-card">
+              <span class="platform-label">macOS / Apple Silicon</span>
+              <h3>macOS DMG</h3>
+              <p>适用于 Apple Silicon Mac。Developer ID 签名，并通过 Apple 公证。</p>
+              <a
+                class="download"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.9-arm64.dmg"
+                >下载 macOS v0.6.9 <b>↓</b></a
+              >
+            </article>
+            <article class="platform-card">
+              <span class="platform-label">Windows / x64</span>
+              <h3>Windows 安装程序</h3>
+              <p>
+                适用于 Windows 10/11 x64。暂未 Authenticode 签名，SmartScreen 可能提示“未知发布者”。
+              </p>
+              <a
+                class="download"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.9-x64.exe"
+                >下载 Windows v0.6.9 <b>↓</b></a
+              >
+            </article>
           </div>
         </section>
 
