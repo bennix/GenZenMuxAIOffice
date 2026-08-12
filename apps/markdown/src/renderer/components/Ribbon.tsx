@@ -30,6 +30,7 @@ interface Props {
   onToggleAutoSave: (on: boolean) => void
   imageEnabled: boolean
   onInsertImage: () => void
+  onInsertEquation: () => void
   frontmatterOpen: boolean
   onToggleFrontmatter: () => void
   aiOpen: boolean
@@ -149,6 +150,7 @@ export function Ribbon({
   onToggleAutoSave,
   imageEnabled,
   onInsertImage,
+  onInsertEquation,
   frontmatterOpen,
   onToggleFrontmatter,
   aiOpen,
@@ -427,6 +429,15 @@ export function Ribbon({
           </IconBtn>
           <IconBtn title={t('insertImage')} disabled={off || !imageEnabled} onClick={onInsertImage}>
             <IconPicture size={ICON} />
+          </IconBtn>
+          <IconBtn
+            title={
+              navigator.language.toLowerCase().startsWith('zh') ? '插入公式' : 'Insert equation'
+            }
+            disabled={off}
+            onClick={onInsertEquation}
+          >
+            <span className="rb-glyph">∑</span>
           </IconBtn>
           <IconBtn
             title={t('insertHr')}

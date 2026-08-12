@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { Editor } from '@tiptap/core'
 import { latexToOmml, ommlToMathML } from '@genoffice/docx-engine'
+import { cleanRecognizedLatex, formulaRecognitionRequest } from '@genoffice/ai-provider'
+import { FormulaImageRecognition, type FormulaImageData } from '@genoffice/ui'
 import { t, useI18n, type StringKey } from '../i18n/locale'
 import { equationBlockJson, inlineEquationNodeJson } from '../editor/equation'
 import { useModalKeys } from './modal-keys'
@@ -91,6 +93,15 @@ export function EquationModal({
   const preview = useMemo(() => previewOf(latex), [latex])
   const canInsert = preview !== null && 'mathml' in preview
 
+  const recognizeImage = async (image: FormulaImageData) => {
+    const settings = await window.desktop.getAiSettings()
+    const response = await window.desktop.aiChat(formulaRecognitionRequest(settings, image))
+    if (!response.ok) throw new Error(response.error || 'ZenMux formula recognition failed')
+    const recognized = cleanRecognizedLatex(response.content ?? '')
+    if (!recognized) throw new Error('ZenMux returned no formula')
+    setLatex(recognized)
+  }
+
   const insert = () => {
     if (!canInsert || !editor.isEditable) return
     if (editTarget) {
@@ -144,6 +155,7 @@ export function EquationModal({
             <span dangerouslySetInnerHTML={{ __html: preview.mathml }} />
           )}
         </div>
+        <FormulaImageRecognition onRecognize={recognizeImage} />
         {!editTarget && (
           <label className="equation-inline-toggle">
             <input type="checkbox" checked={inline} onChange={(e) => setInline(e.target.checked)} />

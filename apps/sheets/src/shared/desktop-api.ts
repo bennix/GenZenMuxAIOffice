@@ -1800,6 +1800,10 @@ export const aiChatRequestSchema = z
     settings: aiSettingsInputSchema,
     system: z.string(),
     user: z.string(),
+    images: z
+      .array(z.object({ base64: z.string(), mime: z.string().startsWith('image/') }).strict())
+      .max(4)
+      .optional(),
   })
   .strict()
 

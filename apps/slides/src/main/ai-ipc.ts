@@ -10,11 +10,13 @@ import { join } from 'node:path'
 import {
   AiCreditsError,
   AiTimeoutError,
+  chatZenMux,
   defaultAiSettings,
   generateZenMuxImage,
   resolveAiSettings,
   streamZenMux,
   type AiSettings,
+  type AiChatRequest,
   type AiStreamChunk,
   type AiStreamRequest,
   type LegacyAiSettings,
@@ -57,6 +59,17 @@ export function registerAiIpc(): void {
 
   ipcMain.handle('ai:set-settings', (_event, settings: AiSettings) => {
     writeJson(AI_SETTINGS_PATH(), { ...settings, provider: 'zenmux' })
+  })
+
+  ipcMain.handle('ai:chat', async (_event, request: AiChatRequest) => {
+    const config = request.settings.providers?.zenmux
+    if (!config?.apiKey) return { ok: false, error: tm('errNoApiKey', { provider: 'ZenMux' }) }
+    if (!config.model) return { ok: false, error: tm('errNoModel') }
+    try {
+      return await chatZenMux(config, request.system, request.user, request.images)
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) }
+    }
   })
 
   ipcMain.handle('ai:stream', async (event, request: AiStreamRequest) => {

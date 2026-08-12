@@ -152,6 +152,8 @@ describe('ommlToLatex', () => {
     'e^x = 1 + \\frac{x}{1!} + \\frac{x^2}{2!} + \\cdots',
     '\\begin{pmatrix} 1 & 0 \\\\ 0 & 1 \\end{pmatrix}',
     '\\begin{cases} x & x > 0 \\\\ -x & x \\le 0 \\end{cases}',
+    '\\begin{aligned} a &= b + c \\\\ d &= e - f \\end{aligned}',
+    '\\begin{gathered} x + y = 1 \\\\ x - y = 0 \\end{gathered}',
     '\\lim_{x \\to 0} \\frac{\\sin x}{x} = 1',
     '\\sqrt[3]{x} + \\hat{y} + \\overline{z}',
     '\\int_{0}^{1} x^2 dx',
@@ -182,9 +184,13 @@ describe('ommlToLatex', () => {
 
   it('returns null for structures outside the subset', () => {
     expect(
-      ommlToLatex('<m:oMath><m:sPre><m:sub><m:r><m:t>a</m:t></m:r></m:sub><m:e><m:r><m:t>X</m:t></m:r></m:e></m:sPre></m:oMath>'),
+      ommlToLatex(
+        '<m:oMath><m:sPre><m:sub><m:r><m:t>a</m:t></m:r></m:sub><m:e><m:r><m:t>X</m:t></m:r></m:e></m:sPre></m:oMath>',
+      ),
     ).toBeNull()
-    expect(ommlToLatex(`<m:oMath>${latexToOmml('a')}</m:oMath><m:oMath>${latexToOmml('b')}</m:oMath>`)).toBeNull()
+    expect(
+      ommlToLatex(`<m:oMath>${latexToOmml('a')}</m:oMath><m:oMath>${latexToOmml('b')}</m:oMath>`),
+    ).toBeNull()
   })
 
   it('escapes parser-special characters', () => {
@@ -242,7 +248,9 @@ describe('formula parse + save integration', () => {
   })
 
   it('an inserted equation paragraph survives save and reparse', async () => {
-    const parsed = await parseDocx(await buildDocx({ bodyXml: '<w:p><w:r><w:t>hi</w:t></w:r></w:p>' }))
+    const parsed = await parseDocx(
+      await buildDocx({ bodyXml: '<w:p><w:r><w:t>hi</w:t></w:r></w:p>' }),
+    )
     const omml = latexToOmml('a^2 + b^2 = c^2')
     const bytes = await saveDocx(parsed, [
       { kind: 'original', docxIndex: parsed.blocks[0].docxIndex! },

@@ -12,6 +12,7 @@ import { BlockDragHandle } from './blockDragHandle'
 import { BlockKeymap } from './blockKeymap'
 import { AiHighlight } from './aiHighlight'
 import { SlashCommand } from './slashCommand'
+import { BlockEquation, InlineEquation } from './equation'
 import type { SlashController, SlashItem } from './slashCommand'
 import { t } from '../i18n/locale'
 
@@ -45,6 +46,8 @@ export function buildExtensions(options: BuildExtensionsOptions): AnyExtension[]
     TaskList,
     TaskItem.configure({ nested: true }),
     LocalImage,
+    InlineEquation,
+    BlockEquation,
     BlockDragHandle,
     BlockKeymap,
     AiHighlight,

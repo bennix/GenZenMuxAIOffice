@@ -5,6 +5,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import type { LinkTargetOp } from '../../shared/ipc'
 import { EQUATION_GALLERY } from '../insert-presets'
+import { cleanRecognizedLatex, formulaRecognitionRequest } from '@genoffice/ai-provider'
+import { FormulaImageRecognition, type FormulaImageData } from '@genoffice/ui'
 import { useI18n } from '../i18n/locale'
 import { latexToMathML } from '../latex-equation'
 
@@ -215,6 +217,15 @@ export function EquationDialog({ onInsert, onClose, initialLatex = '' }: Equatio
   }, [latex])
   const valid = preview !== null && 'mathml' in preview
 
+  const recognizeImage = async (image: FormulaImageData) => {
+    const settings = await window.slidesApi.getAiSettings()
+    const response = await window.slidesApi.aiChat(formulaRecognitionRequest(settings, image))
+    if (!response.ok) throw new Error(response.error || 'ZenMux formula recognition failed')
+    const recognized = cleanRecognizedLatex(response.content ?? '')
+    if (!recognized) throw new Error('ZenMux returned no formula')
+    setLatex(recognized)
+  }
+
   // Esc closes
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -258,6 +269,7 @@ export function EquationDialog({ onInsert, onClose, initialLatex = '' }: Equatio
             <span dangerouslySetInnerHTML={{ __html: preview.mathml }} />
           )}
         </div>
+        <FormulaImageRecognition onRecognize={recognizeImage} />
         <div className="modal-actions">
           <button onClick={onClose}>{t('ribbonCancel')}</button>
           <button className="primary" disabled={!valid} onClick={() => onInsert(latex.trim())}>

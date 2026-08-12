@@ -429,6 +429,11 @@ const ACCENT_CHARS: Record<string, string> = {
 
 const MATRIX_DELIMS: Record<string, { beg: string; end: string } | null> = {
   matrix: null,
+  aligned: null,
+  align: null,
+  gathered: null,
+  gather: null,
+  split: null,
   pmatrix: { beg: '(', end: ')' },
   bmatrix: { beg: '[', end: ']' },
   Bmatrix: { beg: '{', end: '}' },

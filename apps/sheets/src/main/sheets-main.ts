@@ -2130,7 +2130,7 @@ export function registerSheetsAiIpc(): void {
     }
     if (!config.model) return { ok: false, error: tm('errNoModel') }
     try {
-      return await chatZenMux(config, request.system, request.user)
+      return await chatZenMux(config, request.system, request.user, request.images)
     } catch (err) {
       return { ok: false, error: String(err) }
     }

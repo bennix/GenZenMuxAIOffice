@@ -22,7 +22,7 @@ layer.
 > Intelligence, Fudan University; macOS DMG rebuilt for this release.
 
 Apple Silicon Mac 用户可从
-[最新 Release 下载签名并经 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.4-arm64.dmg)。
+[最新 Release 下载签名并经 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.5-arm64.dmg)。
 AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。
 
 [![Meet GenOffice — the world's first full-featured open-source AI Office (video)](https://img.youtube.com/vi/B2pLdMX95v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=B2pLdMX95v4)
@@ -39,6 +39,7 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 - **Markdown to Word, fully local** — the same OOXML engine, no Pandoc, no cloud.
 - **AI that edits documents** — block-level edits with snapshots and diffs, document-aware agents.
 - **Selection-aware AI editing** — select Word text, Excel cells, or PowerPoint objects and ask AI to modify only that content.
+- **Editable equations everywhere** — Word, PowerPoint, Excel, and Markdown accept LaTeX, multi-line environments, and ZenMux formula OCR from clipboard screenshots or image files.
 - **Agent tools built in** — web/image search, image generation, media analysis.
 - **Light / dark / system themes.**
 - **macOS, Windows, Linux.**
@@ -103,13 +104,11 @@ tokens (`packages/ui`), with a CI guard that keeps chrome colors on the token
 system. Document surfaces stay light in dark mode — Word-style dark chrome
 around white paper — so files render and export identically in both themes.
 
-**AI backend (Genspark).** The apps sign in to a Genspark account through a
-device-code flow; no model API key is entered or stored by the user. Model
-calls route through the Genspark proxy (Claude, GPT, and Gemini families).
-The same account also unlocks the Genspark ("gsk") tool endpoints the agents
-build on — web and image search, image generation and editing,
-image/audio/video analysis, and audio transcription — all reachable through
-`packages/ai-search` for anyone extending the agent layer.
+**AI backend (ZenMux).** All document, spreadsheet, presentation, Markdown,
+review, image-generation, media-understanding, and formula-recognition AI calls
+use the ZenMux OpenAI-compatible endpoint. The API Key is configured in Settings,
+masked in the UI, and stored persistently on the local Mac. AI features require a
+network connection and may be affected by network or proxy conditions.
 
 ## Engine packages
 
@@ -180,8 +179,7 @@ back byte-for-byte, so documents keep working in Microsoft Office.
 
 **Does GenOffice work offline?**
 Document editing is fully local — files never leave your machine to be
-opened, edited, or saved. The AI features (agents, search, image tools) sign
-in to a Genspark account and need a network connection.
+opened, edited, or saved. ZenMux AI features need an API Key and network connection.
 
 **Can GenOffice edit PDF files?**
 Yes — real PDF text and image editing that rewrites the page content stream

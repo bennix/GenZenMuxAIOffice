@@ -4,6 +4,8 @@ import {
   TABLE_HEADER_FILL,
   buildBlankDocx,
   generateTableModelXml,
+  latexToOmml,
+  mathParagraphXml,
   parseDocx,
   saveDocx,
 } from '@genoffice/docx-engine'
@@ -44,6 +46,15 @@ function runsFromInline(content: JSONContent[] | undefined): Run[] {
   for (const child of content ?? []) {
     if (child.type === 'hardBreak') {
       runs.push({ text: '\n' })
+      continue
+    }
+    if (child.type === 'inlineEquation') {
+      const latex = String(child.attrs?.latex ?? '')
+      try {
+        runs.push({ text: latex, math: { omml: `<m:oMath>${latexToOmml(latex)}</m:oMath>` } })
+      } catch {
+        runs.push({ text: `$${latex}$`, font: CODE_FONT })
+      }
       continue
     }
     if (child.type !== 'text' || !child.text) continue
@@ -215,6 +226,18 @@ function walkBlock(ctx: WalkContext, node: JSONContent, base?: ParaFormat): void
         format: mergeFormat(base, { borders: 'b' }),
       })
       break
+    case 'blockEquation': {
+      const latex = String(node.attrs?.latex ?? '')
+      try {
+        ctx.blocks.push({ kind: 'xml', xml: mathParagraphXml(latexToOmml(latex)) })
+      } catch {
+        pushParagraph(ctx, {
+          type: 'paragraph',
+          runs: [{ text: `$$\n${latex}\n$$`, font: CODE_FONT }],
+        })
+      }
+      break
+    }
     case 'image': {
       const src = String(node.attrs?.src ?? '')
       const alt = String(node.attrs?.alt ?? '')

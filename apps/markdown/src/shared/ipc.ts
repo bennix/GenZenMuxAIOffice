@@ -1,5 +1,11 @@
 import type { Lang } from '@genoffice/i18n'
-import type { AiSettings, AiStreamChunk, AiStreamRequest } from '@genoffice/ai-provider'
+import type {
+  AiChatRequest,
+  AiChatResponse,
+  AiSettings,
+  AiStreamChunk,
+  AiStreamRequest,
+} from '@genoffice/ai-provider'
 
 export const MARKDOWN_CHANNELS = {
   consumePending: 'markdown:consume-pending',
@@ -81,6 +87,25 @@ export interface ImageData {
   mime: 'image/png' | 'image/jpeg' | 'image/gif'
 }
 
+export interface AttachmentMeta {
+  path: string
+  name: string
+  ext: string
+  sizeBytes: number
+}
+
+export interface AttachmentAddResult {
+  accepted: AttachmentMeta[]
+  rejected: string[]
+}
+
+export interface AttachmentImageResult {
+  ok: boolean
+  base64?: string
+  mime?: string
+  error?: string
+}
+
 /** API exposed by preload to the renderer (window.markdownApi) */
 export interface MarkdownApi {
   /** Take the md path pending for this view (queued at tab creation); null = new untitled document */
@@ -129,9 +154,27 @@ export interface MarkdownApi {
   getTheme(): Promise<UiTheme>
   onThemeChanged(handler: (theme: UiTheme) => void): () => void
   getAiSettings(): Promise<AiSettings>
+  aiChat(request: AiChatRequest): Promise<AiChatResponse>
   aiStream(request: AiStreamRequest): Promise<void>
   aiStreamCancel(requestId: string): Promise<void>
   onAiStream(handler: (chunk: AiStreamChunk) => void): () => void
   /** Main-process web search (Serper/DuckDuckGo via the shared ai:web-search handler) */
   webSearch(query: string, maxResults?: number): Promise<WebSearchResult>
+  pickAttachments(): Promise<AttachmentAddResult | null>
+  addAttachmentPaths(paths: string[]): Promise<AttachmentAddResult>
+  addPastedImage(data: ArrayBuffer, ext: string): Promise<AttachmentAddResult>
+  readAttachment(
+    path: string,
+    offset: number,
+    maxChars: number,
+  ): Promise<{
+    ok: boolean
+    error?: string
+    name?: string
+    totalChars?: number
+    text?: string
+    offset?: number
+  }>
+  readAttachmentImage(path: string): Promise<AttachmentImageResult>
+  getPathForFile(file: File): string
 }

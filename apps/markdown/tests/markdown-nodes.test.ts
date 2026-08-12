@@ -77,6 +77,17 @@ describe('markdown round-trip for GFM nodes', () => {
     expect(stable).toBe(true)
   })
 
+  it('inline and multi-line block equations preserve editable LaTeX', () => {
+    const md =
+      'Energy is $E = mc^2$.\n\n$$\n\\begin{aligned}\na &= b + c \\\\\\nd &= e - f\n\\end{aligned}\n$$'
+    const { out, stable } = roundTrip(editor, md)
+    expect(out).toContain('$E = mc^2$')
+    expect(out).toContain('$$\n\\begin{aligned}')
+    expect(out).toContain('a &= b + c \\\\')
+    expect(out).toContain('\\end{aligned}\n$$')
+    expect(stable).toBe(true)
+  })
+
   it('nested lists serialize with 4-space indents (strict-CommonMark safe)', () => {
     // 2-space indents would be below the ordered item's content column ("1. "
     // = 3 chars), so GitHub would flatten the sub-list when re-parsing the file

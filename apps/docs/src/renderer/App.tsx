@@ -4,6 +4,7 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import type { Editor } from '@tiptap/core'
 import { DOMParser as PmDOMParser, type Mark as PmMark } from '@tiptap/pm/model'
 import { markdownPasteHtml } from './editor/markdown-paste'
+import { docJsonToMarkdown } from './export/markdownExport'
 import {
   BLANK_BULLET_NUM_ID,
   BLANK_ORDERED_NUM_ID,
@@ -2453,6 +2454,14 @@ export function App() {
           break
         case 'export-pdf':
           void exportPdf()
+          break
+        case 'export-markdown':
+          if (editor) {
+            void window.desktop.exportMarkdown(
+              doc?.fileName ?? 'document.docx',
+              docJsonToMarkdown(editor.getJSON()),
+            )
+          }
           break
       }
     })

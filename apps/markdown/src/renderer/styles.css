@@ -2060,3 +2060,162 @@ body {
 .md-block-menu-item.danger:hover {
   background: var(--danger-bg);
 }
+.md-equation {
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.md-equation:hover {
+  background: color-mix(in srgb, var(--accent, #2b579a) 8%, transparent);
+}
+
+.md-equation-inline {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+
+.md-equation-block {
+  display: block;
+  max-width: 100%;
+  margin: 14px 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.md-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.md-equation-dialog {
+  width: min(680px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid var(--border, #d8d8d8);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  color: var(--text, #222);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
+}
+
+.md-equation-dialog h2 {
+  margin: 0 0 16px;
+  font-size: 19px;
+}
+.md-equation-dialog label {
+  display: grid;
+  gap: 7px;
+}
+.md-equation-dialog textarea {
+  min-height: 112px;
+  resize: vertical;
+  font:
+    14px/1.5 ui-monospace,
+    monospace;
+}
+.md-equation-preview {
+  min-height: 72px;
+  margin: 14px 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 6px;
+  text-align: center;
+}
+.formula-image-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.formula-image-hint {
+  display: block;
+  margin-top: 7px;
+  opacity: 0.72;
+}
+.formula-image-error {
+  margin-top: 7px;
+  color: #b42318;
+}
+.md-equation-inline-toggle {
+  display: flex !important;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  margin-top: 12px;
+}
+.md-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+.ai-attachments {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  overflow-x: auto;
+}
+.ai-attachment-thumb,
+.ai-attachment-card {
+  position: relative;
+  flex: 0 0 auto;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 7px;
+  background: var(--surface, #fff);
+}
+.ai-attachment-thumb {
+  width: 64px;
+  height: 54px;
+  overflow: hidden;
+}
+.ai-attachment-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ai-attachment-card {
+  max-width: 150px;
+  padding: 9px 22px 9px 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.ai-attachment-thumb-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  line-height: 17px;
+}
+.ai-attach-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 17px;
+}
+.ai-attach-notice {
+  margin: 0 8px 6px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: #fff4e5;
+  color: #8a4b00;
+  font-size: 12px;
+}
+.ai-panel-dragover {
+  outline: 2px dashed var(--accent, #2b579a);
+  outline-offset: -4px;
+}

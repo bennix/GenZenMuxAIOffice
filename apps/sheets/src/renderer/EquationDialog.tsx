@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from 'react'
 
 import { latexToOmml, ommlToMathML } from '@genoffice/docx-engine/math'
+import { cleanRecognizedLatex, formulaRecognitionRequest } from '@genoffice/ai-provider'
+import { FormulaImageRecognition, type FormulaImageData } from '@genoffice/ui'
 import { useI18n } from './i18n/locale'
 
 /// Excel's Insert → Equation: LaTeX input with a live MathML preview (docs'
@@ -88,6 +90,15 @@ export function EquationDialog({
   const preview = useMemo(() => mathmlOf(latex), [latex])
   const canInsert = preview !== null && 'mathml' in preview
 
+  const recognizeImage = async (image: FormulaImageData): Promise<void> => {
+    const settings = await window.desktopApi.getAiSettings()
+    const response = await window.desktopApi.aiChat(formulaRecognitionRequest(settings, image))
+    if (!response.ok) throw new Error(response.error || 'ZenMux formula recognition failed')
+    const recognized = cleanRecognizedLatex(response.content ?? '')
+    if (!recognized) throw new Error('ZenMux returned no formula')
+    setLatex(recognized)
+  }
+
   const insert = (): void => {
     const node = previewRef.current
     if (busy || !canInsert || !node) return
@@ -158,6 +169,7 @@ export function EquationDialog({
               />
             )}
           </div>
+          <FormulaImageRecognition onRecognize={recognizeImage} />
         </section>
         <div className="dialog-actions">
           <button className="secondary" onClick={onClose}>

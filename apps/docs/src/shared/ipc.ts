@@ -127,6 +127,7 @@ export type MenuCommand =
   | 'find'
   | 'print'
   | 'export-pdf'
+  | 'export-markdown'
   | 'word-count'
 
 export type UiTheme = 'light' | 'dark' | 'system'
@@ -200,6 +201,10 @@ export interface DesktopApi {
     defaultName: string,
     base64Parts: string[],
     outPath?: string,
+  ): Promise<{ ok: boolean; path?: string; error?: string }>
+  exportMarkdown(
+    defaultName: string,
+    text: string,
   ): Promise<{ ok: boolean; path?: string; error?: string }>
   aiChat(request: AiChatRequest): Promise<AiChatResponse>
   /** start a streaming AI call; deltas arrive via onAiStream with the same requestId */

@@ -18,6 +18,7 @@ import { Ribbon } from './components/Ribbon'
 import { SlashMenu, type SlashMenuHandle } from './components/SlashMenu'
 import { TableMenu } from './components/TableMenu'
 import { FrontmatterPanel } from './components/FrontmatterPanel'
+import { EquationDialog, type MarkdownEquationTarget } from './components/EquationDialog'
 import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
 import { DOCX_MAX_IMAGE_PX, exportDocxBytes } from './export/docxExport'
 import { buildPrintHtml } from './export/printHtml'
@@ -84,6 +85,8 @@ export default function App() {
   const [aiOpen, setAiOpen] = useState(true)
   const [aiPreset, setAiPreset] = useState<AiPreset | null>(null)
   const [autoSave, setAutoSave] = useState(() => localStorage.getItem('mdapp.autoSave') === '1')
+  const [equationOpen, setEquationOpen] = useState(false)
+  const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
 
   const statusRef = useRef<LoadStatus>('loading')
   const dirtyRef = useRef(false)
@@ -140,6 +143,15 @@ export default function App() {
   useEffect(() => {
     setImageBaseDir(filePath ? dirOf(filePath) : null)
   }, [filePath])
+
+  useEffect(() => {
+    const editEquation = (event: Event) => {
+      setEquationTarget((event as CustomEvent<MarkdownEquationTarget>).detail)
+      setEquationOpen(true)
+    }
+    window.addEventListener('markdown:edit-equation', editEquation)
+    return () => window.removeEventListener('markdown:edit-equation', editEquation)
+  }, [])
 
   useEffect(() => {
     if (!editor) return
@@ -371,6 +383,10 @@ export default function App() {
         onToggleAutoSave={setAutoSave}
         imageEnabled={Boolean(filePath)}
         onInsertImage={insertImage}
+        onInsertEquation={() => {
+          setEquationTarget(undefined)
+          setEquationOpen(true)
+        }}
         frontmatterOpen={fmOpen}
         onToggleFrontmatter={() => setFmOpen((v) => !v)}
         aiOpen={aiOpen}
@@ -424,6 +440,16 @@ export default function App() {
       </div>
       <SlashMenu ref={slashMenuRef} state={slashState} onDismiss={() => setSlashState(null)} />
       <TableMenu editor={editor} scrollRef={scrollRef} />
+      {equationOpen && editor && (
+        <EquationDialog
+          editor={editor}
+          target={equationTarget}
+          onClose={() => {
+            setEquationOpen(false)
+            setEquationTarget(undefined)
+          }}
+        />
+      )}
     </div>
   )
 }

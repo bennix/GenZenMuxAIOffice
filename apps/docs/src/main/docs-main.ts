@@ -3009,6 +3009,24 @@ export function registerDocsIpc(): void {
     }
   })
 
+  ipcMain.handle('docs:export-markdown', async (event, defaultName: string, text: string) => {
+    if (tornDownWcIds.has(event.sender.id) || typeof text !== 'string') return { ok: false }
+    const baseName = String(defaultName || 'document').replace(/\.docx$/i, '')
+    const result = await saveDialog(event, {
+      title: 'Export Markdown',
+      defaultPath: `${baseName}.md`,
+      filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }],
+    })
+    if (result.canceled || !result.filePath || tornDownWcIds.has(event.sender.id))
+      return { ok: false }
+    try {
+      await atomicWriteFile(result.filePath, Buffer.from(text, 'utf8'))
+      return { ok: true, path: result.filePath }
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) }
+    }
+  })
+
   ipcMain.handle('docs:recent', () =>
     readJson<string[]>(RECENT_PATH(), []).filter((p) => existsSync(p)),
   )
@@ -3366,6 +3384,7 @@ export function buildDocsMenu(): void {
         { type: 'separator' },
         { label: tm('menuPageSetup'), click: () => sendCommand('page-setup') },
         { label: tm('menuExportPdf'), click: () => sendCommand('export-pdf') },
+        { label: 'Export Markdown…', click: () => sendCommand('export-markdown') },
         {
           label: tm('menuPrint'),
           accelerator: 'CmdOrCtrl+P',

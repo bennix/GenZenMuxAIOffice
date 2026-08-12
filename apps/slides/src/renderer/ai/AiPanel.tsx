@@ -1560,7 +1560,12 @@ export function AiPanel({
     if (result.accepted.length > 0) {
       setAttachments((prev) => {
         const seen = new Set(prev.map((a) => a.path))
-        return [...prev, ...result.accepted.filter((a) => !seen.has(a.path))]
+        const next = [...prev, ...result.accepted.filter((a) => !seen.has(a.path))]
+        if (next.length > 5) {
+          setAttachNotice(t('aiTooManyImages', { max: 5 }))
+          window.setTimeout(() => setAttachNotice(null), 5000)
+        }
+        return next.slice(0, 5)
       })
     }
     if (result.rejected.length > 0) {

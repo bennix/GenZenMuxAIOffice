@@ -1031,7 +1031,12 @@ export function App(): React.JSX.Element {
     if (result.accepted.length > 0) {
       setAttachments((prev) => {
         const seen = new Set(prev.map((a) => a.path))
-        return [...prev, ...result.accepted.filter((a) => !seen.has(a.path))]
+        const next = [...prev, ...result.accepted.filter((a) => !seen.has(a.path))]
+        if (next.length > 5) {
+          setAttachNotice('最多支持 5 个附件')
+          window.setTimeout(() => setAttachNotice(null), 5000)
+        }
+        return next.slice(0, 5)
       })
     }
     if (result.rejected.length > 0) {

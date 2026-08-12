@@ -100,6 +100,19 @@ describe('docx export', () => {
     expect(link?.link?.href).toBe('https://genspark.ai')
   })
 
+  it('inline and multi-line equations export as native Word math', async () => {
+    const markdown =
+      'Inline $E=mc^2$.\n\n$$\n\\begin{aligned}a &= b + c \\\\ d &= e-f\\end{aligned}\n$$'
+    const editor = createEditor(markdown)
+    const mapping = await mapDocToSaveBlocks(editor.getJSON(), noImages)
+    expect(
+      mapping.blocks.some((block) => block.kind === 'xml' && block.xml.includes('<m:m>')),
+    ).toBe(true)
+    const parsed = await exportAndParse(markdown)
+    const mathRuns = parsed.blocks.flatMap((block) => block.runs ?? []).filter((run) => run.math)
+    expect(mathRuns.length).toBeGreaterThanOrEqual(1)
+  })
+
   it('unresolvable images fall back to alt text', async () => {
     const parsed = await exportAndParse('![architecture diagram](assets/missing.png)')
     const texts = parsed.blocks.map((b) => (b.runs ?? []).map((r) => r.text).join(''))

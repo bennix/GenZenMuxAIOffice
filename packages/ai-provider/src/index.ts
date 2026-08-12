@@ -25,6 +25,14 @@ export {
 } from './providers'
 export { generateZenMuxImage } from './images'
 export { chatForProvider, chatZenMux } from './chat'
+export {
+  ZENMUX_FORMULA_MODEL,
+  FORMULA_RECOGNITION_SYSTEM,
+  FORMULA_RECOGNITION_USER,
+  cleanRecognizedLatex,
+  formulaRecognitionRequest,
+  formulaRecognitionSettings,
+} from './formula'
 export { AiCreditsError, sseLines, streamForProvider, streamZenMux } from './stream'
 export type { StreamCallbacks } from './stream'
 export {
