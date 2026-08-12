@@ -219,6 +219,556 @@
         backdrop-filter: blur(18px);
       }
 
+      .atlas {
+        padding: 112px 0 40px;
+      }
+
+      .section-kicker {
+        margin-bottom: 14px;
+        color: var(--blue);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .section-title {
+        max-width: 850px;
+        margin: 0 0 20px;
+        font-family: 'Iowan Old Style', 'Songti SC', Georgia, serif;
+        font-size: clamp(48px, 7vw, 92px);
+        font-weight: 400;
+        line-height: 0.96;
+        letter-spacing: -0.06em;
+      }
+
+      .section-lead {
+        max-width: 720px;
+        margin: 0 0 48px;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.75;
+      }
+
+      .app-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        border-top: 1px solid var(--ink);
+        border-left: 1px solid var(--ink);
+      }
+
+      .app-card {
+        --app-color: var(--blue);
+        grid-column: span 6;
+        min-height: 660px;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+        background: rgba(255, 255, 255, 0.52);
+        overflow: hidden;
+      }
+
+      .app-card.wide {
+        grid-column: span 12;
+        min-height: 540px;
+      }
+
+      .app-card.docs {
+        --app-color: #2867df;
+      }
+      .app-card.sheets {
+        --app-color: #08783e;
+      }
+      .app-card.slides {
+        --app-color: #d04a20;
+      }
+      .app-card.markdown {
+        --app-color: #151515;
+      }
+      .app-card.shell-app {
+        --app-color: #2357ff;
+      }
+
+      .app-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .app-id {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .app-icon {
+        width: 48px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        color: white;
+        background: var(--app-color);
+        border-radius: 11px 11px 11px 3px;
+        font-family: 'Iowan Old Style', Georgia, serif;
+        font-size: 22px;
+        font-style: italic;
+      }
+
+      .app-name {
+        margin: 0;
+        font-size: 31px;
+        letter-spacing: -0.045em;
+      }
+
+      .app-format {
+        color: var(--muted);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 11px;
+      }
+
+      .app-number {
+        color: var(--app-color);
+        font-family: 'Iowan Old Style', Georgia, serif;
+        font-size: 25px;
+        font-style: italic;
+      }
+
+      .app-visual {
+        position: relative;
+        height: 210px;
+        margin: 30px 0;
+        padding: 20px;
+        border: 1px solid var(--ink);
+        background: #fbfaf5;
+        box-shadow: 9px 9px 0 color-mix(in srgb, var(--app-color) 22%, transparent);
+      }
+
+      .app-card.wide .app-visual {
+        width: 44%;
+        height: 300px;
+        margin: 0;
+        flex: 0 0 auto;
+      }
+
+      .wide-layout {
+        margin-top: 30px;
+        display: flex;
+        align-items: stretch;
+        gap: 40px;
+      }
+
+      .visual-bar {
+        height: 20px;
+        margin: -20px -20px 18px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0 8px;
+        border-bottom: 1px solid #bcbcb5;
+        background: #e9e7df;
+      }
+
+      .visual-bar i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--app-color);
+        opacity: 0.65;
+      }
+
+      .doc-lines span {
+        display: block;
+        height: 7px;
+        margin: 10px 0;
+        background: #d9d8d1;
+      }
+
+      .doc-lines span:nth-child(1) {
+        width: 55%;
+        height: 15px;
+        background: var(--app-color);
+      }
+      .doc-lines span:nth-child(2) {
+        width: 91%;
+      }
+      .doc-lines span:nth-child(3) {
+        width: 82%;
+      }
+      .doc-lines span:nth-child(4) {
+        width: 95%;
+      }
+      .doc-lines span:nth-child(5) {
+        width: 66%;
+      }
+
+      .formula-chip {
+        position: absolute;
+        right: 22px;
+        bottom: 18px;
+        padding: 8px 12px;
+        color: var(--app-color);
+        border: 1px solid var(--app-color);
+        background: white;
+        font-family: Georgia, serif;
+        font-style: italic;
+      }
+
+      .sheet-mini {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        grid-template-rows: repeat(5, 1fr);
+        height: 150px;
+        border-top: 1px solid #c8c8c0;
+        border-left: 1px solid #c8c8c0;
+      }
+
+      .sheet-mini i {
+        border-right: 1px solid #c8c8c0;
+        border-bottom: 1px solid #c8c8c0;
+      }
+
+      .sheet-mini i:nth-child(8),
+      .sheet-mini i:nth-child(14),
+      .sheet-mini i:nth-child(20) {
+        background: color-mix(in srgb, var(--app-color) 25%, white);
+      }
+
+      .mini-chart {
+        position: absolute;
+        right: 14px;
+        bottom: 12px;
+        width: 48%;
+        height: 95px;
+        padding: 12px;
+        display: flex;
+        align-items: end;
+        gap: 8px;
+        border: 1px solid var(--app-color);
+        background: rgba(255, 255, 255, 0.92);
+      }
+
+      .mini-chart i {
+        flex: 1;
+        background: var(--app-color);
+      }
+      .mini-chart i:nth-child(1) {
+        height: 35%;
+      }
+      .mini-chart i:nth-child(2) {
+        height: 73%;
+      }
+      .mini-chart i:nth-child(3) {
+        height: 51%;
+      }
+      .mini-chart i:nth-child(4) {
+        height: 88%;
+      }
+
+      .slide-mini {
+        height: 150px;
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 14px;
+        background: linear-gradient(
+          135deg,
+          #fff 58%,
+          color-mix(in srgb, var(--app-color) 14%, white) 58%
+        );
+      }
+
+      .slide-title {
+        align-self: center;
+        font:
+          28px/1 'Iowan Old Style',
+          Georgia,
+          serif;
+      }
+      .slide-shape {
+        align-self: center;
+        height: 94px;
+        border-radius: 50% 8px 50% 8px;
+        background: var(--app-color);
+        opacity: 0.82;
+      }
+
+      .md-code {
+        color: #d6ffd8;
+        background: #171817;
+        font:
+          12px/1.7 ui-monospace,
+          Menlo,
+          monospace;
+      }
+
+      .md-code b {
+        color: #7da2ff;
+      }
+      .md-code em {
+        color: #d8ff42;
+      }
+      .mermaid-arrow {
+        margin-top: 13px;
+        display: flex;
+        justify-content: center;
+        color: white;
+        font-size: 25px;
+      }
+
+      .shell-mini {
+        height: 240px;
+        display: grid;
+        grid-template-columns: 76px 1fr;
+        border: 1px solid #c9c7bc;
+        background: #f7f6f1;
+      }
+
+      .shell-side {
+        padding: 14px 10px;
+        background: #22231f;
+      }
+
+      .shell-side i {
+        display: block;
+        height: 9px;
+        margin-bottom: 14px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.28);
+      }
+
+      .shell-side i:first-child {
+        width: 28px;
+        height: 28px;
+        background: var(--blue);
+        border-radius: 7px;
+      }
+      .shell-main {
+        padding: 18px;
+      }
+      .shell-tabs {
+        display: flex;
+        gap: 7px;
+        margin-bottom: 22px;
+      }
+      .shell-tabs i {
+        width: 74px;
+        height: 20px;
+        border: 1px solid #c9c7bc;
+        background: white;
+      }
+      .shell-tabs i:first-child {
+        border-color: var(--blue);
+        box-shadow: inset 0 -3px var(--blue);
+      }
+      .shell-files {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .shell-files i {
+        height: 118px;
+        padding: 10px;
+        border: 1px solid #d5d3ca;
+        background: white;
+      }
+      .shell-files i::before {
+        content: '';
+        display: block;
+        width: 25px;
+        height: 25px;
+        margin-bottom: 42px;
+        background: var(--blue);
+        border-radius: 6px 6px 6px 2px;
+      }
+
+      .capability-list {
+        margin: auto 0 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 24px;
+        list-style: none;
+      }
+
+      .app-card.wide .capability-list {
+        flex: 1;
+      }
+
+      .capability-list li {
+        position: relative;
+        padding: 11px 0 11px 17px;
+        border-top: 1px solid var(--line);
+        color: #353630;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .capability-list li::before {
+        content: '';
+        position: absolute;
+        top: 17px;
+        left: 0;
+        width: 7px;
+        height: 7px;
+        background: var(--app-color);
+      }
+
+      .ai-stage {
+        margin-top: 110px;
+        padding: 70px;
+        color: white;
+        background: var(--ink);
+        overflow: hidden;
+      }
+
+      .ai-stage .section-kicker {
+        color: var(--acid);
+      }
+      .ai-stage .section-title {
+        max-width: 960px;
+        color: white;
+      }
+      .ai-stage .section-lead {
+        color: rgba(255, 255, 255, 0.62);
+      }
+
+      .ai-flow {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr auto 1fr;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .flow-node {
+        min-height: 145px;
+        padding: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .flow-node strong {
+        display: block;
+        margin-bottom: 10px;
+        color: var(--acid);
+        font-size: 20px;
+      }
+      .flow-node span {
+        color: rgba(255, 255, 255, 0.67);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .flow-arrow {
+        color: var(--acid);
+        font-size: 26px;
+      }
+
+      .ai-grid {
+        margin-top: 32px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 1px solid rgba(255, 255, 255, 0.25);
+        border-left: 1px solid rgba(255, 255, 255, 0.25);
+      }
+
+      .ai-cap {
+        min-height: 160px;
+        padding: 22px;
+        border-right: 1px solid rgba(255, 255, 255, 0.25);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+      }
+
+      .ai-cap b {
+        display: block;
+        margin-bottom: 12px;
+        font-size: 16px;
+      }
+      .ai-cap span {
+        color: rgba(255, 255, 255, 0.58);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .matrix-section {
+        padding: 110px 0 40px;
+      }
+      .matrix-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--ink);
+        background: rgba(255, 255, 255, 0.5);
+      }
+      .matrix {
+        width: 100%;
+        min-width: 850px;
+        border-collapse: collapse;
+      }
+      .matrix th,
+      .matrix td {
+        padding: 15px 13px;
+        border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        text-align: center;
+        font-size: 13px;
+      }
+      .matrix th:first-child,
+      .matrix td:first-child {
+        width: 230px;
+        text-align: left;
+        font-weight: 700;
+      }
+      .matrix thead th {
+        color: white;
+        background: var(--ink);
+      }
+      .matrix tr:last-child td {
+        border-bottom: 0;
+      }
+      .matrix th:last-child,
+      .matrix td:last-child {
+        border-right: 0;
+      }
+      .yes {
+        color: #08783e;
+        font-weight: 900;
+      }
+      .partial {
+        color: #b36a00;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .foundation {
+        padding: 74px 0 100px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+
+      .foundation article {
+        min-height: 210px;
+        padding: 24px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+      }
+      .foundation i {
+        color: var(--blue);
+        font:
+          italic 22px 'Iowan Old Style',
+          Georgia,
+          serif;
+      }
+      .foundation h3 {
+        margin: 38px 0 10px;
+      }
+      .foundation p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
       .platforms {
         padding: 34px 0 72px;
       }
@@ -402,8 +952,40 @@
 
         .manifesto,
         .models,
-        .platform-grid {
+        .platform-grid,
+        .foundation {
           grid-template-columns: 1fr;
+        }
+
+        .app-card,
+        .app-card.wide {
+          grid-column: span 12;
+          min-height: auto;
+        }
+        .wide-layout {
+          flex-direction: column;
+        }
+        .app-card.wide .app-visual {
+          width: 100%;
+        }
+        .capability-list {
+          margin-top: 18px;
+          grid-template-columns: 1fr;
+        }
+        .ai-stage {
+          margin-left: -20px;
+          margin-right: -20px;
+          padding: 50px 20px;
+        }
+        .ai-flow {
+          grid-template-columns: 1fr;
+        }
+        .flow-arrow {
+          transform: rotate(90deg);
+          text-align: center;
+        }
+        .ai-grid {
+          grid-template-columns: repeat(2, 1fr);
         }
 
         .platform-card {
@@ -435,9 +1017,29 @@
           padding: 80px 0;
         }
 
+        .atlas,
+        .matrix-section {
+          padding-top: 80px;
+        }
+
         footer {
           flex-direction: column;
           gap: 10px;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .app-card {
+          padding: 22px;
+        }
+        .app-visual {
+          margin: 24px 0;
+        }
+        .ai-grid {
+          grid-template-columns: 1fr;
+        }
+        .section-title {
+          font-size: 46px;
         }
       }
 
@@ -548,7 +1150,7 @@
           <article class="feature">
             <span class="feature-num">02</span>
             <h3>真正的办公文件</h3>
-            <p>在一个应用中处理 Word、Excel、PowerPoint、PDF 与 Markdown。</p>
+            <p>在一个应用中处理 Word、Excel、PowerPoint 与 Markdown。</p>
           </article>
           <article class="feature">
             <span class="feature-num">03</span>
@@ -572,6 +1174,387 @@
           </article>
         </section>
 
+        <section class="atlas" id="features" aria-label="完整功能图鉴">
+          <div class="section-kicker">Complete capability atlas · 完整功能图鉴</div>
+          <h2 class="section-title">五个工作台，<br />一套完整办公系统。</h2>
+          <p class="section-lead">
+            GenOffice 不是聊天框套壳。它直接打开并编辑真实的 DOCX、XLSX、PPTX 与 Markdown 文件；AI
+            能读取当前文件、选区和附件，并在原文档内完成修改。
+          </p>
+
+          <div class="app-grid">
+            <article class="app-card docs">
+              <div class="app-head">
+                <div class="app-id">
+                  <span class="app-icon">W</span>
+                  <div>
+                    <h3 class="app-name">Word 文档</h3>
+                    <span class="app-format">.DOCX · REAL OOXML</span>
+                  </div>
+                </div>
+                <span class="app-number">01</span>
+              </div>
+              <div class="app-visual">
+                <div class="visual-bar"><i></i><i></i><i></i></div>
+                <div class="doc-lines">
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="formula-chip">E = mc²</div>
+              </div>
+              <ul class="capability-list">
+                <li>真实 DOCX 打开、编辑与保存</li>
+                <li>Word 风格分页与页面布局</li>
+                <li>字体、字号、段落、样式与列表</li>
+                <li>表格、图片、图表与图形</li>
+                <li>LaTeX/OMML 公式插入与编辑</li>
+                <li>截图或图片识别公式</li>
+                <li>选中文本作为 AI 上下文修改</li>
+                <li>Markdown 与 Word 相互转换</li>
+                <li>严格 AI 审稿委员会</li>
+                <li>Science/Nature/Cell/IEEE 等标准</li>
+                <li>基金、863、科技及商业标书审阅</li>
+                <li>公式、图片、图表和图形联合审阅</li>
+                <li>中英文审稿报告</li>
+                <li>AI 配图与本地图片插入</li>
+              </ul>
+            </article>
+
+            <article class="app-card sheets">
+              <div class="app-head">
+                <div class="app-id">
+                  <span class="app-icon">X</span>
+                  <div>
+                    <h3 class="app-name">Excel 表格</h3>
+                    <span class="app-format">.XLSX · EDITABLE CHARTS</span>
+                  </div>
+                </div>
+                <span class="app-number">02</span>
+              </div>
+              <div class="app-visual">
+                <div class="visual-bar"><i></i><i></i><i></i></div>
+                <div class="sheet-mini">
+                  <i></i><i></i><i></i><i></i><i></i><i></i> <i></i><i></i><i></i><i></i><i></i
+                  ><i></i> <i></i><i></i><i></i><i></i><i></i><i></i> <i></i><i></i><i></i><i></i
+                  ><i></i><i></i> <i></i><i></i><i></i><i></i><i></i><i></i>
+                </div>
+                <div class="mini-chart"><i></i><i></i><i></i><i></i></div>
+              </div>
+              <ul class="capability-list">
+                <li>真实 XLSX 工作簿编辑与保存</li>
+                <li>公式、函数和自动重算</li>
+                <li>排序、筛选、数据验证与条件格式</li>
+                <li>数据透视表、切片器与时间线</li>
+                <li>当前选区/字段智能分析</li>
+                <li>描述统计与数据质量检查</li>
+                <li>相关性、协方差和回归</li>
+                <li>时间序列、趋势与预测</li>
+                <li>分组汇总与交叉分析</li>
+                <li>异常值、分布和情景分析</li>
+                <li>9 类可编辑原生图表</li>
+                <li>柱/条/线/面积/饼/环形图</li>
+                <li>散点/雷达/组合图</li>
+                <li>中文标题、坐标轴与悬停数值</li>
+                <li>图例、标签、颜色及数据源编辑</li>
+                <li>迷你图、公式 OCR 与 AI 选区修改</li>
+              </ul>
+            </article>
+
+            <article class="app-card slides">
+              <div class="app-head">
+                <div class="app-id">
+                  <span class="app-icon">P</span>
+                  <div>
+                    <h3 class="app-name">PowerPoint</h3>
+                    <span class="app-format">.PPTX · EDITABLE OBJECTS</span>
+                  </div>
+                </div>
+                <span class="app-number">03</span>
+              </div>
+              <div class="app-visual">
+                <div class="visual-bar"><i></i><i></i><i></i></div>
+                <div class="slide-mini">
+                  <div class="slide-title">Ideas become<br />slides.</div>
+                  <div class="slide-shape"></div>
+                </div>
+              </div>
+              <ul class="capability-list">
+                <li>真实 PPTX 打开、编辑与保存</li>
+                <li>AI 生成可编辑文字与对象</li>
+                <li>幻灯片母版、版式和主题</li>
+                <li>文本框、形状、图片与表格</li>
+                <li>可编辑图表及数据源</li>
+                <li>对齐、智能参考线与对象排列</li>
+                <li>非破坏性图片裁剪</li>
+                <li>LaTeX 公式和图片公式识别</li>
+                <li>选择对象作为 AI 上下文</li>
+                <li>AI 增删改当前幻灯片内容</li>
+                <li>ZenMux 原生 PPT 配图</li>
+                <li>默认适配 16:9 横向图片</li>
+                <li>联网检索与事实核查</li>
+                <li>导出并保持对象可编辑</li>
+              </ul>
+            </article>
+
+            <article class="app-card markdown">
+              <div class="app-head">
+                <div class="app-id">
+                  <span class="app-icon">M</span>
+                  <div>
+                    <h3 class="app-name">Markdown</h3>
+                    <span class="app-format">.MD · PURE MARKDOWN</span>
+                  </div>
+                </div>
+                <span class="app-number">04</span>
+              </div>
+              <div class="app-visual md-code">
+                <div class="visual-bar"><i></i><i></i><i></i></div>
+                <b>```mermaid</b><br />flowchart TD<br />&nbsp;&nbsp;想法 --&gt; 文档<br />&nbsp;&nbsp;文档
+                --&gt; <em>发布</em><br /><b>```</b>
+                <div class="mermaid-arrow">想法&nbsp; → &nbsp;文档&nbsp; → &nbsp;发布</div>
+              </div>
+              <ul class="capability-list">
+                <li>纯 Markdown 文件往返保存</li>
+                <li>标题、列表、任务和引用</li>
+                <li>GFM 表格、链接及代码块</li>
+                <li>本地图片、粘贴与拖放</li>
+                <li>行内及多行 LaTeX 公式</li>
+                <li>剪贴板/文件公式 OCR</li>
+                <li>标准 Mermaid fenced code</li>
+                <li>Mermaid 插入、渲染和源码编辑</li>
+                <li>选区或全文 AI 翻译</li>
+                <li>保护公式、链接和图形语法</li>
+                <li>与 Word 相同的 AI 审稿委员会</li>
+                <li>图片、公式、表格与图形审阅</li>
+                <li>Markdown 转 Word</li>
+                <li>AI 附件与联网检索</li>
+              </ul>
+            </article>
+
+            <article class="app-card wide shell-app">
+              <div class="app-head">
+                <div class="app-id">
+                  <span class="app-icon">G</span>
+                  <div>
+                    <h3 class="app-name">统一桌面工作区</h3>
+                    <span class="app-format">ONE APP · FIVE WORKSPACES</span>
+                  </div>
+                </div>
+                <span class="app-number">05</span>
+              </div>
+              <div class="wide-layout">
+                <div class="app-visual">
+                  <div class="visual-bar"><i></i><i></i><i></i></div>
+                  <div class="shell-mini">
+                    <div class="shell-side"><i></i><i></i><i></i><i></i></div>
+                    <div class="shell-main">
+                      <div class="shell-tabs"><i></i><i></i><i></i></div>
+                      <div class="shell-files"><i></i><i></i><i></i></div>
+                    </div>
+                  </div>
+                </div>
+                <ul class="capability-list">
+                  <li>一个 App 统一打开四类文件</li>
+                  <li>多标签页并行编辑</li>
+                  <li>主页、最近文件与快速新建</li>
+                  <li>Word/Excel/PPT/MD 文件菜单</li>
+                  <li>自动保存和未保存关闭保护</li>
+                  <li>统一撤销、重做和导出入口</li>
+                  <li>浅色、深色和跟随系统主题</li>
+                  <li>多语言界面和中文优化</li>
+                  <li>ZenMux API Key 本地永久保存</li>
+                  <li>API Key 遮罩显示与自定义模型</li>
+                  <li>稳定版更新检查与版本提示</li>
+                  <li>macOS 与 Windows 独立安装包</li>
+                  <li>AI 网络状态和错误提示</li>
+                  <li>Apache-2.0 开源与 GitHub 分发</li>
+                </ul>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="ai-stage" aria-label="ZenMux AI 工作流">
+          <div class="section-kicker">ZenMux intelligence layer</div>
+          <h2 class="section-title">AI 不只回答，<br />它直接理解并修改文件。</h2>
+          <p class="section-lead">
+            所有文档、表格、演示、Markdown、公式识别和配图 AI 都统一通过 ZenMux；不再依赖 Genspark
+            云端账号。
+          </p>
+          <div class="ai-flow">
+            <div class="flow-node">
+              <strong>01 · 选择上下文</strong
+              ><span
+                >选择 Word 段落、Excel 单元格、PPT 对象或 Markdown 片段；未选择时可读取全文。</span
+              >
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">
+              <strong>02 · ZenMux 推理</strong
+              ><span
+                >使用本地保存的 API Key
+                和用户指定模型，结合附件、当前系统时间与可信网络来源完成推理。</span
+              >
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">
+              <strong>03 · 写回可编辑文件</strong
+              ><span>内容直接写入真实 Office 对象，保留结构，并提供版本快照、撤销和回退。</span>
+            </div>
+          </div>
+          <div class="ai-grid">
+            <div class="ai-cap">
+              <b>文档内 AI 编辑</b><span>撰写、润色、总结、翻译、排版、改写选区和结构化写回。</span>
+            </div>
+            <div class="ai-cap">
+              <b>最多 5 个附件</b><span>文件和图片附件、缩略图、拖放、文件选择与剪贴板图片。</span>
+            </div>
+            <div class="ai-cap">
+              <b>公式视觉识别</b
+              ><span
+                >从截图、剪贴板或图片文件识别 LaTeX，并插入 Word、PPT、Excel 和 Markdown。</span
+              >
+            </div>
+            <div class="ai-cap">
+              <b>AI 图像生成</b
+              ><span>PPT 与 Word 配图经 ZenMux 图像模型生成，并按文档比例适配。</span>
+            </div>
+            <div class="ai-cap">
+              <b>严格审稿委员会</b
+              ><span>至少 3 名委员加主席，多模型随机分配，针对不同期刊和标书标准。</span>
+            </div>
+            <div class="ai-cap">
+              <b>互联网事实查证</b
+              ><span>参考当前系统时间，并可查询主流媒体、Science、Nature、PubMed 等可信来源。</span>
+            </div>
+            <div class="ai-cap">
+              <b>自定义模型</b><span>设置页可增加模型名称并永久保存，适配 ZenMux 新模型。</span>
+            </div>
+            <div class="ai-cap">
+              <b>网络状态提示</b
+              ><span>明确告知用户 AI 会受网络、代理、服务状态和模型可用性影响。</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="matrix-section" aria-label="跨应用能力矩阵">
+          <div class="section-kicker">Cross-app capability matrix</div>
+          <h2 class="section-title">能力落在哪里，<br />一张表看清。</h2>
+          <p class="section-lead">
+            “✓”代表当前应用中可以直接使用；“专用”代表该应用拥有针对文件格式优化的独立实现。
+          </p>
+          <div class="matrix-wrap">
+            <table class="matrix">
+              <thead>
+                <tr>
+                  <th>能力</th>
+                  <th>Word</th>
+                  <th>Excel</th>
+                  <th>PPT</th>
+                  <th>Markdown</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>打开并保存真实格式</td>
+                  <td class="yes">✓ DOCX</td>
+                  <td class="yes">✓ XLSX</td>
+                  <td class="yes">✓ PPTX</td>
+                  <td class="yes">✓ MD</td>
+                </tr>
+                <tr>
+                  <td>选择内容作为 AI 上下文</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>LaTeX / 多行公式</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>图片公式 OCR</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>图片与文件附件（最多 5 个）</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>互联网搜索与事实核查</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>严格 AI 审稿委员会</td>
+                  <td class="yes">✓ 专用</td>
+                  <td class="partial">数据审查</td>
+                  <td class="partial">内容审查</td>
+                  <td class="yes">✓ 专用</td>
+                </tr>
+                <tr>
+                  <td>AI 配图</td>
+                  <td class="yes">✓ 3:2</td>
+                  <td class="partial">图表</td>
+                  <td class="yes">✓ 16:9</td>
+                  <td class="yes">✓ 图片</td>
+                </tr>
+                <tr>
+                  <td>可编辑图表与可视化</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓ 9 类</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓ Mermaid</td>
+                </tr>
+                <tr>
+                  <td>版本快照与回退</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="foundation" aria-label="基础能力">
+          <article>
+            <i>01</i>
+            <h3>本地优先密钥</h3>
+            <p>ZenMux API Key 永久保存在当前设备，设置页遮罩显示；可添加和保存自定义模型名称。</p>
+          </article>
+          <article>
+            <i>02</i>
+            <h3>跨平台独立应用</h3>
+            <p>
+              macOS Apple Silicon DMG 已 Developer ID 签名并通过 Apple 公证；Windows 10/11
+              提供独立安装程序。
+            </p>
+          </article>
+          <article>
+            <i>03</i>
+            <h3>多语言与中文优化</h3>
+            <p>界面覆盖多语言；文档、图表、字体回退、审稿与分析流程重点支持中文内容。</p>
+          </article>
+          <article>
+            <i>04</i>
+            <h3>开放源代码</h3>
+            <p>Apache-2.0 开源，可在 GitHub 查看源代码、版本记录、安装包和更新说明。</p>
+          </article>
+        </section>
+
         <section class="models">
           <h2>一个入口，<br />多种模型。</h2>
           <div class="model-list">
@@ -586,7 +1569,7 @@
 
       <footer>
         <span>GenOffice · Powered by ZenMux · AI adaptation by Zhiping Xu, Fudan University</span>
-        <span>Apache-2.0 · Built for macOS</span>
+        <span>Apache-2.0 · Built for macOS &amp; Windows</span>
       </footer>
     </div>
   </body>
