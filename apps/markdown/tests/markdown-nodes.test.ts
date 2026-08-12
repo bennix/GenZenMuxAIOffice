@@ -110,6 +110,25 @@ describe('markdown round-trip for GFM nodes', () => {
     expect(stable).toBe(true)
   })
 
+  it('renders equations beside bold text without leaking Markdown markers', () => {
+    const md =
+      '*侦查人员只要测量* **坠落高度 $h$** 和**身体着地点距离墙根的距离 $x$**，反算出**初始水平速度 $v_0$**。'
+    const parsed = editor.markdown!.parse(md)
+    const json = JSON.stringify(parsed)
+    const { out } = roundTrip(editor, md)
+
+    expect(json.match(/"type":"inlineEquation"/g)).toHaveLength(3)
+    expect(json.match(/"type":"bold"/g)).toHaveLength(3)
+    expect(json).not.toContain('**')
+    // Atomic equation nodes cannot carry text marks, so the serializer closes
+    // bold around them. The visual result stays clean and structurally stable.
+    expect(out).toContain('**坠落高度** $h$')
+    expect(out).toContain('**初始水平速度** $v_0$')
+    // The first save normalizes an unsupported "bold around an atom" range.
+    // From that canonical form onward, saving is stable.
+    expect(editor.markdown!.serialize(editor.markdown!.parse(out))).toBe(out)
+  })
+
   it('nested lists serialize with 4-space indents (strict-CommonMark safe)', () => {
     // 2-space indents would be below the ordered item's content column ("1. "
     // = 3 chars), so GitHub would flatten the sub-list when re-parsing the file

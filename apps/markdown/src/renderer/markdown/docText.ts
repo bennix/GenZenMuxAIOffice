@@ -135,6 +135,10 @@ export function repairOverescapedMarkdown(body: string): string {
       }
 
       let repaired = line
+        // A closing italic `*` followed by an escaped bold opener `\*` was
+        // emitted as `*\*...\*\*`. Separate the adjacent marks first so the
+        // generic escaped-bold migration cannot pair the wrong delimiters.
+        .replace(/(?<!\\)\*\\\*([^\n]+?)\\\*\\\*/g, '* **$1**')
         .replace(/\\\*\\\*([^\n]+?)\\\*\\\*/g, '**$1**')
         .replace(/^(\s*)\\\*\s+/, '$1* ')
 

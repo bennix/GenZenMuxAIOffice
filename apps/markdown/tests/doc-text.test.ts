@@ -29,6 +29,14 @@ describe('repairOverescapedMarkdown', () => {
     const md = String.raw`Show \* literally and keep $v\_0$ as authored.`
     expect(repairOverescapedMarkdown(md)).toBe(md)
   })
+
+  it('repairs adjacent italic and partially escaped bold spans', () => {
+    const md =
+      ' *侦查人员只要测量*\\*坠落高度 $h$\\*\\* 和\\*\\*身体着地点距离墙根的距离 $x$\\*\\*，就能反算出\\*\\*初始水平速度 $v\\_0$\\*\\*。'
+    expect(repairOverescapedMarkdown(md)).toBe(
+      ' *侦查人员只要测量* **坠落高度 $h$** 和**身体着地点距离墙根的距离 $x$**，就能反算出**初始水平速度 $v_0$**。',
+    )
+  })
 })
 
 describe('stripLegacyFencedDivs', () => {
