@@ -2,7 +2,7 @@ import type { Editor, JSONContent } from '@tiptap/core'
 import type { Node as PmNode } from '@tiptap/pm/model'
 import type { AgentToolCall, AgentToolDef, ToolExecution } from '@genoffice/agent-core'
 import { markAiRange } from '../editor/aiHighlight'
-import { stripLegacyFencedDivs } from '../markdown/docText'
+import { repairOverescapedMarkdown, stripLegacyFencedDivs } from '../markdown/docText'
 import { t } from '../i18n/locale'
 
 const CONTEXT_MAX_CHARS = 8000
@@ -172,7 +172,7 @@ function parseMarkdownToNodes(editor: Editor, markdown: string): PmNode[] {
   // Raw HTML needs no guard: parse runs it through the schema, so semantic
   // tags degrade to their GFM equivalents (<b>→bold, <img>→image) and
   // anything the schema cannot represent loses its styling, keeping text.
-  const json = editor.markdown?.parse(stripLegacyFencedDivs(markdown))
+  const json = editor.markdown?.parse(repairOverescapedMarkdown(stripLegacyFencedDivs(markdown)))
   const content = json?.content ?? []
   return content.map((c) => editor.schema.nodeFromJSON(c))
 }

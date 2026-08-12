@@ -88,6 +88,28 @@ describe('markdown round-trip for GFM nodes', () => {
     expect(stable).toBe(true)
   })
 
+  it('renders Chinese prose with inline equations and strong marks', () => {
+    const md = [
+      '* 判断碰撞速度：',
+      '',
+      '根据末速度公式 $v = \\sqrt{2gh}$（在忽略空气阻力的小高度范围内），可以精准计算出人体接触地面瞬间的碰撞速度。',
+      '',
+      '法医通过分析骨折形态、内脏破裂程度，对比自由落体算出的碰撞速度 $v$，可以判断死者是**直接砸向地面**，还是在下落过程中**发生过二次减速**。',
+      '',
+      '* 推算坠楼精确时间点：',
+    ].join('\n')
+    const parsed = editor.markdown!.parse(md)
+    const json = JSON.stringify(parsed)
+    const { out, stable } = roundTrip(editor, md)
+
+    expect(json.match(/"type":"inlineEquation"/g)).toHaveLength(2)
+    expect(json).toContain('v = \\\\sqrt{2gh}')
+    expect(json.match(/"type":"bold"/g)).toHaveLength(2)
+    expect(out).toContain('$v = \\sqrt{2gh}$')
+    expect(out).toContain('**直接砸向地面**')
+    expect(stable).toBe(true)
+  })
+
   it('nested lists serialize with 4-space indents (strict-CommonMark safe)', () => {
     // 2-space indents would be below the ordered item's content column ("1. "
     // = 3 chars), so GitHub would flatten the sub-list when re-parsing the file

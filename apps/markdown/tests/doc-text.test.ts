@@ -1,9 +1,35 @@
 import { describe, expect, it } from 'vitest'
 import {
   parseDocText,
+  repairOverescapedMarkdown,
   serializeDocText,
   stripLegacyFencedDivs,
 } from '../src/renderer/markdown/docText'
+
+describe('repairOverescapedMarkdown', () => {
+  it('repairs legacy AI formatting and LaTeX while preserving code fences', () => {
+    const md = [
+      '\\* **not paired**',
+      '\\* 判断碰撞速度：',
+      '速度 $v = \\\\sqrt{2gh}$，结论是\\*\\*直接砸向地面\\*\\*。',
+      '下标 $v\\_0$。',
+      '```md',
+      '\\*\\*literal\\*\\* $\\\\sqrt{x}$',
+      '```',
+    ].join('\n')
+    const out = repairOverescapedMarkdown(md)
+    expect(out).toContain('* 判断碰撞速度：')
+    expect(out).toContain('$v = \\sqrt{2gh}$')
+    expect(out).toContain('**直接砸向地面**')
+    expect(out).toContain('$v_0$')
+    expect(out).toContain('\\*\\*literal\\*\\* $\\\\sqrt{x}$')
+  })
+
+  it('does not alter intentional escapes without a legacy signature', () => {
+    const md = String.raw`Show \* literally and keep $v\_0$ as authored.`
+    expect(repairOverescapedMarkdown(md)).toBe(md)
+  })
+})
 
 describe('stripLegacyFencedDivs', () => {
   it('removes callout fences and keeps the body', () => {

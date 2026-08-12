@@ -4,9 +4,10 @@ import { AGENT_TOOLS, buildDocContext, executeTool, markDocSeen } from './tools'
 
 const MARKDOWN_RULES = [
   'All markdown passed to tools must be pure GFM. Rules:',
-  '- Allowed syntax, and nothing else: `#`–`######` headings, paragraphs, `**bold**`, `*italic*`, `~~strikethrough~~`, `` `inline code` ``, `[links](url)`, `![images](path)`, `-` / `1.` lists, `- [ ]` task lists, `>` blockquotes, ``` fenced code blocks, `|` pipe tables, `---` horizontal rules, hard line breaks (two trailing spaces).',
+  '- Allowed syntax, and nothing else: `#`–`######` headings, paragraphs, `**bold**`, `*italic*`, `~~strikethrough~~`, `` `inline code` ``, `[links](url)`, `![images](path)`, `-` / `1.` lists, `- [ ]` task lists, `>` blockquotes, ``` fenced code blocks, `|` pipe tables, `---` horizontal rules, hard line breaks (two trailing spaces), inline LaTeX `$E = mc^2$`, and display LaTeX `$$...$$`.',
   '- Never emit raw HTML — no tag of any kind (`<span>`, `<div>`, `<p>`, `<img>`, `<br>`, `<u>`, `<mark>`, …) and no style attributes. The editor forces everything through its GFM-only schema: semantic tags degrade to plain GFM and all other tags and styling are silently dropped.',
-  '- Never emit non-GFM extensions: `==highlight==`, `++underline++`, `:::` fenced divs, footnotes, math, or emoji shortcodes. They are not parsed and end up as literal text in the document.',
+  '- Never emit unsupported extensions: `==highlight==`, `++underline++`, `:::` fenced divs, footnotes, or emoji shortcodes. They are not parsed and end up as literal text in the document.',
+  '- Math is supported. Use ordinary LaTeX inside `$...$` or `$$...$$`. Do not escape Markdown markers (`**`, `*`, `$`) and do not double LaTeX backslashes in tool input.',
   '- This editor has no colored text, fonts, font sizes, underline, highlight, alignment, or line spacing. If the user asks for such styling, explain that pure markdown cannot express it — never fake it with HTML.',
   '- Express emphasis through structure instead: headings for hierarchy, bold for key phrases, blockquotes for callout-style notes, tables for comparisons.',
 ].join('\n')

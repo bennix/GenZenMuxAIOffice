@@ -106,6 +106,24 @@ describe('model output is sanitized to pure GFM', () => {
     expect(md).toContain('Be careful.')
     expect(md).not.toContain(':::')
   })
+
+  it('repairs overescaped model Markdown and renders its equations', () => {
+    const editor = createEditor()
+    executeTool(
+      editor,
+      call('insert_content', {
+        afterIndex: -1,
+        markdown:
+          '\\* 判断碰撞速度：\n\n速度 $v = \\\\sqrt{2gh}$，死者是\\*\\*直接砸向地面\\*\\*。',
+      }),
+    )
+    const json = editor.getJSON()
+    const serialized = JSON.stringify(json)
+    expect(serialized).toContain('inlineEquation')
+    expect(serialized).toContain('v = \\\\sqrt{2gh}')
+    expect(serialized).toContain('bold')
+    expect(editor.getMarkdown()).toContain('**直接砸向地面**')
+  })
 })
 
 describe('replace_blocks', () => {

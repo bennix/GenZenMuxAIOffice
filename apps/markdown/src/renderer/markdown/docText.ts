@@ -105,6 +105,61 @@ export function stripLegacyFencedDivs(body: string): string {
   return out.join('\n')
 }
 
+/**
+ * Repair Markdown produced by older AI prompts that told the model math was
+ * unsupported. Those prompts made the model escape formatting markers and
+ * double LaTeX backslashes, so the editor correctly displayed the source
+ * characters instead of formatting them. Keep fenced code byte-for-byte and
+ * only migrate documents with an unmistakable over-escaping signature.
+ */
+export function repairOverescapedMarkdown(body: string): string {
+  const hasEscapedFormatting = /\\\*\\\*[^\n]+?\\\*\\\*/.test(body)
+  const hasDoubledLatex = /\${1,2}[\s\S]*?\\\\(?:[A-Za-z]+|[{}_^])[\s\S]*?\${1,2}/.test(body)
+  if (!hasEscapedFormatting && !hasDoubledLatex) return body
+
+  const lines = body.split('\n')
+  let codeFence: string | null = null
+  let displayMath = false
+  return lines
+    .map((line) => {
+      const fence = /^\s*(`{3,}|~{3,})/.exec(line)
+      if (codeFence) {
+        if (fence && fence[1][0] === codeFence[0] && fence[1].length >= codeFence.length) {
+          codeFence = null
+        }
+        return line
+      }
+      if (fence) {
+        codeFence = fence[1]
+        return line
+      }
+
+      let repaired = line
+        .replace(/\\\*\\\*([^\n]+?)\\\*\\\*/g, '**$1**')
+        .replace(/^(\s*)\\\*\s+/, '$1* ')
+
+      // Only touch delimited math. Outside math, Markdown backslash escapes
+      // may be intentional and must remain unchanged.
+      repaired = repaired.replace(/(\${1,2})([^$\n]+?)\1/g, (_all, delimiter, latex) => {
+        const normalized = normalizeLegacyLatex(String(latex))
+        return `${delimiter}${normalized}${delimiter}`
+      })
+      const displayDelimiters = (repaired.match(/(?<!\\)\$\$/g) ?? []).length
+      if (displayMath || displayDelimiters % 2 === 1) {
+        repaired = normalizeLegacyLatex(repaired)
+        if (displayDelimiters % 2 === 1) displayMath = !displayMath
+      }
+      return repaired
+    })
+    .join('\n')
+}
+
+function normalizeLegacyLatex(latex: string): string {
+  // A LaTeX line break is intentionally `\\`; only collapse doubled command
+  // escapes such as `\\sqrt`, `\\frac`, `\\{` and `\\_`.
+  return latex.replace(/\\\\(?=[A-Za-z{}_^])/g, '\\').replace(/\\_/g, '_')
+}
+
 /** Reassemble the full file text from the envelope and the (re)serialized body */
 export function serializeDocText(envelope: DocEnvelope, body: string): string {
   let text = envelope.frontmatter + body

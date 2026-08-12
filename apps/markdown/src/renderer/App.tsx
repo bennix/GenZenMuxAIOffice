@@ -8,6 +8,7 @@ import {
   parseDocText,
   serializeDocText,
   stripLegacyFencedDivs,
+  repairOverescapedMarkdown,
   type DocEnvelope,
 } from './markdown/docText'
 import { buildExtensions } from './editor/extensions'
@@ -171,7 +172,9 @@ export default function App() {
           editor
             .chain()
             .setMeta('addToHistory', false)
-            .setContent(stripLegacyFencedDivs(envelope.body), { contentType: 'markdown' })
+            .setContent(repairOverescapedMarkdown(stripLegacyFencedDivs(envelope.body)), {
+              contentType: 'markdown',
+            })
             .run()
           setFilePath(path)
           const inner = frontmatterInner(envelope.frontmatter)
@@ -341,7 +344,9 @@ export default function App() {
     restoreSnapshot: (markdown) => {
       const current = editorRef.current
       if (!current) return
-      current.commands.setContent(markdown, { contentType: 'markdown' })
+      current.commands.setContent(repairOverescapedMarkdown(markdown), {
+        contentType: 'markdown',
+      })
       markDirty()
     },
     onRunDone: (mutated) => {
