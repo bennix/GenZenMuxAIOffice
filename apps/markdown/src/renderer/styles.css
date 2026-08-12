@@ -1969,6 +1969,48 @@ body {
 .md-mermaid-dialog textarea {
   min-height: 180px;
 }
+.md-mermaid-ai-box {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-secondary, var(--surface));
+}
+.md-mermaid-ai-box textarea {
+  min-height: 82px;
+}
+.md-mermaid-ai-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.md-mermaid-ai-row > span {
+  flex: 1;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+}
+.md-mermaid-inline-ai {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-secondary, var(--surface));
+}
+.md-mermaid-inline-ai textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.md-mermaid-ai-button {
+  color: var(--accent, #2563eb);
+}
 
 .rb-translate {
   position: relative;
