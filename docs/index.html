@@ -163,6 +163,17 @@
           box-shadow 180ms ease;
       }
 
+      .downloads {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 4px;
+      }
+
+      .downloads .download {
+        margin-top: 0;
+      }
+
       .download:hover {
         transform: translate(-4px, -4px);
         box-shadow: 7px 7px 0 var(--blue);
@@ -338,16 +349,27 @@
           <div class="hero-copy">
             <h2>让文档、表格与演示文稿，拥有同一个 AI 工作台。</h2>
             <p>
-              一款独立的 macOS 办公应用。API Key 只保存在本机；文本生成与 PPT、Word 配图统一通过
-              ZenMux 调用。
+              一款独立的 macOS 与 Windows 办公应用。API Key 只保存在本机；文本生成与 PPT、Word
+              配图统一通过 ZenMux 调用。
             </p>
-            <a
-              class="download"
-              href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.9-arm64.dmg"
-            >
-              下载 macOS DMG <b>↓</b>
-            </a>
-            <div class="meta">Apple Silicon · macOS · Developer ID 签名与 Apple 公证</div>
+            <div class="downloads">
+              <a
+                class="download"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.9-arm64.dmg"
+              >
+                下载 macOS DMG <b>↓</b>
+              </a>
+              <a
+                class="download"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.9-x64.exe"
+              >
+                下载 Windows x64 <b>↓</b>
+              </a>
+            </div>
+            <div class="meta">
+              macOS：Apple Silicon · Developer ID 签名与 Apple 公证<br />Windows：Windows 10/11 x64
+              · 暂未 Authenticode 签名，SmartScreen 可能提示未知发布者
+            </div>
           </div>
         </section>
 
@@ -355,7 +377,7 @@
           <article class="feature">
             <span class="feature-num">01</span>
             <h3>本地优先</h3>
-            <p>ZenMux API Key 在设置页加密遮罩显示，并永久保存在当前 Mac。</p>
+            <p>ZenMux API Key 在设置页加密遮罩显示，并永久保存在当前设备。</p>
           </article>
           <article class="feature">
             <span class="feature-num">02</span>

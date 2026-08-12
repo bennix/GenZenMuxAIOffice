@@ -316,6 +316,7 @@ const config = {
     publish: null,
   },
   nsis: {
+    artifactName: 'GenOfficeSetup-${version}-${arch}.${ext}',
     oneClick: false,
     allowToChangeInstallationDirectory: true,
   },
