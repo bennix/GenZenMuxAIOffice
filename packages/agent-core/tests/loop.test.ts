@@ -3,6 +3,7 @@ import {
   AgentLoop,
   COMPLETED_VIA_TOOLS_TEXT,
   composeSkills,
+  createResearchSkill,
   type AgentMessage,
   type AgentSkill,
   type AgentStreamCallbacks,
@@ -931,5 +932,17 @@ describe('composeSkills', () => {
       executeTool: () => ({ output: '', summary: '' }),
     })
     expect(() => composeSkills('x', '', [make('a'), make('b')])).toThrow(/duplicate/)
+  })
+})
+
+describe('createResearchSkill', () => {
+  it('supplies the current system time on every turn', () => {
+    let current = new Date('2026-08-12T02:00:00.000Z')
+    const skill = createResearchSkill(() => current)
+    expect(skill.systemPrompt).toContain('MUST search')
+    expect(skill.systemPrompt).toContain('PubMed')
+    expect(skill.buildContext?.()).toContain('2026-08-12T02:00:00.000Z')
+    current = new Date('2026-08-13T03:00:00.000Z')
+    expect(skill.buildContext?.()).toContain('2026-08-13T03:00:00.000Z')
   })
 })

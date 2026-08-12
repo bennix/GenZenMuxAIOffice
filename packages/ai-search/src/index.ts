@@ -40,11 +40,13 @@ export async function webSearch(
         const organic: unknown[] = Array.isArray(data.organic) ? data.organic : []
         const results: WebSearchResult[] = organic.slice(0, maxResults).map((item) => {
           const o = asRecord(item)
-          return {
+          const result: WebSearchResult = {
             title: String(o.title ?? ''),
             url: String(o.link ?? ''),
             snippet: String(o.snippet ?? ''),
           }
+          if (typeof o.date === 'string' && o.date.trim()) result.publishedAt = o.date.trim()
+          return result
         })
         const answerBox = asRecord(data.answerBox)
         const answerRaw =

@@ -12,7 +12,9 @@ afterEach(() => {
   delete process.env.SERPER_API_KEY
 })
 
-function mockFetch(handler: (url: string, init?: RequestInit) => { ok: boolean; json?: any; text?: string }) {
+function mockFetch(
+  handler: (url: string, init?: RequestInit) => { ok: boolean; json?: any; text?: string },
+) {
   globalThis.fetch = vi.fn(async (url: any, init: any) => {
     const r = handler(String(url), init)
     return {
@@ -35,7 +37,7 @@ describe('webSearch (Serper)', () => {
         json: {
           answerBox: { answer: '42' },
           organic: [
-            { title: 'A', link: 'https://a.com', snippet: 'sa' },
+            { title: 'A', link: 'https://a.com', snippet: 'sa', date: 'Aug 11, 2026' },
             { title: 'B', link: 'https://b.com', snippet: 'sb' },
           ],
         },
@@ -45,7 +47,12 @@ describe('webSearch (Serper)', () => {
     expect(r.method).toBe('serper')
     expect(r.answer).toBe('42')
     expect(r.results).toHaveLength(2)
-    expect(r.results[0]).toEqual({ title: 'A', url: 'https://a.com', snippet: 'sa' })
+    expect(r.results[0]).toEqual({
+      title: 'A',
+      url: 'https://a.com',
+      snippet: 'sa',
+      publishedAt: 'Aug 11, 2026',
+    })
   })
 
   it('falls back to DuckDuckGo when no key', async () => {
@@ -72,8 +79,18 @@ describe('imageSearch (Serper)', () => {
         ok: true,
         json: {
           images: [
-            { title: 'good', imageUrl: 'https://cdn.example.com/a.jpg', link: 'https://example.com', imageWidth: 800, imageHeight: 600 },
-            { title: 'paid', imageUrl: 'https://gettyimages.com/x.jpg', link: 'https://gettyimages.com' },
+            {
+              title: 'good',
+              imageUrl: 'https://cdn.example.com/a.jpg',
+              link: 'https://example.com',
+              imageWidth: 800,
+              imageHeight: 600,
+            },
+            {
+              title: 'paid',
+              imageUrl: 'https://gettyimages.com/x.jpg',
+              link: 'https://gettyimages.com',
+            },
           ],
         },
       }
@@ -81,6 +98,10 @@ describe('imageSearch (Serper)', () => {
     const r = await imageSearch('cats', 8)
     expect(r.method).toBe('serper')
     expect(r.images).toHaveLength(1) // getty is filtered out
-    expect(r.images[0]).toMatchObject({ imageUrl: 'https://cdn.example.com/a.jpg', width: 800, height: 600 })
+    expect(r.images[0]).toMatchObject({
+      imageUrl: 'https://cdn.example.com/a.jpg',
+      width: 800,
+      height: 600,
+    })
   })
 })

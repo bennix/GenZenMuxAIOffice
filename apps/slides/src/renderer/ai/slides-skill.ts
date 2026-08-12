@@ -2039,7 +2039,8 @@ async function executeTool(
       r.results.forEach((it, i) => {
         const snip =
           it.snippet.length > SNIPPET_MAX ? it.snippet.slice(0, SNIPPET_MAX) + '…' : it.snippet
-        lines.push(`${i + 1}. ${it.title}\n   ${it.url}\n   ${snip}`)
+        const date = it.publishedAt ? `\n   Published/updated: ${it.publishedAt}` : ''
+        lines.push(`${i + 1}. ${it.title}\n   ${it.url}${date}\n   ${snip}`)
       })
       // display side channel: link list (full title+URL for the UI, not in LLM context)
       const display: ToolDisplay = {

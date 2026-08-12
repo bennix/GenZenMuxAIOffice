@@ -214,7 +214,7 @@ export interface DesktopApi {
     query: string,
     maxResults?: number,
   ): Promise<{
-    results: Array<{ title: string; url: string; snippet: string }>
+    results: Array<{ title: string; url: string; snippet: string; publishedAt?: string }>
     answer?: string
     method: string
     /** failure reason when method === 'error' */

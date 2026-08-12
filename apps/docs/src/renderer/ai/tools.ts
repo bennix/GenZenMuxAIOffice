@@ -371,9 +371,10 @@ async function executeAsyncTool(
       }
       const lines: string[] = []
       if (r.answer) lines.push(`Direct answer: ${r.answer}\n`)
-      r.results.forEach((it, i) =>
-        lines.push(`${i + 1}. ${it.title}\n   ${it.url}\n   ${it.snippet}`),
-      )
+      r.results.forEach((it, i) => {
+        const date = it.publishedAt ? `\n   Published/updated: ${it.publishedAt}` : ''
+        lines.push(`${i + 1}. ${it.title}\n   ${it.url}${date}\n   ${it.snippet}`)
+      })
       return {
         output: lines.join('\n') || '(no results)',
         mutated: false,

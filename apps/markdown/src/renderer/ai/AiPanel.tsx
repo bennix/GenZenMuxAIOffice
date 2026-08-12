@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactElement, ReactNode } from 'react'
-import { AgentLoop, composeSkills } from '@genoffice/agent-core'
+import { AgentLoop, composeSkills, createResearchSkill } from '@genoffice/agent-core'
 import type { AgentImage } from '@genoffice/agent-core'
 import type { AiSettings } from '@genoffice/ai-provider'
 import { AiComposer, AiTypingIndicator, Markdown } from '@genoffice/ui'
@@ -164,6 +164,7 @@ export function AiPanel({
       transport: createElectronTransport(() => settingsRef.current!),
       maxTurns: MAX_TURNS,
       skill: composeSkills('markdown+search', '', [
+        createResearchSkill(),
         createMarkdownSkill(() => depsRef.current.getEditor()),
         createSearchSkill(),
         createFilesSkill(() => availableAttachmentsRef.current),

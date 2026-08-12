@@ -59,7 +59,7 @@ export const AI_CHANNELS = {
 
 export interface WebSearchResult {
   answer?: string
-  results: Array<{ title: string; url: string; snippet: string }>
+  results: Array<{ title: string; url: string; snippet: string; publishedAt?: string }>
 }
 
 export type ExportFormat = 'pdf' | 'docx' | 'docs'

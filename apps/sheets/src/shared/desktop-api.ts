@@ -1989,7 +1989,7 @@ export interface DesktopApi {
 export type MenuAction = 'open' | 'save' | 'save-as' | 'export-pdf' | 'undo' | 'redo'
 
 export interface WebSearchResult {
-  results: Array<{ title: string; url: string; snippet: string }>
+  results: Array<{ title: string; url: string; snippet: string; publishedAt?: string }>
   answer?: string
   method: string
 }
