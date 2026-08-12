@@ -1733,6 +1733,9 @@ function extractTextboxes(
       box.insetBottomPx = inset('bIns')
     }
     for (const content of contents) box.paras.push(...txbxContentParas(content, ctx))
+    if (box.paras.some((p) => p.runs.some((r) => r.textOutline))) {
+      box.wordArtId = 'ooxml-wordart'
+    }
     if (contents.some(txbxHasStructuredContent)) box.readOnly = true
     if (contents.length === 0) {
       // textless preset shape: keep it if the geometry has any visible ink
@@ -1826,6 +1829,9 @@ function extractTextboxes(
       const stroke = vmlColorHex(shapeAttrs['strokecolor'])
       if (stroke && shapeAttrs['stroked'] !== 'f') box.borderColor = stroke
       for (const content of contents) box.paras.push(...txbxContentParas(content, ctx))
+      if (box.paras.some((p) => p.runs.some((r) => r.textOutline))) {
+        box.wordArtId = 'ooxml-wordart'
+      }
       if (contents.some(txbxHasStructuredContent)) box.readOnly = true
       if (box.paras.some((p) => p.runs.length > 0)) out.push(box)
     }
@@ -2412,6 +2418,18 @@ function buildRun(
     if (strike !== undefined) run.strike = strike
     const color = colorFrom(rPr, theme)
     if (color) run.color = color
+    const textOutline = findChild(rPr, 'w14:textOutline')
+    const outlineFill = textOutline ? findChild(textOutline, 'w14:solidFill') : undefined
+    const outlineColor = outlineFill
+      ? attrsOf(findChild(outlineFill, 'w14:srgbClr') ?? {})['w14:val']
+      : undefined
+    if (outlineColor && /^[0-9A-Fa-f]{6}$/.test(outlineColor)) {
+      const width = parseInt(attrsOf(textOutline ?? {})['w14:w'] ?? '', 10)
+      run.textOutline = {
+        color: outlineColor.toUpperCase(),
+        widthEmu: Number.isFinite(width) && width > 0 ? width : 12700,
+      }
+    }
     const sz = attrsOf(findChild(rPr, 'w:sz') ?? {})['w:val']
     if (sz) run.sizeHalfPoints = parseInt(sz, 10) || undefined
     const rf = themedRFonts(attrsOf(findChild(rPr, 'w:rFonts') ?? {}), themeFonts)

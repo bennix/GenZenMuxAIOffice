@@ -25,6 +25,8 @@ export interface Run {
   strike?: boolean
   /** hex color without '#', e.g. "FF0000" */
   color?: string
+  /** Word 2010+ text outline (w14:textOutline), used by WordArt; width in EMU. */
+  textOutline?: { color: string; widthEmu: number }
   /** font size in half-points (OOXML w:sz) */
   sizeHalfPoints?: number
   /** primary font family (w:rFonts, eastAsia ?? ascii ?? hAnsi) */
@@ -860,8 +862,8 @@ export interface TextboxDisplay {
    */
   prst?: string
   /**
-   * WordArt preset id (e.g. 'wordArt-1').  When set, the editor applies
-   * large-text CSS approximation (color + optional text-stroke).
+   * WordArt preset id. When set, the editor applies the preset as a fallback;
+   * parsed per-run text fill/outline remains the authoritative rendering.
    * This field is display-only; it is never written to OOXML.
    */
   wordArtId?: string

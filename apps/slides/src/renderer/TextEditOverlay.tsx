@@ -289,6 +289,10 @@ export function populateEditorDom(
             if (run.srcFontFamily) span.dataset.font = run.srcFontFamily
           }
           span.style.color = normalizeCss(run.color)
+          if (run.outline) {
+            span.style.webkitTextStroke = `${Math.max(run.outline.widthPx, 0.5)}px ${normalizeCss(run.outline.color)}`
+            span.style.webkitTextFillColor = normalizeCss(run.color)
+          }
           p.appendChild(span)
         }
         const fragment = document.createElement('span')

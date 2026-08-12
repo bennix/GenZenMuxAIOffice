@@ -2867,6 +2867,7 @@ function RibbonInner({
           </>
         ) : tab === 'draw' ? (
           <DrawTab
+            editor={editor}
             hasDoc={hasDoc}
             tool={inkTool}
             onTool={onInkTool}

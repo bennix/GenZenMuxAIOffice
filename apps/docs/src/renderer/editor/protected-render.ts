@@ -556,6 +556,10 @@ export function runSpanSpec(run: Run, autoSpace?: boolean): DomSpec {
   const cs = run.csFont && textHasComplexScript(run.text) ? run.csFont : undefined
   const runStyle = [
     run.color ? `color:#${run.color}` : '',
+    run.textOutline
+      ? `-webkit-text-stroke:${wordArtStrokePx(run.textOutline.widthEmu)}px #${run.textOutline.color}`
+      : '',
+    run.textOutline ? '-webkit-text-fill-color:currentColor' : '',
     run.bold ? 'font-weight:700' : '',
     run.italic ? 'font-style:italic' : '',
     run.underline ? 'text-decoration:underline' : '',

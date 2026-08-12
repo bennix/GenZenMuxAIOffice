@@ -72,7 +72,11 @@ function insertWordArt(editor: Editor, preset: WordArtPreset) {
 
 describe('WordArt insertion', () => {
   it('buildWordArtParagraphXml generates XML with the correct WPS structure', () => {
-    const xml = buildWordArtParagraphXml({ colorHex: '4472C4', id: 1 })
+    const xml = buildWordArtParagraphXml({
+      colorHex: 'FFFFFF',
+      outline: { colorHex: 'ED7D31', widthEmu: 19050 },
+      id: 1,
+    })
     expect(xml).toContain('wps:wsp')
     expect(xml).toContain('w:txbxContent')
     expect(xml).toContain('wp:anchor')
@@ -80,7 +84,10 @@ describe('WordArt insertion', () => {
     // large text: sz=72 (36pt)
     expect(xml).toContain('w:val="72"')
     // requested color
-    expect(xml).toContain('4472C4')
+    expect(xml).toContain('FFFFFF')
+    expect(xml).toContain('<w14:textOutline')
+    expect(xml).toContain('w14:w="19050"')
+    expect(xml).toContain('ED7D31')
     // center alignment
     expect(xml).toContain('w:val="center"')
     // mc:Fallback should NOT have xmlns:mc attribute
@@ -193,5 +200,30 @@ describe('WordArt insertion', () => {
   it('the WordArt shape itself has no background fill', () => {
     const xml = buildWordArtParagraphXml({ colorHex: '4472C4', id: 1 })
     expect(xml).toContain('<a:noFill/>')
+  })
+
+  it('real WordArt outline survives save and reparse', async () => {
+    const source = await buildDocx({
+      bodyXml: buildWordArtParagraphXml({
+        text: 'Outlined',
+        colorHex: 'FFFFFF',
+        outline: { colorHex: 'C00000', widthEmu: 19050 },
+        id: 9,
+      }),
+    })
+    const parsed = await parseDocx(source)
+    const box = parsed.blocks.find((block) => block.textboxes)?.textboxes?.[0]
+    expect(box?.wordArtId).toBe('ooxml-wordart')
+    expect(box?.paras[0]?.runs[0]?.textOutline).toEqual({ color: 'C00000', widthEmu: 19050 })
+
+    const saved = await saveDocx(
+      parsed,
+      parsed.blocks.map((block) => ({ kind: 'original' as const, docxIndex: block.docxIndex! })),
+    )
+    const reopened = await parseDocx(saved)
+    expect(
+      reopened.blocks.find((block) => block.textboxes)?.textboxes?.[0]?.paras[0]?.runs[0]
+        ?.textOutline,
+    ).toEqual({ color: 'C00000', widthEmu: 19050 })
   })
 })

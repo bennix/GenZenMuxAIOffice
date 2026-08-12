@@ -1935,6 +1935,7 @@ export const RPR_CHILD_ORDER = [
   'w:vanish',
   'w:webHidden',
   'w:color',
+  'w14:textOutline',
   'w:spacing',
   'w:w',
   'w:kern',
@@ -1966,6 +1967,7 @@ const RUN_MANAGED_GROUPS: Array<{ key: string; tags: string[] }> = [
   { key: 'italic', tags: ['w:i', 'w:iCs'] },
   { key: 'strike', tags: ['w:strike'] },
   { key: 'color', tags: ['w:color'] },
+  { key: 'textOutline', tags: ['w14:textOutline'] },
   { key: 'size', tags: ['w:sz', 'w:szCs'] },
   { key: 'highlight', tags: ['w:highlight'] },
   { key: 'underline', tags: ['w:u'] },
@@ -2070,6 +2072,18 @@ function modelRPrChildren(run: Run, insideLink: boolean): PPrChild[] {
   if (run.strike) out.push({ name: 'w:strike', xml: '<w:strike/>' })
   if (run.color)
     out.push({ name: 'w:color', xml: `<w:color w:val="${escapeXmlAttr(run.color)}"/>` })
+  if (run.textOutline) {
+    const color = escapeXmlAttr(run.textOutline.color.replace(/^#/, '').slice(0, 6))
+    const width = Math.max(1, Math.round(run.textOutline.widthEmu))
+    out.push({
+      name: 'w14:textOutline',
+      xml:
+        `<w14:textOutline xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" ` +
+        `w14:w="${width}" w14:cap="rnd" w14:cmpd="sng" w14:algn="ctr">` +
+        `<w14:solidFill><w14:srgbClr w14:val="${color}"/></w14:solidFill>` +
+        `<w14:prstDash w14:val="solid"/></w14:textOutline>`,
+    })
+  }
   if (run.sizeHalfPoints) {
     out.push({ name: 'w:sz', xml: `<w:sz w:val="${run.sizeHalfPoints}"/>` })
     out.push({ name: 'w:szCs', xml: `<w:szCs w:val="${run.sizeHalfPoints}"/>` })
@@ -2134,6 +2148,15 @@ export function mergeRPrModel(rawRPr: string, run: Run, insideLink: boolean): st
       case 'color': {
         const raw = rawAttr(rawOf('w:color'), 'w:val')
         return (raw === 'auto' ? undefined : raw) === run.color
+      }
+      case 'textOutline': {
+        const raw = rawOf('w14:textOutline')
+        const rawColor = /<w14:srgbClr[^>]* w14:val="([0-9A-Fa-f]{6})"/.exec(raw ?? '')?.[1]
+        const rawWidth = parseInt(rawAttr(raw, 'w14:w') ?? '', 10)
+        return (
+          rawColor?.toUpperCase() === run.textOutline?.color.replace(/^#/, '').toUpperCase() &&
+          (Number.isFinite(rawWidth) ? rawWidth : undefined) === run.textOutline?.widthEmu
+        )
       }
       case 'size': {
         const raw = rawAttr(rawOf('w:sz'), 'w:val')
@@ -2365,6 +2388,8 @@ export function buildWordArtParagraphXml(opts: {
   text?: string
   /** 6-digit hex without '#'; defaults to the Office accent blue. */
   colorHex?: string
+  /** Optional text outline written as a real Word 2010+ text effect. */
+  outline?: { colorHex: string; widthEmu: number }
   italic?: boolean
   widthEmu?: number
   heightEmu?: number
@@ -2376,12 +2401,20 @@ export function buildWordArtParagraphXml(opts: {
   const colorHex = opts.colorHex ?? '4472C4'
   const text = opts.text ?? 'WordArt'
 
+  const textOutline = opts.outline
+    ? `<w14:textOutline xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" ` +
+      `w14:w="${Math.max(1, Math.round(opts.outline.widthEmu))}" w14:cap="rnd" w14:cmpd="sng" w14:algn="ctr">` +
+      `<w14:solidFill><w14:srgbClr w14:val="${escapeXmlAttr(opts.outline.colorHex)}"/></w14:solidFill>` +
+      `<w14:prstDash w14:val="solid"/></w14:textOutline>`
+    : ''
+
   // Build run props: large font + color (schema order: b < i < color < sz)
   const rPr =
     `<w:rPr>` +
     `<w:b/>` +
     (opts.italic ? `<w:i/>` : '') +
     `<w:color w:val="${colorHex}"/>` +
+    textOutline +
     `<w:sz w:val="72"/>` + // 36pt = 72 half-points
     `<w:szCs w:val="72"/>` +
     `</w:rPr>`

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Editor, JSONContent } from '@tiptap/core'
-import { SHAPE_GALLERY_GROUPS, wordArtSolidColor, type WordArtPreset } from '@genoffice/ui'
+import { ShapePreview, SHAPE_GALLERY_GROUPS, type WordArtPreset } from '@genoffice/ui'
 import {
   buildLineParagraphXml,
   buildShapeParagraphXml,
@@ -13,6 +13,7 @@ import {
 import type { DocsTabInfo } from '../../shared/ipc'
 import { tableModelToPmNode } from '../editor/convert'
 import { isStraightLineKind } from '../editor/shape-svg'
+import { startShapeDrawMode } from '../editor/shape-draw'
 import type { InkTool } from '../editor/ink'
 import { t, useI18n, type StringKey } from '../i18n/locale'
 import iconEditor from '../assets/icon-editor.png'
@@ -354,11 +355,11 @@ const WORDART_HEIGHT_EMU = 720000
 
 /** Insert a floating WordArt text box at the cursor. */
 export function insertWordArtAt(editor: Editor, preset: WordArtPreset): void {
-  // The saved run can only carry a solid color; light fills fall back to the
-  // outline color so the text stays readable when the file is reopened.
-  const solidHex = wordArtSolidColor(preset).replace('#', '')
   const xml = buildWordArtParagraphXml({
-    colorHex: solidHex,
+    colorHex: preset.fill.replace('#', ''),
+    outline: preset.outline
+      ? { colorHex: preset.outline.color.replace('#', ''), widthEmu: preset.outline.widthEmu }
+      : undefined,
     italic: preset.italic,
     widthEmu: WORDART_WIDTH_EMU,
     heightEmu: WORDART_HEIGHT_EMU,
@@ -374,7 +375,10 @@ export function insertWordArtAt(editor: Editor, preset: WordArtPreset): void {
         runs: [
           {
             text: t('ribbonWordArtDefaultText'),
-            color: solidHex,
+            color: preset.fill.replace('#', ''),
+            textOutline: preset.outline
+              ? { color: preset.outline.color.replace('#', ''), widthEmu: preset.outline.widthEmu }
+              : undefined,
             bold: true,
             italic: preset.italic,
             sizeHalfPoints: 72,
@@ -1185,6 +1189,7 @@ const PEN_WIDTHS = [1, 2, 3.5, 5]
 const HIGHLIGHTER_WIDTHS = [6, 10, 16]
 
 interface DrawTabProps {
+  editor: Editor
   hasDoc: boolean
   tool: InkTool
   onTool: (tool: InkTool) => void
@@ -1197,6 +1202,7 @@ interface DrawTabProps {
 }
 
 export function DrawTab({
+  editor,
   hasDoc,
   tool,
   onTool,
@@ -1208,6 +1214,7 @@ export function DrawTab({
   onClearAll,
 }: DrawTabProps) {
   const { t } = useI18n()
+  const [shapesOpen, setShapesOpen] = useState(false)
   // color/thickness edit the active pen; with no pen active they configure the pen tool
   const editingHighlighter = tool === 'highlighter'
   const active = editingHighlighter ? highlighter : pen
@@ -1231,6 +1238,52 @@ export function DrawTab({
           </button>
         </div>
         <div className="ribbon-group-label">{t('ribbonSelect')}</div>
+      </div>
+      <div className="ribbon-sep" />
+      <div className="ribbon-group">
+        <div className="ribbon-group-items">
+          <div className="rb-split-wrap">
+            <button
+              className={`rb-big ${shapesOpen ? 'active' : ''}`}
+              disabled={!hasDoc}
+              title={t('ribbonShapesTip')}
+              onClick={() => setShapesOpen((open) => !open)}
+            >
+              <span className="rb-big-icon">
+                <ShapePreview prst="rect" size={28} />
+                <IconCaret />
+              </span>
+              <span>{t('ribbonShapes')}</span>
+            </button>
+            {shapesOpen && (
+              <div className="shape-palette rb-shape-gallery">
+                {DOC_SHAPE_GROUPS.map((group) => (
+                  <div key={group.groupKey}>
+                    <div className="rb-drop-title">{t(group.groupKey as StringKey)}</div>
+                    <div className="rb-shape-grid">
+                      {group.shapes.map((shape) => (
+                        <button
+                          key={shape.prst}
+                          className="rb-shape-cell"
+                          title={t(shape.labelKey as StringKey)}
+                          onClick={() => {
+                            startShapeDrawMode(editor, shape.prst, (opts) =>
+                              insertShapeAt(editor, shape.prst, opts),
+                            )
+                            setShapesOpen(false)
+                          }}
+                        >
+                          <ShapePreview prst={shape.prst} size={18} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="ribbon-group-label">{t('ribbonShapes')}</div>
       </div>
       <div className="ribbon-sep" />
       <div className="ribbon-group">

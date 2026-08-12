@@ -13,7 +13,7 @@ import React, {
 } from 'react'
 import type { AnimEffectKind, AnimTrigger, TransitionKind } from '../../shared/ipc'
 import type { ChartStyleInfo } from '@genoffice/pptx-render'
-import { ICON_COLORS } from '../insert-presets'
+import { ICON_COLORS, SHAPE_GALLERY } from '../insert-presets'
 import { THEME_PRESETS, type SlideThemePreset } from '../themes'
 import { restoreEditSelection } from '../TextEditOverlay'
 import { armColorInput, toPickerHex } from '../color-input'
@@ -95,6 +95,7 @@ export type { FormatCmd, SlidesViewMode } from './ribbon-shared'
 import type { FormatCmd } from './ribbon-shared'
 import { RibbonHomeTab } from './RibbonHomeTab'
 import { RibbonInsertTab } from './RibbonInsertTab'
+import { ShapePreview } from './gallery-previews'
 
 const IS_MAC = navigator.platform.toLowerCase().includes('mac')
 /** shell tab mode: the tab strip above owns traffic lights / caption buttons */
@@ -1640,6 +1641,35 @@ export function Ribbon({
                     </span>
                     <span>{t('ribbonEraser')}</span>
                   </button>
+                  {dropBig(
+                    'shapes',
+                    <ShapePreview prst="rect" size={28} />,
+                    t('ribbonShapes'),
+                    t('ribbonShapesTip'),
+                    <div className="rb-shape-gallery">
+                      {SHAPE_GALLERY.map((group) => (
+                        <div key={group.group}>
+                          <div className="rb-drop-title">{group.group}</div>
+                          <div className="rb-shape-grid">
+                            {group.shapes.map((shape) => (
+                              <button
+                                key={shape.prst}
+                                className="rb-shape-cell"
+                                data-tip={shape.label}
+                                aria-label={shape.label}
+                                onClick={() => {
+                                  setInsertDrop(null)
+                                  onPickShape(shape.prst)
+                                }}
+                              >
+                                <ShapePreview prst={shape.prst} size={18} />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>,
+                  )}
                 </Group>
                 <div className="ribbon-sep" />
                 <Group label={t('ribbonGroupPenStyle')}>
