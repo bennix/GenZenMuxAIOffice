@@ -1,0 +1,24 @@
+{
+  "name": "@genoffice/citations",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared scholarly search, bibliography import/export, citation formatting, and citation-manager UI",
+  "exports": {
+    ".": "./src/index.ts",
+    "./citations.css": "./src/citations.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}

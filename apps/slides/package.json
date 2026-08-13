@@ -21,6 +21,7 @@
     "@genoffice/agent-core": "*",
     "@genoffice/ai-provider": "*",
     "@genoffice/ai-search": "*",
+    "@genoffice/citations": "*",
     "@genoffice/docx-engine": "*",
     "@genoffice/file-parse": "*",
     "@genoffice/i18n": "*",

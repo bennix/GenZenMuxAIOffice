@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import type { Editor } from '@tiptap/core'
 import { useI18n } from './i18n/locale'
+import { CitationManager, type CitationRecord } from '@genoffice/citations'
 import {
   buildFrontmatterRaw,
   frontmatterInner,
@@ -88,6 +89,7 @@ export default function App() {
   const [aiOpen, setAiOpen] = useState(true)
   const [aiPreset, setAiPreset] = useState<AiPreset | null>(null)
   const [autoSave, setAutoSave] = useState(() => localStorage.getItem('mdapp.autoSave') === '1')
+  const [citationsOpen, setCitationsOpen] = useState(false)
   const [equationOpen, setEquationOpen] = useState(false)
   const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
   const [mermaidOpen, setMermaidOpen] = useState(false)
@@ -402,6 +404,7 @@ export default function App() {
           setEquationOpen(true)
         }}
         onInsertMermaid={() => setMermaidOpen(true)}
+        onOpenCitations={() => setCitationsOpen(true)}
         onReview={() => setReviewOpen(true)}
         onTranslate={(language) => {
           const selection = editor && editor.state.selection.from !== editor.state.selection.to
@@ -481,6 +484,40 @@ export default function App() {
       )}
       {reviewOpen && editor && (
         <AiReviewCommitteeModal editor={editor} onClose={() => setReviewOpen(false)} />
+      )}
+      {citationsOpen && editor && (
+        <CitationManager
+          onClose={() => setCitationsOpen(false)}
+          onInsertCitation={(record: CitationRecord, rendered) => {
+            const href = record.doi ? `https://doi.org/${record.doi}` : record.url
+            editor
+              .chain()
+              .focus()
+              .insertContent({
+                type: 'text',
+                text: rendered,
+                ...(href ? { marks: [{ type: 'link', attrs: { href } }] } : {}),
+              })
+              .run()
+            markDirty()
+          }}
+          onInsertBibliography={(_records, rendered) => {
+            const markdown = `\n\n## ${navigator.language.startsWith('zh') ? '参考文献' : 'References'}\n\n${rendered.map((line) => `- ${line}`).join('\n')}\n`
+            editor.chain().focus().insertContent(markdown, { contentType: 'markdown' }).run()
+            markDirty()
+          }}
+          aiAssist={async (query) => {
+            const settings = await window.markdownApi.getAiSettings()
+            const response = await window.markdownApi.aiChat({
+              settings,
+              system:
+                'Expand scholarly queries. Return only one concise search query. Never invent publication metadata.',
+              user: `Current date: ${new Date().toISOString().slice(0, 10)}\nQuery: ${query}`,
+            })
+            if (!response.ok) throw new Error(response.error || 'ZenMux request failed')
+            return response.content || query
+          }}
+        />
       )}
     </div>
   )

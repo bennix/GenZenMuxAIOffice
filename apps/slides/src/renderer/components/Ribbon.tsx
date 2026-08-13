@@ -24,6 +24,7 @@ import {
   IconBullets,
   IconArrangeAll,
   IconComment,
+  IconCitation,
   IconCursor,
   IconCustomShow,
   IconEraser,
@@ -745,6 +746,7 @@ export function Ribbon({
   aiOpen,
   onToggleAi,
   onAiPreset,
+  onOpenCitations,
   onInsert,
   onPickShape,
   onInsertImage,
@@ -2196,6 +2198,21 @@ export function Ribbon({
         ) : tab === 'review' ? (
           <>
             <Group label={t('ribbonGroupProofing')}>
+              <button
+                className="rb-big"
+                disabled={!hasDoc}
+                data-tip={
+                  navigator.language.startsWith('zh')
+                    ? '科研文献查询、导入与引用'
+                    : 'Scholarly search, import, and citations'
+                }
+                onClick={onOpenCitations}
+              >
+                <span className="rb-big-icon">
+                  <IconCitation size={BIG} />
+                </span>
+                <span>{navigator.language.startsWith('zh') ? '科研文献' : 'Research'}</span>
+              </button>
               <button
                 className="rb-big"
                 disabled={!hasDoc}

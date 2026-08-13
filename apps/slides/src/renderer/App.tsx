@@ -33,7 +33,13 @@ import { ZOOM_PREVIEW_EVENT } from './zoom-preview'
 import type { DrawRect } from './draw-shape'
 import { SlideThumb } from './SlideThumb'
 import { MasterView } from './MasterView'
-import { TextEditOverlay, firstFontFamily, liveAlign, liveBulletChar } from './TextEditOverlay'
+import {
+  TextEditOverlay,
+  firstFontFamily,
+  liveAlign,
+  liveBulletChar,
+  restoreEditSelection,
+} from './TextEditOverlay'
 import { CropOverlay } from './CropOverlay'
 import { createImageLoader } from './image-loader'
 import { InkOverlay } from './InkOverlay'
@@ -88,6 +94,7 @@ import * as styleActions from './style-actions'
 import { handleGlobalKeydown } from './keyboard-actions'
 import { buildCtxItems } from './context-menu-items'
 import { latexFromEquationDescr } from './latex-equation'
+import { CitationManager } from '@genoffice/citations'
 
 const _IS_MAC = navigator.platform.toLowerCase().includes('mac')
 
@@ -266,6 +273,7 @@ function collectAligns(node: RenderNode, out: Set<ParaAlign>) {
 }
 
 export function App() {
+  const [citationsOpen, setCitationsOpen] = useState(false)
   const { lang } = useI18n()
   const [slides, setSlides] = useState<RenderSlide[]>([])
   const [path, setPath] = useState<string | null>(null)
@@ -2343,6 +2351,7 @@ export function App() {
         aiOpen={showAi}
         onToggleAi={toggleAi}
         onAiPreset={(text, opts) => pushAiPreset(text, true, undefined, undefined, opts?.slideShot)}
+        onOpenCitations={() => setCitationsOpen(true)}
         onInsert={(kind) => void insertElement(kind)}
         onPickShape={pickShape}
         onInsertImage={() => void insertImage()}
@@ -3420,6 +3429,73 @@ export function App() {
           y={ctxMenu.y}
           items={ctxItems}
           onClose={() => setCtxMenu(null)}
+        />
+      )}
+      {citationsOpen && (
+        <CitationManager
+          onClose={() => setCitationsOpen(false)}
+          onInsertCitation={async (_record, rendered) => {
+            if (editing && restoreEditSelection()) {
+              document.execCommand('insertText', false, rendered)
+              return
+            }
+            const currentSlide = ctxRef.current.slide
+            if (!currentSlide) return
+            const result = await window.slidesApi.addElement({
+              slideIndex: current,
+              kind: 'textbox',
+              xPx: Math.round(currentSlide.widthPx * 0.62),
+              yPx: Math.round(currentSlide.heightPx * 0.9),
+              wPx: Math.round(currentSlide.widthPx * 0.32),
+              hPx: 34,
+              fitWidthPx: FIT_WIDTH,
+              paragraphs: [{ runs: [{ text: rendered, fontSize: 10 }] }],
+            })
+            if (result) {
+              applySlide(current, result.slide)
+              setSelectedIds([result.sourceId])
+            }
+          }}
+          onInsertBibliography={async (_records, rendered) => {
+            const currentSlide = ctxRef.current.slide
+            if (!currentSlide || !rendered.length) return
+            const result = await window.slidesApi.addElement({
+              slideIndex: current,
+              kind: 'textbox',
+              xPx: Math.round(currentSlide.widthPx * 0.07),
+              yPx: Math.round(currentSlide.heightPx * 0.12),
+              wPx: Math.round(currentSlide.widthPx * 0.86),
+              hPx: Math.round(currentSlide.heightPx * 0.76),
+              fitWidthPx: FIT_WIDTH,
+              paragraphs: [
+                {
+                  runs: [
+                    {
+                      text: navigator.language.startsWith('zh') ? '参考文献' : 'References',
+                      bold: true,
+                      fontSize: 22,
+                    },
+                  ],
+                },
+                ...rendered.map((line) => ({ runs: [{ text: line, fontSize: 11 }] })),
+              ],
+            })
+            if (result) {
+              applySlide(current, result.slide)
+              setSelectedIds([result.sourceId])
+            }
+          }}
+          aiAssist={async (query) => {
+            const settings = await window.slidesApi.getAiSettings()
+            const response = await window.slidesApi.aiChat({
+              settings,
+              system:
+                'Expand scholarly queries. Return only one concise search query. Never invent publication metadata.',
+              user: `Current date: ${new Date().toISOString().slice(0, 10)}\nQuery: ${query}`,
+            })
+            if (!response.ok) throw new Error(response.error || 'ZenMux request failed')
+            return response.content || query
+          }}
         />
       )}
     </div>

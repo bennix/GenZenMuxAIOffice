@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Editor } from '@tiptap/core'
+import { CitationManager, type CitationRecord } from '@genoffice/citations'
 import {
   bibliographyLine,
   citationText,
@@ -359,6 +360,68 @@ export function ReferencesTab({
   const { t } = useI18n()
   const [captionOpen, setCaptionOpen] = useState(false)
   const [sourceOpen, setSourceOpen] = useState(false)
+  const [researchOpen, setResearchOpen] = useState(false)
+
+  const sourceFromRecord = (record: CitationRecord): SourceInfo => ({
+    tag: record.citationKey,
+    type:
+      record.type === 'book'
+        ? 'Book'
+        : record.type === 'webpage' || record.isPreprint
+          ? 'InternetSite'
+          : record.type === 'report' || record.type === 'thesis'
+            ? 'Report'
+            : 'JournalArticle',
+    author: record.authors
+      .map((author) => author.literal || [author.family, author.given].filter(Boolean).join(', '))
+      .join('; '),
+    title: record.title,
+    year: record.year ? String(record.year) : '',
+    publisher: record.containerTitle || record.publisher,
+    url: record.doi ? `https://doi.org/${record.doi}` : record.url,
+  })
+
+  const insertResearchCitation = (record: CitationRecord, rendered: string) => {
+    if (!sources.some((source) => source.tag === record.citationKey))
+      onAddSource(sourceFromRecord(record))
+    editor
+      .chain()
+      .focus()
+      .insertContent({ type: 'text', text: rendered } as never)
+      .run()
+  }
+
+  const insertResearchBibliography = (_records: CitationRecord[], rendered: string[]) => {
+    const nodes: Array<Record<string, unknown>> = [
+      {
+        type: 'docHeading',
+        attrs: { docxIndex: null, styleId: null, aiChanged: false, level: 1 },
+        content: [{ type: 'text', text: t('ribbonBibliographyHeading') }],
+      },
+      ...rendered.map((line) => ({
+        type: 'docParagraph',
+        attrs: { docxIndex: null, styleId: null, aiChanged: false },
+        content: [{ type: 'text', text: line }],
+      })),
+    ]
+    editor
+      .chain()
+      .focus()
+      .insertContent(nodes as never)
+      .run()
+  }
+
+  const aiAssist = async (query: string): Promise<string> => {
+    const settings = await window.desktop.getAiSettings()
+    const response = await window.desktop.aiChat({
+      settings,
+      system:
+        'You expand scholarly search queries. Return only one concise Boolean-style query with English and Chinese synonyms where useful. Never invent paper titles, authors, DOI, or results.',
+      user: `Current date: ${new Date().toISOString().slice(0, 10)}\nQuery: ${query}`,
+    })
+    if (!response.ok) throw new Error(response.error || 'ZenMux request failed')
+    return response.content || query
+  }
 
   const insertToc = () => {
     const entries = collectTocEntriesWithPages(editor, headingPages)
@@ -459,6 +522,21 @@ export function ReferencesTab({
     <>
       <div className="ribbon-group">
         <div className="ribbon-group-items">
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title={
+              navigator.language.startsWith('zh')
+                ? 'AI 辅助检索、导入和引用科研文献'
+                : 'AI-assisted scholarly search, import, and citation'
+            }
+            onClick={() => setResearchOpen(true)}
+          >
+            <span className="rb-big-icon">
+              <IconBook size={BIG} />
+            </span>
+            <span>{navigator.language.startsWith('zh') ? '科研文献' : 'Research'}</span>
+          </button>
           <button
             className="rb-big"
             disabled={!hasDoc}
@@ -615,6 +693,14 @@ export function ReferencesTab({
       )}
       {sourceOpen && (
         <SourceModal sources={sources} onAdd={onAddSource} onClose={() => setSourceOpen(false)} />
+      )}
+      {researchOpen && (
+        <CitationManager
+          onClose={() => setResearchOpen(false)}
+          onInsertCitation={insertResearchCitation}
+          onInsertBibliography={insertResearchBibliography}
+          aiAssist={aiAssist}
+        />
       )}
       {xePrompt && (
         <PromptModal

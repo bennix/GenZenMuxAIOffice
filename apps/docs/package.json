@@ -22,6 +22,7 @@
     "@genoffice/i18n": "*",
     "@genoffice/ai-provider": "*",
     "@genoffice/ai-search": "*",
+    "@genoffice/citations": "*",
     "@genoffice/docx-engine": "*",
     "@genoffice/file-parse": "*",
     "@genoffice/project-store": "*",

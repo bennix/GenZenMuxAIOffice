@@ -4,6 +4,7 @@ import { App } from './App'
 import { LocaleProvider, setModuleLang } from './i18n/locale'
 import type { UiTheme } from '../shared/ipc'
 import '@genoffice/ui/tokens.css'
+import '@genoffice/citations/citations.css'
 import './styles.css'
 import './fonts/fonts.css'
 

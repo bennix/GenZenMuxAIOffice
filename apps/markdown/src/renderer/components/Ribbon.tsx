@@ -32,6 +32,7 @@ interface Props {
   onInsertImage: () => void
   onInsertEquation: () => void
   onInsertMermaid: () => void
+  onOpenCitations: () => void
   onTranslate: (language: 'zh' | 'en') => void
   onReview: () => void
   frontmatterOpen: boolean
@@ -155,6 +156,7 @@ export function Ribbon({
   onInsertImage,
   onInsertEquation,
   onInsertMermaid,
+  onOpenCitations,
   onTranslate,
   onReview,
   frontmatterOpen,
@@ -374,6 +376,17 @@ export function Ribbon({
             <span className="rb-glyph" style={{ fontWeight: 800 }}>
               B
             </span>
+          </IconBtn>
+          <IconBtn
+            title={
+              navigator.language.startsWith('zh')
+                ? '科研文献查询、导入与引用'
+                : 'Scholarly search, import, and citations'
+            }
+            disabled={off}
+            onClick={onOpenCitations}
+          >
+            <span className="rb-glyph">文</span>
           </IconBtn>
           <IconBtn
             title={t('italic')}

@@ -1,0 +1,208 @@
+.citation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, 0.46);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.citation-manager {
+  width: min(980px, 96vw);
+  height: min(760px, 92vh);
+  background: var(--surface, #fff);
+  color: var(--text, #1f2937);
+  border: 1px solid var(--border, #d7dde7);
+  border-radius: 14px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.citation-manager > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px 12px;
+}
+.citation-manager h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.citation-manager header p,
+.citation-manager main > p {
+  margin: 5px 0 0;
+  color: var(--muted, #667085);
+  font-size: 13px;
+}
+.citation-manager header > button {
+  border: 0;
+  background: transparent;
+  font-size: 28px;
+  cursor: pointer;
+}
+.citation-manager > nav {
+  display: flex;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border, #d7dde7);
+}
+.citation-manager > nav button {
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+}
+.citation-manager > nav button.active {
+  border-bottom-color: #c43e1c;
+  color: #c43e1c;
+  font-weight: 600;
+}
+.citation-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 22px;
+  background: var(--surface-muted, #f7f8fa);
+  font-size: 12px;
+  color: var(--muted, #667085);
+}
+.citation-manager main {
+  padding: 16px 22px;
+  overflow: auto;
+  flex: 1;
+}
+.citation-search {
+  display: flex;
+  gap: 8px;
+}
+.citation-search input {
+  flex: 1;
+}
+.citation-manager input,
+.citation-manager select,
+.citation-manager textarea {
+  border: 1px solid var(--border, #cfd6df);
+  border-radius: 7px;
+  padding: 8px;
+  background: var(--surface, #fff);
+  color: inherit;
+}
+.citation-manager textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 12px;
+  font:
+    12px ui-monospace,
+    monospace;
+}
+.citation-manager button {
+  border: 1px solid var(--border, #cfd6df);
+  border-radius: 7px;
+  padding: 7px 11px;
+  background: var(--surface, #fff);
+  color: inherit;
+  cursor: pointer;
+}
+.citation-manager button:disabled {
+  opacity: 0.48;
+  cursor: default;
+}
+.citation-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+}
+.citation-sources label {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.citation-sources input {
+  margin: 0;
+}
+.citation-records {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.citation-records article {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border, #d7dde7);
+  border-radius: 9px;
+}
+.citation-records h3 {
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+.citation-records p {
+  font-size: 12px;
+  margin: 0;
+  color: var(--muted, #667085);
+}
+.citation-records small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted, #667085);
+  line-height: 1.4;
+}
+.citation-records aside {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 95px;
+}
+.citation-badges {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+}
+.citation-badges span {
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #e9f2ff;
+  color: #175cd3;
+}
+.citation-badges .warn {
+  background: #fff1db;
+  color: #a15c00;
+}
+.citation-empty {
+  text-align: center;
+  padding: 55px;
+  color: var(--muted, #667085);
+}
+.citation-library-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.citation-portals {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 9px;
+  margin-top: 15px;
+}
+.citation-portals button {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+.citation-portals small {
+  color: var(--muted, #667085);
+  margin-top: 3px;
+}
+.citation-manager > footer {
+  padding: 10px 22px;
+  background: #fff7ed;
+  color: #9a4d00;
+  font-size: 12px;
+  border-top: 1px solid #fed7aa;
+}
