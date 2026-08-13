@@ -1,4 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import {
+  ZENMUX_BASE_URL,
+  ZENMUX_IMAGE_MODELS,
+  ZENMUX_MODELS,
+  type AiSettings,
+} from '@genoffice/ai-provider'
 import appIcon from './assets/app-icon.png'
 import { useI18n } from './locale'
 import type { StringKey } from './locale'
@@ -17,14 +23,13 @@ interface Slide {
   bodyKey?: StringKey
   /** render the body in the dimmer footnote gray (slide 3's credits disclaimer) */
   bodyDim?: boolean
-  /** community slide shows the credits offer panel with the "Join GenTeam" call-to-action */
-  showOffer?: boolean
+  /** the second slide embeds the first-run ZenMux API configuration */
+  showZenMuxSetup?: boolean
   art: 'logo' | 'gift' | 'check'
 }
 
 const SLIDES: readonly Slide[] = [
-  { titleKey: 'onbTitle1', subtitleKey: 'onbSubtitle1', art: 'logo' },
-  { titleKey: 'onbTitle2', subtitleKey: 'onbBody2', showOffer: true, art: 'gift' },
+  { titleKey: 'onbTitle1', subtitleKey: 'onbSubtitle1', showZenMuxSetup: true, art: 'logo' },
   {
     titleKey: 'onbTitle3',
     subtitleKey: 'onbBody3',
@@ -33,13 +38,6 @@ const SLIDES: readonly Slide[] = [
     art: 'check',
   },
 ]
-
-/** render `**emphasized**` segments of a localized string as <strong> */
-function renderEmphasis(text: string) {
-  return text
-    .split('**')
-    .map((part, i) => (i % 2 === 1 ? <strong key={part}>{part}</strong> : part))
-}
 
 /* exact vectors from the design spec:
  * 60px canvas, 4px strokes — same visual mass as the 60px app icon */
@@ -87,13 +85,77 @@ function SlideArt({ kind }: { kind: Slide['art'] }) {
 }
 
 export function Onboarding({ onDone }: OnboardingProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [index, setIndex] = useState(0)
+  const [aiSettings, setAiSettings] = useState<AiSettings | null>(null)
+  const [apiKey, setApiKey] = useState('')
+  const [model, setModel] = useState<string>(ZENMUX_MODELS[0])
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
   const slide = SLIDES[index]
   const isLast = index === SLIDES.length - 1
 
-  const next = () => {
+  const isChinese = lang === 'zh' || lang === 'zh-TW'
+
+  useEffect(() => {
+    let alive = true
+    void window.aiOffice
+      .getAiSettings()
+      .then((settings) => {
+        if (!alive) return
+        setAiSettings(settings)
+        setApiKey(settings.providers.zenmux.apiKey)
+        setModel(settings.providers.zenmux.model || ZENMUX_MODELS[0])
+      })
+      .catch(() => {
+        if (alive) setSaveError(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const saveZenMuxSettings = async (): Promise<boolean> => {
+    if (!apiKey.trim()) return true
+    if (!aiSettings) {
+      setSaveError(true)
+      return false
+    }
+    setSaving(true)
+    setSaveError(false)
+    const current = aiSettings.providers.zenmux
+    const nextSettings: AiSettings = {
+      ...aiSettings,
+      provider: 'zenmux',
+      providers: {
+        ...aiSettings.providers,
+        zenmux: {
+          ...current,
+          apiKey: apiKey.trim(),
+          baseUrl: ZENMUX_BASE_URL,
+          model,
+          models: [...new Set([...(current.models ?? []), ...ZENMUX_MODELS, model])],
+          imageModel: current.imageModel || ZENMUX_IMAGE_MODELS[0],
+          imageModels: current.imageModels ?? [...ZENMUX_IMAGE_MODELS],
+        },
+      },
+    }
+    try {
+      await window.aiOffice.setAiSettings(nextSettings)
+      setAiSettings(nextSettings)
+      return true
+    } catch {
+      setSaveError(true)
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const next = async () => {
+    if (saving) return
+    if (index === 0 && !(await saveZenMuxSettings())) return
     if (isLast) onDone()
     else setIndex(index + 1)
   }
@@ -104,9 +166,8 @@ export function Onboarding({ onDone }: OnboardingProps) {
     cardRef.current?.focus()
   }, [])
 
-  // slide changes can strip focus from the active control (leaving slide 2
-  // makes its GenTeam button inert, which blurs it) — pull focus back onto the
-  // card so it never drops to body
+  // Slide changes make the previous controls inert and blur them. Pull focus
+  // back onto the card so it never drops behind the modal.
   useEffect(() => {
     const card = cardRef.current
     const active = document.activeElement
@@ -149,9 +210,10 @@ export function Onboarding({ onDone }: OnboardingProps) {
         }
         return
       }
-      const buttonFocused =
-        event.target instanceof HTMLElement && event.target.closest('button') !== null
-      if ((event.key === 'Enter' && !buttonFocused) || event.key === 'ArrowRight') next()
+      const controlFocused =
+        event.target instanceof HTMLElement &&
+        event.target.closest('button, input, select, textarea, a') !== null
+      if ((event.key === 'Enter' && !controlFocused) || event.key === 'ArrowRight') void next()
       if (event.key === 'ArrowLeft') setIndex((i) => Math.max(0, i - 1))
     }
     window.addEventListener('keydown', onKeyDown)
@@ -172,26 +234,76 @@ export function Onboarding({ onDone }: OnboardingProps) {
               inert={i !== index}
             >
               <SlideArt kind={s.art} />
-              <h2 className="onb-title">{t(s.titleKey)}</h2>
-              <p className="onb-subtitle">{t(s.subtitleKey)}</p>
+              <h2 className="onb-title">
+                {s.showZenMuxSetup
+                  ? isChinese
+                    ? '连接 ZenMux AI'
+                    : 'Connect ZenMux AI'
+                  : t(s.titleKey)}
+              </h2>
+              <p className="onb-subtitle">
+                {s.showZenMuxSetup
+                  ? isChinese
+                    ? '填写 API Key，即可在所有编辑器中使用 AI。'
+                    : 'Enter an API Key to enable AI in every editor.'
+                  : t(s.subtitleKey)}
+              </p>
               {s.bodyKey && (
                 <p className={`onb-body${s.bodyDim ? ' onb-body-dim' : ''}`}>{t(s.bodyKey)}</p>
               )}
-              {s.showOffer && (
-                <div className="onb-offer">
-                  <p className="onb-credits">{renderEmphasis(t('onbCredits'))}</p>
-                  <button className="onb-join" onClick={() => void window.aiOffice.openGenTeam()}>
-                    {t('onbJoinGenTeam')}
-                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                      <path
-                        d="M3.5 8.5 8.5 3.5M4.5 3.5h4v4"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
+              {s.showZenMuxSetup && (
+                <div className="onb-zenmux-setup">
+                  <label className="onb-field" htmlFor="onb-zenmux-key">
+                    <span>
+                      {isChinese
+                        ? 'ZenMux API Key（加密保存在本机）'
+                        : 'ZenMux API Key (encrypted locally)'}
+                    </span>
+                    <input
+                      id="onb-zenmux-key"
+                      type="password"
+                      autoComplete="off"
+                      value={apiKey}
+                      placeholder="ZenMux API Key"
+                      onChange={(event) => {
+                        setApiKey(event.target.value)
+                        setSaveError(false)
+                      }}
+                    />
+                  </label>
+                  <label className="onb-field" htmlFor="onb-zenmux-model">
+                    <span>{isChinese ? '默认模型' : 'Default model'}</span>
+                    <select
+                      id="onb-zenmux-model"
+                      value={model}
+                      onChange={(event) => setModel(event.target.value)}
+                    >
+                      {ZENMUX_MODELS.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="onb-zenmux-help">
+                    <span>{isChinese ? '还没有 API Key？' : "Don't have an API Key?"}</span>
+                    <button
+                      className="onb-invite"
+                      onClick={() => void window.aiOffice.openZenMuxInvite()}
+                    >
+                      {isChinese ? '使用邀请链接申请' : 'Get one with the invite link'} ↗
+                    </button>
+                  </div>
+                  <div className="onb-invite-url">https://zenmux.ai/invite/GBQMC5</div>
+                  <p className={`onb-save-status${saveError ? ' error' : ''}`} aria-live="polite">
+                    {saveError
+                      ? isChinese
+                        ? 'API Key 保存失败，请重试或稍后在设置中填写。'
+                        : 'Could not save the API Key. Retry or enter it later in Settings.'
+                      : isChinese
+                        ? 'AI 功能依赖网络；网络或代理状态可能影响使用。'
+                        : 'AI features require network access and may be affected by proxy conditions.'}
+                  </p>
                 </div>
               )}
             </div>
@@ -219,8 +331,18 @@ export function Onboarding({ onDone }: OnboardingProps) {
                 {t('onbBack')}
               </button>
             )}
-            <button className="onb-next" onClick={next}>
-              {isLast ? t('onbStart') : t('onbNext')}
+            <button className="onb-next" onClick={() => void next()} disabled={saving}>
+              {saving
+                ? isChinese
+                  ? '正在保存…'
+                  : 'Saving…'
+                : isLast
+                  ? t('onbStart')
+                  : index === 0 && apiKey.trim()
+                    ? isChinese
+                      ? '保存并继续'
+                      : 'Save and continue'
+                    : t('onbNext')}
             </button>
           </div>
         </div>

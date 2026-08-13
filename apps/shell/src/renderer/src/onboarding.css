@@ -158,64 +158,85 @@
   color: var(--onb-text-tertiary);
 }
 
-/* slide 2's offer: quiet gray lead-in, then the amount in large brand-blue
- * type, grouped with the Join CTA in one panel so the page reads as
- * info / offer / navigation */
-.onb-offer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+.onb-zenmux-setup {
+  display: grid;
+  gap: 10px;
   width: 100%;
   margin-top: 14px;
-  padding: 17px 16px;
+  padding: 15px 16px;
   border-radius: 12px;
   background: var(--onb-bg-panel);
 }
 
-.onb-credits {
-  margin: 0;
-  font-size: 16px;
-  letter-spacing: -0.154px;
-  line-height: 1.5;
+.onb-field {
+  display: grid;
+  gap: 5px;
   color: var(--onb-text-secondary);
-}
-
-.onb-credits strong {
-  display: block;
-  margin-top: 4px;
-  color: var(--onb-brand);
-  font-size: 22px;
-  font-weight: 700;
-  font-style: italic;
-  letter-spacing: -0.3px;
-  line-height: normal;
-}
-
-/* the offer CTA is the dialog's standout action: a weighted blue outline —
- * 1.5px border + semibold + a faint blue seat-shadow so it doesn't float on
- * the tinted panel — inverting to solid blue on hover */
-.onb-join {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex: none;
-  padding: 10.5px 22.5px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: -0.154px;
-  color: var(--onb-brand);
-  background: #fff;
-  border: 1.5px solid var(--onb-brand);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 127, 255, 0.18);
-  cursor: pointer;
-  transition: all var(--onb-transition);
 }
 
-.onb-join:hover {
-  color: #fff;
-  background: var(--onb-brand);
+.onb-field input,
+.onb-field select {
+  width: 100%;
+  height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--onb-border-strong);
+  border-radius: 8px;
+  outline: none;
+  background: #fff;
+  color: var(--onb-text-primary);
+  font: inherit;
+  font-size: 13px;
+}
+
+.onb-field input:focus,
+.onb-field select:focus {
+  border-color: var(--onb-brand);
+  box-shadow: 0 0 0 2px rgba(15, 127, 255, 0.16);
+}
+
+.onb-zenmux-help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  color: var(--onb-text-secondary);
+  font-size: 12px;
+}
+
+.onb-invite {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--onb-brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.onb-invite:hover {
+  text-decoration: underline;
+}
+
+.onb-invite-url {
+  overflow: hidden;
+  color: var(--onb-text-tertiary);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onb-save-status {
+  margin: 0;
+  color: var(--onb-text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.onb-save-status.error {
+  color: #c23434;
 }
 
 /* footer: progress dots on the start side, Skip / Back / Next grouped on the end side */
@@ -303,12 +324,16 @@
   background: var(--onb-btn-primary-hover);
 }
 
+.onb-next:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 /* replace the UA default focus ring (tinted by the OS accent color) with the
  * brand ring, and only for keyboard focus — clicks stay ring-free */
 .onb-next:focus,
 .onb-back:focus,
 .onb-skip:focus,
-.onb-join:focus,
 .onb-dot:focus {
   outline: none;
 }
@@ -316,7 +341,6 @@
 .onb-next:focus-visible,
 .onb-back:focus-visible,
 .onb-skip:focus-visible,
-.onb-join:focus-visible,
 .onb-dot:focus-visible {
   outline: 2px solid var(--onb-brand);
   outline-offset: 2px;
@@ -344,8 +368,9 @@
     0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-[data-theme='dark'] .onb-join {
-  background: #2a2a2a;
+[data-theme='dark'] .onb-field input,
+[data-theme='dark'] .onb-field select {
+  background: #222;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -367,8 +392,9 @@
       0 24px 64px rgba(0, 0, 0, 0.5),
       0 2px 8px rgba(0, 0, 0, 0.3);
   }
-  :root:not([data-theme='light']):not([data-theme='dark']) .onb-join {
-    background: #2a2a2a;
+  :root:not([data-theme='light']):not([data-theme='dark']) .onb-field input,
+  :root:not([data-theme='light']):not([data-theme='dark']) .onb-field select {
+    background: #222;
   }
 }
 /* Motion accessibility: suppress all animation for users who opt out */
