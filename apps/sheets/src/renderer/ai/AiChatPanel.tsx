@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { AiComposer, AiTypingIndicator } from '@genoffice/ui'
+import { AiComposer, AiTypingIndicator, copyTextToClipboard } from '@genoffice/ui'
 import { ZenMuxMark } from '../ribbon-icons'
 import type { ChangePlan } from '../../domain/workbook.types'
 import { ATTACHMENT_IMAGE_EXTS, type AttachmentMeta } from '../../shared/desktop-api'
@@ -246,6 +246,7 @@ export function AiChatPanel({
   const [dragOver, setDragOver] = useState(false)
   const asideRef = useRef<HTMLElement | null>(null)
   const [resizing, setResizing] = useState(false)
+  const [copiedMessage, setCopiedMessage] = useState<string | null>(null)
   /** data-URL previews for image attachments, keyed by path (ZenMux composer thumbnails) */
   const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({})
   /** image paths with a read already issued — one readAttachmentImage per attach, even while pending */
@@ -424,6 +425,15 @@ export function AiChatPanel({
     if (paths.length > 0) onAddAttachmentPaths(paths)
   }
 
+  const copyMessage = async (text: string, messageKey: string): Promise<void> => {
+    if (!(await copyTextToClipboard(text))) return
+    setCopiedMessage(messageKey)
+    window.setTimeout(
+      () => setCopiedMessage((current) => (current === messageKey ? null : current)),
+      1200,
+    )
+  }
+
   return (
     <aside
       ref={asideRef}
@@ -485,6 +495,22 @@ export function AiChatPanel({
                 )}
                 {entry.tools.length > 0 && <ToolChipList tools={entry.tools} />}
                 {entry.text && <Markdown text={entry.text} />}
+                {entry.text && (
+                  <div className="ai-msg-toolbar">
+                    <button
+                      className="ai-msg-tool-btn"
+                      onClick={() => void copyMessage(entry.text, `h-${i}`)}
+                      aria-label={
+                        entry.role === 'user' ? '复制提示词 / Copy prompt' : '复制回复 / Copy reply'
+                      }
+                      data-tip={
+                        entry.role === 'user' ? '复制提示词 / Copy prompt' : '复制回复 / Copy reply'
+                      }
+                    >
+                      {copiedMessage === `h-${i}` ? '✓' : '⧉'}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
             <div className="ai-history-sep">{t('aiHistorySep')}</div>
@@ -524,6 +550,18 @@ export function AiChatPanel({
                     )}
                   </div>
                 )}
+                {entry.text && (
+                  <div className="ai-msg-toolbar">
+                    <button
+                      className="ai-msg-tool-btn"
+                      onClick={() => void copyMessage(entry.text, `c-${index}`)}
+                      aria-label="复制提示词 / Copy prompt"
+                      data-tip="复制提示词 / Copy prompt"
+                    >
+                      {copiedMessage === `c-${index}` ? '✓' : '⧉'}
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -546,6 +584,18 @@ export function AiChatPanel({
                     </span>
                     <button className="ai-undo-btn" onClick={onUndo} data-tip={t('aiUndoTitle')}>
                       {t('aiUndo')}
+                    </button>
+                  </div>
+                )}
+                {entry.text && !entry.streaming && (
+                  <div className="ai-msg-toolbar">
+                    <button
+                      className="ai-msg-tool-btn"
+                      onClick={() => void copyMessage(entry.text, `c-${index}`)}
+                      aria-label="复制回复 / Copy reply"
+                      data-tip="复制回复 / Copy reply"
+                    >
+                      {copiedMessage === `c-${index}` ? '✓' : '⧉'}
                     </button>
                   </div>
                 )}

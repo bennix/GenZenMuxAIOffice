@@ -4,6 +4,7 @@ export { AiTypingIndicator } from './AiTypingIndicator'
 export { IconSend, IconStop, type IconProps } from './icons'
 export { Markdown } from './Markdown'
 export { FormulaImageRecognition, type FormulaImageData } from './FormulaImageRecognition'
+export { copyTextToClipboard } from './clipboard'
 export {
   WORDART_PRESETS,
   wordArtSolidColor,

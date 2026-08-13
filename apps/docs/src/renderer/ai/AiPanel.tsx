@@ -18,7 +18,7 @@ import { DOCS_AGENT_MAX_TURNS, DOCS_CONTINUE_INSTRUCTION } from './continuation'
 import { createFilesSkill } from './files-skill'
 import { createElectronTransport } from './transport'
 import { useI18n, t as tModule, aiLangDirective, type StringKey } from '../i18n/locale'
-import { Markdown } from '@genoffice/ui'
+import { copyTextToClipboard, Markdown } from '@genoffice/ui'
 import { AiComposer, AiTypingIndicator } from '@genoffice/ui'
 import { ZenMuxMark } from '../components/icons'
 import sendEnterOn from '../assets/send-enter-on.png'
@@ -286,7 +286,7 @@ export function AiPanel({
   const [trackChanges, setTrackChanges] = useState(
     () => localStorage.getItem(TRACK_CHANGES_KEY) === '1',
   )
-  const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
+  const [copiedMessage, setCopiedMessage] = useState<string | null>(null)
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
   const [attachNotice, setAttachNotice] = useState<string | null>(null)
   /** data-URL previews for image attachments, keyed by path (ZenMux composer thumbnails) */
@@ -780,10 +780,10 @@ export function AiPanel({
     inputRef.current?.focus()
   }
 
-  const copyMessage = (text: string, idx: number) => {
-    void navigator.clipboard.writeText(text)
-    setCopiedIdx(idx)
-    window.setTimeout(() => setCopiedIdx((cur) => (cur === idx ? null : cur)), 1200)
+  const copyMessage = async (text: string, messageKey: string) => {
+    if (!(await copyTextToClipboard(text))) return
+    setCopiedMessage(messageKey)
+    window.setTimeout(() => setCopiedMessage((cur) => (cur === messageKey ? null : cur)), 1200)
   }
 
   const mergeAttachments = (result: AttachmentAddResult | null) => {
@@ -959,6 +959,22 @@ export function AiPanel({
                 )}
                 {entry.tools && entry.tools.length > 0 && <ToolChipList tools={entry.tools} />}
                 {entry.text && <Markdown text={entry.text} />}
+                {entry.text && (
+                  <div className="ai-msg-toolbar">
+                    <button
+                      className="ai-msg-tool-btn"
+                      onClick={() => void copyMessage(entry.text, `h-${i}`)}
+                      aria-label={
+                        entry.role === 'user' ? '复制提示词 / Copy prompt' : t('aiCopyReplyTitle')
+                      }
+                      data-tip={
+                        entry.role === 'user' ? '复制提示词 / Copy prompt' : t('aiCopyReplyTitle')
+                      }
+                    >
+                      {copiedMessage === `h-${i}` ? '✓' : '⧉'}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
             <div className="ai-history-sep">{t('aiHistorySep')}</div>
@@ -1033,6 +1049,18 @@ export function AiPanel({
               {entry.role === 'user' && entry.undelivered && (
                 <div className="ai-msg-undelivered">{t('aiUndelivered')}</div>
               )}
+              {entry.role === 'user' && entry.text && (
+                <div className="ai-msg-toolbar">
+                  <button
+                    className="ai-msg-tool-btn"
+                    onClick={() => void copyMessage(entry.text, `c-${i}`)}
+                    aria-label="复制提示词 / Copy prompt"
+                    data-tip="复制提示词 / Copy prompt"
+                  >
+                    {copiedMessage === `c-${i}` ? '✓' : '⧉'}
+                  </button>
+                </div>
+              )}
               {entry.tools && entry.tools.length > 0 && <ToolChipList tools={entry.tools} />}
               {entry.error && (
                 <div className="ai-msg-error">{t('aiErrorPrefix', { error: entry.error })}</div>
@@ -1042,11 +1070,11 @@ export function AiPanel({
                   {entry.text && (
                     <button
                       className="ai-msg-tool-btn"
-                      onClick={() => copyMessage(entry.text, i)}
+                      onClick={() => void copyMessage(entry.text, `c-${i}`)}
                       aria-label={t('aiCopyReplyTitle')}
                       data-tip={t('aiCopyReplyTitle')}
                     >
-                      {copiedIdx === i ? (
+                      {copiedMessage === `c-${i}` ? (
                         <svg
                           width="14"
                           height="14"

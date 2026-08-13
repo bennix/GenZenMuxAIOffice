@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent, ReactElement, ReactNode } from 
 import { AgentLoop, composeSkills, createResearchSkill } from '@genoffice/agent-core'
 import type { AgentImage } from '@genoffice/agent-core'
 import type { AiSettings } from '@genoffice/ai-provider'
-import { AiComposer, AiTypingIndicator, Markdown } from '@genoffice/ui'
+import { AiComposer, AiTypingIndicator, copyTextToClipboard, Markdown } from '@genoffice/ui'
 import type { Editor } from '@tiptap/core'
 import { aiLangDirective, t as tGlobal, useI18n } from '../i18n/locale'
 import sendEnterOn from '../assets/send-enter-on.png'
@@ -89,7 +89,7 @@ export function AiPanel({
   const [chat, setChat] = useState<ChatEntry[]>([])
   const [prompt, setPrompt] = useState('')
   const [busy, setBusy] = useState(false)
-  const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
+  const [copiedMessage, setCopiedMessage] = useState<string | null>(null)
   const [snapshots, setSnapshots] = useState<Snapshot[]>([])
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
   const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({})
@@ -385,10 +385,10 @@ export function AiPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preset])
 
-  const copyMessage = (text: string, idx: number): void => {
-    void navigator.clipboard.writeText(text)
-    setCopiedIdx(idx)
-    window.setTimeout(() => setCopiedIdx((cur) => (cur === idx ? null : cur)), 1200)
+  const copyMessage = async (text: string, messageKey: string): Promise<void> => {
+    if (!(await copyTextToClipboard(text))) return
+    setCopiedMessage(messageKey)
+    window.setTimeout(() => setCopiedMessage((cur) => (cur === messageKey ? null : cur)), 1200)
   }
 
   const rollback = (snapshot: Snapshot): void => {
@@ -585,6 +585,16 @@ export function AiPanel({
                     )}
                   </div>
                 )}
+                <div className="ai-msg-toolbar">
+                  <button
+                    className="ai-msg-tool-btn"
+                    onClick={() => void copyMessage(entry.text, `c-${i}`)}
+                    aria-label="复制提示词 / Copy prompt"
+                    data-tip="复制提示词 / Copy prompt"
+                  >
+                    {copiedMessage === `c-${i}` ? '✓' : '⧉'}
+                  </button>
+                </div>
               </div>
             )
           }
@@ -613,11 +623,11 @@ export function AiPanel({
                 <div className="ai-msg-toolbar">
                   <button
                     className="ai-msg-tool-btn"
-                    onClick={() => copyMessage(entry.text, i)}
+                    onClick={() => void copyMessage(entry.text, `c-${i}`)}
                     aria-label={t('aiCopyReplyTitle')}
                     data-tip={t('aiCopyReplyTitle')}
                   >
-                    {copiedIdx === i ? (
+                    {copiedMessage === `c-${i}` ? (
                       <svg
                         width="14"
                         height="14"
