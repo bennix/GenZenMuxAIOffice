@@ -5,7 +5,10 @@ import {
   type CitationStyle,
 } from '@genoffice/citations'
 
-const CITE_RE = /\[@([A-Za-z0-9_.:+/-]+)\]/g
+// Tiptap's Markdown serializer escapes literal brackets (`\[@key\]`) while
+// imported/Pandoc-authored Markdown commonly keeps the standard `[@key]`.
+// Treat both spellings as the same citation.
+const CITE_RE = /(?:\\)?\[@([A-Za-z0-9_.:+/-]+)(?:\\)?\]/g
 const REFERENCE_HEADING_RE = /(?:^|\n)## (?:参考文献|References)\s*\n(?=\n*- )/
 
 export function citationToken(record: CitationRecord): string {

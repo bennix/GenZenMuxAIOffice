@@ -528,6 +528,13 @@ export default function App() {
               .setContent(synced.markdown, { contentType: 'markdown' })
               .run()
             markDirty()
+            // Persist the synchronized bibliography immediately. For an
+            // untitled document this also assigns its first local path, so the
+            // companion .bib exists as soon as the citation is inserted.
+            queueMicrotask(() => {
+              const suggestedName = deriveAutoFileName(editor) || 'Untitled'
+              void doSave('save', suggestedName)
+            })
           }}
           onInsertBibliography={(_records, rendered) => {
             const markdown = `\n\n## ${navigator.language.startsWith('zh') ? '参考文献' : 'References'}\n\n${rendered.map((line) => `- ${line}`).join('\n')}\n`

@@ -39,4 +39,17 @@ describe('Markdown citation synchronization', () => {
     const withoutCitation = withReferences.replace(citationToken(paper), '')
     expect(syncBibliography(withoutCitation, new Map(), 'gb7714', 'zh').markdown).toBe('正文 。')
   })
+
+  it('recognizes citation brackets escaped by the editor Markdown serializer', () => {
+    const paper = record('zhipingxu2017zebrafish', 'Zebrafish Research')
+    const result = syncBibliography(
+      String.raw`正文 \[@zhipingxu2017zebrafish\]。`,
+      new Map([[paper.citationKey, paper]]),
+      'gb7714',
+      'zh',
+    )
+    expect(result.markdown).toContain('## 参考文献')
+    expect(result.markdown).toContain('Zebrafish Research')
+    expect(result.bibTeX).toContain('@article{zhipingxu2017zebrafish,')
+  })
 })
