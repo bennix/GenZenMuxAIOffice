@@ -530,11 +530,33 @@ describe('executeWorkbookTool: propose_operations', () => {
         operations: [{ op: 'set_cell', sheetId: 'sheet-1', address: 'A1', value: 'new' }],
         summary: 'Update A1',
       }),
-      fakeDeps({ proposeOperations }),
+      fakeDeps({
+        proposeOperations,
+        readCells: () => ({ A1: { value: 'new' } }),
+      }),
     )
     expect(result.isError).toBeFalsy()
     expect(result.mutated).toBe(true)
     expect(result.output).toContain('Auto-applied')
+  })
+
+  it('does not claim success when applied cell data cannot be read back', async () => {
+    const proposeOperations = vi.fn().mockReturnValue({
+      ok: true,
+      plan: EMPTY_PLAN,
+      applied: Promise.resolve({ ok: true }),
+    })
+    const result = await executeWorkbookTool(
+      call('propose_operations', {
+        operations: [{ op: 'set_cell', sheetId: 'sheet-1', address: 'A1', value: 'new' }],
+        summary: 'Update A1',
+      }),
+      fakeDeps({ proposeOperations, readCells: () => ({ A1: { value: null } }) }),
+    )
+    expect(result.isError).toBe(true)
+    expect(result.mutated).toBe(false)
+    expect(result.output).toContain('Apply verification failed')
+    expect(result.output).toContain('Do not tell the user the data was written')
   })
 
   it('returns an error (not success) when the async apply fails', async () => {

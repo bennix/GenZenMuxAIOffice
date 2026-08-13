@@ -87,6 +87,8 @@ const MAX_READ_ADDRESSES = 100
 const MAX_READ_RANGE_CELLS = 2000
 /** Read-back after write: max number of formula cells whose results are read back */
 const MAX_READBACK_FORMULAS = 10
+/** Bound ordinary-cell verification for very large AI fills while sampling both ends. */
+const MAX_READBACK_WRITES = 50
 /** Read-back after write: wait time (ms) for Univer's async formula recalc */
 const FORMULA_RECALC_DELAY_MS = 300
 const MAX_READ_FORMAT_CELLS = 200
@@ -586,7 +588,7 @@ export function executeWorkbookTool(
       const outcome = deps.proposeOperations(operations, summaryInput.trim())
       if (!outcome.ok) return fail(t('aiToolPropose'), outcome.error)
       const summary = summaryInput.trim()
-      const finish = (): ToolExecution | Promise<ToolExecution> => {
+      const finish = (verifyWrites = false): ToolExecution | Promise<ToolExecution> => {
         const warnings =
           outcome.plan.warnings.length > 0 ? `\nNote: ${outcome.plan.warnings.join('; ')}` : ''
         const opCount =
@@ -598,15 +600,46 @@ export function executeWorkbookTool(
         // Read-back after write (write → verify): formula cells fetch their
         // computed values after the async recalc, so the AI sees real results and
         // errors like #REF!/#DIV/0! instead of just what it wrote.
-        const formulaAddrs = outcome.plan.cellChanges
-          .filter((c) => c.after.formula)
-          .map((c) => c.address)
-        if (formulaAddrs.length === 0) {
+        const formulaChanges = outcome.plan.cellChanges.filter((c) => c.after.formula)
+        const formulaAddrs = formulaChanges.filter((c) => c.after.formula).map((c) => c.address)
+        const valueChanges = outcome.plan.cellChanges.filter((c) => !c.after.formula)
+        if (!verifyWrites && formulaAddrs.length === 0) {
           return { output: base, mutated: true, summary }
         }
         return (async (): Promise<ToolExecution> => {
-          await new Promise((resolve) => setTimeout(resolve, FORMULA_RECALC_DELAY_MS))
+          // The facade mutation is synchronous today, but yield once so queued
+          // workbook observers and renderer state have settled before read-back.
+          await new Promise((resolve) =>
+            setTimeout(resolve, formulaAddrs.length ? FORMULA_RECALC_DELAY_MS : 0),
+          )
+          if (verifyWrites && valueChanges.length > 0) {
+            const sampled =
+              valueChanges.length <= MAX_READBACK_WRITES
+                ? valueChanges
+                : [
+                    ...valueChanges.slice(0, MAX_READBACK_WRITES / 2),
+                    ...valueChanges.slice(-MAX_READBACK_WRITES / 2),
+                  ]
+            const addresses = sampled.map((change) => change.address)
+            const cells = deps.readCells(addresses)
+            const mismatches = sampled.filter((change) => {
+              const actual = cells[change.address]
+              return !actual || actual.formula || actual.value !== change.after.value
+            })
+            if (mismatches.length > 0) {
+              const examples = mismatches
+                .slice(0, 5)
+                .map((change) => change.address)
+                .join(', ')
+              return fail(
+                t('aiToolPropose'),
+                `Apply verification failed — ${mismatches.length} sampled cell(s) did not contain the requested data (${examples}). ` +
+                  'Do not tell the user the data was written; retry the write operation.',
+              )
+            }
+          }
           const shown = formulaAddrs.slice(0, MAX_READBACK_FORMULAS)
+          if (shown.length === 0) return { output: base, mutated: true, summary }
           const cells = deps.readCells(shown)
           const lines = shown.map((addr) => {
             const v = cells[addr]?.value
@@ -630,7 +663,7 @@ export function executeWorkbookTool(
       if (!outcome.applied) return finish()
       return outcome.applied.then((applied) =>
         applied.ok
-          ? finish()
+          ? finish(true)
           : fail(
               t('aiToolPropose'),
               `Apply failed — the workbook is UNCHANGED: ${applied.reason ?? 'unknown reason'}. ` +

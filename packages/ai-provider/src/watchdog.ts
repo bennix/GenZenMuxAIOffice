@@ -5,7 +5,13 @@
  * otherwise leaves the request pending forever and the UI stuck busy.
  */
 
-export const AI_CONNECT_TIMEOUT_MS = 60_000
+/**
+ * ZenMux may spend several minutes on queueing and model reasoning before it
+ * sends response headers.  A 60s cap falsely timed out healthy requests (the
+ * ZenMux request log still showed a completed response later).  Five minutes
+ * covers observed ~170s time-to-first-byte while still detecting dead sockets.
+ */
+export const AI_CONNECT_TIMEOUT_MS = 300_000
 /**
  * Generous on purpose: on long-context requests the gateway can legitimately go
  * silent for minutes (thinking/buffering before the first token and between
@@ -14,7 +20,7 @@ export const AI_CONNECT_TIMEOUT_MS = 60_000
  */
 export const AI_IDLE_TIMEOUT_MS = 180_000
 /** Non-streaming chat waits for the full generation before headers arrive */
-export const AI_CHAT_RESPONSE_TIMEOUT_MS = 180_000
+export const AI_CHAT_RESPONSE_TIMEOUT_MS = 300_000
 
 export class AiTimeoutError extends Error {
   constructor(ms: number) {

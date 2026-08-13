@@ -2607,7 +2607,7 @@ export function App(): React.JSX.Element {
       }
       setPendingEdits(journalSize(state.editJournal))
       for (const change of stored.plan.cellChanges) {
-        const range = worksheet.getRange(change.address)
+        const range = sheetById(change.sheetId).getRange(change.address)
         if (change.after.formula) range.setFormula(change.after.formula)
         else if (change.after.value === null) range.clearContent()
         // Explicit f/si null mirrors the cell editor: overwriting a formula
@@ -2617,10 +2617,13 @@ export function App(): React.JSX.Element {
       // Same facade setters as the ribbon, so the edit journal records them
       // (indent included — it lands as a pd patch in set-range-values).
       for (const formatChange of stored.plan.formatChanges) {
-        applyFormatPatchToRange(worksheet.getRange(formatChange.range), formatChange.format)
+        applyFormatPatchToRange(
+          sheetById(formatChange.sheetId).getRange(formatChange.range),
+          formatChange.format,
+        )
       }
       for (const rename of stored.plan.sheetRenames) {
-        worksheet.setName(rename.after)
+        sheetById(rename.sheetId).setName(rename.after)
       }
       lazyPreviewRef.current = null
       setPreview(null)
