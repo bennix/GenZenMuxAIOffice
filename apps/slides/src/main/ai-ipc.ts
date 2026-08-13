@@ -4,7 +4,7 @@
  * to avoid renderer CORS), search tools, and the slides-only ai:* channels
  * (image generation, media analysis, style templates).
  */
-import { app, ipcMain } from 'electron'
+import { app, ipcMain, safeStorage } from 'electron'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
@@ -21,7 +21,11 @@ import {
   type AiStreamRequest,
   type LegacyAiSettings,
 } from '@genoffice/ai-provider'
-import { fetchRemoteImage } from '@genoffice/electron-utils'
+import {
+  fetchRemoteImage,
+  protectAiSettingsForDisk,
+  restoreAiSettingsFromDisk,
+} from '@genoffice/electron-utils'
 import { webSearch, imageSearch } from '@genoffice/ai-search'
 import { addPicture, replacePictureBytes } from '@genoffice/pptx-engine'
 import { EMU_PER_PX_96 } from '@genoffice/pptx-render'
@@ -51,14 +55,21 @@ const activeAiStreams = new Map<string, AbortController>()
 export function registerAiIpc(): void {
   ipcMain.handle('ai:get-settings', (): AiSettings => {
     const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(AI_SETTINGS_PATH(), {})
-    const settings = resolveAiSettings(stored, defaultAiSettings())
+    const restored = restoreAiSettingsFromDisk(stored, safeStorage)
+    const settings = resolveAiSettings(restored.settings, defaultAiSettings())
     // Text AI is served exclusively through ZenMux's OpenAI-compatible endpoint.
     settings.provider = 'zenmux'
+    if (restored.needsMigration) {
+      writeJson(AI_SETTINGS_PATH(), protectAiSettingsForDisk(settings, safeStorage))
+    }
     return settings
   })
 
   ipcMain.handle('ai:set-settings', (_event, settings: AiSettings) => {
-    writeJson(AI_SETTINGS_PATH(), { ...settings, provider: 'zenmux' })
+    writeJson(
+      AI_SETTINGS_PATH(),
+      protectAiSettingsForDisk({ ...settings, provider: 'zenmux' }, safeStorage),
+    )
   })
 
   ipcMain.handle('ai:chat', async (_event, request: AiChatRequest) => {
@@ -167,7 +178,8 @@ export function registerAiIpc(): void {
       },
     ) => {
       const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(AI_SETTINGS_PATH(), {})
-      const config = resolveAiSettings(stored, defaultAiSettings()).providers.zenmux
+      const restored = restoreAiSettingsFromDisk(stored, safeStorage)
+      const config = resolveAiSettings(restored.settings, defaultAiSettings()).providers.zenmux
       if (!config.apiKey) return { error: tm('errNoApiKey', { provider: 'ZenMux' }) }
       const model = op.model ? String(op.model) : config.imageModel
       if (!model) return { error: tm('errNoModel') }
@@ -224,7 +236,8 @@ export function registerSlidesOnlyAiIpc(): void {
     'ai:analyze-media',
     async (_event, op: { mediaUrls: string[]; requirements: string }) => {
       const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(AI_SETTINGS_PATH(), {})
-      const config = resolveAiSettings(stored, defaultAiSettings()).providers.zenmux
+      const restored = restoreAiSettingsFromDisk(stored, safeStorage)
+      const config = resolveAiSettings(restored.settings, defaultAiSettings()).providers.zenmux
       if (!config.apiKey) return { error: tm('errNoApiKey', { provider: 'ZenMux' }) }
       try {
         const images: Array<{ base64: string; mime: string }> = []

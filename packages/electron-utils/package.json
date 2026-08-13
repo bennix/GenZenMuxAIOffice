@@ -13,6 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "@genoffice/ai-provider": "*"
+  },
   "devDependencies": {
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"

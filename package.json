@@ -37,7 +37,6 @@
     "dist:win": "npm run notices && npm run build:all && npm run dist:win -w @genoffice/shell",
     "dist:linux": "npm run notices && npm run build:all && npm run dist:linux -w @genoffice/shell"
   },
-  "dependencies": {},
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
@@ -50,5 +49,13 @@
     "pngjs": "^7.0.0",
     "prettier": "^3.9.6",
     "typescript-eslint": "^8.65.0"
+  },
+  "overrides": {
+    "@univerjs/core": {
+      "nanoid": "5.1.16"
+    },
+    "postcss": {
+      "nanoid": "3.3.17"
+    }
   }
 }

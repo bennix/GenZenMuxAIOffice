@@ -19,8 +19,10 @@ All application windows run with the full Electron renderer lockdown:
   (`@genoffice/electron-utils` → `safeExternalUrl`) that parses the URL and
   enforces a protocol allowlist (http/https; pdf link annotations additionally
   allow mailto). `file:`, `javascript:`, and custom schemes are always rejected.
-- No API keys are hardcoded. AI requests are proxied through the signed-in
-  account by default; user-supplied keys stay in the OS-level settings store.
+- No API keys are hardcoded. ZenMux API Keys are encrypted before local
+  persistence with Electron safe storage (macOS Keychain, Windows DPAPI, or a
+  supported Linux keyring). Legacy plaintext settings are migrated on first
+  read; when secure storage is unavailable, the app refuses to persist a new key.
 
 ## Threat Model: AI-Generated Layout Scripts (slides)
 

@@ -1,12 +1,13 @@
 import { existsSync } from 'node:fs'
 import { readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { BrowserWindow, WebContentsView, app, dialog, ipcMain, shell } from 'electron'
+import { BrowserWindow, WebContentsView, app, dialog, ipcMain, safeStorage, shell } from 'electron'
 import type { WebContents } from 'electron'
 import {
   contextMenuLabels,
   installContextMenu,
   installNavigationGuard,
+  restoreAiSettingsFromDisk,
   safeExternalUrl,
   showOpenDialogWithMemory,
   showSaveDialogWithMemory,
@@ -584,7 +585,8 @@ function registerPdfIpc(): void {
         if (existsSync(settingsPath)) {
           stored = JSON.parse(await readFile(settingsPath, 'utf8')) as typeof stored
         }
-        const config = resolveAiSettings(stored, defaultAiSettings()).providers.zenmux
+        const restored = restoreAiSettingsFromDisk(stored, safeStorage)
+        const config = resolveAiSettings(restored.settings, defaultAiSettings()).providers.zenmux
         if (!config.apiKey) return { error: 'Add a ZenMux API Key in Settings first' }
         const model = config.imageModel
         if (!model) return { error: 'Select a ZenMux image model in Settings first' }

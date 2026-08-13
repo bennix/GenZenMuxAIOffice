@@ -21,6 +21,7 @@ import {
   ipcMain,
   Menu,
   screen,
+  safeStorage,
   session as electronSession,
   shell,
   systemPreferences,
@@ -40,6 +41,8 @@ import {
   contextMenuLabels,
   installContextMenu,
   installNavigationGuard,
+  protectAiSettingsForDisk,
+  restoreAiSettingsFromDisk,
   safeExternalUrl,
   showOpenDialogWithMemory,
   showSaveDialogWithMemory,
@@ -2106,16 +2109,23 @@ export function registerSheetsAiIpc(): void {
   ipcMain.handle(IPC_CHANNELS.aiGetSettings, (event): AiSettings => {
     sessionFor(event)
     const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
-    const settings = resolveAiSettings(stored, defaultAiSettings())
+    const restored = restoreAiSettingsFromDisk(stored, safeStorage)
+    const settings = resolveAiSettings(restored.settings, defaultAiSettings())
     // Text AI is served exclusively through ZenMux's OpenAI-compatible endpoint.
     settings.provider = 'zenmux'
+    if (restored.needsMigration) {
+      writeJson(SETTINGS_PATH(), protectAiSettingsForDisk(settings, safeStorage))
+    }
     return settings
   })
 
   ipcMain.handle(IPC_CHANNELS.aiSetSettings, (event, input: unknown) => {
     sessionFor(event)
     const settings = aiSettingsInputSchema.parse(input)
-    writeJson(SETTINGS_PATH(), { ...settings, provider: 'zenmux' })
+    writeJson(
+      SETTINGS_PATH(),
+      protectAiSettingsForDisk({ ...settings, provider: 'zenmux' }, safeStorage),
+    )
   })
 
   ipcMain.handle(IPC_CHANNELS.aiChat, async (event, input: unknown) => {

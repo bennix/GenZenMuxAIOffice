@@ -25,6 +25,11 @@ export {
 export { installNavigationGuard } from './navigation-guard'
 export { safeExternalUrl, type SafeExternalUrlOptions } from './safe-external-url'
 export {
+  protectAiSettingsForDisk,
+  restoreAiSettingsFromDisk,
+  type SafeStorageLike,
+} from './secure-ai-settings'
+export {
   fetchWithSsrfGuard,
   isBlockedAddress,
   isSafeRemoteUrl,

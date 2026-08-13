@@ -244,9 +244,13 @@ export function applyFormatPatchToRange(
   if (patch.fillColor !== undefined) range.setBackground(patch.fillColor as unknown as string)
   if (patch.numberFormat !== undefined) range.setNumberFormat(patch.numberFormat ?? 'General')
   if (patch.horizontalAlign !== undefined) {
-    range.setHorizontalAlignment(
-      (patch.horizontalAlign ?? 'normal') as 'left' | 'center' | 'normal',
-    )
+    // Univer's facade uses the surprising string "normal" for RIGHT.
+    // Passing our neutral workbook value "right" throws at runtime with
+    // "Invalid horizontal alignment: right". Ribbon commands already map
+    // this value; keep the shared AI/demo/lazy-apply path consistent too.
+    const alignment =
+      patch.horizontalAlign === 'right' ? 'normal' : (patch.horizontalAlign ?? 'normal')
+    range.setHorizontalAlignment(alignment as 'left' | 'center' | 'normal')
   }
   if (patch.verticalAlign !== undefined) {
     if (patch.verticalAlign === null) range.setValue({ s: { vt: null } } as unknown as ICellData)

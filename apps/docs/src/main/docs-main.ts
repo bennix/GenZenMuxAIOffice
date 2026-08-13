@@ -10,7 +10,16 @@ import {
 } from 'node:fs'
 import { copyFile, mkdir, readFile, readdir, stat, unlink } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import { BrowserWindow, Menu, WebContentsView, app, dialog, ipcMain, shell } from 'electron'
+import {
+  BrowserWindow,
+  Menu,
+  WebContentsView,
+  app,
+  dialog,
+  ipcMain,
+  safeStorage,
+  shell,
+} from 'electron'
 import {
   appMenuLabels,
   configuredDefaultSaveDir,
@@ -18,6 +27,8 @@ import {
   fetchRemoteImage,
   installContextMenu,
   installNavigationGuard,
+  protectAiSettingsForDisk,
+  restoreAiSettingsFromDisk,
   safeExternalUrl,
   showOpenDialogWithMemory,
   showSaveDialogWithMemory,
@@ -2477,14 +2488,21 @@ const activeAiStreams = new Map<string, AbortController>()
 export function registerAiIpc(): void {
   ipcMain.handle('ai:get-settings', (): AiSettings => {
     const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
-    const settings = resolveAiSettings(stored, defaultAiSettings())
+    const restored = restoreAiSettingsFromDisk(stored, safeStorage)
+    const settings = resolveAiSettings(restored.settings, defaultAiSettings())
     // Text AI is served exclusively through ZenMux's OpenAI-compatible endpoint.
     settings.provider = 'zenmux'
+    if (restored.needsMigration) {
+      writeJson(SETTINGS_PATH(), protectAiSettingsForDisk(settings, safeStorage))
+    }
     return settings
   })
 
   ipcMain.handle('ai:set-settings', (_event, settings: AiSettings) => {
-    writeJson(SETTINGS_PATH(), { ...settings, provider: 'zenmux' })
+    writeJson(
+      SETTINGS_PATH(),
+      protectAiSettingsForDisk({ ...settings, provider: 'zenmux' }, safeStorage),
+    )
   })
 
   ipcMain.handle('ai:stream', async (event, request: AiStreamRequest) => {
@@ -2607,7 +2625,8 @@ export function registerAiIpc(): void {
       },
     ) => {
       const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
-      const settings = resolveAiSettings(stored, defaultAiSettings())
+      const restored = restoreAiSettingsFromDisk(stored, safeStorage)
+      const settings = resolveAiSettings(restored.settings, defaultAiSettings())
       const config = settings.providers.zenmux
       if (!config.apiKey) return { error: tm('errNoApiKey', { provider: 'ZenMux' }) }
       const model = op.model ? String(op.model) : config.imageModel
