@@ -1909,15 +1909,6 @@ export interface AttachmentImageResult {
 
 export type UiTheme = 'light' | 'dark' | 'system'
 
-export type FinanceDatabaseAsset =
-  'equities' | 'etfs' | 'funds' | 'indices' | 'currencies' | 'cryptos' | 'moneymarkets'
-
-export interface FinanceDatabaseResult {
-  csv: string
-  sourceUrl: string
-  retrievedAt: string
-}
-
 export interface DesktopApi extends ConnectApi {
   /** current UI language (persisted by the shell in app-settings.json) */
   getLanguage(): Promise<'zh' | 'en' | 'ja' | 'ko' | 'fr' | 'de' | 'es' | 'th' | 'id' | 'ru' | 'ar'>
@@ -1960,10 +1951,6 @@ export interface DesktopApi extends ConnectApi {
   exportPdf(request: WorkbookExportPdfRequest): Promise<WorkbookExportPdfResult>
   closeWorkbook(sessionId: string): Promise<void>
   openExternal(url: string): Promise<void>
-  fetchFinanceDatabase(
-    asset: FinanceDatabaseAsset,
-    exchange?: string,
-  ): Promise<FinanceDatabaseResult>
   /// Application-menu File commands (Open/Save/Save As); returns unsubscribe.
   onMenuAction(callback: (action: MenuAction) => void): () => void
   /// The open workbook was renamed on disk (renamed in the shell Home list);

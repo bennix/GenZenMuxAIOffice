@@ -35,7 +35,6 @@ import type {
   WebContents,
 } from 'electron'
 import { z } from 'zod'
-import { financeDatabaseSourceUrl } from '../shared/finance-database'
 import {
   appMenuLabels,
   configuredDefaultSaveDir,
@@ -2012,36 +2011,6 @@ export function registerSheetsIpc(): void {
     }
     await shell.openExternal(validatedUrl)
   })
-
-  ipcMain.handle(
-    IPC_CHANNELS.financeDatabaseFetch,
-    async (event, asset: unknown, exchange: unknown) => {
-      sessionFor(event)
-      const kind = z
-        .enum(['equities', 'etfs', 'funds', 'indices', 'currencies', 'cryptos', 'moneymarkets'])
-        .parse(asset)
-      const sourceUrl = financeDatabaseSourceUrl(
-        kind,
-        typeof exchange === 'string' ? exchange : undefined,
-      )
-      const response = await fetch(sourceUrl, {
-        headers: { 'User-Agent': 'GenOffice-FinanceDatabase/1.0' },
-        signal: AbortSignal.timeout(45_000),
-      })
-      if (!response.ok) {
-        throw new Error(
-          response.status === 404
-            ? 'FinanceDatabase does not contain that exchange code.'
-            : `FinanceDatabase request failed (${response.status}).`,
-        )
-      }
-      const declared = Number(response.headers.get('content-length') ?? 0)
-      if (declared > 25 * 1024 * 1024) throw new Error('FinanceDatabase result is too large.')
-      const csv = await response.text()
-      if (csv.length > 25 * 1024 * 1024) throw new Error('FinanceDatabase result is too large.')
-      return { csv, sourceUrl, retrievedAt: new Date().toISOString() }
-    },
-  )
 
   // ── Chat attachments (same structure as the docs/slides files:* pipeline) ──
 

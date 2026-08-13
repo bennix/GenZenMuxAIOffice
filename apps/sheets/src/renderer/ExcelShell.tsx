@@ -35,7 +35,6 @@ import { ConsolidateDialog } from './ConsolidateDialog'
 import type { ConsolidateConfig } from './consolidate'
 import { HeaderFooterDialog, type HeaderFooterResult } from './HeaderFooterDialog'
 import type { HeaderFooterParts } from './edit-journal'
-import { FinanceDataDialog, type FinanceDataImport } from './FinanceDataDialog'
 
 // No File tab: file commands live in the macOS
 // application menu (File → Open/Save/Save As) and the toolbar icons.
@@ -201,7 +200,6 @@ interface ExcelShellProps {
   readonly onGetConsolidateDefault: () => string
   /// Header & Footer dialog OK; returns an error message, or null on success.
   readonly onApplyHeaderFooter: (result: HeaderFooterResult) => string | null
-  readonly onImportFinanceData: (data: FinanceDataImport) => string | null
   /// Session page-layout settings of the active sheet, echoed by the Page
   /// Layout tab's controls (untouched fields show the app default).
   readonly pageLayout: PageLayoutEcho
@@ -259,7 +257,6 @@ export function ExcelShell({
   onCreateConsolidate,
   onGetConsolidateDefault,
   onApplyHeaderFooter,
-  onImportFinanceData,
   onPromptChange,
   onSend,
   onStop,
@@ -291,7 +288,6 @@ export function ExcelShell({
   const [insertFunctionCat, setInsertFunctionCat] = useState<string | null>(null)
   const [showSubtotalDialog, setShowSubtotalDialog] = useState(false)
   const [showConsolidateDialog, setShowConsolidateDialog] = useState(false)
-  const [showFinanceData, setShowFinanceData] = useState(false)
   const [showGoTo, setShowGoTo] = useState(false)
   const [showHeaderFooter, setShowHeaderFooter] = useState(false)
   /// Non-null while the Chart Design → Add Chart Element text prompt is open.
@@ -411,7 +407,6 @@ export function ExcelShell({
               setInsertFunctionCat(command.slice('insert-function-open:'.length))
             else if (command === 'subtotal-open') setShowSubtotalDialog(true)
             else if (command === 'consolidate-open') setShowConsolidateDialog(true)
-            else if (command === 'finance-data-open') setShowFinanceData(true)
             else if (command === 'goto-open') setShowGoTo(true)
             else if (command === 'header-footer-open') setShowHeaderFooter(true)
             else if (command.startsWith('ai-analysis:')) {
@@ -632,15 +627,6 @@ export function ExcelShell({
           targetLabel={onGetActiveCell()}
           onCreate={onCreateConsolidate}
           onClose={() => setShowConsolidateDialog(false)}
-        />
-      )}
-      {showFinanceData && (
-        <FinanceDataDialog
-          onImport={(data) => {
-            const error = onImportFinanceData(data)
-            if (error) onCommand(`error:${error}`)
-          }}
-          onClose={() => setShowFinanceData(false)}
         />
       )}
       {showGoTo && (
@@ -1967,17 +1953,6 @@ function Ribbon({
           />
         </RibbonGroup>
         <RibbonGroup label={t('appGroupGetData')}>
-          <RibbonButton
-            large
-            label={chinese ? '金融数据' : 'Financial Data'}
-            detail={
-              chinese
-                ? '从 FinanceDatabase 查询并导入金融标的目录'
-                : 'Search and import instruments from FinanceDatabase'
-            }
-            symbol="🛢"
-            onClick={() => onCommand('finance-data-open')}
-          />
           <div className="row-stack">
             <button
               className="styles-row as-button"

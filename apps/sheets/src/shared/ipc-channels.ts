@@ -17,7 +17,6 @@ export const IPC_CHANNELS = {
   closeSaveResult: 'workbook:close-save-result',
   exportPdf: 'workbook:export-pdf',
   openExternal: 'shell:open-external',
-  financeDatabaseFetch: 'finance-database:fetch',
   menuAction: 'menu:action',
   aiGetSettings: 'ai:get-settings',
   aiSetSettings: 'ai:set-settings',
