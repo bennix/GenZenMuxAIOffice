@@ -1174,6 +1174,124 @@
           </article>
         </section>
 
+        <section class="atlas" aria-label="项目来源与改造说明">
+          <div class="section-kicker">Upstream &amp; adaptation · 项目来源与改造</div>
+          <h2 class="section-title">源自 GenOffice，<br />面向 ZenMux 深度改造。</h2>
+          <p class="section-lead">
+            本项目是
+            <a href="https://github.com/genspark-ai/genoffice">genspark-ai/genoffice ↗</a>
+            的衍生版本，遵循原项目 Apache-2.0 许可证。我们保留其 Office
+            编辑器基础，并在此之上完成以下适配与增强。
+          </p>
+          <section class="foundation" aria-label="本衍生版本的主要改动">
+            <article>
+              <i>01</i>
+              <h3>AI 全面切换 ZenMux</h3>
+              <p>
+                Word、Excel、PowerPoint、Markdown 的对话、写回、公式识别和配图统一走 ZenMux，不依赖
+                Genspark 登录。
+              </p>
+            </article>
+            <article>
+              <i>02</i>
+              <h3>隐私与模型设置</h3>
+              <p>
+                API Key
+                经系统凭据服务加密后永久保存在本机；设置页支持遮罩显示、预置模型及自定义模型。
+              </p>
+            </article>
+            <article>
+              <i>03</i>
+              <h3>内容与学术能力增强</h3>
+              <p>
+                新增选区上下文、附件、联网核查、AI 审稿委员会、翻译、LaTeX、公式图片识别，以及 AI
+                Mermaid 生成与修改。
+              </p>
+            </article>
+            <article>
+              <i>04</i>
+              <h3>编辑与数据能力增强</h3>
+              <p>
+                加强可编辑 PPT、Markdown 与 Word 转换、Excel
+                分析和可视化、艺术字与绘图形状，并支持双向复制 AI 消息源文。
+              </p>
+            </article>
+            <article>
+              <i>05</i>
+              <h3>独立桌面发行</h3>
+              <p>
+                重新构建 macOS 与 Windows 安装包；macOS 使用 Developer ID 签名并经 Apple
+                公证，同时维护 GitHub Release 与下载页。
+              </p>
+            </article>
+            <article>
+              <i>06</i>
+              <h3>适配与维护署名</h3>
+              <p>
+                AI
+                适配与修改由复旦大学计算与智能创新学院徐志平完成，并持续同步安全修复与跨平台发布。
+              </p>
+            </article>
+          </section>
+          <div class="section-kicker" style="margin-top: 56px">
+            Advantages over upstream · 相较原版的优势
+          </div>
+          <h2 class="section-title">更开放的模型入口，<br />更完整的 AI 办公闭环。</h2>
+          <p class="section-lead">
+            相较上游原版，本衍生版本的优势集中在可自主配置、跨编辑器一致性、专业内容处理和开箱即用的桌面发行；基础
+            Office 编辑能力仍承袭上游项目。
+          </p>
+          <section class="foundation" aria-label="相较上游原版的优势">
+            <article>
+              <i>A</i>
+              <h3>无需 Genspark 账号</h3>
+              <p>
+                用户直接使用自己的 ZenMux API
+                Key，可选择预置或自定义模型，服务入口和模型选择更自主。
+              </p>
+            </article>
+            <article>
+              <i>B</i>
+              <h3>四类编辑器体验统一</h3>
+              <p>
+                Word、Excel、PPT、Markdown 共享选区上下文、附件、剪贴板、联网搜索和原文复制等 AI
+                工作流。
+              </p>
+            </article>
+            <article>
+              <i>C</i>
+              <h3>专业与学术场景更强</h3>
+              <p>
+                覆盖多标准审稿委员会、中英文报告、公式和图表审阅、LaTeX/OCR、Mermaid，以及可信来源事实核查。
+              </p>
+            </article>
+            <article>
+              <i>D</i>
+              <h3>数据与可编辑内容更丰富</h3>
+              <p>
+                强化 Excel 分析和中文可视化、PPT 可编辑对象、Markdown/Word
+                转换、艺术字与更多基础绘图形状。
+              </p>
+            </article>
+            <article>
+              <i>E</i>
+              <h3>本地隐私更明确</h3>
+              <p>
+                API Key 使用操作系统凭据服务加密保存并在界面遮罩；消息复制保留
+                Markdown、LaTeX、Mermaid 与代码源文。
+              </p>
+            </article>
+            <article>
+              <i>F</i>
+              <h3>发行与安装更直接</h3>
+              <p>
+                提供独立 macOS DMG 与 Windows 安装程序、版本化下载页及 GitHub Release；macOS
+                包经过签名和 Apple 公证。
+              </p>
+            </article>
+          </section>
+        </section>
+
         <section class="atlas" id="features" aria-label="完整功能图鉴">
           <div class="section-kicker">Complete capability atlas · 完整功能图鉴</div>
           <h2 class="section-title">五个工作台，<br />一套完整办公系统。</h2>
@@ -1580,9 +1698,9 @@
 
       <footer>
         <span
-          >由复旦大学计算与智能创新学院徐志平完成 AI 适配与修改。<br />AI adaptation and
-          modifications by Zhiping Xu, College of Computer Science and Artificial Intelligence,
-          Fudan University.</span
+          >衍生自 genspark-ai/genoffice；由复旦大学计算与智能创新学院徐志平完成 AI 适配与修改。<br />Derived
+          from genspark-ai/genoffice; AI adaptation and modifications by Zhiping Xu, College of
+          Computer Science and Artificial Intelligence, Fudan University.</span
         >
         <span>Apache-2.0 · Built for macOS &amp; Windows</span>
       </footer>

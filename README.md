@@ -16,6 +16,20 @@ PDF and Markdown too: a word processor, spreadsheet, presentation editor,
 PDF editor, and Markdown editor as six Electron apps sharing one engine
 layer.
 
+This repository is a derivative of the upstream
+[`genspark-ai/genoffice`](https://github.com/genspark-ai/genoffice) project and
+retains its Apache-2.0 license. This branch replaces the AI integration with
+ZenMux, adds encrypted local API-key/model settings, cross-editor AI workflows
+and source-preserving message copy, expands equations, Mermaid, review and
+spreadsheet-analysis features, and provides rebuilt macOS and Windows releases.
+
+Compared with the upstream edition, this derivative offers a user-controlled
+ZenMux model gateway without a Genspark login, consistent AI context/attachment
+workflows across Word, Excel, PowerPoint and Markdown, stronger academic review,
+formula/Mermaid and data-analysis capabilities, encrypted local credentials,
+and ready-to-download desktop installers (with Developer ID signing and Apple
+notarization on macOS).
+
 > **AI 适配与修改 / AI adaptation and modifications**<br>
 > 由复旦大学计算与智能创新学院徐志平完成 AI 适配与修改，并重新制作 macOS 与 Windows 安装包。<br>
 > AI adaptation and modifications by Zhiping Xu, College of Computer Science and Artificial
