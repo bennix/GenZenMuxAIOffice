@@ -4,8 +4,6 @@ import type { Editor } from '@tiptap/core'
 import { useI18n } from './i18n/locale'
 import { CitationManager, type CitationRecord } from '@genoffice/citations'
 import {
-  buildFrontmatterRaw,
-  frontmatterInner,
   parseDocText,
   serializeDocText,
   stripLegacyFencedDivs,
@@ -19,7 +17,6 @@ import { setImageBaseDir } from './editor/localImage'
 import { Ribbon } from './components/Ribbon'
 import { SlashMenu, type SlashMenuHandle } from './components/SlashMenu'
 import { TableMenu } from './components/TableMenu'
-import { FrontmatterPanel } from './components/FrontmatterPanel'
 import { EquationDialog, type MarkdownEquationTarget } from './components/EquationDialog'
 import { MermaidDialog } from './components/MermaidDialog'
 import { AiReviewCommitteeModal } from './components/AiReviewCommitteeModal'
@@ -84,8 +81,6 @@ export default function App() {
   const [dirty, setDirty] = useState(false)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [slashState, setSlashState] = useState<SlashMenuState | null>(null)
-  const [fmOpen, setFmOpen] = useState(false)
-  const [fmText, setFmText] = useState('')
   const [aiOpen, setAiOpen] = useState(true)
   const [aiPreset, setAiPreset] = useState<AiPreset | null>(null)
   const [autoSave, setAutoSave] = useState(() => localStorage.getItem('mdapp.autoSave') === '1')
@@ -187,9 +182,6 @@ export default function App() {
             })
             .run()
           setFilePath(path)
-          const inner = frontmatterInner(envelope.frontmatter)
-          setFmText(inner)
-          if (inner) setFmOpen(true)
         } else {
           envelopeRef.current = { ...EMPTY_ENVELOPE }
         }
@@ -207,15 +199,6 @@ export default function App() {
       cancelled = true
     }
   }, [editor])
-
-  const onFrontmatterChange = useCallback(
-    (inner: string) => {
-      setFmText(inner)
-      envelopeRef.current.frontmatter = buildFrontmatterRaw(inner)
-      markDirty()
-    },
-    [markDirty],
-  )
 
   /** Serialize and write to disk; false when canceled/failed (caller keeps the tab open) */
   const doSave = useCallback(async (mode: SaveMode, suggestedName?: string): Promise<boolean> => {
@@ -416,8 +399,6 @@ export default function App() {
             nonce: (prev?.nonce ?? 0) + 1,
           }))
         }}
-        frontmatterOpen={fmOpen}
-        onToggleFrontmatter={() => setFmOpen((v) => !v)}
         aiOpen={aiOpen}
         onToggleAi={() => setAiOpen((v) => !v)}
         onAiPreset={(text) => {
@@ -451,7 +432,6 @@ export default function App() {
         <div className="app-content">
           <div className="editor-scroll" ref={scrollRef}>
             <div className="doc-page">
-              {fmOpen && <FrontmatterPanel value={fmText} onChange={onFrontmatterChange} />}
               <EditorContent editor={editor} />
             </div>
           </div>

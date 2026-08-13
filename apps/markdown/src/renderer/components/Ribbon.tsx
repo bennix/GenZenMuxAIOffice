@@ -13,7 +13,6 @@ import {
   IconLink,
   IconNumbered,
   IconPicture,
-  IconProperties,
   IconRedo,
   IconSave,
   IconTable,
@@ -35,8 +34,6 @@ interface Props {
   onOpenCitations: () => void
   onTranslate: (language: 'zh' | 'en') => void
   onReview: () => void
-  frontmatterOpen: boolean
-  onToggleFrontmatter: () => void
   aiOpen: boolean
   onToggleAi: () => void
   onAiPreset: (instruction: string) => void
@@ -159,8 +156,6 @@ export function Ribbon({
   onOpenCitations,
   onTranslate,
   onReview,
-  frontmatterOpen,
-  onToggleFrontmatter,
   aiOpen,
   onToggleAi,
   onAiPreset,
@@ -322,6 +317,23 @@ export function Ribbon({
               </span>
               <span>{navigator.language.startsWith('zh') ? 'AI 审稿' : 'AI Review'}</span>
             </button>
+            <button
+              type="button"
+              className="rb-big ai-entry"
+              data-tip={
+                navigator.language.startsWith('zh')
+                  ? '科研文献查询、导入与引用（受网络与代理环境影响）'
+                  : 'Scholarly search, import, and citations (network dependent)'
+              }
+              disabled={off}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onOpenCitations}
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon">文</span>
+              </span>
+              <span>{navigator.language.startsWith('zh') ? '科研文献' : 'Research'}</span>
+            </button>
             <span className="rb-translate">
               <button
                 type="button"
@@ -376,17 +388,6 @@ export function Ribbon({
             <span className="rb-glyph" style={{ fontWeight: 800 }}>
               B
             </span>
-          </IconBtn>
-          <IconBtn
-            title={
-              navigator.language.startsWith('zh')
-                ? '科研文献查询、导入与引用'
-                : 'Scholarly search, import, and citations'
-            }
-            disabled={off}
-            onClick={onOpenCitations}
-          >
-            <span className="rb-glyph">文</span>
           </IconBtn>
           <IconBtn
             title={t('italic')}
@@ -512,15 +513,6 @@ export function Ribbon({
         </div>
 
         <div className="rb-spacer" />
-
-        <IconBtn
-          title={t('fmProperties')}
-          active={frontmatterOpen}
-          disabled={disabled}
-          onClick={onToggleFrontmatter}
-        >
-          <IconProperties size={ICON} />
-        </IconBtn>
       </div>
     </div>
   )
