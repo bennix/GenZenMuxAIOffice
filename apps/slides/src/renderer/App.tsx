@@ -282,6 +282,39 @@ export function App() {
   /** Theme body default font (fallback for the font box when the selection has no text element) */
   const [defaultFont, setDefaultFont] = useState<string | null>(null)
   const [current, setCurrent] = useState(0)
+
+  useEffect(
+    () =>
+      window.slidesApi.onConnectReceive(({ text }) => {
+        void (async () => {
+          const slide = ctxRef.current.slide
+          if (!slide) return
+          const clean = text
+            .replace(/^#{1,6}\s+/gm, '')
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .trim()
+          const result = await window.slidesApi.addElement({
+            slideIndex: current,
+            kind: 'textbox',
+            xPx: Math.round(slide.widthPx * 0.08),
+            yPx: Math.round(slide.heightPx * 0.12),
+            wPx: Math.round(slide.widthPx * 0.84),
+            hPx: Math.round(slide.heightPx * 0.72),
+            fitWidthPx: FIT_WIDTH,
+            paragraphs: clean
+              .split(/\n+/)
+              .map((line) => ({ runs: [{ text: line, fontSize: 18 }] })),
+          })
+          if (result) {
+            applySlide(current, result.slide)
+            setSelectedIds([result.sourceId])
+            setDirty(true)
+            showToast('@Connect: 已插入可编辑文本框 / Editable text box inserted')
+          }
+        })()
+      }),
+    [current],
+  )
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   /** Group being edited from inside (double-click to enter, click outside/Esc to exit); the selection may contain its children */
   const [enteredGroupId, setEnteredGroupId] = useState<string | null>(null)

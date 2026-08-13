@@ -3,7 +3,14 @@ import type { PointerEvent as ReactPointerEvent, ReactElement, ReactNode } from 
 import { AgentLoop, composeSkills, createResearchSkill } from '@genoffice/agent-core'
 import type { AgentImage } from '@genoffice/agent-core'
 import type { AiSettings } from '@genoffice/ai-provider'
-import { AiComposer, AiTypingIndicator, copyTextToClipboard, Markdown } from '@genoffice/ui'
+import {
+  AiComposer,
+  AiTypingIndicator,
+  ConnectButton,
+  copyTextToClipboard,
+  Markdown,
+} from '@genoffice/ui'
+import { removeConnectCommand } from '@genoffice/electron-utils/connect'
 import type { Editor } from '@tiptap/core'
 import { aiLangDirective, t as tGlobal, useI18n } from '../i18n/locale'
 import sendEnterOn from '../assets/send-enter-on.png'
@@ -88,6 +95,7 @@ export function AiPanel({
   const { lang, t } = useI18n()
   const [chat, setChat] = useState<ChatEntry[]>([])
   const [prompt, setPrompt] = useState('')
+  const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null)
   const [snapshots, setSnapshots] = useState<Snapshot[]>([])
@@ -621,6 +629,7 @@ export function AiPanel({
               {hasTools && <ToolChipList tools={entry.tools!} />}
               {showToolbar && (
                 <div className="ai-msg-toolbar">
+                  <ConnectButton api={window.markdownApi} text={entry.text} />
                   <button
                     className="ai-msg-tool-btn"
                     onClick={() => void copyMessage(entry.text, `c-${i}`)}
@@ -741,18 +750,29 @@ export function AiPanel({
           sendIconDisabled={<img src={sendEnterOff} alt="" aria-hidden />}
           stopIcon={<img src={sendStop} alt="" aria-hidden />}
           textareaRef={inputRef}
-          onChange={setPrompt}
+          onChange={(value) => {
+            const command = removeConnectCommand(value)
+            setPrompt(command.text)
+            if (command.matched) setConnectNonce((nonce) => nonce + 1)
+          }}
           onSend={() => send(prompt)}
           onStop={stop}
           onPasteFiles={(files) => void pasteFiles(files)}
           footerStart={
-            <button
-              className="ai-attach-btn"
-              onClick={() => void window.markdownApi.pickAttachments().then(mergeAttachments)}
-              title="添加附件 / Attach files"
-            >
-              📎
-            </button>
+            <>
+              <ConnectButton
+                api={window.markdownApi}
+                text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
+                triggerNonce={connectNonce}
+              />
+              <button
+                className="ai-attach-btn"
+                onClick={() => void window.markdownApi.pickAttachments().then(mergeAttachments)}
+                title="添加附件 / Attach files"
+              >
+                📎
+              </button>
+            </>
           }
         />
       </div>

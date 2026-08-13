@@ -1156,6 +1156,29 @@ export function App() {
     editorRef.current = editor
   }, [editor])
 
+  useEffect(
+    () =>
+      window.desktop.onConnectReceive(({ text }) => {
+        const current = editorRef.current
+        if (!current) return
+        const html = markdownPasteHtml(text)
+        current
+          .chain()
+          .focus()
+          .insertContent(
+            html ??
+              text
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replace(/\n/g, '<br>'),
+          )
+          .run()
+        setStatus('Connected AI reply inserted as editable content')
+      }),
+    [],
+  )
+
   /** Pasted list items lacking a numId (schema default null; saving would lose list semantics):
    *  reuse the numId of an existing same-kind instance, otherwise fall back to creating a definition */
   useEffect(() => {

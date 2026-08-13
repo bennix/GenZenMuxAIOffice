@@ -34,6 +34,14 @@ import type {
 import { IPC_CHANNELS } from '../shared/ipc-channels'
 
 const desktopApi: DesktopApi = {
+  listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
+  sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
+  onConnectReceive(handler) {
+    const listener = (_event: Electron.IpcRendererEvent, payload: Parameters<typeof handler>[0]) =>
+      handler(payload)
+    ipcRenderer.on('connect:receive', listener)
+    return () => ipcRenderer.removeListener('connect:receive', listener)
+  },
   getLanguage: () => ipcRenderer.invoke('app:get-language'),
   onLanguageChanged(handler) {
     const listener = (

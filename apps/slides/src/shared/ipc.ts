@@ -16,6 +16,7 @@ import type {
   AiStreamChunk,
   AiStreamRequest,
 } from '@genoffice/ai-provider'
+import type { ConnectApi } from '@genoffice/electron-utils/connect'
 
 export type { SlideComment, SectionInfo } from '@genoffice/pptx-engine'
 
@@ -1001,7 +1002,7 @@ export type MenuCommand =
   | 'copy'
   | 'paste'
 
-export interface SlidesApi {
+export interface SlidesApi extends ConnectApi {
   /** current UI language (persisted by the shell in app-settings.json) */
   getLanguage: () => Promise<
     'zh' | 'en' | 'ja' | 'ko' | 'fr' | 'de' | 'es' | 'th' | 'id' | 'ru' | 'ar'

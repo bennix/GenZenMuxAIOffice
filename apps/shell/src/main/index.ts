@@ -2114,6 +2114,28 @@ function registerTabsIpc(): void {
   })
 }
 
+function registerConnectIpc(): void {
+  ipcMain.handle(
+    'connect:list-targets',
+    (event) => tabManager?.connectTargets(event.sender.id) ?? [],
+  )
+  ipcMain.handle('connect:send', (event, targetId: unknown, text: unknown) => {
+    if (typeof targetId !== 'string' || typeof text !== 'string' || text.length === 0) {
+      return { ok: false, error: 'invalid-payload' }
+    }
+    if (Buffer.byteLength(text, 'utf8') > 2 * 1024 * 1024) {
+      return { ok: false, error: 'too-large' }
+    }
+    const ok =
+      tabManager?.sendConnect(event.sender.id, targetId, {
+        text,
+        format: 'markdown',
+        sentAt: new Date().toISOString(),
+      }) ?? false
+    return ok ? { ok: true } : { ok: false, error: 'invalid-target' }
+  })
+}
+
 // ---- home menu ----
 
 async function openFileViaDialog(): Promise<void> {
@@ -2454,6 +2476,7 @@ registerProjectIpc()
 registerDocsIpc()
 registerHomeIpc()
 registerTabsIpc()
+registerConnectIpc()
 
 // sheets' project:resolveChat goes through the handler registered by docs-main; the sessionId reverse lookup hooks in here
 setSessionPathResolver(resolveSheetsSessionPath)

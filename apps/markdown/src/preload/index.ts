@@ -6,6 +6,14 @@ import { AI_CHANNELS, MARKDOWN_CHANNELS } from '../shared/ipc'
 import type { ExportFormat, MarkdownApi, SaveMode, UiTheme } from '../shared/ipc'
 
 const api: MarkdownApi = {
+  listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
+  sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
+  onConnectReceive: (handler) => {
+    const listener = (_e: Electron.IpcRendererEvent, payload: Parameters<typeof handler>[0]) =>
+      handler(payload)
+    ipcRenderer.on('connect:receive', listener)
+    return () => ipcRenderer.removeListener('connect:receive', listener)
+  },
   consumePending: () => ipcRenderer.invoke(MARKDOWN_CHANNELS.consumePending),
   readFile: (path) => ipcRenderer.invoke(MARKDOWN_CHANNELS.readFile, path),
   readBibliography: () => ipcRenderer.invoke(MARKDOWN_CHANNELS.readBibliography),

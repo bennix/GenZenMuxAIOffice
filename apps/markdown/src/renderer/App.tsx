@@ -163,6 +163,17 @@ export default function App() {
   editorRef.current = editor
   filePathRef.current = filePath
 
+  useEffect(
+    () =>
+      window.markdownApi.onConnectReceive(({ text }) => {
+        const current = editorRef.current
+        if (!current) return
+        current.chain().focus().insertContent(text, { contentType: 'markdown' }).run()
+        markDirty()
+      }),
+    [markDirty],
+  )
+
   useEffect(() => {
     setImageBaseDir(filePath ? dirOf(filePath) : null)
   }, [filePath])

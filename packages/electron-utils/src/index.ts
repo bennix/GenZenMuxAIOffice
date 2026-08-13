@@ -36,3 +36,14 @@ export {
   type FetchWithSsrfGuardOptions,
 } from './safe-remote-url'
 export { fetchRemoteImage, remoteImageHeaders } from './remote-image'
+export {
+  CONNECT_CHANNELS,
+  CONNECT_MAX_TEXT_BYTES,
+  markdownTableOrLines,
+  removeConnectCommand,
+  type ConnectApi,
+  type ConnectEditorKind,
+  type ConnectPayload,
+  type ConnectResult,
+  type ConnectTarget,
+} from './connect'

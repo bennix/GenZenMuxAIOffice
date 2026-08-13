@@ -18,7 +18,8 @@ import { DOCS_AGENT_MAX_TURNS, DOCS_CONTINUE_INSTRUCTION } from './continuation'
 import { createFilesSkill } from './files-skill'
 import { createElectronTransport } from './transport'
 import { useI18n, t as tModule, aiLangDirective, type StringKey } from '../i18n/locale'
-import { copyTextToClipboard, Markdown } from '@genoffice/ui'
+import { ConnectButton, copyTextToClipboard, Markdown } from '@genoffice/ui'
+import { removeConnectCommand } from '@genoffice/electron-utils/connect'
 import { AiComposer, AiTypingIndicator } from '@genoffice/ui'
 import { ZenMuxMark } from '../components/icons'
 import sendEnterOn from '../assets/send-enter-on.png'
@@ -277,6 +278,7 @@ export function AiPanel({
 }: AiPanelProps) {
   const { t } = useI18n()
   const [input, setInput] = useState('')
+  const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
   /** Wall-clock start of the current run, drives the elapsed badge */
   const runStartedAtRef = useRef(0)
@@ -1067,6 +1069,7 @@ export function AiPanel({
               )}
               {showToolbar && (
                 <div className="ai-msg-toolbar">
+                  {entry.text && <ConnectButton api={window.desktop} text={entry.text} />}
                   {entry.text && (
                     <button
                       className="ai-msg-tool-btn"
@@ -1236,12 +1239,21 @@ export function AiPanel({
           sendIconDisabled={<img src={sendEnterOff} alt="" aria-hidden />}
           stopIcon={<img src={sendStop} alt="" aria-hidden />}
           textareaRef={inputRef}
-          onChange={setInput}
+          onChange={(value) => {
+            const command = removeConnectCommand(value)
+            setInput(command.text)
+            if (command.matched) setConnectNonce((nonce) => nonce + 1)
+          }}
           onSend={run}
           onStop={cancel}
           onPasteFiles={(files) => void onPasteFiles(files)}
           footerStart={
             <>
+              <ConnectButton
+                api={window.desktop}
+                text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
+                triggerNonce={connectNonce}
+              />
               <button
                 className="ai-attach-btn"
                 onClick={pickAttachments}

@@ -25,6 +25,7 @@
     "vitest": "^4.1.0"
   },
   "dependencies": {
+    "@genoffice/electron-utils": "*",
     "@genoffice/pptx-render": "*"
   }
 }

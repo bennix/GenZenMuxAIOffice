@@ -6,6 +6,7 @@ import type {
   AiStreamChunk,
   AiStreamRequest,
 } from '@genoffice/ai-provider'
+import type { ConnectApi } from '@genoffice/electron-utils/connect'
 
 export const MARKDOWN_CHANNELS = {
   consumePending: 'markdown:consume-pending',
@@ -110,7 +111,7 @@ export interface AttachmentImageResult {
 }
 
 /** API exposed by preload to the renderer (window.markdownApi) */
-export interface MarkdownApi {
+export interface MarkdownApi extends ConnectApi {
   /** Take the md path pending for this view (queued at tab creation); null = new untitled document */
   consumePending(): Promise<string | null>
   /** Read the file as UTF-8 text. Only paths granted to this view are allowed */

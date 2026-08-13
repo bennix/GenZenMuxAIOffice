@@ -8,6 +8,7 @@ import type {
   AiStreamChunk,
   AiStreamRequest,
 } from '@genoffice/ai-provider'
+import type { ConnectApi } from '@genoffice/electron-utils/connect'
 
 const MAX_RANGE_CELLS = 20_000
 const cellScalarSchema = z.union([z.string(), z.number().finite(), z.boolean(), z.null()])
@@ -1917,7 +1918,7 @@ export interface FinanceDatabaseResult {
   retrievedAt: string
 }
 
-export interface DesktopApi {
+export interface DesktopApi extends ConnectApi {
   /** current UI language (persisted by the shell in app-settings.json) */
   getLanguage(): Promise<'zh' | 'en' | 'ja' | 'ko' | 'fr' | 'de' | 'es' | 'th' | 'id' | 'ru' | 'ar'>
   /** language switched from the shell home page */

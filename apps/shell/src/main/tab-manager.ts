@@ -30,6 +30,7 @@ import {
   slidesIsDirty,
 } from '../../../slides/src/main/slides-main'
 import type { TabKind, TabSummary } from '../shared/tabs-api'
+import type { ConnectPayload, ConnectTarget } from '@genoffice/electron-utils/connect'
 
 interface TabRecord {
   id: string
@@ -123,6 +124,33 @@ export class TabManager {
       closable: t.id !== HOME_ID,
       active: t.id === this.activeId,
     }))
+  }
+
+  connectTargets(sourceWebContentsId: number): ConnectTarget[] {
+    return this.tabs.flatMap((tab) => {
+      if (
+        !tab.view ||
+        tab.view.webContents.id === sourceWebContentsId ||
+        !['docs', 'sheets', 'slides', 'markdown'].includes(tab.kind)
+      ) {
+        return []
+      }
+      return [{ id: tab.id, kind: tab.kind as ConnectTarget['kind'], title: tab.title }]
+    })
+  }
+
+  sendConnect(sourceWebContentsId: number, targetId: string, payload: ConnectPayload): boolean {
+    const target = this.tabs.find((tab) => tab.id === targetId)
+    if (
+      !target?.view ||
+      target.view.webContents.id === sourceWebContentsId ||
+      !['docs', 'sheets', 'slides', 'markdown'].includes(target.kind)
+    ) {
+      return false
+    }
+    target.view.webContents.send('connect:receive', payload)
+    this.activateTab(target.id)
+    return true
   }
 
   openHomeTab(): void {

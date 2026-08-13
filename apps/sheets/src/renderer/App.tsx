@@ -98,6 +98,7 @@ import UniverPresetSheetsTableEnUS from '@univerjs/preset-sheets-table/locales/e
 import '@univerjs/preset-sheets-table/lib/index.css'
 import { greenTheme } from '@univerjs/themes'
 import { createUniver } from './create-univer'
+import { markdownTableOrLines } from '@genoffice/electron-utils/connect'
 
 import {
   AgentLoop,
@@ -2772,6 +2773,28 @@ export function App(): React.JSX.Element {
       return error instanceof Error ? error.message : String(error)
     }
   }
+
+  useEffect(
+    () =>
+      window.desktopApi.onConnectReceive(({ text }) => {
+        const workbook = univerRef.current?.univerAPI.getActiveWorkbook()
+        const worksheet = workbook?.getActiveSheet()
+        const range = workbook?.getActiveRange()
+        if (!worksheet || !range) return
+        const rows = markdownTableOrLines(text)
+        const columns = rows.reduce((width, row) => Math.max(width, row.length), 1)
+        const values = rows.map((row) =>
+          Array.from({ length: columns }, (_, index) => ({ v: row[index] ?? '' })),
+        )
+        worksheet
+          .getRange(range.getRow(), range.getColumn(), values.length, columns)
+          .setValues(values)
+        setMessage(
+          `@Connect: inserted editable content at ${columnLetter(range.getColumn())}${range.getRow() + 1}.`,
+        )
+      }),
+    [],
+  )
 
   refreshSelectionFormatRef.current = () => {
     const range = univerRef.current?.univerAPI.getActiveWorkbook()?.getActiveRange()

@@ -24,7 +24,8 @@ import { createElectronTransport } from './transport'
 import { renderSlidesToPngBase64 } from '../export-render'
 import { isQcEnabled, mergeQcPages, qcSlidePage, QC_MAX_PAGES } from './slide-qc'
 import { useI18n, t as tGlobal, aiLangDirective, type TFunc } from '../i18n/locale'
-import { copyTextToClipboard, Markdown } from '@genoffice/ui'
+import { ConnectButton, copyTextToClipboard, Markdown } from '@genoffice/ui'
+import { removeConnectCommand } from '@genoffice/electron-utils/connect'
 import { ZenMuxMark } from '../components/icons'
 import sendEnterOn from '../assets/send-enter-on.png'
 import sendEnterOff from '../assets/send-enter-off.png'
@@ -366,6 +367,7 @@ export function AiPanel({
 }: AiPanelProps) {
   const { t } = useI18n()
   const [input, setInput] = useState('')
+  const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
   const [chat, setChat] = useState<ChatEntry[]>([])
   /** Past conversation restored from JSONL (read-only transcript, not fed to the model) */
@@ -1832,6 +1834,7 @@ export function AiPanel({
               {entry.deckProgress && <DeckProgressCard progress={entry.deckProgress} />}
               {showToolbar && (
                 <div className="ai-msg-toolbar">
+                  {entry.text && <ConnectButton api={window.slidesApi} text={entry.text} />}
                   {entry.text && (
                     <button
                       className="ai-msg-tool-btn"
@@ -2022,7 +2025,9 @@ export function AiPanel({
               placeholder={t(deckEmpty ? 'aiInputPlaceholderGen' : 'aiInputPlaceholder')}
               onChange={(e) => {
                 inputEditedSinceRunRef.current = true
-                setInput(e.target.value)
+                const command = removeConnectCommand(e.target.value)
+                setInput(command.text)
+                if (command.matched) setConnectNonce((nonce) => nonce + 1)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -2042,6 +2047,11 @@ export function AiPanel({
               rows={1}
             />
             <div className="ai-input-footer">
+              <ConnectButton
+                api={window.slidesApi}
+                text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
+                triggerNonce={connectNonce}
+              />
               <button
                 className="ai-attach-btn"
                 onClick={pickAttachments}

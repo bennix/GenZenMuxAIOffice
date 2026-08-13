@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { AiComposer, AiTypingIndicator, copyTextToClipboard } from '@genoffice/ui'
+import { AiComposer, AiTypingIndicator, ConnectButton, copyTextToClipboard } from '@genoffice/ui'
+import { removeConnectCommand } from '@genoffice/electron-utils/connect'
 import { ZenMuxMark } from '../ribbon-icons'
 import type { ChangePlan } from '../../domain/workbook.types'
 import { ATTACHMENT_IMAGE_EXTS, type AttachmentMeta } from '../../shared/desktop-api'
@@ -247,6 +248,7 @@ export function AiChatPanel({
   const asideRef = useRef<HTMLElement | null>(null)
   const [resizing, setResizing] = useState(false)
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null)
+  const [connectNonce, setConnectNonce] = useState(0)
   /** data-URL previews for image attachments, keyed by path (ZenMux composer thumbnails) */
   const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({})
   /** image paths with a read already issued — one readAttachmentImage per attach, even while pending */
@@ -589,6 +591,7 @@ export function AiChatPanel({
                 )}
                 {entry.text && !entry.streaming && (
                   <div className="ai-msg-toolbar">
+                    <ConnectButton api={window.desktopApi} text={entry.text} />
                     <button
                       className="ai-msg-tool-btn"
                       onClick={() => void copyMessage(entry.text, `c-${index}`)}
@@ -752,17 +755,28 @@ export function AiChatPanel({
           sendIconDisabled={<img src={sendEnterOff} alt="" aria-hidden />}
           stopIcon={<img src={sendStop} alt="" aria-hidden />}
           footerStart={
-            <button
-              className="ai-attach-btn"
-              onClick={onPickAttachments}
-              data-tip={t('aiAttachTitle')}
-              aria-label={t('aiAttachTitle')}
-            >
-              <img src={attachIcon} alt="" aria-hidden />
-            </button>
+            <>
+              <ConnectButton
+                api={window.desktopApi}
+                text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
+                triggerNonce={connectNonce}
+              />
+              <button
+                className="ai-attach-btn"
+                onClick={onPickAttachments}
+                data-tip={t('aiAttachTitle')}
+                aria-label={t('aiAttachTitle')}
+              >
+                <img src={attachIcon} alt="" aria-hidden />
+              </button>
+            </>
           }
           textareaRef={inputRef}
-          onChange={onPromptChange}
+          onChange={(value) => {
+            const command = removeConnectCommand(value)
+            onPromptChange(command.text)
+            if (command.matched) setConnectNonce((nonce) => nonce + 1)
+          }}
           onSend={send}
           onStop={onStop}
           onPasteFiles={onPasteFiles}
