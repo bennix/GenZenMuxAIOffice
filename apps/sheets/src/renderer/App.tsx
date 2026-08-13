@@ -122,6 +122,7 @@ import type { ApplyOutcome, ChangePlan } from '../domain/workbook.types'
 import { createElectronTransport } from './ai/transport'
 import type { ActiveSheetInfo, SheetsSkillDeps } from './ai/tools'
 import type { AiChatMessage } from './ai/AiChatPanel'
+import type { FinanceDataImport } from './FinanceDataDialog'
 import { createWorkbookSkill } from './ai/workbook-skill'
 import { createFilesSkill } from './ai/files-skill'
 import { createSearchSkill } from './ai/search-skill'
@@ -2733,6 +2734,45 @@ export function App(): React.JSX.Element {
     }
   }
 
+  function importFinanceData(data: FinanceDataImport): string | null {
+    const workbook = univerRef.current?.univerAPI.getActiveWorkbook()
+    const worksheet = workbook?.getActiveSheet()
+    const range = workbook?.getActiveRange()
+    if (!worksheet || !range) return 'Select a destination cell first.'
+    const columns = data.rows.reduce((width, row) => Math.max(width, row.length), 0)
+    const values = data.rows.map((row) =>
+      Array.from({ length: columns }, (_, index) => ({ v: row[index] ?? '' })),
+    )
+    values.push(
+      Array.from({ length: columns }, (_, index) => ({
+        v: index === 0 ? 'Source' : index === 1 ? data.sourceUrl : '',
+      })),
+      Array.from({ length: columns }, (_, index) => ({
+        v: index === 0 ? 'Retrieved at' : index === 1 ? data.retrievedAt : '',
+      })),
+      Array.from({ length: columns }, (_, index) => ({
+        v:
+          index === 0
+            ? 'Data note'
+            : index === 1
+              ? 'FinanceDatabase provides instrument metadata/classification, not live prices or current fundamentals.'
+              : '',
+      })),
+    )
+    if (values.length * columns > 50_000) return 'The selected financial data result is too large.'
+    try {
+      worksheet
+        .getRange(range.getRow(), range.getColumn(), values.length, columns)
+        .setValues(values)
+      setMessage(
+        `${data.assetLabel}: imported ${data.rows.length - 1} records from FinanceDatabase at ${columnLetter(range.getColumn())}${range.getRow() + 1}.`,
+      )
+      return null
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error)
+    }
+  }
+
   refreshSelectionFormatRef.current = () => {
     const range = univerRef.current?.univerAPI.getActiveWorkbook()?.getActiveRange()
     if (!range) {
@@ -3196,6 +3236,7 @@ export function App(): React.JSX.Element {
         onCreateConsolidate={(config) => handleCreateConsolidateImpl(dataToolsContext(), config)}
         onGetConsolidateDefault={() => consolidateDefaultReferenceImpl(dataToolsContext())}
         onApplyHeaderFooter={(result) => handleApplyHeaderFooterImpl(pageLayoutContext(), result)}
+        onImportFinanceData={importFinanceData}
       />
       {advancedFilterColumns !== null && (
         <AdvancedFilterDialog

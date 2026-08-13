@@ -65,6 +65,10 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 - **Agent tools built in** — web/image search, image generation, media analysis.
 - **Light / dark / system themes.**
 - **macOS, Windows, Linux.**
+- **金融标的数据库。** Excel 的“数据 → 金融数据”可查询并导入
+  [FinanceDatabase](https://github.com/JerBouma/FinanceDatabase)（MIT）的股票、ETF、基金、指数、
+  货币、加密资产和货币市场目录。该来源提供标的元数据与分类，不提供实时行情或最新基本面；
+  实时价格仍通过带时间戳的行情查询通路获取。
 - **Free & open-source (Apache-2.0).**
 
 ## Download

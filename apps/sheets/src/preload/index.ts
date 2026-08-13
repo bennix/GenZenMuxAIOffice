@@ -8,6 +8,7 @@ import type {
   AttachmentMeta,
   AttachmentReadResult,
   DesktopApi,
+  FinanceDatabaseResult,
   ScreenCaptureResult,
   ScreenSourcesResult,
   UiTheme,
@@ -215,6 +216,22 @@ const desktopApi: DesktopApi = {
       throw new Error('Only http(s) links can be opened.')
     }
     await ipcRenderer.invoke(IPC_CHANNELS.openExternal, url)
+  },
+  async fetchFinanceDatabase(asset, exchange) {
+    const result: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.financeDatabaseFetch,
+      asset,
+      exchange,
+    )
+    if (
+      !isRecord(result) ||
+      typeof result.csv !== 'string' ||
+      typeof result.sourceUrl !== 'string' ||
+      typeof result.retrievedAt !== 'string'
+    ) {
+      throw new Error('Invalid FinanceDatabase response.')
+    }
+    return result as unknown as FinanceDatabaseResult
   },
   onMenuAction(callback) {
     const listener = (_event: unknown, action: unknown): void => {
