@@ -91,6 +91,7 @@ export default function App() {
   const [aiPreset, setAiPreset] = useState<AiPreset | null>(null)
   const [autoSave, setAutoSave] = useState(() => localStorage.getItem('mdapp.autoSave') === '1')
   const [citationsOpen, setCitationsOpen] = useState(false)
+  const [citationInitialTab, setCitationInitialTab] = useState<'search' | 'library'>('search')
   const [equationOpen, setEquationOpen] = useState(false)
   const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
   const [mermaidOpen, setMermaidOpen] = useState(false)
@@ -141,7 +142,10 @@ export default function App() {
         buildSlashItems({
           insertImage,
           insertMermaid: () => setMermaidOpen(true),
-          openCitations: () => setCitationsOpen(true),
+          openCitations: () => {
+            setCitationInitialTab('library')
+            setCitationsOpen(true)
+          },
         }),
     })
   }, [insertImage])
@@ -431,7 +435,10 @@ export default function App() {
           setEquationOpen(true)
         }}
         onInsertMermaid={() => setMermaidOpen(true)}
-        onOpenCitations={() => setCitationsOpen(true)}
+        onOpenCitations={() => {
+          setCitationInitialTab('search')
+          setCitationsOpen(true)
+        }}
         onReview={() => setReviewOpen(true)}
         onTranslate={(language) => {
           const selection = editor && editor.state.selection.from !== editor.state.selection.to
@@ -511,6 +518,7 @@ export default function App() {
       )}
       {citationsOpen && editor && (
         <CitationManager
+          initialTab={citationInitialTab}
           onClose={() => setCitationsOpen(false)}
           onInsertCitation={(record: CitationRecord, _rendered, style) => {
             citationRecordsRef.current.set(record.citationKey, record)

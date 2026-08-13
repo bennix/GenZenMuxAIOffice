@@ -59,6 +59,7 @@ export interface CitationManagerProps {
   onInsertBibliography(records: CitationRecord[], rendered: string[]): void
   aiAssist?: (query: string) => Promise<string>
   language?: 'zh' | 'en'
+  initialTab?: 'search' | 'library' | 'import' | 'portals'
 }
 
 export function CitationManager({
@@ -67,9 +68,10 @@ export function CitationManager({
   onInsertBibliography,
   aiAssist,
   language = navigator.language.startsWith('zh') ? 'zh' : 'en',
+  initialTab = 'search',
 }: CitationManagerProps) {
   const zh = language === 'zh'
-  const [tab, setTab] = useState<'search' | 'library' | 'import' | 'portals'>('search')
+  const [tab, setTab] = useState<'search' | 'library' | 'import' | 'portals'>(initialTab)
   const [library, setLibrary] = useState<CitationRecord[]>(loadLibrary)
   const [results, setResults] = useState<CitationRecord[]>([])
   const [query, setQuery] = useState('')
@@ -257,6 +259,21 @@ export function CitationManager({
           )}
           {tab === 'library' && (
             <>
+              {!library.length && (
+                <div className="citation-library-actions">
+                  <span>
+                    {zh
+                      ? '本地文献库尚无条目，可先查询或导入文献。'
+                      : 'Your local library is empty. Search or import references first.'}
+                  </span>
+                  <button onClick={() => setTab('search')}>
+                    {zh ? '在线检索添加' : 'Search and add'}
+                  </button>
+                  <button onClick={() => setTab('import')}>
+                    {zh ? '导入文献' : 'Import references'}
+                  </button>
+                </div>
+              )}
               <div className="citation-library-actions">
                 <button disabled={!library.length} onClick={insertBibliography}>
                   {zh

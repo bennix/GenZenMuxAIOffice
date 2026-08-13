@@ -366,9 +366,13 @@ export function ReferencesTab({
   const [captionOpen, setCaptionOpen] = useState(false)
   const [sourceOpen, setSourceOpen] = useState(false)
   const [researchOpen, setResearchOpen] = useState(false)
+  const [researchInitialTab, setResearchInitialTab] = useState<'search' | 'library'>('search')
 
   useEffect(() => {
-    const openResearch = () => setResearchOpen(true)
+    const openResearch = () => {
+      setResearchInitialTab('library')
+      setResearchOpen(true)
+    }
     window.addEventListener('docs:open-citations', openResearch)
     return () => window.removeEventListener('docs:open-citations', openResearch)
   }, [])
@@ -577,7 +581,10 @@ export function ReferencesTab({
                 ? 'AI 辅助检索、导入和引用科研文献'
                 : 'AI-assisted scholarly search, import, and citation'
             }
-            onClick={() => setResearchOpen(true)}
+            onClick={() => {
+              setResearchInitialTab('search')
+              setResearchOpen(true)
+            }}
           >
             <span className="rb-big-icon">
               <IconBook size={BIG} />
@@ -743,6 +750,7 @@ export function ReferencesTab({
       )}
       {researchOpen && (
         <CitationManager
+          initialTab={researchInitialTab}
           onClose={() => setResearchOpen(false)}
           onInsertCitation={insertResearchCitation}
           onInsertBibliography={insertResearchBibliography}
