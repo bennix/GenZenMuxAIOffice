@@ -14,10 +14,14 @@ export interface AiProviderConfig {
   model: string
   /** user-added model ids shown alongside the provider's built-in models */
   models?: string[] | undefined
+  /** model ids explicitly hidden by the user (persists deletion of built-ins) */
+  removedModels?: string[] | undefined
   /** image-generation model (ZenMux only) */
   imageModel?: string | undefined
   /** user-added image model ids shown alongside the built-in image models */
   imageModels?: string[] | undefined
+  /** image model ids explicitly hidden by the user */
+  removedImageModels?: string[] | undefined
   /** only used by the custom (OpenAI-compatible) provider */
   baseUrl?: string | undefined
 }

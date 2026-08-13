@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useI18n } from './locale'
 import type { StringKey } from './locale'
 import type { AccountStatus, UiTheme } from '../../shared/home-api'
+import { removeActiveModel, resolveModelOptions } from './model-options'
 import {
   ZENMUX_BASE_URL,
   ZENMUX_IMAGE_MODELS,
@@ -170,9 +171,11 @@ export function SettingsModal({
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState<string>(ZENMUX_MODELS[0])
   const [models, setModels] = useState<string[]>([...ZENMUX_MODELS])
+  const [removedModels, setRemovedModels] = useState<string[]>([])
   const [newModel, setNewModel] = useState('')
   const [imageModel, setImageModel] = useState<string>(ZENMUX_IMAGE_MODELS[0])
   const [imageModels, setImageModels] = useState<string[]>([...ZENMUX_IMAGE_MODELS])
+  const [removedImageModels, setRemovedImageModels] = useState<string[]>([])
   const [newImageModel, setNewImageModel] = useState('')
   const [aiSaved, setAiSaved] = useState(false)
 
@@ -193,17 +196,27 @@ export function SettingsModal({
     void window.aiOffice.getAiSettings?.().then((settings) => {
       if (!alive) return
       const config = settings.providers.zenmux
+      const activeModel = config.model || ZENMUX_MODELS[0]
       const savedModels = config.models ?? []
+      const savedRemovedModels = config.removedModels ?? []
       setAiSettings(settings)
       setApiKey(config.apiKey)
-      setModel(config.model || ZENMUX_MODELS[0])
-      setModels([...new Set([...ZENMUX_MODELS, ...savedModels, config.model].filter(Boolean))])
+      setModel(activeModel)
+      setRemovedModels(savedRemovedModels)
+      setModels(resolveModelOptions(ZENMUX_MODELS, savedModels, savedRemovedModels, activeModel))
       const savedImageModels = config.imageModels ?? []
+      const savedRemovedImageModels = config.removedImageModels ?? []
       const activeImageModel = config.imageModel || ZENMUX_IMAGE_MODELS[0]
       setImageModel(activeImageModel)
-      setImageModels([
-        ...new Set([...ZENMUX_IMAGE_MODELS, ...savedImageModels, activeImageModel].filter(Boolean)),
-      ])
+      setRemovedImageModels(savedRemovedImageModels)
+      setImageModels(
+        resolveModelOptions(
+          ZENMUX_IMAGE_MODELS,
+          savedImageModels,
+          savedRemovedImageModels,
+          activeImageModel,
+        ),
+      )
     })
     return () => {
       alive = false
@@ -240,6 +253,7 @@ export function SettingsModal({
     const next = newModel.trim()
     if (!next) return
     setModels((current) => (current.includes(next) ? current : [...current, next]))
+    setRemovedModels((current) => current.filter((name) => name !== next))
     setModel(next)
     setNewModel('')
     setAiSaved(false)
@@ -249,8 +263,27 @@ export function SettingsModal({
     const next = newImageModel.trim()
     if (!next) return
     setImageModels((current) => (current.includes(next) ? current : [...current, next]))
+    setRemovedImageModels((current) => current.filter((name) => name !== next))
     setImageModel(next)
     setNewImageModel('')
+    setAiSaved(false)
+  }
+
+  const deleteModel = () => {
+    const result = removeActiveModel(models, model)
+    if (!result) return
+    setRemovedModels((current) => [...new Set([...current, model])])
+    setModels(result.models)
+    setModel(result.active)
+    setAiSaved(false)
+  }
+
+  const deleteImageModel = () => {
+    const result = removeActiveModel(imageModels, imageModel)
+    if (!result) return
+    setRemovedImageModels((current) => [...new Set([...current, imageModel])])
+    setImageModels(result.models)
+    setImageModel(result.active)
     setAiSaved(false)
   }
 
@@ -265,8 +298,10 @@ export function SettingsModal({
           apiKey: apiKey.trim(),
           model,
           models,
+          removedModels,
           imageModel,
           imageModels,
+          removedImageModels,
           baseUrl: ZENMUX_BASE_URL,
         },
       },
@@ -455,24 +490,43 @@ export function SettingsModal({
                     readOnly
                   />
                 </label>
-                <label className="set-ai-field" htmlFor="set-zenmux-model">
+                <div className="set-ai-field">
                   <span>{isChinese ? '当前模型' : 'Active model'}</span>
-                  <select
-                    id="set-zenmux-model"
-                    className="set-input"
-                    value={model}
-                    onChange={(e) => {
-                      setModel(e.target.value)
-                      setAiSaved(false)
-                    }}
-                  >
-                    {models.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <div className="set-ai-model-row">
+                    <select
+                      id="set-zenmux-model"
+                      className="set-input"
+                      aria-label={isChinese ? '当前文本模型' : 'Active text model'}
+                      value={model}
+                      onChange={(e) => {
+                        setModel(e.target.value)
+                        setAiSaved(false)
+                      }}
+                    >
+                      {models.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      className="set-btn danger"
+                      onClick={deleteModel}
+                      disabled={models.length <= 1}
+                      title={
+                        models.length <= 1
+                          ? isChinese
+                            ? '至少保留一个文本模型'
+                            : 'Keep at least one text model'
+                          : isChinese
+                            ? `删除 ${model}`
+                            : `Delete ${model}`
+                      }
+                    >
+                      {isChinese ? '删除' : 'Delete'}
+                    </button>
+                  </div>
+                </div>
                 <div className="set-ai-field">
                   <label htmlFor="set-zenmux-new-model">
                     {isChinese ? '增加模型名称' : 'Add model name'}
@@ -493,24 +547,43 @@ export function SettingsModal({
                     </button>
                   </div>
                 </div>
-                <label className="set-ai-field" htmlFor="set-zenmux-image-model">
+                <div className="set-ai-field">
                   <span>{isChinese ? '配图模型（PPT / Word）' : 'Image model (PPT / Word)'}</span>
-                  <select
-                    id="set-zenmux-image-model"
-                    className="set-input"
-                    value={imageModel}
-                    onChange={(e) => {
-                      setImageModel(e.target.value)
-                      setAiSaved(false)
-                    }}
-                  >
-                    {imageModels.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <div className="set-ai-model-row">
+                    <select
+                      id="set-zenmux-image-model"
+                      className="set-input"
+                      aria-label={isChinese ? '当前配图模型' : 'Active image model'}
+                      value={imageModel}
+                      onChange={(e) => {
+                        setImageModel(e.target.value)
+                        setAiSaved(false)
+                      }}
+                    >
+                      {imageModels.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      className="set-btn danger"
+                      onClick={deleteImageModel}
+                      disabled={imageModels.length <= 1}
+                      title={
+                        imageModels.length <= 1
+                          ? isChinese
+                            ? '至少保留一个配图模型'
+                            : 'Keep at least one image model'
+                          : isChinese
+                            ? `删除 ${imageModel}`
+                            : `Delete ${imageModel}`
+                      }
+                    >
+                      {isChinese ? '删除' : 'Delete'}
+                    </button>
+                  </div>
+                </div>
                 <div className="set-ai-field">
                   <label htmlFor="set-zenmux-new-image-model">
                     {isChinese ? '增加配图模型名称' : 'Add image model name'}

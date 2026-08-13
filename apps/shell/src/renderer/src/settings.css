@@ -236,9 +236,16 @@
   gap: 8px;
 }
 
-.set-ai-add-row .set-input {
+.set-ai-add-row .set-input,
+.set-ai-model-row .set-input {
   flex: 1;
   min-width: 0;
+}
+
+.set-ai-model-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .set-saved {

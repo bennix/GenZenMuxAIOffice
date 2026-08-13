@@ -1730,6 +1730,10 @@ const aiProviderConfigSchema = z
     apiKey: z.string(),
     model: z.string(),
     models: z.array(z.string()).optional(),
+    removedModels: z.array(z.string()).optional(),
+    imageModel: z.string().optional(),
+    imageModels: z.array(z.string()).optional(),
+    removedImageModels: z.array(z.string()).optional(),
     baseUrl: z.string().optional(),
   })
   .strict()
