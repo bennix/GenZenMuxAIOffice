@@ -176,6 +176,8 @@ export interface DesktopApi {
     defaultName: string,
     data: ArrayBuffer,
   ): Promise<{ ok: boolean; path?: string; error?: string }>
+  /** Write a same-name .bib companion next to an allowlisted Word document. */
+  saveBibliography(path: string, bibText: string): Promise<{ ok: boolean; error?: string }>
   getRecentFiles(): Promise<string[]>
   pickImage(): Promise<PickImageResult | null>
   getAiSettings(): Promise<AiSettings>

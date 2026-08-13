@@ -56,6 +56,8 @@ const api: DesktopApi = {
     ipcRenderer.invoke('docs:save-as', defaultName, data),
   saveDocxNew: (defaultName: string, data: ArrayBuffer) =>
     ipcRenderer.invoke('docs:save-new', defaultName, data),
+  saveBibliography: (path: string, bibText: string) =>
+    ipcRenderer.invoke('docs:save-bibliography', path, bibText),
   getRecentFiles: () => ipcRenderer.invoke('docs:recent'),
   pickImage: () => ipcRenderer.invoke('docs:pick-image'),
   print: () => ipcRenderer.invoke('docs:print'),

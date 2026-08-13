@@ -10,6 +10,7 @@ import type {
 export const MARKDOWN_CHANNELS = {
   consumePending: 'markdown:consume-pending',
   readFile: 'markdown:read-file',
+  readBibliography: 'markdown:read-bibliography',
   save: 'markdown:save',
   saveRequest: 'markdown:save-request',
   saveRequestAck: 'markdown:save-request-ack',
@@ -43,6 +44,8 @@ export interface SaveMarkdownRequest {
    * Ignored when the document already has a path.
    */
   suggestedName?: string
+  /** BibTeX for records cited by this document; written beside it as a same-name .bib file. */
+  bibText?: string
 }
 
 export type SaveMarkdownResult =
@@ -112,6 +115,8 @@ export interface MarkdownApi {
   consumePending(): Promise<string | null>
   /** Read the file as UTF-8 text. Only paths granted to this view are allowed */
   readFile(path: string): Promise<string>
+  /** Read the same-name .bib companion of the currently open document, if present. */
+  readBibliography(): Promise<string | null>
   /**
    * Write the document text. With a granted file path the write is atomic
    * (tmp + rename); untitled documents and mode 'saveAs' go through a main-process

@@ -2855,4 +2855,26 @@ export const editorExtensions = [
   PPrChangeExtension,
   RevisionOriginalExtension,
   AutoDirectionExtension,
+  Extension.create({
+    name: 'citationSlashShortcut',
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          props: {
+            handleTextInput(view, from, to, text) {
+              if (text !== ' ') return false
+              const before = view.state.doc.textBetween(Math.max(0, from - 5), from, '', '')
+              if (!before.endsWith('/cite')) return false
+              view.dispatch(view.state.tr.delete(from - 5, to))
+              setTimeout(() => {
+                window.dispatchEvent(new Event('docs:show-references'))
+                window.dispatchEvent(new Event('docs:open-citations'))
+              }, 0)
+              return true
+            },
+          },
+        }),
+      ]
+    },
+  }),
 ]

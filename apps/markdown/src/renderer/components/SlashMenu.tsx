@@ -72,7 +72,7 @@ export const SlashMenu = forwardRef<SlashMenuHandle, Props>(function SlashMenu(
             onMouseEnter={() => setIndex(i)}
             onClick={() => state.command(item)}
           >
-            {t(item.labelKey)}
+            {item.label || t(item.labelKey)}
           </button>
         ))
       )}

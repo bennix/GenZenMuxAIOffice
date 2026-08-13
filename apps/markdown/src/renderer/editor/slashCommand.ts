@@ -8,6 +8,8 @@ import { t } from '../i18n/locale'
 export interface SlashItem {
   id: string
   labelKey: StringKey
+  /** Optional task-specific label for commands that are not generic formatting actions. */
+  label?: string
   /** extra match terms besides id and the localized label */
   keywords: string[]
   run: (editor: Editor, range: Range) => void
@@ -57,6 +59,7 @@ function blockChain(editor: Editor, range: Range) {
 export function buildSlashItems(extra?: {
   insertImage?: () => void
   insertMermaid?: () => void
+  openCitations?: () => void
 }): SlashItem[] {
   const items: SlashItem[] = [
     {
@@ -149,6 +152,18 @@ export function buildSlashItems(extra?: {
       },
     })
   }
+  if (extra?.openCitations) {
+    items.push({
+      id: 'cite',
+      labelKey: 'fmProperties',
+      label: navigator.language.startsWith('zh') ? '引用科研文献' : 'Cite research',
+      keywords: ['citation', 'reference', 'bibliography', '文献', '引用'],
+      run: (e, r) => {
+        chain(e, r).run()
+        extra.openCitations!()
+      },
+    })
+  }
   return items
 }
 
@@ -158,7 +173,7 @@ export function filterSlashItems(items: SlashItem[], query: string): SlashItem[]
   return items.filter(
     (item) =>
       item.id.includes(q) ||
-      t(item.labelKey).toLowerCase().includes(q) ||
+      (item.label || t(item.labelKey)).toLowerCase().includes(q) ||
       item.keywords.some((k) => k.includes(q)),
   )
 }

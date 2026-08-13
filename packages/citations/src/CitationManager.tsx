@@ -55,7 +55,7 @@ function loadLibrary(): CitationRecord[] {
 
 export interface CitationManagerProps {
   onClose(): void
-  onInsertCitation(record: CitationRecord, rendered: string): void
+  onInsertCitation(record: CitationRecord, rendered: string, style?: CitationStyle): void
   onInsertBibliography(records: CitationRecord[], rendered: string[]): void
   aiAssist?: (query: string) => Promise<string>
   language?: 'zh' | 'en'
@@ -249,7 +249,7 @@ export function CitationManager({
                 zh={zh}
                 onAdd={add}
                 onCite={(r, index) => {
-                  onInsertCitation(r, inlineCitation(r, style, index))
+                  onInsertCitation(r, inlineCitation(r, style, index), style)
                   onClose()
                 }}
               />
@@ -282,7 +282,7 @@ export function CitationManager({
                   )
                 }
                 onCite={(r, index) => {
-                  onInsertCitation(r, inlineCitation(r, style, index))
+                  onInsertCitation(r, inlineCitation(r, style, index), style)
                   onClose()
                 }}
               />

@@ -1,6 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Editor } from '@tiptap/core'
-import { CitationManager, type CitationRecord } from '@genoffice/citations'
+import {
+  bibliographyEntry,
+  CitationManager,
+  type CitationRecord,
+  type CitationStyle,
+} from '@genoffice/citations'
 import {
   bibliographyLine,
   citationText,
@@ -362,6 +367,12 @@ export function ReferencesTab({
   const [sourceOpen, setSourceOpen] = useState(false)
   const [researchOpen, setResearchOpen] = useState(false)
 
+  useEffect(() => {
+    const openResearch = () => setResearchOpen(true)
+    window.addEventListener('docs:open-citations', openResearch)
+    return () => window.removeEventListener('docs:open-citations', openResearch)
+  }, [])
+
   const sourceFromRecord = (record: CitationRecord): SourceInfo => ({
     tag: record.citationKey,
     type:
@@ -381,13 +392,49 @@ export function ReferencesTab({
     url: record.doi ? `https://doi.org/${record.doi}` : record.url,
   })
 
-  const insertResearchCitation = (record: CitationRecord, rendered: string) => {
+  const insertResearchCitation = (
+    record: CitationRecord,
+    rendered: string,
+    style: CitationStyle = 'gb7714',
+  ) => {
     if (!sources.some((source) => source.tag === record.citationKey))
       onAddSource(sourceFromRecord(record))
     editor
       .chain()
       .focus()
       .insertContent({ type: 'text', text: rendered } as never)
+      .run()
+    const citationEnd = editor.state.selection.to
+
+    // Keep an editable bibliography at the physical end of the Word document.
+    // The exact rendered entry is also our duplicate guard for repeated citations.
+    const citedTags = new Set(sources.map((source) => source.tag))
+    citedTags.add(record.citationKey)
+    const entry = bibliographyEntry(record, style, citedTags.size)
+    if (editor.state.doc.textContent.includes(entry)) return
+    const hasHeading = editor.state.doc.content.content.some(
+      (node) =>
+        node.type.name === 'docHeading' &&
+        ['参考文献', 'References'].includes(node.textContent.trim()),
+    )
+    const nodes: Array<Record<string, unknown>> = []
+    if (!hasHeading) {
+      nodes.push({
+        type: 'docHeading',
+        attrs: { docxIndex: null, styleId: null, aiChanged: false, level: 1 },
+        content: [{ type: 'text', text: t('ribbonBibliographyHeading') }],
+      })
+    }
+    nodes.push({
+      type: 'docParagraph',
+      attrs: { docxIndex: null, styleId: null, aiChanged: false },
+      content: [{ type: 'text', text: entry }],
+    })
+    editor
+      .chain()
+      .insertContentAt(editor.state.doc.content.size, nodes as never)
+      .setTextSelection(citationEnd)
+      .focus()
       .run()
   }
 

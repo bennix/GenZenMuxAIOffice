@@ -703,6 +703,16 @@ function RibbonInner({
   }, [tabRequest])
 
   useEffect(() => {
+    const showReferences = () => {
+      lastRegularTab.current = 'references'
+      setTab('references')
+      setDropdown(null)
+    }
+    window.addEventListener('docs:show-references', showReferences)
+    return () => window.removeEventListener('docs:show-references', showReferences)
+  }, [])
+
+  useEffect(() => {
     const close = (e: MouseEvent) => {
       if (ribbonRef.current && !ribbonRef.current.contains(e.target as Node)) setDropdown(null)
     }

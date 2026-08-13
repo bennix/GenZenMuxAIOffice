@@ -495,6 +495,18 @@ function registerMarkdownIpc(): void {
     return await readFile(path, 'utf8')
   })
 
+  ipcMain.handle(MARKDOWN_CHANNELS.readBibliography, async (e): Promise<string | null> => {
+    const docPath = savePathByWc.get(e.sender.id)
+    if (!docPath) return null
+    const bibPath = docPath.replace(/\.(?:md|markdown)$/i, '') + '.bib'
+    if (!existsSync(bibPath)) return null
+    try {
+      return await readFile(bibPath, 'utf8')
+    } catch {
+      return null
+    }
+  })
+
   ipcMain.handle(
     MARKDOWN_CHANNELS.save,
     async (e, request: SaveMarkdownRequest): Promise<SaveMarkdownResult> => {
@@ -516,6 +528,10 @@ function registerMarkdownIpc(): void {
         if (!target) return done({ ok: false, error: 'markdown: no save target' })
         const isNewPath = savePathByWc.get(e.sender.id) !== target
         await writeTextAtomic(target, request.text)
+        if (typeof request.bibText === 'string') {
+          const bibPath = target.replace(/\.(?:md|markdown)$/i, '') + '.bib'
+          await writeTextAtomic(bibPath, request.bibText)
+        }
         savePathByWc.set(e.sender.id, target)
         // keep the reload path in sync — a stale openPathByWc would make a
         // reloaded renderer load the OLD file and then save it over the new one

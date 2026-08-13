@@ -3035,6 +3035,23 @@ export function registerDocsIpc(): void {
     }
   })
 
+  ipcMain.handle('docs:save-bibliography', async (event, filePath: unknown, bibText: unknown) => {
+    if (
+      typeof filePath !== 'string' ||
+      typeof bibText !== 'string' ||
+      !canDocWrite(event.sender.id, filePath)
+    ) {
+      return { ok: false, error: 'bibliography target is not an opened document' }
+    }
+    try {
+      const bibPath = filePath.replace(/\.docx$/i, '') + '.bib'
+      await atomicWriteFile(bibPath, Buffer.from(bibText, 'utf8'))
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) }
+    }
+  })
+
   ipcMain.handle('docs:export-markdown', async (event, defaultName: string, text: string) => {
     if (tornDownWcIds.has(event.sender.id) || typeof text !== 'string') return { ok: false }
     const baseName = String(defaultName || 'document').replace(/\.docx$/i, '')

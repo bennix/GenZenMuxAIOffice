@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import type { Editor } from '@tiptap/core'
 import { useI18n } from './i18n/locale'
-import { CitationManager, type CitationRecord } from '@genoffice/citations'
+import {
+  CitationManager,
+  parseImport,
+  type CitationRecord,
+  type CitationStyle,
+} from '@genoffice/citations'
 import {
   parseDocText,
   serializeDocText,
@@ -24,6 +29,7 @@ import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/Ai
 import { DOCX_MAX_IMAGE_PX, exportDocxBytes } from './export/docxExport'
 import { buildPrintHtml } from './export/printHtml'
 import { resolveImageSrc } from './editor/localImage'
+import { citationToken, syncBibliography } from './markdown/citations'
 import type { ExportFormat, SaveMode } from '../shared/ipc'
 
 type LoadStatus = 'loading' | 'ready' | 'error'
@@ -89,6 +95,8 @@ export default function App() {
   const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
   const [mermaidOpen, setMermaidOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const citationRecordsRef = useRef(new Map<string, CitationRecord>())
+  const citationStyleRef = useRef<CitationStyle>('gb7714')
 
   const statusRef = useRef<LoadStatus>('loading')
   const dirtyRef = useRef(false)
@@ -129,7 +137,12 @@ export default function App() {
     }
     return buildExtensions({
       slashController: controller,
-      slashItems: () => buildSlashItems({ insertImage, insertMermaid: () => setMermaidOpen(true) }),
+      slashItems: () =>
+        buildSlashItems({
+          insertImage,
+          insertMermaid: () => setMermaidOpen(true),
+          openCitations: () => setCitationsOpen(true),
+        }),
     })
   }, [insertImage])
 
@@ -182,6 +195,12 @@ export default function App() {
             })
             .run()
           setFilePath(path)
+          const bibText = await window.markdownApi.readBibliography()
+          if (bibText) {
+            for (const record of parseImport(bibText, 'bibtex')) {
+              citationRecordsRef.current.set(record.citationKey, record)
+            }
+          }
         } else {
           envelopeRef.current = { ...EMPTY_ENVELOPE }
         }
@@ -209,11 +228,36 @@ export default function App() {
     try {
       // edits landing while the write is in flight (AI streaming, fast typing)
       // must keep the document dirty — compare doc identity after the await
+      const language = navigator.language.startsWith('zh') ? 'zh' : 'en'
+      const synced = syncBibliography(
+        current.getMarkdown(),
+        citationRecordsRef.current,
+        citationStyleRef.current,
+        language,
+      )
+      if (synced.markdown.trimEnd() !== current.getMarkdown().trimEnd()) {
+        current
+          .chain()
+          .setMeta('addToHistory', false)
+          .setContent(synced.markdown, { contentType: 'markdown' })
+          .run()
+      }
       const docAtSave = current.state.doc
       const fmAtSave = envelopeRef.current.frontmatter
       const body = current.getMarkdown()
       const text = serializeDocText(envelopeRef.current, body)
-      const result = await window.markdownApi.save({ text, mode, suggestedName })
+      const finalCitations = syncBibliography(
+        body,
+        citationRecordsRef.current,
+        citationStyleRef.current,
+        language,
+      )
+      const result = await window.markdownApi.save({
+        text,
+        mode,
+        suggestedName,
+        bibText: citationRecordsRef.current.size ? finalCitations.bibTeX : undefined,
+      })
       if (result.ok && 'path' in result) {
         setFilePath(result.path)
         const unchanged =
@@ -468,16 +512,20 @@ export default function App() {
       {citationsOpen && editor && (
         <CitationManager
           onClose={() => setCitationsOpen(false)}
-          onInsertCitation={(record: CitationRecord, rendered) => {
-            const href = record.doi ? `https://doi.org/${record.doi}` : record.url
+          onInsertCitation={(record: CitationRecord, _rendered, style) => {
+            citationRecordsRef.current.set(record.citationKey, record)
+            if (style) citationStyleRef.current = style
+            editor.chain().focus().insertContent(citationToken(record)).run()
+            const synced = syncBibliography(
+              editor.getMarkdown(),
+              citationRecordsRef.current,
+              citationStyleRef.current,
+              navigator.language.startsWith('zh') ? 'zh' : 'en',
+            )
             editor
               .chain()
-              .focus()
-              .insertContent({
-                type: 'text',
-                text: rendered,
-                ...(href ? { marks: [{ type: 'link', attrs: { href } }] } : {}),
-              })
+              .setMeta('addToHistory', false)
+              .setContent(synced.markdown, { contentType: 'markdown' })
               .run()
             markDirty()
           }}

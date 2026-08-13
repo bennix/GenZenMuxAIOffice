@@ -60,6 +60,36 @@ import { checkMissingFonts, collectDocFonts } from './font-check'
 import { defaultEastAsiaFontFor } from './font-list'
 import { hasPrintableHeaderFooter } from './pagination'
 import { showToast } from './components/toast-bus'
+import { exportBibTeX, normalizeRecord } from '@genoffice/citations'
+
+function sourcesBibTeX(sources: SourceInfo[]): string {
+  if (!sources.length) return ''
+  return (
+    exportBibTeX(
+      sources.map((source) =>
+        normalizeRecord({
+          citationKey: source.tag,
+          type:
+            source.type === 'Book'
+              ? 'book'
+              : source.type === 'JournalArticle'
+                ? 'article-journal'
+                : source.type === 'Report'
+                  ? 'report'
+                  : 'webpage',
+          title: source.title,
+          authors: source.author
+            ? source.author.split(/\s*;\s*/).map((name) => ({ literal: name }))
+            : [],
+          year: Number(source.year) || undefined,
+          containerTitle: source.publisher,
+          url: source.url,
+          source: 'Word bibliography source',
+        }),
+      ),
+    ) + '\n'
+  )
+}
 
 /** The App state the file actions need; built fresh per call. */
 export interface FileActionContext {
@@ -603,6 +633,13 @@ async function saveOnce(ctx: FileActionContext, saveAs: boolean, auto: boolean):
       // close-guard's saveUntilPersisted retries would repeat it on every pass —
       // the converging complete save below toasts once.
       return true
+    }
+    if (savedPath && ctx.sources.length) {
+      const bibResult = await window.desktop.saveBibliography(savedPath, sourcesBibTeX(ctx.sources))
+      if (!bibResult.ok) {
+        ctx.setStatus(t('appSaveFailed', { error: bibResult.error ?? 'BibTeX write failed' }))
+        return false
+      }
     }
     // Reload from saved bytes so docxIndex anchors point at the new file.
     const reparsed = await parseDocx(bytes)
