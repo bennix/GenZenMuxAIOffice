@@ -182,12 +182,6 @@ const config = {
       mimeType: 'text/csv',
     },
     {
-      ext: 'pdf',
-      name: 'PDF Document',
-      role: 'Editor',
-      mimeType: 'application/pdf',
-    },
-    {
       ext: 'md',
       name: 'Markdown Document',
       role: 'Editor',

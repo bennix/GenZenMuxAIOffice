@@ -23,7 +23,7 @@ interface Slide {
 }
 
 const SLIDES: readonly Slide[] = [
-  { titleKey: 'onbTitle1', subtitleKey: 'onbSubtitle1', bodyKey: 'onbBody1', art: 'logo' },
+  { titleKey: 'onbTitle1', subtitleKey: 'onbSubtitle1', art: 'logo' },
   { titleKey: 'onbTitle2', subtitleKey: 'onbBody2', showOffer: true, art: 'gift' },
   {
     titleKey: 'onbTitle3',
