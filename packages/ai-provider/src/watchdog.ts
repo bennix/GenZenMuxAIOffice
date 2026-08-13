@@ -6,21 +6,22 @@
  */
 
 /**
- * ZenMux may spend several minutes on queueing and model reasoning before it
- * sends response headers.  A 60s cap falsely timed out healthy requests (the
- * ZenMux request log still showed a completed response later).  Five minutes
- * covers observed ~170s time-to-first-byte while still detecting dead sockets.
+ * ZenMux may keep a request queued or reasoning for a long time before it
+ * sends response headers. Aborting locally does not necessarily cancel the
+ * supplier job, so a short cap can report a timeout while the supplier later
+ * completes (and bills) the same request. Keep the automatic ceiling high;
+ * users can still stop a run explicitly from the composer.
  */
-export const AI_CONNECT_TIMEOUT_MS = 300_000
+export const AI_CONNECT_TIMEOUT_MS = 1_200_000
 /**
  * Generous on purpose: on long-context requests the gateway can legitimately go
  * silent for minutes (thinking/buffering before the first token and between
  * chunks). 60s here killed real in-progress generations that were still billed,
  * so only genuinely dead connections should trip this.
  */
-export const AI_IDLE_TIMEOUT_MS = 180_000
+export const AI_IDLE_TIMEOUT_MS = 600_000
 /** Non-streaming chat waits for the full generation before headers arrive */
-export const AI_CHAT_RESPONSE_TIMEOUT_MS = 300_000
+export const AI_CHAT_RESPONSE_TIMEOUT_MS = 1_200_000
 
 export class AiTimeoutError extends Error {
   constructor(ms: number) {

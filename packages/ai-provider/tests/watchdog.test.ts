@@ -26,7 +26,7 @@ function abortable(signal: AbortSignal): Promise<never> {
 }
 
 describe('createStreamWatchdog', () => {
-  it('allows ZenMux-style slow first-token responses for more than 60 seconds', async () => {
+  it('allows ZenMux-style slow first-token responses for many minutes', async () => {
     const wd = createStreamWatchdog()
     const run = wd.guard(
       () =>
@@ -34,7 +34,7 @@ describe('createStreamWatchdog', () => {
           const timer = setTimeout(() => {
             wd.touch()
             resolve('first token')
-          }, 170_000)
+          }, 720_000)
           wd.signal.addEventListener(
             'abort',
             () => {
@@ -45,7 +45,7 @@ describe('createStreamWatchdog', () => {
           )
         }),
     )
-    await vi.advanceTimersByTimeAsync(170_000)
+    await vi.advanceTimersByTimeAsync(720_000)
     await expect(run).resolves.toBe('first token')
   })
 

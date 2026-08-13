@@ -2535,6 +2535,12 @@ export function registerAiIpc(): void {
       lastPing = now
       send({ requestId, type: 'ping' })
     }
+    // Provider-side reasoning may legitimately produce no network bytes for
+    // many minutes. Keep the renderer informed that the main process and its
+    // request handler are still alive; this heartbeat does not reset the
+    // provider watchdog, so genuinely dead sockets still end eventually.
+    const heartbeat = setInterval(ping, 15_000)
+    ping()
     try {
       let stopReason: string | undefined
       await streamZenMux(config, system, messages, tools, maxTokens, {
@@ -2563,6 +2569,7 @@ export function registerAiIpc(): void {
         })
       }
     } finally {
+      clearInterval(heartbeat)
       activeAiStreams.delete(requestId)
     }
   })

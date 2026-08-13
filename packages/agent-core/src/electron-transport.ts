@@ -37,10 +37,12 @@ export interface IpcStreamStart<S> {
  * Renderer-side silence watchdog: the main process re-arms it with keepalive
  * pings on wire activity, so firing means the turn is dead (main-process stall,
  * lost chunks) and the run must fail instead of leaving the UI busy forever.
- * Longer than the main-process connect timeout (300s) so that one (localized)
- * wins. Network activity and main-process keepalive pings re-arm this timer.
+ * The main process sends an independent heartbeat while a provider request is
+ * alive, even when that provider has not emitted bytes yet. Missing several
+ * heartbeats therefore means the IPC/main process is actually wedged, not that
+ * a healthy upstream model is still reasoning.
  */
-export const IPC_STREAM_SILENCE_TIMEOUT_MS = 360_000
+export const IPC_STREAM_SILENCE_TIMEOUT_MS = 90_000
 
 export interface IpcTransportOptions<S> {
   /** subscribe to stream chunks; returns the unsubscribe function */
