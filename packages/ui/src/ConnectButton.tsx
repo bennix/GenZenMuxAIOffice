@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ConnectApi, ConnectTarget } from '@genoffice/electron-utils/connect'
 
 const KIND_LABEL: Record<ConnectTarget['kind'], string> = {
@@ -6,6 +7,37 @@ const KIND_LABEL: Record<ConnectTarget['kind'], string> = {
   sheets: 'Excel',
   slides: 'PPT',
   markdown: 'MD',
+}
+
+const MENU_WIDTH = 230
+const VIEWPORT_GAP = 8
+const ANCHOR_GAP = 6
+
+interface MenuPosition {
+  left: number
+  top: number
+  maxHeight: number
+}
+
+export function connectMenuPosition(
+  anchor: Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>,
+  viewportWidth: number,
+  viewportHeight: number,
+  estimatedHeight = 240,
+): MenuPosition {
+  const width = Math.min(MENU_WIDTH, Math.max(0, viewportWidth - VIEWPORT_GAP * 2))
+  const left = Math.min(
+    Math.max(VIEWPORT_GAP, anchor.right - width),
+    Math.max(VIEWPORT_GAP, viewportWidth - width - VIEWPORT_GAP),
+  )
+  const roomAbove = anchor.top - VIEWPORT_GAP - ANCHOR_GAP
+  const roomBelow = viewportHeight - anchor.bottom - VIEWPORT_GAP - ANCHOR_GAP
+  const openAbove = roomAbove >= Math.min(estimatedHeight, 120) || roomAbove >= roomBelow
+  const maxHeight = Math.max(80, openAbove ? roomAbove : roomBelow)
+  const top = openAbove
+    ? Math.max(VIEWPORT_GAP, anchor.top - ANCHOR_GAP - Math.min(estimatedHeight, maxHeight))
+    : anchor.bottom + ANCHOR_GAP
+  return { left, top, maxHeight }
 }
 
 export function ConnectButton({
@@ -19,7 +51,18 @@ export function ConnectButton({
 }) {
   const [targets, setTargets] = useState<ConnectTarget[] | null>(null)
   const [notice, setNotice] = useState('')
+  const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null)
   const rootRef = useRef<HTMLSpanElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const updateMenuPosition = useCallback(() => {
+    const anchor = rootRef.current?.getBoundingClientRect()
+    if (!anchor) return
+    const estimatedHeight = menuRef.current?.offsetHeight || 240
+    setMenuPosition(
+      connectMenuPosition(anchor, window.innerWidth, window.innerHeight, estimatedHeight),
+    )
+  }, [])
 
   const open = async () => {
     if (!text.trim()) {
@@ -41,11 +84,27 @@ export function ConnectButton({
   useEffect(() => {
     if (targets === null) return
     const close = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setTargets(null)
+      const node = event.target as Node
+      if (!rootRef.current?.contains(node) && !menuRef.current?.contains(node)) setTargets(null)
     }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [targets])
+
+  useLayoutEffect(() => {
+    if (targets === null) {
+      setMenuPosition(null)
+      return
+    }
+    updateMenuPosition()
+    const reposition = () => updateMenuPosition()
+    window.addEventListener('resize', reposition)
+    window.addEventListener('scroll', reposition, true)
+    return () => {
+      window.removeEventListener('resize', reposition)
+      window.removeEventListener('scroll', reposition, true)
+    }
+  }, [targets, updateMenuPosition])
 
   const send = async (target: ConnectTarget) => {
     const result = await api.sendConnect(target.id, text)
@@ -64,47 +123,52 @@ export function ConnectButton({
       >
         ↗
       </button>
-      {targets !== null && (
-        <span
-          role="menu"
-          style={{
-            position: 'absolute',
-            zIndex: 1000,
-            right: 0,
-            bottom: 'calc(100% + 6px)',
-            width: 230,
-            padding: 6,
-            border: '1px solid var(--border-color, #d7d7d7)',
-            borderRadius: 8,
-            background: 'var(--panel-bg, #fff)',
-            color: 'var(--text-color, #222)',
-            boxShadow: '0 8px 24px rgba(0,0,0,.18)',
-          }}
-        >
-          {notice && <span style={{ display: 'block', padding: 8, fontSize: 12 }}>{notice}</span>}
-          {targets.map((target) => (
-            <button
-              key={target.id}
-              type="button"
-              role="menuitem"
-              onClick={() => void send(target)}
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '7px 9px',
-                border: 0,
-                borderRadius: 6,
-                background: 'transparent',
-                color: 'inherit',
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-            >
-              {KIND_LABEL[target.kind]} · {target.title}
-            </button>
-          ))}
-        </span>
-      )}
+      {targets !== null &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            style={{
+              position: 'fixed',
+              zIndex: 2147483647,
+              left: menuPosition?.left ?? VIEWPORT_GAP,
+              top: menuPosition?.top ?? VIEWPORT_GAP,
+              width: Math.min(MENU_WIDTH, Math.max(0, window.innerWidth - VIEWPORT_GAP * 2)),
+              maxHeight: menuPosition?.maxHeight ?? 240,
+              overflowY: 'auto',
+              padding: 6,
+              border: '1px solid var(--border-color, #d7d7d7)',
+              borderRadius: 8,
+              background: 'var(--panel-bg, Canvas)',
+              color: 'var(--text-color, CanvasText)',
+              boxShadow: '0 8px 24px rgba(0,0,0,.18)',
+            }}
+          >
+            {notice && <span style={{ display: 'block', padding: 8, fontSize: 12 }}>{notice}</span>}
+            {targets.map((target) => (
+              <button
+                key={target.id}
+                type="button"
+                role="menuitem"
+                onClick={() => void send(target)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '7px 9px',
+                  border: 0,
+                  borderRadius: 6,
+                  background: 'transparent',
+                  color: 'inherit',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
+              >
+                {KIND_LABEL[target.kind]} · {target.title}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
     </span>
   )
 }
