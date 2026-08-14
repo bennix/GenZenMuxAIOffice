@@ -213,6 +213,12 @@ const config = {
     entitlements: 'build/entitlements.mac.plist',
     entitlementsInherit: 'build/entitlements.mac.plist',
     notarize: true,
+    extendInfo: {
+      NSMicrophoneUsageDescription:
+        'GenOffice uses the microphone only when you choose to record narration for a presentation.',
+      NSScreenCaptureUsageDescription:
+        'GenOffice captures the selected window or display when you choose to record a presentation.',
+    },
     extraResources: [
       {
         from: '../sheets/native/xlsx-engine/target/release/xlsx-sidecar',

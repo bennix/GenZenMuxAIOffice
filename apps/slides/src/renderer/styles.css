@@ -2784,6 +2784,74 @@ body.vib .slide-list {
   color: var(--color-error);
 }
 
+.recording-setup {
+  width: min(500px, calc(100vw - 32px));
+}
+
+.recording-help,
+.recording-permission-note {
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.recording-permission-note {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--color-bg-subtle);
+}
+
+.presentation-recording-controls {
+  position: fixed;
+  z-index: 220;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 13px;
+  background: rgb(24 24 27 / 92%);
+  color: #fff;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 32%);
+  backdrop-filter: blur(12px);
+  font-size: 12px;
+}
+
+.presentation-recording-controls button {
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 8px;
+  padding: 5px 9px;
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
+  cursor: pointer;
+}
+
+.presentation-recording-controls button:hover {
+  background: rgb(255 255 255 / 19%);
+}
+
+.presentation-recording-controls .recording-stop {
+  border-color: #d92d20;
+  background: #d92d20;
+}
+
+.recording-live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgb(239 68 68 / 22%);
+}
+
+.recording-clock {
+  min-width: 48px;
+  font-variant-numeric: tabular-nums;
+}
+
 .provider-tabs {
   display: flex;
   flex-wrap: wrap;

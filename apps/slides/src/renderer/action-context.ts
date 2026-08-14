@@ -86,6 +86,20 @@ export interface ChartDataDialogInit {
   series: Array<{ name: string; values: number[] }>
 }
 
+export interface PresentationRecorderState {
+  rec: MediaRecorder
+  stream: MediaStream
+  displayStream: MediaStream
+  microphoneStream: MediaStream | null
+  audioContext: AudioContext | null
+  recordingId: string
+  writeQueue: Promise<void>
+  canceled: boolean
+  startedAt: number
+  pausedAt: number | null
+  pausedTotalMs: number
+}
+
 /** App state bundle passed to every extracted action; refreshed each render. */
 export interface ActionCtx {
   // Document
@@ -170,9 +184,11 @@ export interface ActionCtx {
   setZoom: Set<number>
   masterItems: MasterPartItem[] | null
 
-  // Screen recording
-  recorderRef: { current: { rec: MediaRecorder; stream: MediaStream } | null }
+  // Presentation recording
+  recorderRef: { current: PresentationRecorderState | null }
   setRecording: Set<boolean>
+  setRecordingPaused: Set<boolean>
+  setRecordingStartedAt: Set<number>
 
   // Text-edit flush support
   editingActiveRef: { current: boolean }

@@ -59,6 +59,11 @@ import { AnimationPane } from './components/AnimationPane'
 import { AnimPreviewOverlay } from './components/AnimatedSlide'
 import { EquationDialog, HeaderFooterDialog, LinkDialog } from './components/InsertDialogs'
 import { CutoutDialog } from './components/CutoutDialog'
+import {
+  PresentationRecordingControls,
+  PresentationRecordingDialog,
+  type PresentationRecordingOptions,
+} from './components/PresentationRecording'
 import type { WordArtPreset } from '@genoffice/ui'
 import type { ChartPresetDef, IconDef, SmartArtDef } from './insert-presets'
 import { ZenMuxMark, IconAiBeautify, IconAiFactCheck, IconAiImage } from './components/icons'
@@ -78,6 +83,7 @@ import type {
   EditingState,
   HfDialogState,
   LinkDialogState,
+  PresentationRecorderState,
   SlideShowState,
 } from './action-context'
 import { FIT_WIDTH, PX_PER_INCH } from './app-constants'
@@ -467,8 +473,11 @@ export function App() {
   const [hfDialog, setHfDialog] = useState<HfDialogState | null>(null)
   const [eqDialogOpen, setEqDialogOpen] = useState(false)
   const [eqEditTarget, setEqEditTarget] = useState<{ sourceId: string; latex: string } | null>(null)
-  const recorderRef = useRef<{ rec: MediaRecorder; stream: MediaStream } | null>(null)
+  const recorderRef = useRef<PresentationRecorderState | null>(null)
   const [recording, setRecording] = useState(false)
+  const [recordingPaused, setRecordingPaused] = useState(false)
+  const [recordingStartedAt, setRecordingStartedAt] = useState(0)
+  const [recordingSetupOpen, setRecordingSetupOpen] = useState(false)
   // ── Layout picking: layout list + slide size (loaded after the file opens) ─────────────────
   const [layoutsResult, setLayoutsResult] = useState<GetLayoutsResult | null>(null)
   // ── Picture crop mode ─────────────────────────────────────────────────────
@@ -1144,7 +1153,23 @@ export function App() {
     [],
   )
   const insertModel3dFile = useCallback(() => insertActions.insertModel3dFile(ctxRef.current), [])
-  const toggleScreenRecord = useCallback(() => insertActions.toggleScreenRecord(ctxRef.current), [])
+  const startPresentationRecording = useCallback(async (options: PresentationRecordingOptions) => {
+    const ok = await insertActions.startPresentationRecording(ctxRef.current, options)
+    if (ok) setRecordingSetupOpen(false)
+    return ok
+  }, [])
+  const pauseResumePresentationRecording = useCallback(
+    () => insertActions.pauseResumePresentationRecording(ctxRef.current),
+    [],
+  )
+  const stopPresentationRecording = useCallback(
+    () => insertActions.stopPresentationRecording(ctxRef.current),
+    [],
+  )
+  const cancelPresentationRecording = useCallback(
+    () => insertActions.cancelPresentationRecording(ctxRef.current),
+    [],
+  )
 
   // Reflect the current page's transition effect on page/document changes
   useEffect(() => {
@@ -1278,10 +1303,12 @@ export function App() {
     (fromStart: boolean) => showActions.startSlideShow(ctxRef.current, fromStart),
     [],
   )
-  const exitSlideShow = useCallback(
-    (lastIndex: number) => showActions.exitSlideShow(ctxRef.current, lastIndex),
-    [],
-  )
+  const exitSlideShow = useCallback((lastIndex: number) => {
+    showActions.exitSlideShow(ctxRef.current, lastIndex)
+    if (ctxRef.current.recorderRef.current) {
+      insertActions.stopPresentationRecording(ctxRef.current)
+    }
+  }, [])
 
   // ── Custom shows: load the document's list on document switch (no path = unsaved new document, memory-only) ──
   useEffect(() => {
@@ -2312,6 +2339,8 @@ export function App() {
     masterItems,
     recorderRef,
     setRecording,
+    setRecordingPaused,
+    setRecordingStartedAt,
     editingActiveRef,
     applySlide,
     flushNotes,
@@ -2521,7 +2550,9 @@ export function App() {
         onInsertMedia={(kind) => void insertMediaFile(kind)}
         onInsertModel3d={() => void insertModel3dFile()}
         recording={recording}
-        onToggleScreenRecord={() => void toggleScreenRecord()}
+        onToggleScreenRecord={() =>
+          recording ? stopPresentationRecording() : setRecordingSetupOpen(true)
+        }
         contextElementType={contextElementType}
         contextElementId={selectedNode?.sourceId}
         contextSlideIndex={current}
@@ -3321,6 +3352,23 @@ export function App() {
           rehearseMode={slideShow.rehearse}
           onRehearseDone={onRehearseDone}
           onExit={exitSlideShow}
+        />
+      )}
+
+      {recording && recordingStartedAt > 0 && (
+        <PresentationRecordingControls
+          recorder={recorderRef.current!}
+          paused={recordingPaused}
+          onPauseResume={pauseResumePresentationRecording}
+          onStop={stopPresentationRecording}
+          onCancel={cancelPresentationRecording}
+        />
+      )}
+
+      {recordingSetupOpen && !recording && (
+        <PresentationRecordingDialog
+          onClose={() => setRecordingSetupOpen(false)}
+          onStart={startPresentationRecording}
         />
       )}
 

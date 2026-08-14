@@ -19,6 +19,8 @@ import {
 } from './insert-presets'
 import { t } from './i18n/locale'
 import { isLineDrawKind, type DrawRect } from './draw-shape'
+import type { PresentationRecordingOptions } from './components/PresentationRecording'
+import { presentationMp4Mime, recordingFileName } from './presentation-recording'
 
 /** Draw-mode commit: insert a gallery shape at the drawn box (PowerPoint click-or-drag sizing). */
 export async function insertShapeAt(
@@ -449,62 +451,184 @@ export async function insertModel3dFile(ctx: ActionCtx): Promise<void> {
   }
 }
 
-/** Screen recording: getDisplayMedia + MediaRecorder; when stopped, inserted into the current page as webm video. */
-export async function toggleScreenRecord(ctx: ActionCtx): Promise<void> {
-  if (ctx.recorderRef.current) {
-    ctx.recorderRef.current.rec.stop()
-    return
+function stopRecordingTracks(ctx: ActionCtx): void {
+  const state = ctx.recorderRef.current
+  state?.stream.getTracks().forEach((track) => track.stop())
+  state?.displayStream.getTracks().forEach((track) => track.stop())
+  state?.microphoneStream?.getTracks().forEach((track) => track.stop())
+  if (state?.audioContext && state.audioContext.state !== 'closed') {
+    void state.audioContext.close()
   }
-  if (!ctx.slide) return
+}
+
+/** Record a full-screen presentation plus optional microphone narration to a real MP4 file. */
+export async function startPresentationRecording(
+  ctx: ActionCtx,
+  options: PresentationRecordingOptions,
+): Promise<boolean> {
+  if (!ctx.slide || ctx.recorderRef.current) return false
+  const mimeType = presentationMp4Mime()
+  if (!mimeType) {
+    ctx.setStatus('当前系统的视频编码器不支持 MP4，无法开始录制。请更新 GenOffice 或系统后重试。')
+    return false
+  }
+  let displayStream: MediaStream | null = null
+  let microphoneStream: MediaStream | null = null
+  let audioContext: AudioContext | null = null
+  let recordingId: string | null = null
   try {
-    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
-    const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-      ? 'video/webm;codecs=vp9'
-      : 'video/webm'
-    const rec = new MediaRecorder(stream, { mimeType: mime })
-    const chunks: Blob[] = []
-    rec.ondataavailable = (ev) => {
-      if (ev.data.size > 0) chunks.push(ev.data)
-    }
-    const slideIndex = ctx.current
-    rec.onstop = async () => {
-      stream.getTracks().forEach((t) => t.stop())
-      ctx.recorderRef.current = null
-      ctx.setRecording(false)
-      const blob = new Blob(chunks, { type: 'video/webm' })
-      if (blob.size === 0) {
-        ctx.setStatus(t('appStatusRecordingEmpty'))
-        return
-      }
-      // Blob → base64 (chunked to avoid call stack overflow)
-      const buf = new Uint8Array(await blob.arrayBuffer())
-      let bin = ''
-      for (let i = 0; i < buf.length; i += 0x8000) {
-        bin += String.fromCharCode(...buf.subarray(i, i + 0x8000))
-      }
-      const r = await window.slidesApi.addMediaBytes({
-        slideIndex,
-        kind: 'video',
-        base64: btoa(bin),
-        ext: 'webm',
-        fitWidthPx: FIT_WIDTH,
-        name: `Screen recording ${new Date().toLocaleTimeString()}`,
+    if (options.microphone) {
+      microphoneStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          ...(options.deviceId ? { deviceId: { exact: options.deviceId } } : {}),
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       })
-      if (r) {
-        ctx.applySlide(slideIndex, r.slide)
-        ctx.setSelectedIds([r.sourceId])
-        ctx.setStatus(t('appStatusRecordingInserted'))
+    }
+    displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: { ideal: 30, max: 60 } },
+      audio: options.systemAudio,
+    })
+    const audioStreams = [displayStream, microphoneStream].filter(
+      (candidate): candidate is MediaStream => !!candidate?.getAudioTracks().length,
+    )
+    let audioTracks: MediaStreamTrack[] = []
+    if (audioStreams.length === 1) {
+      audioTracks = audioStreams[0]!.getAudioTracks()
+    } else if (audioStreams.length > 1) {
+      audioContext = new AudioContext()
+      await audioContext.resume()
+      const destination = audioContext.createMediaStreamDestination()
+      for (const sourceStream of audioStreams) {
+        const gain = audioContext.createGain()
+        gain.gain.value = 0.75
+        audioContext.createMediaStreamSource(sourceStream).connect(gain).connect(destination)
+      }
+      audioTracks = destination.stream.getAudioTracks()
+    }
+    const stream = new MediaStream([...displayStream.getVideoTracks(), ...audioTracks])
+    const started = await window.slidesApi.beginPresentationRecording(mimeType)
+    if (!started) throw new Error('Unable to create the local recording file')
+    recordingId = started.id
+    const rec = new MediaRecorder(stream, {
+      mimeType,
+      videoBitsPerSecond: 8_000_000,
+      audioBitsPerSecond: 192_000,
+    })
+    const state = {
+      rec,
+      stream,
+      displayStream,
+      microphoneStream,
+      audioContext,
+      recordingId: started.id,
+      writeQueue: Promise.resolve(),
+      canceled: false,
+      startedAt: 0,
+      pausedAt: null,
+      pausedTotalMs: 0,
+    }
+    rec.ondataavailable = (ev) => {
+      if (ev.data.size === 0) return
+      state.writeQueue = state.writeQueue.then(async () => {
+        const bytes = new Uint8Array(await ev.data.arrayBuffer())
+        const ok = await window.slidesApi.appendPresentationRecording(started.id, bytes)
+        if (!ok) throw new Error('Unable to write the local recording file')
+      })
+    }
+    rec.onstop = async () => {
+      stopRecordingTracks(ctx)
+      ctx.setSlideShow(null)
+      ctx.setRecordingPaused(false)
+      try {
+        await state.writeQueue
+        if (state.canceled) {
+          await window.slidesApi.cancelPresentationRecording(started.id)
+          ctx.setStatus('已取消录制，临时文件已删除')
+        } else {
+          ctx.setStatus('录制完成，正在准备 MP4 导出…')
+          // Let fullscreen close before opening the native save sheet, especially on macOS.
+          await new Promise((resolve) => window.setTimeout(resolve, 200))
+          const result = await window.slidesApi.finishPresentationRecording(
+            started.id,
+            recordingFileName(ctx.path),
+          )
+          if (result.ok && result.path) ctx.setStatus(`MP4 已导出：${result.path}`)
+          else if (result.canceled) ctx.setStatus('已取消 MP4 导出')
+          else ctx.setStatus(`MP4 导出失败：${result.error ?? '未知错误'}`)
+        }
+      } catch (error) {
+        await window.slidesApi.cancelPresentationRecording(started.id)
+        ctx.setStatus(`MP4 导出失败：${String(error)}`)
+      } finally {
+        ctx.recorderRef.current = null
+        ctx.setRecording(false)
+        ctx.setRecordingPaused(false)
+        ctx.setRecordingStartedAt(0)
       }
     }
-    // Also clean up when the user ends via the system "Stop sharing"
-    stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+    displayStream.getVideoTracks()[0]?.addEventListener('ended', () => {
       if (rec.state !== 'inactive') rec.stop()
     })
+    ctx.setStatus('录制将在 3 秒后开始…')
+    await new Promise((resolve) => window.setTimeout(resolve, 1000))
+    ctx.setStatus('录制将在 2 秒后开始…')
+    await new Promise((resolve) => window.setTimeout(resolve, 1000))
+    ctx.setStatus('录制将在 1 秒后开始…')
+    await new Promise((resolve) => window.setTimeout(resolve, 1000))
     rec.start(1000)
-    ctx.recorderRef.current = { rec, stream }
+    state.startedAt = Date.now()
+    ctx.recorderRef.current = state
     ctx.setRecording(true)
-    ctx.setStatus(t('appStatusRecording'))
-  } catch {
-    ctx.setStatus(t('appStatusRecordingUnavailable'))
+    ctx.setRecordingPaused(false)
+    ctx.setRecordingStartedAt(state.startedAt)
+    ctx.setEditing(null)
+    ctx.setCtxMenu(null)
+    const first = ctx.slides.findIndex((slide) => !slide.hidden)
+    ctx.setSlideShow({ startAt: options.fromStart ? Math.max(0, first) : ctx.current })
+    const audioLabel = [options.microphone ? '麦克风' : '', options.systemAudio ? '系统声音' : '']
+      .filter(Boolean)
+      .join('和')
+    ctx.setStatus(`正在录制演示${audioLabel ? `、${audioLabel}` : ''}…`)
+    return true
+  } catch (error) {
+    displayStream?.getTracks().forEach((track) => track.stop())
+    microphoneStream?.getTracks().forEach((track) => track.stop())
+    if (audioContext && audioContext.state !== 'closed') await audioContext.close()
+    if (recordingId) await window.slidesApi.cancelPresentationRecording(recordingId)
+    ctx.setStatus(`无法开始录制（权限未授予、未选择屏幕或设备不可用）：${String(error)}`)
+    return false
   }
+}
+
+export function pauseResumePresentationRecording(ctx: ActionCtx): void {
+  const rec = ctx.recorderRef.current?.rec
+  if (!rec || rec.state === 'inactive') return
+  if (rec.state === 'paused') {
+    const state = ctx.recorderRef.current!
+    rec.resume()
+    if (state.pausedAt != null) state.pausedTotalMs += Date.now() - state.pausedAt
+    state.pausedAt = null
+    ctx.setRecordingPaused(false)
+    ctx.setStatus('已继续录制')
+  } else {
+    ctx.recorderRef.current!.pausedAt = Date.now()
+    rec.pause()
+    ctx.setRecordingPaused(true)
+    ctx.setStatus('录制已暂停')
+  }
+}
+
+export function stopPresentationRecording(ctx: ActionCtx): void {
+  const rec = ctx.recorderRef.current?.rec
+  if (rec && rec.state !== 'inactive') rec.stop()
+}
+
+export function cancelPresentationRecording(ctx: ActionCtx): void {
+  const state = ctx.recorderRef.current
+  if (!state) return
+  state.canceled = true
+  if (state.rec.state !== 'inactive') state.rec.stop()
 }

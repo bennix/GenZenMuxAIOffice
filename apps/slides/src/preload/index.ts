@@ -200,6 +200,13 @@ const api: SlidesApi = {
   insertMedia: (slideIndex: number, kind: 'video' | 'audio', fitWidthPx: number) =>
     ipcRenderer.invoke('slides:insert-media', slideIndex, kind, fitWidthPx),
   addMediaBytes: (op: AddMediaBytesOp) => ipcRenderer.invoke('slides:add-media-bytes', op),
+  beginPresentationRecording: (mimeType: string) =>
+    ipcRenderer.invoke('slides:recording-begin', mimeType),
+  appendPresentationRecording: (id: string, bytes: Uint8Array) =>
+    ipcRenderer.invoke('slides:recording-append', id, bytes),
+  finishPresentationRecording: (id: string, defaultName: string) =>
+    ipcRenderer.invoke('slides:recording-finish', id, defaultName),
+  cancelPresentationRecording: (id: string) => ipcRenderer.invoke('slides:recording-cancel', id),
   getMediaData: (slideIndex: number, sourceId: string) =>
     ipcRenderer.invoke('slides:media-data', slideIndex, sourceId),
   insertModel3d: (slideIndex: number, fitWidthPx: number) =>

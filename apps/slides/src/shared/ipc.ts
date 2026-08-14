@@ -1169,6 +1169,17 @@ export interface SlidesApi extends ConnectApi {
   ) => Promise<{ slide: RenderSlide; sourceId: string } | null>
   /** Insert renderer-recorded media (screen recording); placed centered */
   addMediaBytes: (op: AddMediaBytesOp) => Promise<{ slide: RenderSlide; sourceId: string } | null>
+  /** Create a private local temporary file for a presentation recording. */
+  beginPresentationRecording: (mimeType: string) => Promise<{ id: string } | null>
+  /** Append one MediaRecorder chunk without retaining the whole movie in renderer memory. */
+  appendPresentationRecording: (id: string, bytes: Uint8Array) => Promise<boolean>
+  /** Close the temporary recording and let the user save it as an MP4. */
+  finishPresentationRecording: (
+    id: string,
+    defaultName: string,
+  ) => Promise<{ ok: boolean; path?: string; canceled?: boolean; error?: string }>
+  /** Delete an unfinished or discarded recording. */
+  cancelPresentationRecording: (id: string) => Promise<void>
   /** Read an audio/video element's media data (double-click playback); embedded media converts to dataUrl, external links return as-is */
   getMediaData: (
     slideIndex: number,

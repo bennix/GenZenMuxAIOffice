@@ -19,11 +19,11 @@ import {
 } from 'electron'
 import type { WebContents } from 'electron'
 import { execFile } from 'node:child_process'
-import { readFile, writeFile, rm, stat, mkdir, open } from 'node:fs/promises'
-import { createHash } from 'node:crypto'
+import { copyFile, readFile, writeFile, rm, stat, mkdir, open } from 'node:fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
 import { userInfo } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import {
   appMenuLabels,
   configuredDefaultSaveDir,
@@ -924,6 +924,22 @@ function chartColorSchemes(
 
 let ipcRegistered = false
 
+interface PendingPresentationRecording {
+  senderId: number
+  path: string
+  queue: Promise<void>
+}
+
+const pendingPresentationRecordings = new Map<string, PendingPresentationRecording>()
+
+async function discardPresentationRecording(id: string, senderId: number): Promise<void> {
+  const pending = pendingPresentationRecordings.get(id)
+  if (!pending || pending.senderId !== senderId) return
+  pendingPresentationRecordings.delete(id)
+  await pending.queue.catch(() => {})
+  await rm(pending.path, { force: true }).catch(() => {})
+}
+
 export function registerSlidesIpc(): void {
   if (ipcRegistered) return
   ipcRegistered = true
@@ -937,12 +953,18 @@ export function registerSlidesIpc(): void {
   void app.whenReady().then(() => {
     try {
       electronSession.defaultSession.setDisplayMediaRequestHandler(
-        (_request, callback) => {
+        (request, callback) => {
           desktopCapturer
             .getSources({ types: ['screen', 'window'] })
             .then((sources) => {
-              if (sources[0]) callback({ video: sources[0] })
-              else callback({})
+              if (sources[0]) {
+                callback({
+                  video: sources[0],
+                  ...(request.audioRequested && process.platform === 'win32'
+                    ? { audio: 'loopback' as const }
+                    : {}),
+                })
+              } else callback({})
             })
             .catch(() => callback({}))
         },
@@ -951,6 +973,68 @@ export function registerSlidesIpc(): void {
     } catch {
       /* Older Electron lacks this API: the screen-record button will get no stream and report failure */
     }
+  })
+
+  ipcMain.handle('slides:recording-begin', async (e, mimeType: string) => {
+    if (typeof mimeType !== 'string' || !mimeType.toLowerCase().startsWith('video/mp4')) return null
+    const id = randomUUID()
+    const dir = join(app.getPath('temp'), 'genoffice-presentation-recordings')
+    await mkdir(dir, { recursive: true })
+    const path = join(dir, `${id}.mp4`)
+    await writeFile(path, Buffer.alloc(0), { mode: 0o600 })
+    const senderId = e.sender.id
+    pendingPresentationRecordings.set(id, { senderId, path, queue: Promise.resolve() })
+    e.sender.once('destroyed', () => void discardPresentationRecording(id, senderId))
+    return { id }
+  })
+
+  ipcMain.handle('slides:recording-append', async (e, id: string, raw: Uint8Array) => {
+    const pending = pendingPresentationRecordings.get(id)
+    if (!pending || pending.senderId !== e.sender.id || !(raw instanceof Uint8Array)) return false
+    // One-second MediaRecorder chunks are normally far smaller. Keep malformed IPC payloads bounded.
+    if (raw.byteLength === 0 || raw.byteLength > 32 * 1024 * 1024) return false
+    const bytes = Buffer.from(raw)
+    pending.queue = pending.queue.then(() => writeFile(pending.path, bytes, { flag: 'a' }))
+    try {
+      await pending.queue
+      return true
+    } catch {
+      return false
+    }
+  })
+
+  ipcMain.handle('slides:recording-finish', async (e, id: string, defaultName: string) => {
+    const pending = pendingPresentationRecordings.get(id)
+    if (!pending || pending.senderId !== e.sender.id) {
+      return { ok: false, error: 'Recording session not found' }
+    }
+    try {
+      await pending.queue
+      if ((await stat(pending.path)).size === 0) return { ok: false, error: 'Recording is empty' }
+      const safeName = basename(typeof defaultName === 'string' ? defaultName : 'Presentation.mp4')
+      const r = await showSaveDialogWithMemory(
+        dialog,
+        dialogParent(),
+        {
+          title: '导出演示录制 / Export presentation recording',
+          defaultPath: safeName.toLowerCase().endsWith('.mp4') ? safeName : `${safeName}.mp4`,
+          filters: [{ name: 'MP4 Video', extensions: ['mp4'] }],
+        },
+        getDraftsDir(),
+      )
+      if (r.canceled || !r.filePath) return { ok: false, canceled: true }
+      await copyFile(pending.path, r.filePath)
+      return { ok: true, path: r.filePath }
+    } catch (error) {
+      return { ok: false, error: String(error) }
+    } finally {
+      pendingPresentationRecordings.delete(id)
+      await rm(pending.path, { force: true }).catch(() => {})
+    }
+  })
+
+  ipcMain.handle('slides:recording-cancel', async (e, id: string) => {
+    await discardPresentationRecording(id, e.sender.id)
   })
 
   ipcMain.handle('slides:open', async (e, fitWidthPx: number) => {
