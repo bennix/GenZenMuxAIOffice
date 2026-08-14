@@ -76,6 +76,13 @@ describe('image text wrap (wp:anchor)', () => {
     expect(out).not.toContain('wp:wrapSquare')
   })
 
+  it('converts an inline image to the front drawing layer', () => {
+    const out = applyImageWrap(IMAGE_PARAGRAPH_XML, 'front')
+    expect(out).toContain('<wp:anchor')
+    expect(out).toContain('behindDoc="0"')
+    expect(out).toContain('<wp:wrapNone/>')
+  })
+
   it('applies margin-relative position presets (Word position gallery)', () => {
     const out = applyImageWrap(IMAGE_PARAGRAPH_XML, 'square-right', undefined, {
       h: 'center',
@@ -188,6 +195,20 @@ describe('tight / through wrap (wrapPolygon fidelity)', () => {
     const out = applyImageWrap(tightXml, 'square-left')
     expect(out).toContain('<wp:wrapSquare wrapText="bothSides"/>')
     expect(out).not.toContain('wp:wrapTight')
+  })
+
+  it('creates a valid tight polygon when an inline image is switched to tight', () => {
+    const out = applyImageWrap(IMAGE_PARAGRAPH_XML, 'tight-left')
+    expect(out).toContain('<wp:wrapTight wrapText="bothSides">')
+    expect(out).toContain('<wp:wrapPolygon edited="0">')
+    expect(out).not.toContain('wp:wrapSquare')
+  })
+
+  it('creates a valid through polygon when an inline image is switched to through', () => {
+    const out = applyImageWrap(IMAGE_PARAGRAPH_XML, 'through-right')
+    expect(out).toContain('<wp:wrapThrough wrapText="bothSides">')
+    expect(out).toContain('<wp:lineTo x="21600" y="21600"/>')
+    expect(out).not.toContain('wp:wrapSquare')
   })
 
   it('tight wrap round-trips through save + reparse', async () => {

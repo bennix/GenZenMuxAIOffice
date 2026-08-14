@@ -61,7 +61,7 @@ export function EditorContextMenu({
   onContinueNumbering,
   onUpdateFields,
 }: EditorContextMenuProps) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const ref = useRef<HTMLDivElement>(null)
   const [submenu, setSubmenu] = useState<string | null>(null)
 
@@ -287,7 +287,7 @@ export function EditorContextMenu({
                   >
                     <span className="ctx-label">
                       {currentWrap === opt.value ? '✓ ' : ''}
-                      {t(opt.labelKey)}
+                      {wrapOptionLabel(opt, lang, t)}
                     </span>
                   </button>
                 ))}
@@ -303,15 +303,37 @@ export function EditorContextMenu({
   )
 }
 
-/** Wrap options from Word's image context menu (inline/square/top-bottom/behind text/in front of text); shared with the Picture Format tab */
-export const WRAP_OPTIONS: Array<{ labelKey: StringKey; value: string | null }> = [
+export interface WrapOption {
+  labelKey?: StringKey
+  labels?: { zh: string; en: string }
+  value: string | null
+}
+
+/** All Word-compatible image wrap modes; shared by context, Picture Format and Layout. */
+export const WRAP_OPTIONS: WrapOption[] = [
   { labelKey: 'appWrapInline', value: null },
   { labelKey: 'appWrapSquareLeft', value: 'square-left' },
   { labelKey: 'appWrapSquareRight', value: 'square-right' },
+  { labels: { zh: '紧密型环绕 · 图片靠左', en: 'Tight · Picture Left' }, value: 'tight-left' },
+  { labels: { zh: '紧密型环绕 · 图片靠右', en: 'Tight · Picture Right' }, value: 'tight-right' },
+  { labels: { zh: '穿越型环绕 · 图片靠左', en: 'Through · Picture Left' }, value: 'through-left' },
+  {
+    labels: { zh: '穿越型环绕 · 图片靠右', en: 'Through · Picture Right' },
+    value: 'through-right',
+  },
   { labelKey: 'appWrapTopBottom', value: 'topBottom' },
   { labelKey: 'appWrapBehind', value: 'behind' },
   { labelKey: 'appWrapFront', value: 'front' },
 ]
+
+export function wrapOptionLabel(
+  option: WrapOption,
+  lang: string,
+  t: (key: StringKey) => string,
+): string {
+  if (option.labelKey) return t(option.labelKey)
+  return lang === 'zh' || lang === 'zh-TW' ? option.labels!.zh : option.labels!.en
+}
 
 /* ================= Font dialog ================= */
 

@@ -1,5 +1,5 @@
 import { type SectionSettings } from '@genoffice/docx-engine'
-import { WRAP_OPTIONS } from './ContextMenu'
+import { WRAP_OPTIONS, wrapOptionLabel } from './ContextMenu'
 import { useI18n, type StringKey } from '../i18n/locale'
 import {
   IconCaret,
@@ -89,7 +89,7 @@ export function LayoutTab({
   activeSection,
   onInsertSectionBreak,
 }: LayoutTabProps) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const paraAttrs = activeParaAttrs(editor)
   const enabled = hasDoc && !!section
 
@@ -99,8 +99,7 @@ export function LayoutTab({
   const isFloatingBox =
     Array.isArray(protAttrs?.textboxes) && (protAttrs.textboxes as unknown[]).length > 0
   const canWrap = hasDoc && (isImage || isFloatingBox)
-  // position presets go through imagePatchOf (original-document images only); newly inserted objects work after saving
-  const canPosition = hasDoc && isImage && protAttrs?.docxIndex != null
+  const canPosition = hasDoc && isImage
   const currentWrap = (protAttrs?.imageWrap as string | null) ?? null
 
   const applyWrap = (value: string | null) => {
@@ -454,7 +453,7 @@ export function LayoutTab({
                     className={currentWrap === opt.value ? 'active' : ''}
                     onClick={() => applyWrap(opt.value)}
                   >
-                    <b>{t(opt.labelKey)}</b>
+                    <b>{wrapOptionLabel(opt, lang, t)}</b>
                   </button>
                 ))}
               </div>

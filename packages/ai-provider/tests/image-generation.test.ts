@@ -57,4 +57,26 @@ describe('generateZenMuxImage', () => {
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
     expect(body.parameters).toMatchObject({ imageSize: '1536x1024', quality: 'high' })
   })
+
+  it('sends a local reference image to gpt-image-2 through ZenMux', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({ predictions: [{ bytesBase64Encoded: 'clean', mimeType: 'image/png' }] }),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await generateZenMuxImage({
+      apiKey: 'key',
+      model: 'openai/gpt-image-2',
+      prompt: 'restore scan',
+      referenceImages: [{ base64: 'c2Nhbg==', mime: 'image/png' }],
+    })
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body.instances[0].image).toEqual({
+      bytesBase64Encoded: 'c2Nhbg==',
+      mimeType: 'image/png',
+    })
+  })
 })

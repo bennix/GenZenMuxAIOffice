@@ -201,14 +201,20 @@ export function applyImageWrap(
     : wrap.startsWith('through-')
       ? 'wp:wrapThrough'
       : null
+  const defaultWrapPolygon =
+    '<wp:wrapPolygon edited="0"><wp:start x="0" y="0"/>' +
+    '<wp:lineTo x="0" y="21600"/><wp:lineTo x="21600" y="21600"/>' +
+    '<wp:lineTo x="21600" y="0"/><wp:lineTo x="0" y="0"/></wp:wrapPolygon>'
   const wrapElement =
     keepKind && existingWrap?.startsWith(`<${keepKind}`)
       ? existingWrap
-      : isSide
-        ? '<wp:wrapSquare wrapText="bothSides"/>'
-        : wrap === 'topBottom'
-          ? '<wp:wrapTopAndBottom/>'
-          : '<wp:wrapNone/>'
+      : keepKind
+        ? `<${keepKind} wrapText="bothSides">${defaultWrapPolygon}</${keepKind}>`
+        : isSide
+          ? '<wp:wrapSquare wrapText="bothSides"/>'
+          : wrap === 'topBottom'
+            ? '<wp:wrapTopAndBottom/>'
+            : '<wp:wrapNone/>'
   const anchorOpen =
     `<wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0"` +
     ` relativeHeight="251658240" behindDoc="${behind}" locked="0" layoutInCell="1" allowOverlap="1">`

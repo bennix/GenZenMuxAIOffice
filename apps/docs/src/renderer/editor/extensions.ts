@@ -1732,23 +1732,25 @@ function protectedDomSpec(node: PmNode): DomSpec {
       attrs['style'] = `text-align:${imageAlign}`
     }
     if (imageWrap) attrs.class += ` img-wrap-${String(imageWrap)}`
+    if (imageWrap === 'front' || imageWrap === 'behind') {
+      attrs.class += ' doc-protected-floating'
+    }
     // no-wrap / behind-text floats: approximate the anchor position — margin
     // alignment via text-align, numeric posOffset via a transform on the INNER
     // wrap (the outer block's rect feeds pagination measurement, which must
     // stay at the flow position; transforms leak into getBoundingClientRect)
-    let imgWrapTransform = ''
+    let imgWrapStyle = ''
     if (imageWrap === 'front' || imageWrap === 'behind') {
       const posH = node.attrs.imagePosH
-      if ((posH === 'center' || posH === 'right') && !attrs['style']) {
-        attrs['style'] = `text-align:${String(posH)}`
-      }
       const tx =
         node.attrs.imageOffsetXEmu != null ? Number(node.attrs.imageOffsetXEmu) / EMU_PER_PX : 0
       const ty =
         node.attrs.imageOffsetYEmu != null ? Number(node.attrs.imageOffsetYEmu) / EMU_PER_PX : 0
-      if (tx !== 0 || ty !== 0) {
-        imgWrapTransform = `transform:translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px)`
-      }
+      const anchor = posH === 'center' ? 'left:50%;' : posH === 'right' ? 'right:0;' : 'left:0;'
+      const base = posH === 'center' ? 'translateX(-50%) ' : ''
+      imgWrapStyle =
+        `position:absolute;top:0;${anchor}` +
+        `transform:${base}translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px);`
     }
     const imgAttrs: Record<string, string> = {
       src: String(imageDataUrl),
@@ -1796,7 +1798,7 @@ function protectedDomSpec(node: PmNode): DomSpec {
           'span',
           {
             class: 'doc-img-wrap doc-img-crop',
-            style: `position:relative;display:inline-block;overflow:hidden;width:${W}px;height:${H}px${imgWrapTransform ? `;${imgWrapTransform}` : ''}`,
+            style: `${imgWrapStyle || 'position:relative;'}display:inline-block;overflow:hidden;width:${W}px;height:${H}px`,
           },
           ['img', imgAttrs],
           ['span', { class: 'img-resize-handle' }],
@@ -1811,7 +1813,7 @@ function protectedDomSpec(node: PmNode): DomSpec {
         'span',
         {
           class: 'doc-img-wrap',
-          ...(imgWrapTransform ? { style: `display:inline-block;${imgWrapTransform}` } : {}),
+          ...(imgWrapStyle ? { style: `display:inline-block;${imgWrapStyle}` } : {}),
         },
         ['img', imgAttrs],
         ['span', { class: 'img-resize-handle' }],
@@ -2638,12 +2640,6 @@ function floatingObjectDragPlugin(): Plugin {
           if (!handle && !isShapeBody) return false
 
           const isFloating = !!node.attrs.imageWrap
-          const hasNumericOffset =
-            node.attrs.imageOffsetXEmu != null && node.attrs.imageOffsetYEmu != null
-
-          // Only handle floating images (anchor) that have numeric posOffset,
-          // or inline images (will be converted on first drag)
-          if (isImage && isFloating && !hasNumericOffset) return false
 
           event.preventDefault()
           event.stopPropagation()

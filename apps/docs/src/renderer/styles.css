@@ -4387,9 +4387,19 @@ th.cell-rev-del {
   text-align: center;
 }
 
-/* behind text / in front of text: the flowing canvas has no absolutely positioned layer; reduced opacity as an approximation */
-.doc-protected.img-wrap-behind {
-  opacity: 0.45;
+/* Word drawing layers: both modes leave the text flow; regular page content is
+   stacked above behind-text objects, while front objects remain above it. */
+.doc-page > :not(.img-wrap-behind):not(.img-wrap-front) {
+  position: relative;
+  z-index: 1;
+}
+
+.doc-protected.doc-protected-floating.img-wrap-behind {
+  z-index: 0;
+}
+
+.doc-protected.doc-protected-floating.img-wrap-front {
+  z-index: 20;
 }
 
 .doc-protected[data-doc-protected='image'].ProseMirror-selectednode .doc-img-wrap {

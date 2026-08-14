@@ -52,8 +52,8 @@ import {
   type RevisionDisplayMode,
   type ViewMode,
 } from './ribbon-tabs'
-import { WRAP_OPTIONS } from './ContextMenu'
-import { CropDialog, CutoutDialog } from './PictureDialogs'
+import { WRAP_OPTIONS, wrapOptionLabel } from './ContextMenu'
+import { AiScanEnhanceDialog, CropDialog, CutoutDialog } from './PictureDialogs'
 import {
   ZenMuxMark,
   IconAlignCenter,
@@ -92,6 +92,7 @@ import {
   IconPilcrow,
   IconRemoveBg,
   IconReplacePicture,
+  IconSparkle,
   IconRowDelete,
   IconRowInsertAbove,
   IconRowInsertBelow,
@@ -690,7 +691,7 @@ function RibbonInner({
   const wasInTable = useRef(false)
   const wasInImage = useRef(false)
   /** Picture Format → remove background / crop dialogs */
-  const [pictureDialog, setPictureDialog] = useState<'cutout' | 'crop' | null>(null)
+  const [pictureDialog, setPictureDialog] = useState<'cutout' | 'crop' | 'aiEnhance' | null>(null)
   const [listDialog, setListDialog] = useState(false)
 
   useEffect(() => {
@@ -1603,6 +1604,23 @@ function RibbonInner({
                 <button
                   className="rb-big"
                   disabled={!canEdit}
+                  title={
+                    lang === 'zh' || lang === 'zh-TW'
+                      ? 'ZenMux AI 去除手写痕迹或增强黑白扫描件'
+                      : 'ZenMux AI handwriting removal and scan enhancement'
+                  }
+                  onClick={() => setPictureDialog('aiEnhance')}
+                >
+                  <span className="rb-big-icon">
+                    <IconSparkle size={28} />
+                  </span>
+                  <span>
+                    {lang === 'zh' || lang === 'zh-TW' ? 'AI 扫描增强' : 'AI Scan Enhance'}
+                  </span>
+                </button>
+                <button
+                  className="rb-big"
+                  disabled={!canEdit}
                   title={t('ribbonRemoveBgTip')}
                   onClick={() => setPictureDialog('cutout')}
                 >
@@ -1656,7 +1674,7 @@ function RibbonInner({
                 >
                   {WRAP_OPTIONS.map((opt) => (
                     <option key={String(opt.value)} value={opt.value ?? ''}>
-                      {t(opt.labelKey)}
+                      {wrapOptionLabel(opt, lang, t)}
                     </option>
                   ))}
                 </select>
@@ -3014,6 +3032,16 @@ function RibbonInner({
           onApply={(cropped) => {
             setPictureDialog(null)
             void applyPictureBytes(cropped)
+          }}
+          onCancel={() => setPictureDialog(null)}
+        />
+      )}
+      {pictureDialog === 'aiEnhance' && imageDataUrl && (
+        <AiScanEnhanceDialog
+          dataUrl={imageDataUrl}
+          onApply={(enhanced) => {
+            setPictureDialog(null)
+            void applyPictureBytes(enhanced)
           }}
           onCancel={() => setPictureDialog(null)}
         />

@@ -31,6 +31,199 @@ export function fitCropPreview(
   }
 }
 
+/* ================= ZenMux AI scan enhancement ================= */
+
+type ScanEnhanceMode = 'handwriting' | 'scan'
+
+interface AiScanEnhanceProps {
+  dataUrl: string
+  onApply: (enhancedDataUrl: string) => void
+  onCancel: () => void
+}
+
+const SCAN_ENHANCE_PROMPTS: Record<ScanEnhanceMode, string> = {
+  handwriting:
+    'Edit this scanned document image. Remove only handwritten annotations, pen marks, signatures, scribbles, highlights, and handwritten corrections. Preserve all printed text, tables, equations, stamps, page geometry, margins, and layout exactly. Reconstruct the clean paper background naturally. Do not invent, rewrite, translate, summarize, or omit printed content. Return a clean high-resolution black-and-white or grayscale document scan.',
+  scan: 'Restore and enhance this black-and-white scanned document. Correct uneven illumination and page perspective, remove gray background, dust, bleed-through, shadows, speckles, and scanner noise, and improve printed text, equations, tables, and line-art contrast and sharpness. Preserve every character and the complete original layout exactly. Do not invent, rewrite, translate, summarize, or omit content. Return a clean high-resolution archival document scan.',
+}
+
+function parseImageDataUrl(dataUrl: string): { base64: string; mime: string } | null {
+  const match = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=\s]+)$/i.exec(dataUrl)
+  if (!match) return null
+  return { mime: match[1].toLowerCase(), base64: match[2].replace(/\s/g, '') }
+}
+
+export function AiScanEnhanceDialog({ dataUrl, onApply, onCancel }: AiScanEnhanceProps) {
+  const { lang } = useI18n()
+  const zh = lang === 'zh' || lang === 'zh-TW'
+  const [mode, setMode] = useState<ScanEnhanceMode>('handwriting')
+  const [processing, setProcessing] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !processing) onCancel()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onCancel, processing])
+
+  const generate = async () => {
+    const reference = parseImageDataUrl(dataUrl)
+    if (!reference) {
+      setError(
+        zh
+          ? '此图片格式不支持 AI 增强，请先转换为 PNG、JPEG 或 WebP。'
+          : 'Convert this image to PNG, JPEG, or WebP before AI enhancement.',
+      )
+      return
+    }
+    setProcessing(true)
+    setError(null)
+    setResult(null)
+    try {
+      const response = await window.desktop.generateImage({
+        model: 'openai/gpt-image-2',
+        prompt: SCAN_ENHANCE_PROMPTS[mode],
+        referenceImages: [reference],
+        imageSize: '2K',
+      })
+      if (response.error) throw new Error(response.error)
+      if (response.base64) {
+        setResult(`data:${response.mime || 'image/png'};base64,${response.base64}`)
+      } else if (response.url) {
+        const downloaded = await window.desktop.fetchImage(response.url)
+        if (!downloaded) {
+          throw new Error(zh ? '无法下载 AI 返回的图片。' : 'Could not download the AI result.')
+        }
+        setResult(`data:${downloaded.mime};base64,${downloaded.base64}`)
+      } else {
+        throw new Error(zh ? 'AI 没有返回图片。' : 'The AI did not return an image.')
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={() => !processing && onCancel()}>
+      <div className="modal" style={{ maxWidth: 920 }} onClick={(e) => e.stopPropagation()}>
+        <h2>{zh ? 'ZenMux AI 扫描增强' : 'ZenMux AI Scan Enhancement'}</h2>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <button
+            className={mode === 'handwriting' ? 'primary' : ''}
+            disabled={processing}
+            onClick={() => setMode('handwriting')}
+          >
+            {zh ? '去除手写痕迹' : 'Remove Handwriting'}
+          </button>
+          <button
+            className={mode === 'scan' ? 'primary' : ''}
+            disabled={processing}
+            onClick={() => setMode('scan')}
+          >
+            {zh ? '黑白扫描件增强' : 'Enhance B&W Scan'}
+          </button>
+          <span
+            style={{
+              marginLeft: 'auto',
+              color: 'var(--text-muted)',
+              fontSize: 12,
+              alignSelf: 'center',
+            }}
+          >
+            ZenMux · openai/gpt-image-2
+          </span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <figure style={{ margin: 0 }}>
+            <figcaption style={{ marginBottom: 6 }}>{zh ? '原图' : 'Original'}</figcaption>
+            <div
+              style={{
+                height: 400,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--surface-subtle)',
+                overflow: 'hidden',
+              }}
+            >
+              <img
+                src={dataUrl}
+                alt=""
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              />
+            </div>
+          </figure>
+          <figure style={{ margin: 0 }}>
+            <figcaption style={{ marginBottom: 6 }}>
+              {zh ? '处理结果（应用前预览）' : 'Result (preview before applying)'}
+            </figcaption>
+            <div
+              style={{
+                height: 400,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--surface-subtle)',
+                overflow: 'hidden',
+              }}
+            >
+              {result ? (
+                <img
+                  src={result}
+                  alt=""
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                />
+              ) : (
+                <span style={{ color: 'var(--text-muted)', padding: 20, textAlign: 'center' }}>
+                  {processing
+                    ? zh
+                      ? 'AI 正在处理…'
+                      : 'AI is processing…'
+                    : zh
+                      ? '选择处理方式后点击“生成预览”'
+                      : 'Choose a mode and generate a preview'}
+                </span>
+              )}
+            </div>
+          </figure>
+        </div>
+        <p
+          style={{
+            color: error ? 'var(--danger)' : 'var(--text-muted)',
+            fontSize: 12,
+            margin: '10px 0 0',
+          }}
+        >
+          {error ||
+            (zh
+              ? 'AI 可能改变细节或文字，请在应用前仔细检查；功能可能受网络状况影响。'
+              : 'AI may alter details or text. Review before applying; availability may be affected by network conditions.')}
+        </p>
+        <div className="modal-actions">
+          <button onClick={onCancel} disabled={processing}>
+            {zh ? '取消' : 'Cancel'}
+          </button>
+          <button onClick={() => void generate()} disabled={processing}>
+            {processing ? (zh ? '处理中…' : 'Processing…') : zh ? '生成预览' : 'Generate Preview'}
+          </button>
+          <button
+            className="primary"
+            onClick={() => result && onApply(result)}
+            disabled={!result || processing}
+          >
+            {zh ? '应用到文档' : 'Apply to Document'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** Checkerboard backdrop: visualizes transparent areas */
 const CHECKERBOARD: React.CSSProperties = {
   background: 'repeating-conic-gradient(#d5d5d5 0% 25%, #ffffff 0% 50%) 0 0 / 16px 16px',

@@ -243,6 +243,7 @@ export interface DesktopApi extends ConnectApi {
     prompt: string
     model?: string
     referenceImageUrls?: string[]
+    referenceImages?: Array<{ base64: string; mime: string }>
     aspectRatio?: string
     imageSize?: string
   }): Promise<{ base64?: string; mime?: string; url?: string; error?: string }>

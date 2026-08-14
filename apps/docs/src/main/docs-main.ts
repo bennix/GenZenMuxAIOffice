@@ -2627,6 +2627,7 @@ export function registerAiIpc(): void {
         prompt: string
         model?: string
         referenceImageUrls?: string[]
+        referenceImages?: Array<{ base64: string; mime: string }>
         aspectRatio?: string
         imageSize?: string
       },
@@ -2639,7 +2640,33 @@ export function registerAiIpc(): void {
       const model = op.model ? String(op.model) : config.imageModel
       if (!model) return { error: tm('errNoModel') }
       try {
-        const referenceImages = []
+        const referenceImages: Array<{ base64: string; mime: string }> = []
+        const allowedReferenceMimes = new Set(['image/png', 'image/jpeg', 'image/webp'])
+        const localReferences = Array.isArray(op.referenceImages)
+          ? op.referenceImages.slice(0, 1)
+          : []
+        for (const reference of localReferences) {
+          if (
+            !reference ||
+            typeof reference.base64 !== 'string' ||
+            typeof reference.mime !== 'string'
+          ) {
+            return { error: 'Invalid reference image.' }
+          }
+          const mime = reference.mime.toLowerCase().split(';')[0]
+          if (!allowedReferenceMimes.has(mime)) {
+            return { error: 'Reference image must be PNG, JPEG, or WebP.' }
+          }
+          const base64 = reference.base64.replace(/\s/g, '')
+          if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) {
+            return { error: 'Invalid reference image data.' }
+          }
+          const decoded = Buffer.from(base64, 'base64')
+          if (decoded.length === 0 || decoded.length > 20 * 1024 * 1024) {
+            return { error: 'Reference image must be no larger than 20 MB.' }
+          }
+          referenceImages.push({ base64, mime })
+        }
         for (const url of Array.isArray(op.referenceImageUrls) ? op.referenceImageUrls : []) {
           const resp = await fetchRemoteImage(String(url))
           if (!resp?.ok) continue
