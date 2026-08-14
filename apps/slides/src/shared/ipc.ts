@@ -1169,6 +1169,10 @@ export interface SlidesApi extends ConnectApi {
   ) => Promise<{ slide: RenderSlide; sourceId: string } | null>
   /** Insert renderer-recorded media (screen recording); placed centered */
   addMediaBytes: (op: AddMediaBytesOp) => Promise<{ slide: RenderSlide; sourceId: string } | null>
+  /** Trigger the native macOS microphone permission prompt before requesting an audio stream. */
+  requestPresentationMicrophonePermission: () => Promise<{
+    status: 'not-determined' | 'restricted' | 'denied' | 'granted' | 'unknown'
+  }>
   /** Create a private local temporary file for a presentation recording. */
   beginPresentationRecording: (mimeType: string) => Promise<{ id: string } | null>
   /** Append one MediaRecorder chunk without retaining the whole movie in renderer memory. */

@@ -478,6 +478,12 @@ export async function startPresentationRecording(
   let recordingId: string | null = null
   try {
     if (options.microphone) {
+      const permission = await window.slidesApi.requestPresentationMicrophonePermission()
+      if (permission.status !== 'granted') {
+        throw new Error(
+          '麦克风权限未授予。请打开“系统设置 → 隐私与安全性 → 麦克风”，允许 GenOffice 使用麦克风后重新启动应用。',
+        )
+      }
       microphoneStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           ...(options.deviceId ? { deviceId: { exact: options.deviceId } } : {}),
@@ -486,6 +492,10 @@ export async function startPresentationRecording(
           autoGainControl: true,
         },
       })
+      const microphoneTrack = microphoneStream.getAudioTracks()[0]
+      if (!microphoneTrack || microphoneTrack.readyState !== 'live') {
+        throw new Error('未能取得可用的麦克风音轨，请检查所选输入设备。')
+      }
     }
     displayStream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: { ideal: 30, max: 60 } },

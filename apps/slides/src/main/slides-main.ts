@@ -15,6 +15,7 @@ import {
   nativeImage,
   session as electronSession,
   shell,
+  systemPreferences,
   WebContentsView,
 } from 'electron'
 import type { WebContents } from 'electron'
@@ -932,6 +933,19 @@ interface PendingPresentationRecording {
 
 const pendingPresentationRecordings = new Map<string, PendingPresentationRecording>()
 
+function isTrustedEditorMediaUrl(rawUrl: string): boolean {
+  try {
+    const url = new URL(rawUrl)
+    if (url.protocol === 'file:') return true
+    return (
+      (url.protocol === 'http:' || url.protocol === 'https:') &&
+      (url.hostname === 'localhost' || url.hostname === '127.0.0.1')
+    )
+  } catch {
+    return false
+  }
+}
+
 async function discardPresentationRecording(id: string, senderId: number): Promise<void> {
   const pending = pendingPresentationRecordings.get(id)
   if (!pending || pending.senderId !== senderId) return
@@ -952,7 +966,17 @@ export function registerSlidesIpc(): void {
   // macOS prefers the system picker (with its permission flow), falling back to the first screen.
   void app.whenReady().then(() => {
     try {
-      electronSession.defaultSession.setDisplayMediaRequestHandler(
+      const appSession = electronSession.defaultSession
+      appSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+        const requestingUrl = details.requestingUrl || webContents.getURL()
+        const mediaPermission = permission === 'media' || permission === 'display-capture'
+        callback(mediaPermission && isTrustedEditorMediaUrl(requestingUrl))
+      })
+      appSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+        const requestingUrl = details.requestingUrl || requestingOrigin || webContents?.getURL() || ''
+        return permission === 'media' && isTrustedEditorMediaUrl(requestingUrl)
+      })
+      appSession.setDisplayMediaRequestHandler(
         (request, callback) => {
           desktopCapturer
             .getSources({ types: ['screen', 'window'] })
@@ -973,6 +997,37 @@ export function registerSlidesIpc(): void {
     } catch {
       /* Older Electron lacks this API: the screen-record button will get no stream and report failure */
     }
+  })
+
+  ipcMain.handle('slides:recording-request-microphone', async (event) => {
+    if (process.platform !== 'darwin') return { status: 'granted' as const }
+    let status = systemPreferences.getMediaAccessStatus('microphone')
+    if (status === 'not-determined') {
+      const granted = await systemPreferences.askForMediaAccess('microphone')
+      status = granted ? 'granted' : systemPreferences.getMediaAccessStatus('microphone')
+    }
+    if (status !== 'granted') {
+      const parent = BrowserWindow.fromWebContents(event.sender)
+      const options = {
+        type: 'warning' as const,
+        title: 'GenOffice 麦克风权限',
+        message: 'GenOffice 尚未获得麦克风权限',
+        detail:
+          '请在“系统设置 → 隐私与安全性 → 麦克风”中允许 GenOffice 使用麦克风，然后重新启动应用。',
+        buttons: ['打开系统设置', '取消'],
+        defaultId: 0,
+        cancelId: 1,
+      }
+      const result = parent
+        ? await dialog.showMessageBox(parent, options)
+        : await dialog.showMessageBox(options)
+      if (result.response === 0) {
+        await shell.openExternal(
+          'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone',
+        )
+      }
+    }
+    return { status }
   })
 
   ipcMain.handle('slides:recording-begin', async (e, mimeType: string) => {

@@ -36,9 +36,9 @@ notarization on macOS).
 > Intelligence, Fudan University; macOS and Windows installers rebuilt for this release.
 
 Apple Silicon Mac 用户可从
-[最新 Release 下载签名并经 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.36-arm64.dmg)。
+[最新 Release 下载签名并经 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.37-arm64.dmg)。
 Windows 10/11 x64 用户可下载
-[GenOfficeSetup-0.6.36-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.36-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
+[GenOfficeSetup-0.6.37-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.37-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
 AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。
 
 [![Meet GenOffice — the world's first full-featured open-source AI Office (video)](https://img.youtube.com/vi/B2pLdMX95v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=B2pLdMX95v4)
@@ -55,7 +55,7 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 - **Encrypted ZenMux credentials** — API Keys are encrypted with the operating system credential service before being saved locally; legacy plaintext settings migrate automatically.
 - **ZenMux-first onboarding** — the first screen accepts an encrypted local API Key, selects the default model, and links directly to the ZenMux invitation page.
 - **PowerPoint-compatible presentations** — in-house `.pptx` engine with masters, layouts, smart guides, non-destructive crop.
-- **Presentation recording and MP4 playback** — start recording directly from the Slide Show or Insert ribbon, capture the full-screen show with microphone narration and available system/presentation audio, pause or resume, and export a local H.264/AAC MP4; insert MP4/M4V/MOV/WebM media and play it in editing preview or slide show.
+- **Presentation recording and MP4 playback** — start recording directly from the Slide Show or Insert ribbon; macOS requests native microphone permission before validating the live input track; capture the full-screen show with microphone narration and available system/presentation audio, pause or resume, and export a local H.264/AAC MP4.
 - **Markdown to Word, fully local** — the same OOXML engine, no Pandoc, no cloud.
 - **Markdown review, translation, images and AI Mermaid** — the same strict multi-model review committee as Word, selection/full-document translation through ZenMux, local image assets, and standard fenced Mermaid with live rendering, source editing, and ZenMux-powered natural-language generation/modification.
 - **Scholarly search and citations in Word, PowerPoint, and Markdown** — query OpenAlex, Crossref, Semantic Scholar, Europe PMC/PubMed, and arXiv; import BibTeX, RIS, or CSL-JSON into a reusable local library; deduplicate by DOI/PMID/arXiv ID; distinguish preprints; insert editable citations and bibliography lists in GB/T 7714, APA 7, IEEE, Nature, or Vancouver style. Restricted services such as Google Scholar and Baidu Scholar open as official browser searches instead of being scraped.
@@ -75,9 +75,9 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 
 | Platform                             | Requirements                                          | Download                                                                                                                            |
 | ------------------------------------ | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **macOS** — Apple Silicon (arm64)    | macOS 11+                                             | [GenOffice-0.6.36-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.36-arm64.dmg)       |
+| **macOS** — Apple Silicon (arm64)    | macOS 11+                                             | [GenOffice-0.6.37-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.37-arm64.dmg)       |
 | **macOS** — Intel (x64)              | macOS 11+                                             | [GenOffice-0.6.101.dmg](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.dmg)                  |
-| **Windows** (x64)                    | Windows 10/11; unsigned, SmartScreen may warn         | [GenOfficeSetup-0.6.36-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.36-x64.exe) |
+| **Windows** (x64)                    | Windows 10/11; unsigned, SmartScreen may warn         | [GenOfficeSetup-0.6.37-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.37-x64.exe) |
 | **Linux** — Debian / Ubuntu          | x86_64, glibc 2.34+ (Ubuntu 22.04 or newer)           | [genoffice_0.6.101_amd64.deb](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/genoffice_0.6.101_amd64.deb)      |
 | **Linux** — Fedora / RHEL / openSUSE | x86_64, glibc 2.34+ (Fedora 35+, RHEL 9+, Leap 15.6+) | [genoffice-0.6.101.x86_64.rpm](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/genoffice-0.6.101.x86_64.rpm)    |
 | **Linux** — other distributions      | x86_64, glibc 2.34+, FUSE 2                           | [GenOffice-0.6.101.AppImage](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.AppImage)        |
