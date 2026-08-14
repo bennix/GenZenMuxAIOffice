@@ -1,0 +1,89 @@
+name: Build Ubuntu DEB
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub Release tag that will receive the verified DEB
+        required: true
+        default: v0.6.39
+
+concurrency:
+  group: ubuntu-deb-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-deb:
+    # Building on the oldest supported LTS keeps the package compatible with
+    # both Ubuntu 22.04 and newer Ubuntu releases such as 24.04.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3 dpkg-dev fakeroot file binutils
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable branch, 2026-07
+        with:
+          toolchain: stable
+
+      - name: Confirm release version
+        shell: bash
+        run: |
+          version=$(node -p "require('./apps/shell/package.json').version")
+          test "${{ inputs.release_tag }}" = "v${version}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate notices and build apps
+        run: |
+          npm run notices
+          npm run build:all
+
+      - name: Build Ubuntu package
+        working-directory: apps/shell
+        run: npx electron-builder --linux deb --x64
+
+      - name: Verify DEB and bundled Linux sidecar
+        shell: bash
+        run: |
+          deb_file=$(find apps/shell/release -maxdepth 1 -name 'genoffice_*_amd64.deb' -print -quit)
+          test -n "$deb_file"
+          test "$(dpkg-deb -f "$deb_file" Package)" = "genoffice"
+          test "$(dpkg-deb -f "$deb_file" Architecture)" = "amd64"
+          dpkg-deb -I "$deb_file"
+          dpkg-deb -c "$deb_file" | grep '/resources/native/xlsx-sidecar$'
+          mkdir -p deb-check
+          dpkg-deb -x "$deb_file" deb-check
+          sidecar=$(find deb-check -path '*/resources/native/xlsx-sidecar' -print -quit)
+          app_binary=$(find deb-check -path '*/genoffice' -type f -perm -111 -print -quit)
+          test -n "$sidecar"
+          test -n "$app_binary"
+          file "$sidecar" | grep 'ELF 64-bit.*x86-64'
+          file "$app_binary" | grep 'ELF 64-bit.*x86-64'
+          test -x "$sidecar"
+          sha256sum "$deb_file"
+
+      - name: Upload verified Ubuntu DEB artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: genoffice-ubuntu-deb-${{ inputs.release_tag }}
+          path: apps/shell/release/genoffice_*_amd64.deb
+          if-no-files-found: error
+          retention-days: 7
