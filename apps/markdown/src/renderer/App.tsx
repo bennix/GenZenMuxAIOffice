@@ -154,7 +154,22 @@ export default function App() {
     extensions,
     content: '',
     autofocus: true,
-    editorProps: { attributes: { class: 'doc-editor' } },
+    editorProps: {
+      attributes: { class: 'doc-editor' },
+      handlePaste: (_view, event) => {
+        // A Markdown editor should interpret pasted plain text as Markdown.
+        // ProseMirror's default paste path treats `$F_1$` as literal text,
+        // which is why standard math delimiters were visible in the document.
+        // Keep file/image-only clipboard events on their native path.
+        const text = event.clipboardData?.getData('text/plain') ?? ''
+        if (!text) return false
+        const current = editorRef.current
+        if (!current) return false
+        const markdown = repairOverescapedMarkdown(stripLegacyFencedDivs(text))
+        current.chain().focus().insertContent(markdown, { contentType: 'markdown' }).run()
+        return true
+      },
+    },
     // uiOnly transactions (toggle fold state) never reach the file — not dirty
     onUpdate: ({ transaction }) => {
       if (!transaction.getMeta('uiOnly')) markDirty()
