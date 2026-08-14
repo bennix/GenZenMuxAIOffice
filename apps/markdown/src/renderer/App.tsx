@@ -168,7 +168,12 @@ export default function App() {
       window.markdownApi.onConnectReceive(({ text }) => {
         const current = editorRef.current
         if (!current) return
-        current.chain().focus().insertContent(text, { contentType: 'markdown' }).run()
+        // @Connect receives the source form of another editor's AI reply.
+        // Normalize it through the same path as native Markdown AI tools so
+        // model-written bare LaTeX (for example `4\\text{ kg}`) becomes an
+        // editable equation instead of visible source text.
+        const markdown = repairOverescapedMarkdown(stripLegacyFencedDivs(text))
+        current.chain().focus().insertContent(markdown, { contentType: 'markdown' }).run()
         markDirty()
       }),
     [markDirty],
