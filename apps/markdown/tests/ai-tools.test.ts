@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { Editor } from '@tiptap/core'
+import { TextSelection } from '@tiptap/pm/state'
 import { buildExtensions } from '../src/renderer/editor/extensions'
-import { buildDocContext, executeTool, markDocSeen } from '../src/renderer/ai/tools'
+import {
+  buildDocContext,
+  captureAiSelection,
+  executeTool,
+  markDocSeen,
+} from '../src/renderer/ai/tools'
 import { deriveAutoFileName } from '../src/renderer/App'
 
 // Undestroyed views leave DOMObserver flush timers that fire after jsdom teardown
@@ -47,6 +53,86 @@ describe('get_document_context', () => {
     expect(ctx).toContain('0 | h1 | Title')
     expect(ctx).toContain('1 | paragraph | Hello world.')
     expect(ctx).toContain('2 | bulletList |')
+  })
+
+  it('reports the captured selection and its block range', () => {
+    const editor = createEditor('# Title\n\nAlpha selected text omega.\n\nTail')
+    const text = editor.state.doc.textContent
+    const start = text.indexOf('selected')
+    const paragraphStart = 1 + editor.state.doc.child(0).nodeSize
+    editor.view.dispatch(
+      editor.state.tr.setSelection(
+        TextSelection.create(
+          editor.state.doc,
+          paragraphStart + start - 'Title'.length,
+          paragraphStart + start - 'Title'.length + 8,
+        ),
+      ),
+    )
+    captureAiSelection(editor)
+    const ctx = buildDocContext(editor)
+    expect(ctx).toContain('User selection (default target; top-level blocks 1-1)')
+    expect(ctx).toContain('selected')
+  })
+})
+
+function selectText(editor: Editor, needle: string): void {
+  let foundFrom = -1
+  editor.state.doc.descendants((node, pos) => {
+    if (foundFrom !== -1 || !node.isText || !node.text) return
+    const index = node.text.indexOf(needle)
+    if (index >= 0) foundFrom = pos + index
+  })
+  if (foundFrom < 0) throw new Error(`Text not found: ${needle}`)
+  editor.view.dispatch(
+    editor.state.tr.setSelection(
+      TextSelection.create(editor.state.doc, foundFrom, foundFrom + needle.length),
+    ),
+  )
+}
+
+describe('selection-anchored AI tools', () => {
+  it('precisely replaces selected text inside a paragraph', () => {
+    const editor = createEditor('Before old words after.')
+    selectText(editor, 'old words')
+    captureAiSelection(editor)
+    const result = executeTool(editor, call('replace_selection', { markdown: '**new words**' }))
+    expect(result.isError).toBeUndefined()
+    expect(editor.getMarkdown()).toContain('Before **new words** after.')
+  })
+
+  it('inserts content after the selected block', () => {
+    const editor = createEditor('# A\n\nAnchor paragraph.\n\nTail paragraph.')
+    selectText(editor, 'Anchor')
+    captureAiSelection(editor)
+    const result = executeTool(
+      editor,
+      call('insert_near_selection', { position: 'after', markdown: 'AI addition.' }),
+    )
+    expect(result.isError).toBeUndefined()
+    const md = editor.getMarkdown()
+    expect(md.indexOf('AI addition.')).toBeGreaterThan(md.indexOf('Anchor paragraph.'))
+    expect(md.indexOf('AI addition.')).toBeLessThan(md.indexOf('Tail paragraph.'))
+  })
+
+  it('requires a captured selection', () => {
+    const editor = createEditor('No selection.')
+    expect(executeTool(editor, call('replace_selection', { markdown: 'x' })).isError).toBe(true)
+    expect(
+      executeTool(editor, call('insert_near_selection', { position: 'after', markdown: 'x' }))
+        .isError,
+    ).toBe(true)
+  })
+
+  it('rejects an anchored edit if the user changed the document after capture', () => {
+    const editor = createEditor('Selected words.')
+    selectText(editor, 'Selected')
+    captureAiSelection(editor)
+    markDocSeen(editor)
+    editor.commands.insertContentAt(editor.state.doc.content.size, ' user edit')
+    const result = executeTool(editor, call('replace_selection', { markdown: 'Changed' }))
+    expect(result.isError).toBe(true)
+    expect(result.output).toContain('changed')
   })
 })
 

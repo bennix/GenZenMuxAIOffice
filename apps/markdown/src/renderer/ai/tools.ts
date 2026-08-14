@@ -19,6 +19,18 @@ const STALE_DOC_ERROR =
 
 const docBaseline = new WeakMap<Editor, PmNode>()
 
+export interface AiSelectionAnchor {
+  /** The exact document version the selection belongs to. */
+  doc: PmNode
+  from: number
+  to: number
+  markdown: string
+  startBlock: number
+  endBlock: number
+}
+
+const aiSelection = new WeakMap<Editor, AiSelectionAnchor>()
+
 export function markDocSeen(editor: Editor): void {
   docBaseline.set(editor, editor.state.doc)
 }
@@ -61,6 +73,45 @@ function selectionMarkdown(editor: Editor): string {
     : markdown
 }
 
+function selectionBlockRange(doc: PmNode, from: number, to: number): [number, number] {
+  let start = -1
+  let end = -1
+  doc.forEach((node, offset, index) => {
+    const nodeEnd = offset + node.nodeSize
+    if (start === -1 && from < nodeEnd) start = index
+    // `to` is exclusive, so a selection ending at a block boundary belongs
+    // to the preceding block, not the next one.
+    if (to > offset) end = index
+  })
+  return [Math.max(0, start), Math.max(0, end)]
+}
+
+/** Read the live editor selection without changing the per-run frozen anchor. */
+export function readAiSelection(editor: Editor): AiSelectionAnchor | null {
+  const { from, to } = editor.state.selection
+  if (from === to) return null
+  const markdown = selectionMarkdown(editor)
+  if (!markdown) return null
+  const [startBlock, endBlock] = selectionBlockRange(editor.state.doc, from, to)
+  return { doc: editor.state.doc, from, to, markdown, startBlock, endBlock }
+}
+
+/** Freeze the selection at send time so focusing the composer cannot move the AI target. */
+export function captureAiSelection(editor: Editor): AiSelectionAnchor | null {
+  const selection = readAiSelection(editor)
+  if (selection) aiSelection.set(editor, selection)
+  else aiSelection.delete(editor)
+  return selection
+}
+
+export function clearAiSelection(editor: Editor): void {
+  aiSelection.delete(editor)
+}
+
+export function getAiSelection(editor: Editor): AiSelectionAnchor | null {
+  return aiSelection.get(editor) ?? null
+}
+
 /** Per-turn context: numbered block skeleton + selection, same shape as the docs agent */
 export function buildDocContext(editor: Editor): string {
   const doc = editor.state.doc
@@ -82,8 +133,14 @@ export function buildDocContext(editor: Editor): string {
     }
     lines.push(line)
   }
-  const selection = selectionMarkdown(editor)
-  if (selection) lines.push('', '## User selection', selection)
+  const selection = getAiSelection(editor) ?? readAiSelection(editor)
+  if (selection) {
+    lines.push(
+      '',
+      `## User selection (default target; top-level blocks ${selection.startBlock}-${selection.endBlock})`,
+      selection.markdown,
+    )
+  }
   return lines.join('\n')
 }
 
@@ -141,6 +198,38 @@ export const AGENT_TOOLS: AgentToolDef[] = [
         markdown: { type: 'string', description: 'Replacement markdown; empty string deletes' },
       },
       required: ['startIndex', 'endIndex', 'markdown'],
+    },
+  },
+  {
+    name: 'insert_near_selection',
+    description:
+      'Insert markdown immediately before or after the selection captured when the user sent this message. Use this when the user asks to add, continue, explain, or expand content at the selected anchor without replacing it.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        position: {
+          type: 'string',
+          enum: ['before', 'after'],
+          description: 'Insert before or after the selected top-level block range',
+        },
+        markdown: { type: 'string', description: 'Markdown content to insert' },
+      },
+      required: ['position', 'markdown'],
+    },
+  },
+  {
+    name: 'replace_selection',
+    description:
+      'Replace the selection captured when the user sent this message. A selection within one text block is replaced precisely; a multi-block selection replaces the covered top-level blocks.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        markdown: {
+          type: 'string',
+          description: 'Replacement markdown; empty string deletes the selection',
+        },
+      },
+      required: ['markdown'],
     },
   },
 ]
@@ -304,6 +393,102 @@ export function executeTool(editor: Editor, call: AgentToolCall): ToolExecution 
         output: `Replaced blocks ${start}-${end} with ${nodes.length} block(s). ${INDEX_CHANGE_NOTICE}`,
         mutated: true,
         summary: t('aiToolReplaceDone', { n: end - start + 1 }),
+      }
+    }
+
+    case 'insert_near_selection': {
+      const selection = getAiSelection(editor)
+      if (!selection) {
+        return fail('No user selection was captured for this message.', t('aiToolInsert'))
+      }
+      if (selection.doc !== doc || editedExternally(editor)) {
+        return fail(STALE_DOC_ERROR, t('aiToolInsert'))
+      }
+      const position = String(call.input.position ?? '')
+      if (position !== 'before' && position !== 'after') {
+        return fail('position must be "before" or "after"', t('aiToolInsert'))
+      }
+      const markdown = String(call.input.markdown ?? '')
+      if (!markdown.trim()) return fail('markdown must not be empty', t('aiToolInsert'))
+      let nodes: PmNode[]
+      try {
+        nodes = parseMarkdownToNodes(editor, markdown)
+      } catch (err) {
+        return fail(
+          `markdown parse failed: ${err instanceof Error ? err.message : String(err)}`,
+          t('aiToolInsert'),
+        )
+      }
+      if (nodes.length === 0) return fail('markdown parsed to no content', t('aiToolInsert'))
+      const anchorRange = blockRange(
+        doc,
+        position === 'before' ? selection.startBlock : selection.endBlock,
+        position === 'before' ? selection.startBlock : selection.endBlock,
+      )
+      const pos = position === 'before' ? anchorRange.from : anchorRange.to
+      const insertedSize = nodes.reduce((sum, node) => sum + node.nodeSize, 0)
+      let tr = editor.state.tr.insert(pos, nodes)
+      tr = markAiRange(tr, pos, pos + insertedSize)
+      editor.view.dispatch(tr)
+      markDocSeen(editor)
+      return {
+        output: `Inserted ${nodes.length} block(s) ${position} the captured selection. ${INDEX_CHANGE_NOTICE}`,
+        mutated: true,
+        summary: t('aiToolInsertDone', { n: nodes.length }),
+      }
+    }
+
+    case 'replace_selection': {
+      const selection = getAiSelection(editor)
+      if (!selection) {
+        return fail('No user selection was captured for this message.', t('aiToolReplace'))
+      }
+      if (selection.doc !== doc || editedExternally(editor)) {
+        return fail(STALE_DOC_ERROR, t('aiToolReplace'))
+      }
+      const markdown = String(call.input.markdown ?? '')
+      let nodes: PmNode[]
+      try {
+        nodes = parseMarkdownToNodes(editor, markdown)
+      } catch (err) {
+        return fail(
+          `markdown parse failed: ${err instanceof Error ? err.message : String(err)}`,
+          t('aiToolReplace'),
+        )
+      }
+
+      let from = selection.from
+      let to = selection.to
+      let replacement: PmNode[] | PmNode['content'] = nodes
+      const preciseInlineReplacement =
+        selection.startBlock === selection.endBlock &&
+        doc.child(selection.startBlock).isTextblock &&
+        (nodes.length === 0 || (nodes.length === 1 && nodes[0]!.isTextblock))
+
+      if (preciseInlineReplacement) {
+        replacement = nodes.length === 0 ? [] : nodes[0]!.content
+      } else {
+        const range = blockRange(doc, selection.startBlock, selection.endBlock)
+        from = range.from
+        to = range.to
+        if (nodes.length === 0 && selection.startBlock === 0 && selection.endBlock === maxIndex) {
+          replacement = [editor.schema.nodes.paragraph!.create()]
+        }
+      }
+
+      let tr = editor.state.tr.replaceWith(from, to, replacement)
+      const insertedSize = Array.isArray(replacement)
+        ? replacement.reduce((sum, node) => sum + node.nodeSize, 0)
+        : replacement.size
+      if (insertedSize > 0) tr = markAiRange(tr, from, from + insertedSize)
+      editor.view.dispatch(tr)
+      markDocSeen(editor)
+      return {
+        output: preciseInlineReplacement
+          ? 'Replaced the captured text selection.'
+          : `Replaced selected blocks ${selection.startBlock}-${selection.endBlock}. ${INDEX_CHANGE_NOTICE}`,
+        mutated: true,
+        summary: t('aiToolReplaceDone', { n: selection.endBlock - selection.startBlock + 1 }),
       }
     }
 

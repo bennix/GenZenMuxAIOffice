@@ -18,6 +18,8 @@ import sendEnterOff from '../assets/send-enter-off.png'
 import sendStop from '../assets/send-stop.png'
 import { clearAiHighlights } from '../editor/aiHighlight'
 import { createMarkdownSkill } from './markdown-skill'
+import { captureAiSelection, readAiSelection } from './tools'
+import type { AiSelectionAnchor } from './tools'
 import { createSearchSkill } from './search-skill'
 import { createFilesSkill } from './files-skill'
 import { createElectronTransport } from './transport'
@@ -102,6 +104,7 @@ export function AiPanel({
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
   const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({})
   const [attachNotice, setAttachNotice] = useState('')
+  const [selectionContext, setSelectionContext] = useState<AiSelectionAnchor | null>(null)
   const chatRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const stickToBottomRef = useRef(true)
@@ -327,6 +330,19 @@ export function AiPanel({
     }
   }, [chat, busy])
 
+  useEffect(() => {
+    const editor = deps.getEditor()
+    if (!editor) return
+    const updateSelection = (): void => setSelectionContext(readAiSelection(editor))
+    updateSelection()
+    editor.on('selectionUpdate', updateSelection)
+    editor.on('transaction', updateSelection)
+    return () => {
+      editor.off('selectionUpdate', updateSelection)
+      editor.off('transaction', updateSelection)
+    }
+  }, [deps])
+
   const onChatScroll = (): void => {
     const el = chatRef.current
     if (!el) return
@@ -337,6 +353,8 @@ export function AiPanel({
     const instruction = text.trim()
     const loop = loopRef.current
     if (!instruction || !loop || loop.busy) return
+    const editor = depsRef.current.getEditor()
+    if (editor) captureAiSelection(editor)
     stickToBottomRef.current = true
     runInstructionRef.current = instruction
     runMutatedRef.current = false
@@ -712,29 +730,63 @@ export function AiPanel({
         {attachNotice && <div className="ai-attach-notice">{attachNotice}</div>}
         <AiComposer
           header={
-            attachments.length > 0 ? (
-              <div className="ai-attachments">
-                {attachments.map((file) => {
-                  const preview = attachmentPreviews[file.path]
-                  return (
-                    <span
-                      key={file.path}
-                      className={preview ? 'ai-attachment-thumb' : 'ai-attachment-card'}
-                      title={file.name}
+            selectionContext || attachments.length > 0 ? (
+              <div className="ai-composer-contexts">
+                {selectionContext && (
+                  <div className="ai-selection-context">
+                    <div className="ai-selection-context-copy">
+                      <span className="ai-selection-context-label">
+                        已选择上下文 / Selected context
+                      </span>
+                      <span className="ai-selection-context-preview">
+                        {selectionContext.markdown.replace(/\s+/g, ' ').trim().slice(0, 120)}
+                        {selectionContext.markdown.length > 120 ? '…' : ''}
+                      </span>
+                    </div>
+                    <button
+                      className="ai-selection-context-remove"
+                      onClick={() => {
+                        const editor = depsRef.current.getEditor()
+                        if (editor) editor.commands.setTextSelection(editor.state.selection.to)
+                      }}
+                      aria-label="清除选区上下文 / Clear selected context"
+                      title="清除选区上下文 / Clear selected context"
                     >
-                      {preview ? <img src={preview} alt={file.name} /> : <span>{file.name}</span>}
-                      <button
-                        className="ai-attachment-thumb-remove"
-                        onClick={() =>
-                          setAttachments((items) => items.filter((item) => item.path !== file.path))
-                        }
-                        aria-label="Remove attachment"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  )
-                })}
+                      ×
+                    </button>
+                  </div>
+                )}
+                {attachments.length > 0 && (
+                  <div className="ai-attachments">
+                    {attachments.map((file) => {
+                      const preview = attachmentPreviews[file.path]
+                      return (
+                        <span
+                          key={file.path}
+                          className={preview ? 'ai-attachment-thumb' : 'ai-attachment-card'}
+                          title={file.name}
+                        >
+                          {preview ? (
+                            <img src={preview} alt={file.name} />
+                          ) : (
+                            <span>{file.name}</span>
+                          )}
+                          <button
+                            className="ai-attachment-thumb-remove"
+                            onClick={() =>
+                              setAttachments((items) =>
+                                items.filter((item) => item.path !== file.path),
+                              )
+                            }
+                            aria-label="Remove attachment"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             ) : undefined
           }

@@ -1603,6 +1603,65 @@ body {
   font-family: var(--gs-font-sans);
 }
 
+.ai-composer-contexts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px 0;
+}
+
+.ai-selection-context {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--word-blue) 28%, var(--color-border-default));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--word-blue) 7%, var(--color-bg-page));
+}
+
+.ai-selection-context-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ai-selection-context-label {
+  color: var(--word-blue);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.ai-selection-context-preview {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-selection-context-remove {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.ai-selection-context-remove:hover {
+  background: var(--active-bg);
+  color: var(--color-text-primary);
+}
+
 /* composer card — 16px radius, default border, production float shadow */
 .ai-input-box {
   border: 1px solid var(--color-border-default);
