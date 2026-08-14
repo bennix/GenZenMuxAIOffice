@@ -113,6 +113,7 @@ export function stripLegacyFencedDivs(body: string): string {
  * only migrate documents with an unmistakable over-escaping signature.
  */
 export function repairOverescapedMarkdown(body: string): string {
+  body = repairEscapedWhitespaceEntities(body)
   const hasEscapedFormatting = /\\\*\\\*[^\n]+?\\\*\\\*/.test(body)
   const hasDoubledLatex = /\${1,2}[\s\S]*?\\\\(?:[A-Za-z]+|[{}_^])[\s\S]*?\${1,2}/.test(body)
   if (!hasEscapedFormatting && !hasDoubledLatex) return delimitBareLatex(body)
@@ -157,6 +158,59 @@ export function repairOverescapedMarkdown(body: string): string {
     })
     .join('\n')
   return delimitBareLatex(repaired)
+}
+
+/**
+ * Remove HTML non-breaking-space placeholders leaked by model output or an
+ * HTML→Markdown round trip. Repeated escaping (`&amp;nbsp;`,
+ * `&amp;amp;nbsp;`) is handled in one pass. A four-space-indented placeholder
+ * also becomes a blank line before Markdown parsing instead of an accidental
+ * code block. Explicit inline/fenced code remains byte-for-byte unchanged.
+ */
+export function repairEscapedWhitespaceEntities(body: string): string {
+  const lines = body.split('\n')
+  let codeFence: string | null = null
+  return lines
+    .map((line) => {
+      const fence = /^\s*(`{3,}|~{3,})/.exec(line)
+      if (codeFence) {
+        if (fence && fence[1][0] === codeFence[0] && fence[1].length >= codeFence.length) {
+          codeFence = null
+        }
+        return line
+      }
+      if (fence) {
+        codeFence = fence[1]
+        return line
+      }
+
+      let out = ''
+      let cursor = 0
+      while (cursor < line.length) {
+        const open = line.indexOf('`', cursor)
+        if (open < 0) {
+          out += normalizeWhitespaceEntities(line.slice(cursor))
+          break
+        }
+        out += normalizeWhitespaceEntities(line.slice(cursor, open))
+        let width = 1
+        while (line[open + width] === '`') width++
+        const delimiter = '`'.repeat(width)
+        const close = line.indexOf(delimiter, open + width)
+        if (close < 0) {
+          out += line.slice(open)
+          break
+        }
+        out += line.slice(open, close + width)
+        cursor = close + width
+      }
+      return out
+    })
+    .join('\n')
+}
+
+function normalizeWhitespaceEntities(text: string): string {
+  return text.replace(/&(?:amp;)*(?:nbsp|#(?:0*160|x0*a0));/gi, ' ')
 }
 
 /**

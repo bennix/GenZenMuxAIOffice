@@ -2,10 +2,24 @@ import { describe, expect, it } from 'vitest'
 import {
   delimitBareLatex,
   parseDocText,
+  repairEscapedWhitespaceEntities,
   repairOverescapedMarkdown,
   serializeDocText,
   stripLegacyFencedDivs,
 } from '../src/renderer/markdown/docText'
+
+describe('repairEscapedWhitespaceEntities', () => {
+  it('removes single and repeatedly escaped nbsp placeholders', () => {
+    const md = '前&amp;nbsp;后\n    &amp;amp;nbsp;\nA&#160;B C&amp;#xA0;D'
+    expect(repairEscapedWhitespaceEntities(md)).toBe('前 后\n     \nA B C D')
+    expect(repairOverescapedMarkdown(md)).toBe('前 后\n     \nA B C D')
+  })
+
+  it('preserves entities in explicit inline and fenced code', () => {
+    const md = ['正文 `&amp;nbsp;`', '```html', '&amp;nbsp;', '```'].join('\n')
+    expect(repairEscapedWhitespaceEntities(md)).toBe(md)
+  })
+})
 
 describe('delimitBareLatex', () => {
   it('repairs common unit and Greek formulas emitted without math delimiters', () => {
