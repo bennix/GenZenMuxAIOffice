@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { PDFArray, PDFDict, PDFDocument, PDFName } from 'pdf-lib'
 import {
   applySaveRequest,
+  encryptPdfBytes,
   extractPagesBytes,
   insertPdfBytes,
   savePdfToPath,
@@ -45,6 +46,30 @@ function pageAnnots(doc: PDFDocument, pageIndex: number): PDFDict[] {
 }
 
 const subtypeOf = (annot: PDFDict) => annot.lookup(PDFName.of('Subtype'), PDFName).decodeText()
+
+describe('encryptPdfBytes', () => {
+  it('requires the configured password and opens with the correct password', async () => {
+    const bytes = await makePdf([[320, 240]])
+    const encrypted = await encryptPdfBytes(bytes, 'Open-2026')
+    expect(new TextDecoder('latin1').decode(encrypted).includes('/Encrypt')).toBe(true)
+
+    const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    await expect(getDocument({ data: encrypted.slice() }).promise).rejects.toMatchObject({
+      name: 'PasswordException',
+    })
+    const task = getDocument({ data: encrypted.slice(), password: 'Open-2026' })
+    const opened = await task.promise
+    expect(opened.numPages).toBe(1)
+    await task.destroy()
+  })
+
+  it('rejects empty, overlong, and non-Latin-1 passwords', async () => {
+    const bytes = await makePdf([[100, 100]])
+    await expect(encryptPdfBytes(bytes, '')).rejects.toThrow(/1-32/)
+    await expect(encryptPdfBytes(bytes, 'x'.repeat(33))).rejects.toThrow(/1-32/)
+    await expect(encryptPdfBytes(bytes, '打开密码')).rejects.toThrow(/1-32/)
+  })
+})
 
 describe('extractPagesBytes', () => {
   it('extracts the requested pages in the given order', async () => {

@@ -1,6 +1,7 @@
 import type { AiGeneratedImage, AiImageGenerateOptions } from './types'
 
 const VERTEX_BASE_URL = 'https://zenmux.ai/api/vertex-ai/v1'
+const OPENAI_BASE_URL = 'https://zenmux.ai/api/v1'
 
 function modelPath(model: string): { provider: string; name: string } {
   const slash = model.indexOf('/')
@@ -93,6 +94,35 @@ export async function generateZenMuxImage(
 
   const instance: any = { prompt: options.prompt }
   const firstReference = options.referenceImages?.[0]
+  // ZenMux exposes OpenAI's native multipart image-edit endpoint. Use it for
+  // reference-based edits so input_fidelity=high is honored; sending the same
+  // request through the generic Vertex predict adapter can be interpreted as a
+  // fresh generation and invent unrelated page content.
+  if (provider === 'openai' && firstReference) {
+    const form = new FormData()
+    form.append('model', options.model)
+    form.append('prompt', options.prompt)
+    form.append(
+      'image',
+      new Blob([Buffer.from(firstReference.base64, 'base64')], { type: firstReference.mime }),
+      `reference.${firstReference.mime === 'image/jpeg' ? 'jpg' : firstReference.mime.split('/')[1] || 'png'}`,
+    )
+    form.append('input_fidelity', 'high')
+    form.append('quality', 'high')
+    form.append('size', 'auto')
+    form.append('output_format', 'png')
+    const response = await fetch(`${OPENAI_BASE_URL}/images/edits`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${options.apiKey}` },
+      ...(options.signal ? { signal: options.signal } : {}),
+      body: form,
+    })
+    const data = await responseJson(response)
+    const image = data?.data?.[0]
+    if (image?.b64_json) return { base64: image.b64_json, mime: 'image/png' }
+    if (image?.url) return { url: image.url, mime: 'image/png' }
+    throw new Error('ZenMux returned no image data')
+  }
   if (firstReference) {
     instance.image = {
       bytesBase64Encoded: firstReference.base64,

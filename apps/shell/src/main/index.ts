@@ -1559,10 +1559,11 @@ function createShellWindow(): void {
 const DOCX_RE = /\.docx$/i
 const XLSX_RE = /\.(xlsx|xls|csv)$/i
 const PPTX_RE = /\.pptx$/i
+const PDF_RE = /\.pdf$/i
 const MD_RE = /\.(md|markdown)$/i
 
 /** document formats we recognize but don't open — surfaced as a dialog, not silently dropped */
-const UNSUPPORTED_DOC_RE = /\.(pdf|doc|rtf|odt|ppt|pps|odp|ods|xlsm|xlsb|pages|key|numbers)$/i
+const UNSUPPORTED_DOC_RE = /\.(doc|rtf|odt|ppt|pps|odp|ods|xlsm|xlsb|pages|key|numbers)$/i
 
 /**
  * Single source of truth for the open-dialog filter. Includes the
@@ -1577,6 +1578,7 @@ const OPEN_DIALOG_EXTENSIONS = [
   'csv',
   'pptx',
   'ppt',
+  'pdf',
   'md',
   'markdown',
 ]
@@ -1585,7 +1587,11 @@ function supportedFileIn(argv: string[]): string | null {
   return (
     argv.find(
       (arg) =>
-        (DOCX_RE.test(arg) || XLSX_RE.test(arg) || PPTX_RE.test(arg) || MD_RE.test(arg)) &&
+        (DOCX_RE.test(arg) ||
+          XLSX_RE.test(arg) ||
+          PPTX_RE.test(arg) ||
+          PDF_RE.test(arg) ||
+          MD_RE.test(arg)) &&
         existsSync(arg),
     ) ?? null
   )
@@ -1638,6 +1644,13 @@ function openDocumentPath(filePath: string): boolean {
       // For a new tab the path goes through the pending queue; the renderer consumes it after mounting
       tabManager.openSlidesTab(filePath)
     }
+    return true
+  }
+  if (PDF_RE.test(filePath)) {
+    recordRecentFile(filePath)
+    const existing = tabManager.findPdfTabByPath(filePath)
+    if (existing) tabManager.activateTab(existing)
+    else tabManager.openPdfTab(filePath)
     return true
   }
   if (MD_RE.test(filePath)) {
@@ -1734,9 +1747,7 @@ function startQueuedWorkbookNudge(): void {
 // ---- home IPC ----
 
 function statEntries(paths: string[]): RecentEntry[] {
-  return statExistingPaths(paths, new Set(readStarredFiles())).filter(
-    (entry) => entry.ext !== 'pdf',
-  )
+  return statExistingPaths(paths, new Set(readStarredFiles()))
 }
 
 function registerHomeIpc(): void {
@@ -1750,11 +1761,7 @@ function registerHomeIpc(): void {
   ipcMain.handle(HOME_CHANNELS.getAppVersion, (): string => app.getVersion())
 
   ipcMain.handle(HOME_CHANNELS.recents, (_event, query: unknown): RecentPage =>
-    pageRecentPaths(
-      readRecentFiles().filter((path) => !/\.pdf$/i.test(path)),
-      query,
-      new Set(readStarredFiles()),
-    ),
+    pageRecentPaths(readRecentFiles(), query, new Set(readStarredFiles())),
   )
 
   // Starred files sort by mtime, which requires stat-ing them all first; they are hand-picked and few, so this is fine
@@ -1791,6 +1798,7 @@ function registerHomeIpc(): void {
         { name: tm('filterWord'), extensions: ['docx', 'doc'] },
         { name: tm('filterExcel'), extensions: ['xlsx', 'xls', 'csv'] },
         { name: tm('filterPpt'), extensions: ['pptx', 'ppt'] },
+        { name: tm('filterPdf'), extensions: ['pdf'] },
         { name: tm('filterMarkdown'), extensions: ['md', 'markdown'] },
       ],
       properties: ['openFile'],

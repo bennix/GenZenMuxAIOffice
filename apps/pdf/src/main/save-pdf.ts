@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { readFile, rename, rm, writeFile } from 'node:fs/promises'
 import {
   PDFArray,
@@ -409,6 +410,62 @@ export async function savePdfToPath(
   const tmp = `${targetPath}.gensave-${process.pid}.tmp`
   try {
     await writeFile(tmp, bytes)
+    await rename(tmp, targetPath)
+  } catch (err) {
+    await rm(tmp, { force: true })
+    throw err
+  }
+  return skips
+}
+
+/** Encrypt unencrypted output bytes with a PDF 1.7 AES-128 Standard Security
+ *  handler. The user password is needed only to open the copy; an unguessable
+ *  owner password plus permissive flags avoids presenting misleading DRM
+ *  restrictions while still requiring the requested open password.
+ *
+ *  The encryption fork follows the PDF 1.7 R4 password rules, which accept at
+ *  most 32 single-byte characters. Validate here as well as in the UI because
+ *  this function is a main-process trust boundary.
+ */
+export async function encryptPdfBytes(bytes: Uint8Array, password: string): Promise<Uint8Array> {
+  if (!password || password.length > 32 || [...password].some((c) => c.charCodeAt(0) > 0xff)) {
+    throw new Error('Password must contain 1-32 Latin-1 characters')
+  }
+  const { PDFDocument: EncryptingPdfDocument } = await import('pdf-lib-plus-encrypt')
+  const pdfDoc = await EncryptingPdfDocument.load(bytes, { updateMetadata: false })
+  await pdfDoc.encrypt({
+    userPassword: password,
+    ownerPassword: randomBytes(32).toString('base64url').slice(0, 32),
+    permissions: {
+      printing: 'highResolution',
+      modifying: true,
+      copying: true,
+      annotating: true,
+      fillingForms: true,
+      contentAccessibility: true,
+      documentAssembly: true,
+    },
+  })
+  return pdfDoc.save({ useObjectStreams: false })
+}
+
+/** Build, verify, encrypt, and atomically write a protected copy. The source is
+ *  never mutated, including when applying pending edits or encryption fails. */
+export async function protectPdfToPath(
+  sourcePath: string,
+  targetPath: string,
+  request: SavePdfRequest,
+  password: string,
+): Promise<SavePdfSkips> {
+  const { bytes, ...skips } = await applySaveRequest(
+    new Uint8Array(await readFile(sourcePath)),
+    request,
+  )
+  await verifyContentEdits(bytes, request, skips)
+  const encrypted = await encryptPdfBytes(bytes, password)
+  const tmp = `${targetPath}.gensave-${process.pid}.tmp`
+  try {
+    await writeFile(tmp, encrypted)
     await rename(tmp, targetPath)
   } catch (err) {
     await rm(tmp, { force: true })

@@ -170,6 +170,12 @@ const config = {
       mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     },
     {
+      ext: 'pdf',
+      name: 'PDF Document',
+      role: 'Editor',
+      mimeType: 'application/pdf',
+    },
+    {
       ext: 'xls',
       name: 'Excel 97-2003 Workbook',
       role: 'Editor',

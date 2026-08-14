@@ -43,8 +43,8 @@ interface AiScanEnhanceProps {
 
 const SCAN_ENHANCE_PROMPTS: Record<ScanEnhanceMode, string> = {
   handwriting:
-    'Edit this scanned document image. Remove only handwritten annotations, pen marks, signatures, scribbles, highlights, and handwritten corrections. Preserve all printed text, tables, equations, stamps, page geometry, margins, and layout exactly. Reconstruct the clean paper background naturally. Do not invent, rewrite, translate, summarize, or omit printed content. Return a clean high-resolution black-and-white or grayscale document scan.',
-  scan: 'Restore and enhance this black-and-white scanned document. Correct uneven illumination and page perspective, remove gray background, dust, bleed-through, shadows, speckles, and scanner noise, and improve printed text, equations, tables, and line-art contrast and sharpness. Preserve every character and the complete original layout exactly. Do not invent, rewrite, translate, summarize, or omit content. Return a clean high-resolution archival document scan.',
+    'HIGH-FIDELITY DOCUMENT CLEANUP. Treat the attached image as the immutable source canvas; this is an image edit, never a new composition. Remove only handwriting, handwritten signatures, pen or pencil strokes, scribbles, manual highlights, and handwritten corrections. Handwriting may be written directly over printed text, equations, tables, charts, or diagrams: separate only the overlaid handwritten ink and restore an occluded printed stroke solely when its continuation is visually supported by the immediately adjacent source pixels. Never erase the whole printed item, complete a word or formula from meaning, or replace it with semantically guessed content. When the underlying mark is ambiguous, preserve all visible printed pixels and make the smallest conservative cleanup instead of inventing a reconstruction. Preserve every printed glyph, number, equation, table line, diagram, stamp, logo, margin, crop, page dimension, and blank area at the exact same position and scale. Do not add, regenerate, infer, rewrite, translate, sharpen into different glyphs, or invent any printed content. If an area contains handwriting but no printed content, replace it only with the matching blank paper background. If the entire source contains only handwriting, the correct result is the same blank page after removal—never invent a document, book page, or text. Output a pixel-faithful cleaned scan with identical geometry.',
+  scan: 'HIGH-FIDELITY BLACK-AND-WHITE SCAN RESTORATION. Treat the attached image as the immutable source canvas; enhance the same pixels and never create a new composition. Preserve every printed glyph, number, punctuation mark, equation, table, diagram, stamp, logo, margin, crop, page dimension, blank area, and relative position exactly. Only correct uneven illumination or perspective and remove paper gray cast, dust, bleed-through, shadows, speckles, and scanner noise; improve contrast conservatively without changing character shapes. Do not add or remove handwriting in this mode. Do not add, regenerate, infer, rewrite, translate, summarize, omit, or invent any content. Output the same page with identical geometry and faithful printed content, only cleaner and more legible.',
 }
 
 function parseImageDataUrl(dataUrl: string): { base64: string; mime: string } | null {
@@ -114,14 +114,16 @@ export function AiScanEnhanceDialog({ dataUrl, onApply, onCancel }: AiScanEnhanc
         <h2>{zh ? 'ZenMux AI 扫描增强' : 'ZenMux AI Scan Enhancement'}</h2>
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <button
-            className={mode === 'handwriting' ? 'primary' : ''}
+            className={`scan-mode-option${mode === 'handwriting' ? ' selected' : ''}`}
+            aria-pressed={mode === 'handwriting'}
             disabled={processing}
             onClick={() => setMode('handwriting')}
           >
-            {zh ? '去除手写痕迹' : 'Remove Handwriting'}
+            {zh ? '去除手写痕迹（含覆盖印刷内容）' : 'Remove Handwriting (including overlays)'}
           </button>
           <button
-            className={mode === 'scan' ? 'primary' : ''}
+            className={`scan-mode-option${mode === 'scan' ? ' selected' : ''}`}
+            aria-pressed={mode === 'scan'}
             disabled={processing}
             onClick={() => setMode('scan')}
           >
@@ -138,6 +140,13 @@ export function AiScanEnhanceDialog({ dataUrl, onApply, onCancel }: AiScanEnhanc
             ZenMux · openai/gpt-image-2
           </span>
         </div>
+        {mode === 'handwriting' && (
+          <p className="scan-enhance-note">
+            {zh
+              ? '手写可以位于空白处，也可以覆盖在印刷字、公式、表格线或图形上。处理会优先保留原始印刷内容，只对有局部笔画依据的遮挡部分进行保守修复。'
+              : 'Handwriting may be on blank paper or over printed text, equations, table rules, or diagrams. Printed source content is preserved first; occluded strokes are repaired conservatively only when nearby pixels support them.'}
+          </p>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <figure style={{ margin: 0 }}>
             <figcaption style={{ marginBottom: 6 }}>{zh ? '原图' : 'Original'}</figcaption>

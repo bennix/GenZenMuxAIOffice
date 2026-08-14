@@ -6218,6 +6218,43 @@ body.docs-crop-active
   background: var(--surface);
 }
 
+/* AI scan-enhancement mode is a real selection, not an action button. Keep the
+   chosen mode black-on-white even while generation temporarily disables it. */
+.scan-mode-option {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scan-mode-option.selected,
+.scan-mode-option.selected:disabled {
+  border-color: var(--color-btn-primary);
+  background: var(--color-btn-primary);
+  color: var(--color-btn-primary-text);
+  opacity: 1;
+}
+
+.scan-mode-option:disabled:not(.selected) {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.scan-enhance-note {
+  margin: -2px 0 12px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-subtle);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 /* ZenMux DS modal footer buttons: secondary = bg-subtle, primary = black (#232425) */
 .modal-actions button {
   display: inline-flex;

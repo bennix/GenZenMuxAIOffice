@@ -29,12 +29,14 @@ import type {
   InsertPdfRequest,
   InsertPdfResult,
   PagePreviewRequest,
+  ProtectPdfRequest,
+  ProtectPdfResult,
   SavePdfRequest,
   SavePdfResult,
   TextEditValidation,
   ValidateTextEditsRequest,
 } from '../shared/ipc'
-import { extractPagesBytes, insertPdfBytes, savePdfToPath } from './save-pdf'
+import { extractPagesBytes, insertPdfBytes, protectPdfToPath, savePdfToPath } from './save-pdf'
 
 const tDlg = createI18n({
   zh: {
@@ -540,6 +542,39 @@ function registerPdfIpc(): void {
         await writeFile(tmp, merged)
         await rename(tmp, path)
         return { ok: true, insertedCount: count }
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      }
+    },
+  )
+
+  ipcMain.handle(
+    PDF_CHANNELS.protectCopy,
+    async (e, input: ProtectPdfRequest): Promise<ProtectPdfResult> => {
+      const request = input?.request
+      const path = request?.path
+      const password = input?.password
+      if (
+        typeof path !== 'string' ||
+        !allowedByWc.get(e.sender.id)?.has(path) ||
+        typeof password !== 'string' ||
+        password.length < 1 ||
+        password.length > 32 ||
+        [...password].some((c) => c.charCodeAt(0) > 0xff)
+      ) {
+        return { ok: false, error: 'pdf: invalid password protection request' }
+      }
+      const win =
+        BrowserWindow.fromWebContents(e.sender) ?? BrowserWindow.getFocusedWindow() ?? undefined
+      const picked = await showSaveDialogWithMemory(dialog, win, {
+        title: getUiLang().startsWith('zh') ? '保存密码保护副本' : 'Save Password-Protected Copy',
+        defaultPath: join(dirname(path), String(input.suggestedName || 'protected.pdf')),
+        filters: [{ name: tm('filterPdf'), extensions: ['pdf'] }],
+      })
+      if (picked.canceled || !picked.filePath) return { ok: true, canceled: true }
+      try {
+        await protectPdfToPath(path, picked.filePath, request, password)
+        return { ok: true, savedPath: picked.filePath }
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) }
       }

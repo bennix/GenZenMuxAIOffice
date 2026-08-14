@@ -4,6 +4,7 @@ import logoLockup from './assets/genoffice-logo.svg'
 import iconDocx from './assets/file-docx.svg'
 import iconXlsx from './assets/file-xlsx.svg'
 import iconPptx from './assets/file-pptx.svg'
+import iconPdf from './assets/file-pdf.svg'
 import iconMd from './assets/file-md.svg'
 import type {
   AccountStatus,
@@ -43,6 +44,7 @@ const FILE_ICONS: Record<string, string> = {
   docx: iconDocx,
   xlsx: iconXlsx,
   pptx: iconPptx,
+  pdf: iconPdf,
   md: iconMd,
   markdown: iconMd,
 }
@@ -114,6 +116,7 @@ const FILTERS: { key: string; label: StringKey }[] = [
   { key: 'docx', label: 'filterDocs' },
   { key: 'xlsx', label: 'filterSheets' },
   { key: 'pptx', label: 'filterSlides' },
+  { key: 'pdf', label: 'filterPdf' },
   { key: 'md', label: 'filterMd' },
 ]
 
@@ -1434,7 +1437,7 @@ export function Home() {
             <span className="quick-title-row">
               <span className="quick-title">{t('openLocal')}</span>
             </span>
-            <span className="quick-sub">.docx / .xlsx / .xls / .csv / .pptx / .md</span>
+            <span className="quick-sub">.docx / .xlsx / .xls / .csv / .pptx / .pdf / .md</span>
           </span>
         </button>
       </div>

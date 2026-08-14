@@ -478,6 +478,22 @@ const IconProps = () => (
     <circle cx="12" cy="8.46" r="0.94" fill="currentColor" stroke="none" />
   </Icon>
 )
+const IconProtect = () => (
+  <Icon>
+    <rect x="5.5" y="10" width="13" height="9.5" rx="1.5" />
+    <path d="M8.5 10 V8 A3.5 3.5 0 0 1 15.5 8 V10" />
+    <circle cx="12" cy="14.25" r="1" fill="currentColor" stroke="none" />
+    <path d="M12 15.25 V17" />
+  </Icon>
+)
+const IconHand = () => (
+  <Icon>
+    <path d="M8.2 11 V7.3 A1.2 1.2 0 0 1 10.6 7.3 V10.2" />
+    <path d="M10.6 10.2 V5.9 A1.2 1.2 0 0 1 13 5.9 V10" />
+    <path d="M13 10 V6.8 A1.2 1.2 0 0 1 15.4 6.8 V10.5" />
+    <path d="M15.4 10.5 V8.5 A1.2 1.2 0 0 1 17.8 8.5 V13.7 C17.8 17.3 15.6 19.5 12.3 19.5 H11.4 C9.6 19.5 8.2 18.8 7.1 17.4 L4.8 14.5 A1.25 1.25 0 0 1 6.7 12.9 L8.2 14.4 Z" />
+  </Icon>
+)
 const IconRotateL = () => (
   <Icon>
     <path d="M8.28 10.3 L4.53 10.3 L4.53 6.55" />
@@ -992,7 +1008,8 @@ function SignDropOverlay({
 }
 
 export default function App() {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
+  const zhUi = lang === 'zh' || lang === 'zh-TW'
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
   const [filePath, setFilePath] = useState('')
   const [status, setStatus] = useState<'loading' | 'error' | 'empty' | 'password' | 'ready'>(
@@ -1049,6 +1066,8 @@ export default function App() {
   const [ribbonTab, setRibbonTab] = useState<RibbonTab>('home')
   const [spread, setSpread] = useState<1 | 2>(1)
   const [nightMode, setNightMode] = useState(false)
+  const [panMode, setPanMode] = useState(false)
+  const [panning, setPanning] = useState(false)
   const [outline, setOutline] = useState<OutlineNode[] | null>(null)
   const [markups, setMarkups] = useState<LocalMarkup[]>([])
   const [drawings, setDrawings] = useState<LocalDrawing[]>([])
@@ -1187,6 +1206,11 @@ export default function App() {
   const [metadata, setMetadata] = useState<MetadataInput | null>(null)
   const [stampDlg, setStampDlg] = useState(false)
   const [propsDlg, setPropsDlg] = useState(false)
+  const [protectDlg, setProtectDlg] = useState(false)
+  const [protectPassword, setProtectPassword] = useState('')
+  const [protectConfirm, setProtectConfirm] = useState('')
+  const [protectBusy, setProtectBusy] = useState(false)
+  const [protectError, setProtectError] = useState('')
   const [fileSize, setFileSize] = useState(0)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
@@ -2593,6 +2617,52 @@ export default function App() {
     return true
   }
 
+  /** Export the visible state as an encrypted copy. The open source document is
+      deliberately left unencrypted and unchanged so the user can keep editing it. */
+  const protectCopy = async (): Promise<void> => {
+    if (!filePath || readOnly || protectBusy || saveInFlightRef.current) return
+    const invalid =
+      !protectPassword ||
+      protectPassword !== protectConfirm ||
+      protectPassword.length > 32 ||
+      [...protectPassword].some((c) => c.charCodeAt(0) > 0xff)
+    if (invalid) {
+      setProtectError(
+        protectPassword !== protectConfirm
+          ? zhUi
+            ? '两次输入的密码不一致。'
+            : 'The passwords do not match.'
+          : zhUi
+            ? '密码须为 1–32 个英文字符、数字或符号。'
+            : 'Use 1–32 Latin letters, numbers, or symbols.',
+      )
+      return
+    }
+    setProtectBusy(true)
+    setProtectError('')
+    const draftEdits = commitTextDraft()
+    const base = fileName.replace(/\.pdf$/i, '') || 'document'
+    const result = await window.pdfApi.protectCopy({
+      request: { path: filePath, ...editsPayload(draftEdits) },
+      password: protectPassword,
+      suggestedName: `${base}-protected.pdf`,
+    })
+    setProtectBusy(false)
+    if (!result.ok) {
+      setProtectError(friendlySaveError(result.error))
+      return
+    }
+    if ('canceled' in result) return
+    setProtectDlg(false)
+    setProtectPassword('')
+    setProtectConfirm('')
+    showNotice(
+      zhUi
+        ? `密码保护副本已保存：${result.savedPath}`
+        : `Protected copy saved: ${result.savedPath}`,
+    )
+  }
+
   // Autosave pauses while the shell's Save As flow is open: the save dialog blurs the
   // window, and the blur-triggered autosave would write the pending edits into the original
   const saveAsFlowRef = useRef(false)
@@ -2779,7 +2849,8 @@ export default function App() {
     setImagePick({ kind: 'image', image: base64, width: canvas.width, height: canvas.height })
   }
 
-  /** Drop the picked image centered on the click point, into the text-below band by default */
+  /** Drop the picked image centered on the click point as a floating page object.
+      The layer toggle can still send it below the existing page text. */
   const placeImage = (origIdx: number, vx: number, vy: number) => {
     const pick = imagePick
     if (!pick) return
@@ -2802,7 +2873,7 @@ export default function App() {
           pageIndex: origIdx,
           image: pick.image,
           rect: [Math.min(ax, bx), Math.min(ay, by), Math.max(ax, bx), Math.max(ay, by)],
-          layer: 'belowText',
+          layer: 'aboveText',
           rotate: ((geom.rot % 360) + 360) % 360,
         },
       },
@@ -3528,6 +3599,33 @@ export default function App() {
     return () => el.removeEventListener('wheel', onWheel)
   })
 
+  /** Hand-tool panning. Middle-button drag always pans; left-button drag pans
+      while the explicit hand tool is selected. */
+  const startPan = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!(e.button === 1 || (panMode && e.button === 0))) return
+    const el = scrollRef.current
+    if (!el) return
+    e.preventDefault()
+    const startX = e.clientX
+    const startY = e.clientY
+    const startLeft = el.scrollLeft
+    const startTop = el.scrollTop
+    setPanning(true)
+    document.body.style.userSelect = 'none'
+    const onMove = (event: PointerEvent) => {
+      el.scrollLeft = startLeft - (event.clientX - startX)
+      el.scrollTop = startTop - (event.clientY - startY)
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      document.body.style.userSelect = ''
+      setPanning(false)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp, { once: true })
+  }
+
   if (status === 'password') {
     return (
       <div className="app">
@@ -3757,6 +3855,18 @@ export default function App() {
           </span>
           {t('nightMode')}
         </button>
+        <button
+          className={`rb-big${panMode ? ' active' : ''}`}
+          data-tip={
+            zhUi ? '拖动页面进行平移；鼠标中键可随时平移' : 'Drag to pan; middle-drag always pans'
+          }
+          onClick={() => setPanMode((v) => !v)}
+        >
+          <span className="rb-big-icon">
+            <IconHand />
+          </span>
+          {zhUi ? '平移' : 'Hand tool'}
+        </button>
       </div>
     </div>
   )
@@ -3909,6 +4019,24 @@ export default function App() {
                       <IconProps />
                     </span>
                     {t('props')}
+                  </button>
+                  <button
+                    className="rb-big"
+                    disabled={readOnly || protectBusy || saveState === 'saving'}
+                    data-tip={
+                      zhUi
+                        ? '将当前内容另存为需要密码才能打开的 PDF 副本'
+                        : 'Save the current content as a PDF copy that requires a password'
+                    }
+                    onClick={() => {
+                      setProtectError('')
+                      setProtectDlg(true)
+                    }}
+                  >
+                    <span className="rb-big-icon">
+                      <IconProtect />
+                    </span>
+                    {zhUi ? '密码保护' : 'Protect'}
                   </button>
                 </div>
               </div>
@@ -4228,7 +4356,8 @@ export default function App() {
             )}
             <div
               ref={scrollRef}
-              className={`pdf-scroll${drawTool ? ' pdf-drawing' : ''}${nightMode ? ' pdf-night' : ''}`}
+              className={`pdf-scroll${drawTool ? ' pdf-drawing' : ''}${nightMode ? ' pdf-night' : ''}${panMode ? ' pdf-pan-mode' : ''}${panning ? ' pdf-panning' : ''}`}
+              onPointerDown={startPan}
               onScroll={() => {
                 handleScroll()
                 setSelPopup(null)
@@ -5230,6 +5359,75 @@ export default function App() {
             )}
             {stampDlg && (
               <StampDialog t={t} onCancel={() => setStampDlg(false)} onApply={applyStamps} />
+            )}
+            {protectDlg && (
+              <div className="pdf-modal-mask" onClick={() => !protectBusy && setProtectDlg(false)}>
+                <div className="pdf-modal" onClick={(e) => e.stopPropagation()}>
+                  <div className="pdf-modal-title">
+                    {zhUi ? '保存密码保护副本' : 'Save Password-Protected Copy'}
+                  </div>
+                  <p className="pdf-protect-hint">
+                    {zhUi
+                      ? '副本需要密码才能打开；当前原文件不会被加密或覆盖。密码不会保存到本机。'
+                      : 'The copy will require a password to open. The current file is not encrypted or overwritten, and the password is not stored.'}
+                  </p>
+                  <input
+                    type="password"
+                    className="pdf-modal-input"
+                    value={protectPassword}
+                    autoFocus
+                    maxLength={32}
+                    placeholder={zhUi ? '输入打开密码' : 'Enter open password'}
+                    onChange={(e) => {
+                      setProtectPassword(e.target.value)
+                      setProtectError('')
+                    }}
+                  />
+                  <input
+                    type="password"
+                    className="pdf-modal-input pdf-protect-confirm"
+                    value={protectConfirm}
+                    maxLength={32}
+                    placeholder={zhUi ? '再次输入密码' : 'Enter password again'}
+                    onChange={(e) => {
+                      setProtectConfirm(e.target.value)
+                      setProtectError('')
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void protectCopy()
+                      else if (e.key === 'Escape' && !protectBusy) setProtectDlg(false)
+                    }}
+                  />
+                  <div className="pdf-protect-rule">
+                    {zhUi
+                      ? '支持 1–32 个英文字符、数字或符号。'
+                      : 'Use 1–32 Latin letters, numbers, or symbols.'}
+                  </div>
+                  {protectError && <div className="pdf-password-error">{protectError}</div>}
+                  <div className="pdf-modal-actions">
+                    <button
+                      className="pdf-modal-btn"
+                      disabled={protectBusy}
+                      onClick={() => setProtectDlg(false)}
+                    >
+                      {t('cancel')}
+                    </button>
+                    <button
+                      className="pdf-modal-btn primary"
+                      disabled={protectBusy || !protectPassword || !protectConfirm}
+                      onClick={() => void protectCopy()}
+                    >
+                      {protectBusy
+                        ? zhUi
+                          ? '正在加密…'
+                          : 'Encrypting…'
+                        : zhUi
+                          ? '选择位置并保存'
+                          : 'Choose Location and Save'}
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
             {propsDlg && (
               <PropertiesDialog

@@ -58,12 +58,8 @@ describe('generateZenMuxImage', () => {
     expect(body.parameters).toMatchObject({ imageSize: '1536x1024', quality: 'high' })
   })
 
-  it('sends a local reference image to gpt-image-2 through ZenMux', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(
-        jsonResponse({ predictions: [{ bytesBase64Encoded: 'clean', mimeType: 'image/png' }] }),
-      )
+  it('uses ZenMux native high-fidelity image editing for a local gpt-image-2 reference', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ data: [{ b64_json: 'clean' }] }))
     vi.stubGlobal('fetch', fetchMock)
 
     await generateZenMuxImage({
@@ -73,10 +69,13 @@ describe('generateZenMuxImage', () => {
       referenceImages: [{ base64: 'c2Nhbg==', mime: 'image/png' }],
     })
 
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
-    expect(body.instances[0].image).toEqual({
-      bytesBase64Encoded: 'c2Nhbg==',
-      mimeType: 'image/png',
-    })
+    expect(fetchMock.mock.calls[0][0]).toBe('https://zenmux.ai/api/v1/images/edits')
+    const body = fetchMock.mock.calls[0][1].body as FormData
+    expect(body.get('model')).toBe('openai/gpt-image-2')
+    expect(body.get('prompt')).toBe('restore scan')
+    expect(body.get('input_fidelity')).toBe('high')
+    expect(body.get('quality')).toBe('high')
+    expect(body.get('size')).toBe('auto')
+    expect(body.get('image')).toBeInstanceOf(Blob)
   })
 })

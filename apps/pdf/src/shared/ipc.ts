@@ -12,6 +12,7 @@ export const PDF_CHANNELS = {
   pagePreviewPng: 'pdf:page-preview-png',
   extractPages: 'pdf:extract-pages',
   insertPdf: 'pdf:insert-pdf',
+  protectCopy: 'pdf:protect-copy',
   exportImages: 'pdf:export-images',
   generateImage: 'pdf:generate-image',
   dirtyChanged: 'pdf:dirty-changed',
@@ -329,6 +330,18 @@ export interface InsertPdfRequest {
 export type InsertPdfResult =
   { ok: true; insertedCount: number } | { ok: true; canceled: true } | { ok: false; error: string }
 
+/** Save the currently visible PDF state as a password-protected copy. The main
+    process owns the destination picker so renderers cannot write arbitrary paths. */
+export interface ProtectPdfRequest {
+  request: SavePdfRequest
+  /** PDF 1.7 AES-128 open password: 1-32 Latin-1 characters. Never persisted. */
+  password: string
+  suggestedName: string
+}
+
+export type ProtectPdfResult =
+  { ok: true; savedPath: string } | { ok: true; canceled: true } | { ok: false; error: string }
+
 /** Export pages as PNG: renderer rasterizes the bitmaps, main process shows a dialog and writes to disk */
 export interface ExportImagesRequest {
   /** base64 PNGs (without the data: prefix), in page order */
@@ -392,6 +405,8 @@ export interface PdfApi {
   pagePreviewPng(request: PagePreviewRequest): Promise<string | null>
   extractPages(request: ExtractPagesRequest): Promise<ExtractPagesResult>
   insertPdf(request: InsertPdfRequest): Promise<InsertPdfResult>
+  /** Save a password-protected copy containing all pending edits. */
+  protectCopy(request: ProtectPdfRequest): Promise<ProtectPdfResult>
   exportImages(request: ExportImagesRequest): Promise<ExportImagesResult>
   /** Web image search for AI tools (app-wide ai:image-search handler) */
   imageSearch(query: string, maxResults?: number): Promise<ImageSearchResponse>

@@ -881,6 +881,15 @@ button {
   background: var(--canvas);
 }
 
+.pdf-scroll.pdf-pan-mode {
+  cursor: grab;
+  user-select: none;
+}
+
+.pdf-scroll.pdf-panning {
+  cursor: grabbing;
+}
+
 /* One row: one page in single-page mode, two side by side in two-page mode */
 .pdf-row {
   display: flex;
@@ -1092,6 +1101,23 @@ button {
 
 .pdf-modal-input.invalid {
   border-color: var(--pdf-error);
+}
+
+.pdf-protect-hint {
+  max-width: 390px;
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.pdf-protect-confirm {
+  margin-top: 2px;
+}
+
+.pdf-protect-rule {
+  color: var(--text-dim);
+  font-size: 11px;
 }
 
 .pdf-modal-actions {
