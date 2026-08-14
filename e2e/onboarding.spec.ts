@@ -10,18 +10,16 @@ test.describe('first-run onboarding', () => {
     try {
       const overlay = page.locator('.onb-overlay')
       await expect(overlay).toBeVisible()
-      await expect(page.locator('.onb-slide.active .onb-title')).toHaveText('Welcome to GenOffice')
+      await expect(page.locator('.onb-slide.active .onb-title')).toHaveText('Connect ZenMux AI')
+      await expect(page.locator('#onb-zenmux-key')).toBeVisible()
+      await expect(page.locator('#onb-zenmux-model')).toBeVisible()
       await page.screenshot({ path: screenshotPath('onboarding-slide-1') })
 
       await page.locator('.onb-next').click()
-      await expect(page.locator('.onb-slide.active .onb-offer')).toBeVisible()
+      await expect(page.locator('.onb-slide.active .onb-title')).toHaveText('Free for everyone')
       await page.screenshot({ path: screenshotPath('onboarding-slide-2') })
 
-      await page.locator('.onb-next').click()
-      await expect(page.locator('.onb-slide.active .onb-title')).toHaveText('Free for everyone')
-      await page.screenshot({ path: screenshotPath('onboarding-slide-3') })
-
-      // last slide's primary button finishes the onboarding
+      // The second slide is the final step in the ZenMux-first onboarding.
       await page.locator('.onb-next').click()
       await expect(overlay).toBeHidden()
       await expect(page.locator('.home-hero')).toBeVisible()
