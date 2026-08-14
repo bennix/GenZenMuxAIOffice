@@ -1,12 +1,41 @@
 import { Fragment, type ReactNode } from 'react'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 /**
  * Minimal dependency-free markdown for chat bubbles: paragraphs, ul/ol,
- * headings, GFM tables, **bold**, *italic*, `inline code`. Tolerates
+ * headings, GFM tables, **bold**, *italic*, `inline code`, and LaTeX. Tolerates
  * partial (streaming) input — anything unrecognized renders as plain text.
  */
 
-const INLINE_RE = /(`[^`\n]+`|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)/g
+const INLINE_RE =
+  /(`[^`\n]+`|\$\$[^$\n]+?\$\$|\$[^$\n]+?\$|\\\([^\\\n]+?\\\)|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)/g
+
+function renderMath(tex: string, displayMode: boolean, key: number): ReactNode {
+  try {
+    // Models often Markdown-escape underscores inside already-delimited math
+    // (`F\_1`). In LaTeX that means a literal underscore, not a subscript.
+    const normalized = tex.replace(/\\_/g, '_')
+    return (
+      <span
+        key={key}
+        className={displayMode ? 'ai-math ai-math-display' : 'ai-math ai-math-inline'}
+        dangerouslySetInnerHTML={{
+          __html: katex.renderToString(normalized, {
+            displayMode,
+            throwOnError: false,
+            strict: 'ignore',
+            trust: false,
+            output: 'htmlAndMathml',
+          }),
+        }}
+      />
+    )
+  } catch {
+    const delimiter = displayMode ? '$$' : '$'
+    return `${delimiter}${tex}${delimiter}`
+  }
+}
 
 function renderInline(text: string): ReactNode[] {
   const out: ReactNode[] = []
@@ -17,8 +46,12 @@ function renderInline(text: string): ReactNode[] {
     if (i > last) out.push(text.slice(last, i))
     const tok = m[0] ?? ''
     if (tok.startsWith('`')) out.push(<code key={key++}>{tok.slice(1, -1)}</code>)
-    else if (tok.startsWith('**')) out.push(<strong key={key++}>{tok.slice(2, -2)}</strong>)
-    else out.push(<em key={key++}>{tok.slice(1, -1)}</em>)
+    else if (tok.startsWith('$$')) out.push(renderMath(tok.slice(2, -2), true, key++))
+    else if (tok.startsWith('$')) out.push(renderMath(tok.slice(1, -1), false, key++))
+    else if (tok.startsWith('\\(')) out.push(renderMath(tok.slice(2, -2), false, key++))
+    else if (tok.startsWith('**'))
+      out.push(<strong key={key++}>{renderInline(tok.slice(2, -2))}</strong>)
+    else out.push(<em key={key++}>{renderInline(tok.slice(1, -1))}</em>)
     last = i + tok.length
   }
   if (last < text.length) out.push(text.slice(last))
@@ -30,6 +63,7 @@ type MdBlock =
   | { kind: 'ul'; items: string[] }
   | { kind: 'ol'; items: string[] }
   | { kind: 'h'; text: string }
+  | { kind: 'math'; tex: string }
   | {
       kind: 'table'
       header: string[]
@@ -43,13 +77,11 @@ function tableCells(line: string): string[] | null {
   const body = trimmed.replace(/^\|/, '').replace(/\|$/, '')
   const cells: string[] = []
   let current = ''
-  let escaped = false
-  for (const ch of body) {
-    if (escaped) {
-      current += ch
-      escaped = false
-    } else if (ch === '\\') {
-      escaped = true
+  for (let index = 0; index < body.length; index += 1) {
+    const ch = body[index] ?? ''
+    if (ch === '\\' && body[index + 1] === '|') {
+      current += '|'
+      index += 1
     } else if (ch === '|') {
       cells.push(current.trim())
       current = ''
@@ -57,7 +89,6 @@ function tableCells(line: string): string[] | null {
       current += ch
     }
   }
-  if (escaped) current += '\\'
   cells.push(current.trim())
   return cells.length >= 2 ? cells : null
 }
@@ -90,6 +121,34 @@ function parseBlocks(text: string): MdBlock[] {
     if (!line.trim()) {
       flush()
       continue
+    }
+    const trimmed = line.trim()
+    const mathOpen = trimmed.startsWith('$$') ? '$$' : trimmed.startsWith('\\[') ? '\\[' : null
+    if (mathOpen) {
+      const mathClose = mathOpen === '$$' ? '$$' : '\\]'
+      const first = trimmed.slice(mathOpen.length)
+      if (first.endsWith(mathClose)) {
+        flush()
+        blocks.push({ kind: 'math', tex: first.slice(0, -mathClose.length).trim() })
+        continue
+      }
+      const body: string[] = first ? [first] : []
+      let closeIndex = -1
+      for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+        const candidate = lines[cursor] ?? ''
+        if (candidate.trimEnd().endsWith(mathClose)) {
+          body.push(candidate.trimEnd().slice(0, -mathClose.length))
+          closeIndex = cursor
+          break
+        }
+        body.push(candidate)
+      }
+      if (closeIndex >= 0) {
+        flush()
+        blocks.push({ kind: 'math', tex: body.join('\n').trim() })
+        index = closeIndex
+        continue
+      }
     }
     const h = /^#{1,6}\s+(.*)$/.exec(line)
     if (h) {
@@ -144,6 +203,13 @@ export function Markdown({ text }: { text: string }): React.JSX.Element {
   return (
     <div className="ai-md">
       {parseBlocks(text).map((b, i) => {
+        if (b.kind === 'math') {
+          return (
+            <div key={i} className="ai-md-math-block">
+              {renderMath(b.tex, true, 0)}
+            </div>
+          )
+        }
         if (b.kind === 'h') {
           return (
             <p key={i} className="ai-md-h">

@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@genoffice/electron-utils": "*",
-    "@genoffice/pptx-render": "*"
+    "@genoffice/pptx-render": "*",
+    "katex": "^0.16.47"
   }
 }

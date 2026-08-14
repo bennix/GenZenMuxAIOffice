@@ -24,4 +24,50 @@ describe('Markdown', () => {
     const html = renderToStaticMarkup(<Markdown text={'| A | B |\n| --- | --- |\n| x\\|y | z |'} />)
     expect(html).toContain('<td>x|y</td>')
   })
+
+  it('preserves and renders LaTeX commands inside table cells', () => {
+    const html = renderToStaticMarkup(
+      <Markdown text={'| 变量 | 数值 |\n| --- | --- |\n| $F\\_1$ | $\\frac{\\pi}{2}$ |'} />,
+    )
+    expect(html.match(/class="katex"/g)?.length).toBe(2)
+    expect(html).toContain('class="mfrac"')
+    expect(html).toContain('F</mi><mn>1</mn>')
+  })
+
+  it('renders inline LaTeX throughout prose and list items', () => {
+    const html = renderToStaticMarkup(
+      <Markdown
+        text={
+          '正切函数 $y = \\tan x$ 有间断点。\n\n- 当 $x = \\frac{\\pi}{2}$ 时趋向 $+\\infty$。\n- 区间为 $\\left(-\\frac{\\pi}{2}, \\frac{\\pi}{2}\\right)$。'
+        }
+      />,
+    )
+    expect(html.match(/class="katex"/g)?.length).toBe(4)
+    expect(html).toContain('class="mfrac"')
+    expect(html).toContain('class="mord mathnormal">x</span>')
+  })
+
+  it('renders multiline display LaTeX and bracket delimiters', () => {
+    const html = renderToStaticMarkup(
+      <Markdown
+        text={
+          '推导如下：\n\n$$\n\\begin{aligned}\ny &= ax+b \\\\\nx &= \\frac{-b}{a}\n\\end{aligned}\n$$\n\n\\[E = mc^2\\]'
+        }
+      />,
+    )
+    expect(html.match(/class="katex-display"/g)?.length).toBe(2)
+    expect(html).toContain('class="mtable"')
+  })
+
+  it('renders LaTeX nested inside bold text', () => {
+    const html = renderToStaticMarkup(<Markdown text={'**公式 $F_1 = G \\sin\\theta$ 很重要**'} />)
+    expect(html).toContain('<strong>')
+    expect(html).toContain('class="katex"')
+  })
+
+  it('keeps an incomplete streaming delimiter visible until it closes', () => {
+    const html = renderToStaticMarkup(<Markdown text={'正在生成 $x = \\frac{1}{2'} />)
+    expect(html).toContain('$x = \\frac{1}{2')
+    expect(html).not.toContain('class="katex"')
+  })
 })
