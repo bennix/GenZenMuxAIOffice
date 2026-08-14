@@ -217,8 +217,12 @@ function mmlOf(node: XNode): string {
         .join('')
       return `<mtable>${rows}</mtable>`
     }
-    case 'm:box':
     case 'm:borderBox':
+      // Chromium implements MathML Core but not the optional <menclose>
+      // element. A styled mrow therefore preserves the visible box in every
+      // Electron editor while the source OMML remains a real borderBox.
+      return `<mrow data-math-boxed="true" style="border:1px solid currentColor;padding:0.12em 0.25em">${mmlSlot(node, 'm:e')}</mrow>`
+    case 'm:box':
     case 'm:phant':
       return mmlSlot(node, 'm:e')
     case 'm:t':
@@ -605,8 +609,9 @@ function latexOfNode(node: XNode): string {
     }
     case 'm:m':
       return `\\begin{matrix} ${matrixBody(node)} \\end{matrix}`
-    case 'm:box':
     case 'm:borderBox':
+      return `\\boxed{${latexSlot(node, 'm:e')}}`
+    case 'm:box':
     case 'm:phant':
       return latexSlot(node, 'm:e')
     case undefined:
@@ -1026,6 +1031,8 @@ function parseControl(p: LatexParser): string {
       return `<m:bar><m:barPr><m:pos m:val="top"/></m:barPr><m:e>${parseGroup(p)}</m:e></m:bar>`
     case 'underline':
       return `<m:bar><m:barPr><m:pos m:val="bot"/></m:barPr><m:e>${parseGroup(p)}</m:e></m:bar>`
+    case 'boxed':
+      return `<m:borderBox><m:borderBoxPr/><m:e>${parseGroup(p)}</m:e></m:borderBox>`
     case 'underbrace':
       return (
         '<m:groupChr><m:groupChrPr><m:chr m:val="⏟"/><m:pos m:val="bot"/></m:groupChrPr>' +

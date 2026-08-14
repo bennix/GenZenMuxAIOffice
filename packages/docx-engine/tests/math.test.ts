@@ -128,6 +128,21 @@ describe('latexToOmml', () => {
     expect(omml).toContain('<m:f>')
   })
 
+  it('supports boxed expressions with scripts and text', () => {
+    const latex = '\\boxed{f_1 = F_1 = 5\\text{ N}}'
+    const omml = latexToOmml(latex)
+    expect(omml).toContain('<m:borderBox>')
+    expect(omml).toContain('<m:sSub>')
+    expect(omml).toContain('5')
+    expect(omml).toContain(' N')
+    const xml = `<m:oMath>${omml}</m:oMath>`
+    expect(ommlToMathML(xml)).toContain('data-math-boxed="true"')
+    expect(ommlToMathML(xml)).toContain('border:1px solid currentColor')
+    const decompiled = ommlToLatex(xml)
+    expect(decompiled).toContain('\\boxed{')
+    expect(`<m:oMath>${latexToOmml(decompiled!)}</m:oMath>`).toContain('<m:borderBox>')
+  })
+
   it('rejects unsupported commands with a helpful error', () => {
     expect(() => latexToOmml('\\unknowncmd{x}')).toThrow(/Unsupported command/)
     expect(() => latexToOmml('{unclosed')).toThrow(/Missing matching/)
