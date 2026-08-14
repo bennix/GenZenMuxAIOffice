@@ -1,14 +1,11 @@
 import { dedupeRecords, normalizeRecord } from './core'
-import type { CitationAuthor, CitationRecord, SearchSource } from './types'
+import type { CitationRecord, SearchSource } from './types'
 
 export interface SearchOptions {
   sources?: SearchSource[]
   limit?: number
   signal?: AbortSignal
 }
-
-const text = (value: unknown): string | undefined =>
-  typeof value === 'string' && value.trim() ? value.trim() : undefined
 
 function openAlexAbstract(index: unknown): string | undefined {
   if (!index || typeof index !== 'object') return undefined
