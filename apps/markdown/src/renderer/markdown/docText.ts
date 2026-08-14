@@ -168,7 +168,7 @@ export function repairOverescapedMarkdown(body: string): string {
  * code block. Explicit inline/fenced code remains byte-for-byte unchanged.
  */
 export function repairEscapedWhitespaceEntities(body: string): string {
-  const lines = body.split('\n')
+  const lines = removeEntityOnlyCodeBlocks(body.split('\n'))
   let codeFence: string | null = null
   return lines
     .map((line) => {
@@ -207,6 +207,46 @@ export function repairEscapedWhitespaceEntities(body: string): string {
       return out
     })
     .join('\n')
+}
+
+/** Remove legacy code blocks that contain nothing except leaked nbsp entities. */
+function removeEntityOnlyCodeBlocks(lines: string[]): string[] {
+  const out: string[] = []
+  for (let index = 0; index < lines.length; index++) {
+    const open = /^\s*(`{3,}|~{3,})\s*$/.exec(lines[index])
+    if (!open) {
+      out.push(lines[index])
+      continue
+    }
+    let close = index + 1
+    for (; close < lines.length; close++) {
+      const marker = /^\s*(`{3,}|~{3,})\s*$/.exec(lines[close])
+      if (marker && marker[1][0] === open[1][0] && marker[1].length >= open[1].length) {
+        break
+      }
+    }
+    if (close >= lines.length) {
+      out.push(lines[index])
+      continue
+    }
+    const content = lines.slice(index + 1, close)
+    const hasEntity = content.some((line) => isWhitespaceEntityOnly(line.trim()))
+    const onlyWhitespaceEntities = content.every(
+      (line) => line.trim() === '' || isWhitespaceEntityOnly(line.trim()),
+    )
+    if (hasEntity && onlyWhitespaceEntities) {
+      out.push('')
+      index = close
+      continue
+    }
+    out.push(...lines.slice(index, close + 1))
+    index = close
+  }
+  return out
+}
+
+function isWhitespaceEntityOnly(text: string): boolean {
+  return /^(?:&(?:amp;)*(?:nbsp|#(?:0*160|x0*a0));)+$/i.test(text)
 }
 
 function normalizeWhitespaceEntities(text: string): string {

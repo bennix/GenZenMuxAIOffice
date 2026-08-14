@@ -19,6 +19,22 @@ describe('repairEscapedWhitespaceEntities', () => {
     const md = ['正文 `&amp;nbsp;`', '```html', '&amp;nbsp;', '```'].join('\n')
     expect(repairEscapedWhitespaceEntities(md)).toBe(md)
   })
+
+  it('removes an old entity-only code block but keeps real code', () => {
+    const md = [
+      '之前',
+      '```',
+      '&amp;nbsp;',
+      '```',
+      '之后',
+      '```',
+      'const entity = "&amp;nbsp;"',
+      '```',
+    ].join('\n')
+    expect(repairEscapedWhitespaceEntities(md)).toBe(
+      ['之前', '', '之后', '```', 'const entity = "&amp;nbsp;"', '```'].join('\n'),
+    )
+  })
 })
 
 describe('delimitBareLatex', () => {
