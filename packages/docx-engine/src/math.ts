@@ -238,14 +238,15 @@ function mmlOf(node: XNode): string {
 function runToMml(run: XNode): string {
   const sty = propVal(run, 'm:rPr', 'm:sty')
   const plain = sty === 'p' || !!findChild(findChild(run, 'm:rPr') ?? {}, 'm:nor')
+  const bold = sty === 'b' || sty === 'bi'
   let out = ''
   for (const child of childrenOf(run)) {
     if (nameOf(child) === 'm:t') out += runTextToMml(textOf(child), plain)
   }
-  return out
+  return bold && out ? `<mrow data-math-bold="true" style="font-weight:700">${out}</mrow>` : out
 }
 
-const OPERATOR_CHARS = new Set('+-−=<>±∓×÷·⋅∙*/!%&|∣,;:()[]{}′″∞→←↔⇒⇐⇔∈∉⊂⊃∪∩∀∃∧∨¬≤≥≠≈≡∼∝⊥∥°∂∇')
+const OPERATOR_CHARS = new Set('+-−=<>±∓×÷·⋅∙*/!%&|∣,;:()[]{}′″∞→←↔⇒⇐⇔⟶⟵⟹⟸∈∉⊂⊃∪∩∀∃∧∨¬≤≥≠≈≡∼∝⊥∥°∂∇')
 
 /** classify a text run into mn / mi / mo / mtext tokens */
 function runTextToMml(text: string, plain: boolean): string {
@@ -341,6 +342,10 @@ const LATEX_SYMBOLS: Record<string, string> = {
   Rightarrow: '⇒',
   Leftarrow: '⇐',
   Leftrightarrow: '⇔',
+  longrightarrow: '⟶',
+  longleftarrow: '⟵',
+  Longrightarrow: '⟹',
+  Longleftarrow: '⟸',
   partial: '∂',
   nabla: '∇',
   in: '∈',
@@ -710,6 +715,7 @@ function plainTextOfRuns(node: XNode | undefined): string {
 function runToLatex(run: XNode): string {
   const sty = propVal(run, 'm:rPr', 'm:sty')
   const plain = sty === 'p' || !!findChild(findChild(run, 'm:rPr') ?? {}, 'm:nor')
+  const bold = sty === 'b' || sty === 'bi'
   let text = ''
   for (const child of childrenOf(run)) {
     if (nameOf(child) === 'm:t') text += textOf(child)
@@ -720,6 +726,7 @@ function runToLatex(run: XNode): string {
   if (LATEX_FUNCTIONS.has(trimmed)) return `\\${trimmed} `
   if (trimmed === 'lim') return '\\lim '
   if (/[{}\\]/.test(text)) throw new UnsupportedOmml()
+  if (bold) return `\\textbf{${text}}`
   return `\\text{${text}}`
 }
 
@@ -787,9 +794,13 @@ export function mathParagraphXml(
   )
 }
 
-function mathRun(text: string, plain = false): string {
+function mathRun(text: string, plain = false, bold = false): string {
   if (text === '') return ''
-  const rPr = plain ? '<m:rPr><m:sty m:val="p"/></m:rPr>' : ''
+  const rPr = bold
+    ? '<m:rPr><m:sty m:val="b"/><m:nor/></m:rPr>'
+    : plain
+      ? '<m:rPr><m:sty m:val="p"/></m:rPr>'
+      : ''
   return `<m:r>${rPr}<m:t xml:space="preserve">${escapeXmlText(text)}</m:t></m:r>`
 }
 
@@ -1082,6 +1093,8 @@ function parseControl(p: LatexParser): string {
     case 'mathrm':
     case 'operatorname':
       return mathRun(readBraceText(p), true)
+    case 'textbf':
+      return mathRun(readBraceText(p), true, true)
     case 'mathbb':
       return mathRun(doubleStruckText(readBraceText(p)))
     case 'lim': {

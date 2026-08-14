@@ -221,14 +221,22 @@ function delimitBareLatexSegment(segment: string): string {
   // guessing from the surrounding prose, so Chinese punctuation immediately
   // after the closing delimiter stays outside the editable equation node.
   const bareFormulas: string[] = []
+  const protectFormula = (_all: string, latex: string): string => {
+    const index = bareFormulas.push(latex.trim()) - 1
+    // Protect the whole expression from the narrower repairs below (for
+    // example the `\\pi` rule must not inject nested dollar delimiters).
+    return `\uE000${index}\uE001`
+  }
   let result = segment.replace(
     /(\\left\s*(?:\\[A-Za-z]+|\\.|[()[\]|])[\s\S]*?\\right\s*(?:\\[A-Za-z]+|\\.|[()[\]|]))/g,
-    (_all, latex: string) => {
-      const index = bareFormulas.push(latex.trim()) - 1
-      // Protect the whole expression from the narrower repairs below (for
-      // example the `\\pi` rule must not inject nested dollar delimiters).
-      return `\uE000${index}\uE001`
-    },
+    protectFormula,
+  )
+  // AI explanations often express a process as bold math text joined by
+  // arrows, but omit delimiters around the entire chain. Keep it as a single
+  // equation so the labels, spacing and arrows render together.
+  result = result.replace(
+    /(\\textbf\{[^{}\n]+\}(?:\s*\\(?:longrightarrow|longleftarrow|Longrightarrow|Longleftarrow|rightarrow|leftarrow|Rightarrow|Leftarrow)\s*\\textbf\{[^{}\n]+\})+)/g,
+    protectFormula,
   )
   // Include the conventional variable/assignment prefix when present so
   // `F_1 = 5\\text{ N}` becomes one editable equation instead of mixed text.

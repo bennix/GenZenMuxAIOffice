@@ -22,6 +22,11 @@ describe('delimitBareLatex', () => {
     )
   })
 
+  it('repairs a bare bold process joined by long arrows', () => {
+    const md = String.raw`\textbf{一重} \longrightarrow \textbf{二弹（撤面法）} \longrightarrow \textbf{三摩擦}`
+    expect(delimitBareLatex(md)).toBe(`$${md}$`)
+  })
+
   it('preserves existing math, inline code, and fenced code', () => {
     const md = [
       String.raw`已有 $F = 5\text{ N}$，代码 \`4\text{ kg}\`。`,

@@ -146,6 +146,23 @@ describe('latexToOmml', () => {
     expect(() => latexToOmml(decompiled!)).not.toThrow()
   })
 
+  it('renders and round-trips bold text joined by long arrows', () => {
+    const latex =
+      '\\textbf{一重} \\longrightarrow \\textbf{二弹（撤面法）} \\longrightarrow \\textbf{三摩擦}'
+    const omml = latexToOmml(latex)
+    expect(omml).toContain('<m:sty m:val="b"/>')
+    expect(omml).toContain('⟶')
+    const xml = `<m:oMath>${omml}</m:oMath>`
+    const mathml = ommlToMathML(xml)
+    expect(mathml).toContain('data-math-bold="true"')
+    expect(mathml).toContain('font-weight:700')
+    expect(mathml).toContain('<mo>⟶</mo>')
+    const decompiled = ommlToLatex(xml)
+    expect(decompiled).toContain('\\textbf{一重}')
+    expect(decompiled).toContain('\\longrightarrow')
+    expect(() => latexToOmml(decompiled!)).not.toThrow()
+  })
+
   it('supports boxed expressions with scripts and text', () => {
     const latex = '\\boxed{f_1 = F_1 = 5\\text{ N}}'
     const omml = latexToOmml(latex)
