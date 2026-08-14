@@ -15,6 +15,13 @@ describe('delimitBareLatex', () => {
     )
   })
 
+  it('repairs a bare set expression with stretchy delimiters', () => {
+    const md = String.raw`定义域是 \left\{x \mid x \in \mathbb{R}, x \neq k\pi + \frac{\pi}{2}, k \in \mathbb{Z}\right\}，它被渐近线隔开。`
+    expect(delimitBareLatex(md)).toBe(
+      String.raw`定义域是 $\left\{x \mid x \in \mathbb{R}, x \neq k\pi + \frac{\pi}{2}, k \in \mathbb{Z}\right\}$，它被渐近线隔开。`,
+    )
+  })
+
   it('preserves existing math, inline code, and fenced code', () => {
     const md = [
       String.raw`已有 $F = 5\text{ N}$，代码 \`4\text{ kg}\`。`,

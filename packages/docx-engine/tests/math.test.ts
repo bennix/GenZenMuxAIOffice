@@ -128,6 +128,24 @@ describe('latexToOmml', () => {
     expect(omml).toContain('<m:f>')
   })
 
+  it('renders and round-trips set-builder notation with mathbb', () => {
+    const latex =
+      '\\left\\{x \\mid x \\in \\mathbb{R}, x \\neq k\\pi + \\frac{\\pi}{2}, k \\in \\mathbb{Z}\\right\\}'
+    const omml = latexToOmml(latex)
+    expect(omml).toContain('<m:d>')
+    expect(omml).toContain('ℝ')
+    expect(omml).toContain('ℤ')
+    expect(omml).toContain('∣')
+    const xml = `<m:oMath>${omml}</m:oMath>`
+    const mathml = ommlToMathML(xml)
+    expect(mathml).toContain('<mo stretchy="true">{</mo>')
+    expect(mathml).toContain('ℝ')
+    const decompiled = ommlToLatex(xml)
+    expect(decompiled).toContain('\\mathbb{R}')
+    expect(decompiled).toContain('\\mathbb{Z}')
+    expect(() => latexToOmml(decompiled!)).not.toThrow()
+  })
+
   it('supports boxed expressions with scripts and text', () => {
     const latex = '\\boxed{f_1 = F_1 = 5\\text{ N}}'
     const omml = latexToOmml(latex)

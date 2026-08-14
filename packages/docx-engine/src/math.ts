@@ -245,7 +245,7 @@ function runToMml(run: XNode): string {
   return out
 }
 
-const OPERATOR_CHARS = new Set('+-−=<>±∓×÷·⋅∙*/!%&|,;:()[]{}′″∞→←↔⇒⇐⇔∈∉⊂⊃∪∩∀∃∧∨¬≤≥≠≈≡∼∝⊥∥°∂∇')
+const OPERATOR_CHARS = new Set('+-−=<>±∓×÷·⋅∙*/!%&|∣,;:()[]{}′″∞→←↔⇒⇐⇔∈∉⊂⊃∪∩∀∃∧∨¬≤≥≠≈≡∼∝⊥∥°∂∇')
 
 /** classify a text run into mn / mi / mo / mtext tokens */
 function runTextToMml(text: string, plain: boolean): string {
@@ -359,6 +359,7 @@ const LATEX_SYMBOLS: Record<string, string> = {
   angle: '∠',
   perp: '⊥',
   parallel: '∥',
+  mid: '∣',
   ldots: '…',
   cdots: '⋯',
   vdots: '⋮',
@@ -444,6 +445,35 @@ const MATRIX_DELIMS: Record<string, { beg: string; end: string } | null> = {
   vmatrix: { beg: '|', end: '|' },
   Vmatrix: { beg: '‖', end: '‖' },
   cases: { beg: '{', end: '' },
+}
+
+const DOUBLE_STRUCK_EXCEPTIONS: Record<string, string> = {
+  C: 'ℂ',
+  H: 'ℍ',
+  N: 'ℕ',
+  P: 'ℙ',
+  Q: 'ℚ',
+  R: 'ℝ',
+  Z: 'ℤ',
+}
+
+/** Unicode's double-struck alphabet has seven legacy letterlike exceptions. */
+function doubleStruckText(text: string): string {
+  return [...text]
+    .map((ch) => {
+      if (ch in DOUBLE_STRUCK_EXCEPTIONS) return DOUBLE_STRUCK_EXCEPTIONS[ch]
+      const code = ch.codePointAt(0) ?? 0
+      if (code >= 65 && code <= 90) return String.fromCodePoint(0x1d538 + code - 65)
+      if (code >= 97 && code <= 122) return String.fromCodePoint(0x1d552 + code - 97)
+      if (code >= 48 && code <= 57) return String.fromCodePoint(0x1d7d8 + code - 48)
+      return ch
+    })
+    .join('')
+}
+
+const DOUBLE_STRUCK_LATEX = new Map<string, string>()
+for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') {
+  DOUBLE_STRUCK_LATEX.set(doubleStruckText(ch), ch)
 }
 
 class LatexError extends Error {}
@@ -708,6 +738,11 @@ const CHAR_ESCAPES: Record<string, string> = {
 function charsToLatex(text: string): string {
   let out = ''
   for (const ch of text) {
+    const doubleStruck = DOUBLE_STRUCK_LATEX.get(ch)
+    if (doubleStruck) {
+      out += `\\mathbb{${doubleStruck}}`
+      continue
+    }
     if (ch === '\\' || ch === '\n') throw new UnsupportedOmml()
     if (ch in CHAR_ESCAPES) {
       out += CHAR_ESCAPES[ch]
@@ -1047,6 +1082,8 @@ function parseControl(p: LatexParser): string {
     case 'mathrm':
     case 'operatorname':
       return mathRun(readBraceText(p), true)
+    case 'mathbb':
+      return mathRun(doubleStruckText(readBraceText(p)))
     case 'lim': {
       skipSpaces(p)
       if (peek(p) === '_') {

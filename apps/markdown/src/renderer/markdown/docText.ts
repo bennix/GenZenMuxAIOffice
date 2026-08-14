@@ -188,7 +188,7 @@ export function delimitBareLatex(body: string): string {
         out += delimitBareLatexSegment(plain)
         plain = ''
       }
-      for (let index = 0; index < line.length; ) {
+      for (let index = 0; index < line.length;) {
         const char = line[index]
         if (char !== '`' && char !== '$') {
           plain += char
@@ -216,9 +216,23 @@ export function delimitBareLatex(body: string): string {
 }
 
 function delimitBareLatexSegment(segment: string): string {
+  // A complete \left...\right pair is an unmistakable formula even when an
+  // AI response omitted `$...$`.  Match the delimiter commands rather than
+  // guessing from the surrounding prose, so Chinese punctuation immediately
+  // after the closing delimiter stays outside the editable equation node.
+  const bareFormulas: string[] = []
+  let result = segment.replace(
+    /(\\left\s*(?:\\[A-Za-z]+|\\.|[()[\]|])[\s\S]*?\\right\s*(?:\\[A-Za-z]+|\\.|[()[\]|]))/g,
+    (_all, latex: string) => {
+      const index = bareFormulas.push(latex.trim()) - 1
+      // Protect the whole expression from the narrower repairs below (for
+      // example the `\\pi` rule must not inject nested dollar delimiters).
+      return `\uE000${index}\uE001`
+    },
+  )
   // Include the conventional variable/assignment prefix when present so
   // `F_1 = 5\\text{ N}` becomes one editable equation instead of mixed text.
-  let result = segment.replace(
+  result = result.replace(
     /(?<![\w\\])((?:[A-Za-z](?:_\{?[A-Za-z0-9]+\}?)?\s*=\s*)?[-+]?(?:\d+(?:\.\d+)?|\.\d+)\s*\\text\{[^{}\n]+\})/g,
     (_all, latex: string) => `$${latex.trim()}$`,
   )
@@ -228,7 +242,10 @@ function delimitBareLatexSegment(segment: string): string {
     /(?<![\w\\$])(\\(?:alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|rho|sigma|tau|phi|chi|psi|omega|Delta|Gamma|Lambda|Omega)(?:_\{?[A-Za-z0-9]+\}?)?(?:\s*=\s*[-+]?(?:\d+(?:\.\d+)?|\.\d+))?)/g,
     (_all, latex: string) => `$${latex.trim()}$`,
   )
-  return result
+  return result.replace(/\uE000(\d+)\uE001/g, (_all, index: string) => {
+    const latex = bareFormulas[Number(index)]
+    return latex === undefined ? _all : `$${latex}$`
+  })
 }
 
 function normalizeLegacyLatex(latex: string): string {

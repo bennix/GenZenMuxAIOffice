@@ -36,9 +36,9 @@ notarization on macOS).
 > Intelligence, Fudan University; macOS and Windows installers rebuilt for this release.
 
 Apple Silicon Mac 用户可从
-[最新 Release 下载签名并经 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.28-arm64.dmg)。
+[最新 Release 下载签名并经 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.29-arm64.dmg)。
 Windows 10/11 x64 用户可下载
-[GenOfficeSetup-0.6.28-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.28-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
+[GenOfficeSetup-0.6.29-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.29-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
 AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。
 
 [![Meet GenOffice — the world's first full-featured open-source AI Office (video)](https://img.youtube.com/vi/B2pLdMX95v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=B2pLdMX95v4)
@@ -72,9 +72,9 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 
 | Platform                             | Requirements                                          | Download                                                                                                                            |
 | ------------------------------------ | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **macOS** — Apple Silicon (arm64)    | macOS 11+                                             | [GenOffice-0.6.28-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.28-arm64.dmg)       |
+| **macOS** — Apple Silicon (arm64)    | macOS 11+                                             | [GenOffice-0.6.29-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.29-arm64.dmg)       |
 | **macOS** — Intel (x64)              | macOS 11+                                             | [GenOffice-0.6.101.dmg](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.dmg)                  |
-| **Windows** (x64)                    | Windows 10/11; unsigned, SmartScreen may warn         | [GenOfficeSetup-0.6.28-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.28-x64.exe) |
+| **Windows** (x64)                    | Windows 10/11; unsigned, SmartScreen may warn         | [GenOfficeSetup-0.6.29-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.29-x64.exe) |
 | **Linux** — Debian / Ubuntu          | x86_64, glibc 2.34+ (Ubuntu 22.04 or newer)           | [genoffice_0.6.101_amd64.deb](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/genoffice_0.6.101_amd64.deb)      |
 | **Linux** — Fedora / RHEL / openSUSE | x86_64, glibc 2.34+ (Fedora 35+, RHEL 9+, Leap 15.6+) | [genoffice-0.6.101.x86_64.rpm](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/genoffice-0.6.101.x86_64.rpm)    |
 | **Linux** — other distributions      | x86_64, glibc 2.34+, FUSE 2                           | [GenOffice-0.6.101.AppImage](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.AppImage)        |
