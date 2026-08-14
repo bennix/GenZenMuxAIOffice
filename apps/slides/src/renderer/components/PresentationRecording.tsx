@@ -62,7 +62,9 @@ export function PresentationRecordingDialog({
             checked={systemAudio}
             onChange={(e) => setSystemAudio(e.target.checked)}
           />
-          {zh ? '同时录制系统/演示文稿声音' : 'Also record system/presentation audio'}
+          {zh
+            ? '同时录制演示文稿声音（Windows 也支持系统声音）'
+            : 'Also record presentation audio (and system audio on Windows)'}
         </label>
         <label>
           {zh ? '麦克风' : 'Microphone'}
@@ -89,8 +91,8 @@ export function PresentationRecordingDialog({
         </label>
         <p className="recording-permission-note">
           {zh
-            ? '开始后，请允许麦克风和屏幕录制权限，并在系统选择器中选择 GenOffice 窗口或屏幕。系统声音是否可用取决于操作系统和所选捕获源。'
-            : 'Allow microphone and screen recording, then select the GenOffice window or display. System-audio availability depends on the OS and selected capture source.'}
+            ? '开始后，请允许麦克风和屏幕录制权限。macOS 会录制 GenOffice 幻灯片内播放的媒体声音；Windows 还可录制系统声音。'
+            : 'Allow microphone and screen-recording access. macOS records media played inside GenOffice; Windows can also record system audio.'}
         </p>
         <div className="modal-actions">
           <button disabled={starting} onClick={onClose}>

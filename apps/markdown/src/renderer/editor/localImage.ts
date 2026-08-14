@@ -49,6 +49,7 @@ const EXT_BY_MIME: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/gif': 'gif',
+  'image/webp': 'webp',
 }
 
 function imageFileIn(data: DataTransfer | null): File | null {

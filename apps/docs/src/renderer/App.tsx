@@ -660,6 +660,28 @@ export function App() {
         }
         return false
       },
+      // Dragging an image from Finder inserts it at the document drop position, using the same
+      // protected-image model as Paste and Insert → Picture so DOCX save/export stays consistent.
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved) return false
+        const imageFile = [...(event.dataTransfer?.files ?? [])].find((file) =>
+          /^image\/(png|jpeg|gif)$/.test(file.type),
+        )
+        if (!imageFile) return false
+        const pos =
+          view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos ??
+          view.state.selection.from
+        const reader = new FileReader()
+        reader.onload = () => {
+          const ed = editorRef.current
+          if (ed && typeof reader.result === 'string') {
+            ed.chain().focus().setTextSelection(pos).run()
+            void insertImageFromDataUrl(ed, reader.result, `Image (${imageFile.name})`)
+          }
+        }
+        reader.readAsDataURL(imageFile)
+        return true
+      },
     },
     onSelectionUpdate: () => forceRender(),
     // typing in the main document takes ribbon routing back from any textbox

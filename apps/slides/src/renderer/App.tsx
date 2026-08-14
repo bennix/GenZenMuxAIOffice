@@ -1037,6 +1037,65 @@ export function App() {
     [],
   )
 
+  /** Embed a Finder-dropped video/audio file at the drop point, preserving video aspect ratio. */
+  const insertExternalMedia = useCallback(
+    async (file: File, atPx: { x: number; y: number }): Promise<void> => {
+      const ctx = ctxRef.current
+      const targetSlide = ctx.slide
+      if (!targetSlide) return
+      const ext = (file.name.split('.').pop() ?? '').toLowerCase()
+      const videoExts = new Set(['mp4', 'm4v', 'mov', 'webm', 'avi'])
+      const audioExts = new Set(['mp3', 'wav', 'm4a', 'aac', 'ogg'])
+      const kind = videoExts.has(ext) ? 'video' : audioExts.has(ext) ? 'audio' : null
+      if (!kind) return
+
+      let natural = { w: 16, h: 9 }
+      if (kind === 'video') {
+        natural = await new Promise<{ w: number; h: number }>((resolve) => {
+          const el = document.createElement('video')
+          const url = URL.createObjectURL(file)
+          const finish = (dims = { w: 16, h: 9 }) => {
+            URL.revokeObjectURL(url)
+            el.removeAttribute('src')
+            resolve(dims)
+          }
+          el.preload = 'metadata'
+          el.onloadedmetadata = () => finish({ w: el.videoWidth || 16, h: el.videoHeight || 9 })
+          el.onerror = () => finish()
+          el.src = url
+        })
+      }
+
+      const maxW = targetSlide.widthPx * (kind === 'video' ? 0.6 : 0.24)
+      const maxH = targetSlide.heightPx * (kind === 'video' ? 0.6 : 0.09)
+      const scale = kind === 'video' ? Math.min(maxW / natural.w, maxH / natural.h) : 1
+      const w = kind === 'video' ? Math.max(48, natural.w * scale) : maxW
+      const h = kind === 'video' ? Math.max(36, natural.h * scale) : maxH
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      let binary = ''
+      for (let i = 0; i < bytes.length; i += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+      }
+      const result = await window.slidesApi.addMediaBytes({
+        slideIndex: ctx.current,
+        kind,
+        base64: btoa(binary),
+        ext,
+        fitWidthPx: FIT_WIDTH,
+        name: file.name,
+        xPx: Math.max(0, Math.min(targetSlide.widthPx - w, atPx.x - w / 2)),
+        yPx: Math.max(0, Math.min(targetSlide.heightPx - h, atPx.y - h / 2)),
+        wPx: w,
+        hPx: h,
+      })
+      if (!result) return
+      ctx.applySlide(ctx.current, result.slide)
+      ctx.setSelectedIds([result.sourceId])
+      ctx.setStatus(kind === 'video' ? t('appStatusVideoInserted') : t('appStatusAudioInserted'))
+    },
+    [],
+  )
+
   // The clipboard lives in the main process, so a slide copied here can be pasted
   // into any other open deck.
   const [canPasteSlide, setCanPasteSlide] = useState(false)
@@ -2968,9 +3027,7 @@ export function App() {
                               if (e.dataTransfer.types.includes('Files')) e.preventDefault()
                             }}
                             onDrop={(e) => {
-                              const files = Array.from(e.dataTransfer.files).filter((f) =>
-                                f.type.startsWith('image/'),
-                              )
+                              const files = Array.from(e.dataTransfer.files)
                               if (!files.length) return
                               e.preventDefault()
                               const rect = e.currentTarget.getBoundingClientRect()
@@ -2978,22 +3035,41 @@ export function App() {
                                 x: ((e.clientX - rect.left) / rect.width) * slide.widthPx,
                                 y: ((e.clientY - rect.top) / rect.height) * slide.heightPx,
                               }
-                              for (const f of files) {
-                                void f.arrayBuffer().then((buf) => {
+                              void (async () => {
+                                for (const f of files) {
+                                  const ext = (f.name.split('.').pop() ?? '').toLowerCase()
+                                  if (
+                                    [
+                                      'mp4',
+                                      'm4v',
+                                      'mov',
+                                      'webm',
+                                      'avi',
+                                      'mp3',
+                                      'wav',
+                                      'm4a',
+                                      'aac',
+                                      'ogg',
+                                    ].includes(ext)
+                                  ) {
+                                    await insertExternalMedia(f, at)
+                                    continue
+                                  }
+                                  if (!f.type.startsWith('image/')) continue
+                                  const buf = await f.arrayBuffer()
                                   // Chunked base64 conversion: spreading a large array would blow the call stack
                                   const bytes = new Uint8Array(buf)
                                   let bin = ''
                                   for (let i = 0; i < bytes.length; i += 0x8000) {
                                     bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
                                   }
-                                  const ext = (f.name.split('.').pop() ?? 'png').toLowerCase()
                                   void insertExternalImage(
                                     btoa(bin),
                                     ext === 'jpeg' ? 'jpg' : ext,
                                     at,
                                   )
-                                })
-                              }
+                                }
+                              })()
                             }}
                           >
                             <SlideCanvas

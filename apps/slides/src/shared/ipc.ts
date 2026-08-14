@@ -823,7 +823,7 @@ export interface ReplacePictureBytesOp {
   descr?: string
 }
 
-/** Insert renderer-recorded media bytes (screen-recording webm etc.). */
+/** Insert renderer-provided media bytes (recordings and dragged local files). */
 export interface AddMediaBytesOp {
   slideIndex: number
   kind: 'video' | 'audio'
@@ -831,6 +831,11 @@ export interface AddMediaBytesOp {
   ext: string
   fitWidthPx: number
   name?: string
+  /** Optional slide-pixel placement. Omitted values use the centered default frame. */
+  xPx?: number
+  yPx?: number
+  wPx?: number
+  hPx?: number
 }
 
 /** Element hyperlink target. */

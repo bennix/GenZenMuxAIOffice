@@ -963,7 +963,8 @@ export function registerSlidesIpc(): void {
   ipcMain.handle('app:get-language', () => getUiLang())
 
   // Screen recording: source dispatch for the renderer's navigator.mediaDevices.getDisplayMedia.
-  // macOS prefers the system picker (with its permission flow), falling back to the first screen.
+  // Electron's loopback source is Windows-only. On macOS capture the requesting Slides frame's
+  // audio instead, which includes media played by the presentation while keeping local playback.
   void app.whenReady().then(() => {
     try {
       const appSession = electronSession.defaultSession
@@ -973,7 +974,8 @@ export function registerSlidesIpc(): void {
         callback(mediaPermission && isTrustedEditorMediaUrl(requestingUrl))
       })
       appSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
-        const requestingUrl = details.requestingUrl || requestingOrigin || webContents?.getURL() || ''
+        const requestingUrl =
+          details.requestingUrl || requestingOrigin || webContents?.getURL() || ''
         return permission === 'media' && isTrustedEditorMediaUrl(requestingUrl)
       })
       appSession.setDisplayMediaRequestHandler(
@@ -982,17 +984,25 @@ export function registerSlidesIpc(): void {
             .getSources({ types: ['screen', 'window'] })
             .then((sources) => {
               if (sources[0]) {
+                const frameAudio =
+                  request.audioRequested && process.platform === 'darwin' && request.frame
+                    ? request.frame
+                    : undefined
                 callback({
                   video: sources[0],
                   ...(request.audioRequested && process.platform === 'win32'
                     ? { audio: 'loopback' as const }
-                    : {}),
+                    : frameAudio
+                      ? { audio: frameAudio, enableLocalEcho: true }
+                      : {}),
                 })
               } else callback({})
             })
             .catch(() => callback({}))
         },
-        { useSystemPicker: true },
+        // The native macOS picker bypasses this handler, so it cannot receive the WebFrameMain
+        // audio source above. Force the handler on macOS; other platforms keep their picker.
+        { useSystemPicker: process.platform !== 'darwin' },
       )
     } catch {
       /* Older Electron lacks this API: the screen-record button will get no stream and report failure */
@@ -3184,21 +3194,27 @@ export function registerSlidesIpc(): void {
     }
   })
 
-  // Media recorded by the renderer (screen-recording webm): placed centered at 16:9
+  // Media supplied by the renderer (recordings or drag/drop). Dragged files may provide their
+  // exact slide-pixel frame; recordings keep the centered 16:9 default.
   ipcMain.handle('slides:add-media-bytes', (e, op: AddMediaBytesOp) => {
     const session = sessions.get(e.sender.id)
     if (!session || !session.opened.deck.slides[op.slideIndex]) return null
     const deckSize = session.opened.deck.size
-    const cx = Math.round(deckSize.cx * 0.6)
-    const cy = Math.round((cx * 9) / 16)
+    const hasFrame =
+      [op.xPx, op.yPx, op.wPx, op.hPx].every((value) => Number.isFinite(value)) &&
+      (op.wPx ?? 0) > 0 &&
+      (op.hPx ?? 0) > 0
+    const pxToEmu = deckSize.cx / op.fitWidthPx
+    const cx = hasFrame ? Math.round(op.wPx! * pxToEmu) : Math.round(deckSize.cx * 0.6)
+    const cy = hasFrame ? Math.round(op.hPx! * pxToEmu) : Math.round((cx * 9) / 16)
     pushHistory(session)
     const added = addMedia(session.opened, op.slideIndex, {
       kind: op.kind,
       bytes: new Uint8Array(Buffer.from(op.base64, 'base64')),
       ext: op.ext,
       offset: {
-        x: Math.round((deckSize.cx - cx) / 2),
-        y: Math.round((deckSize.cy - cy) / 2),
+        x: hasFrame ? Math.round(op.xPx! * pxToEmu) : Math.round((deckSize.cx - cx) / 2),
+        y: hasFrame ? Math.round(op.yPx! * pxToEmu) : Math.round((deckSize.cy - cy) / 2),
         cx,
         cy,
       },

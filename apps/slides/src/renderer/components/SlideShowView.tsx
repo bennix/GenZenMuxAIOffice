@@ -481,6 +481,8 @@ function ShowMediaLayer({
           width: n.box.w * k,
           height: n.box.h * k,
           cursor: 'pointer',
+          display: 'block',
+          objectFit: 'contain',
         }
         const isPlaying = !!playing[n.sourceId]
         const toggle = (el: HTMLMediaElement | null) => {

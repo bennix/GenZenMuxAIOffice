@@ -501,6 +501,11 @@ export async function startPresentationRecording(
       video: { frameRate: { ideal: 30, max: 60 } },
       audio: options.systemAudio,
     })
+    if (options.systemAudio && displayStream.getAudioTracks().length === 0) {
+      throw new Error(
+        '未取得演示文稿音轨。macOS 可录制 GenOffice 幻灯片中播放的视频和音频；请确认媒体正在播放后重试。',
+      )
+    }
     const audioStreams = [displayStream, microphoneStream].filter(
       (candidate): candidate is MediaStream => !!candidate?.getAudioTracks().length,
     )
