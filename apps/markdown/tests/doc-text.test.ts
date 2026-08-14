@@ -1,10 +1,30 @@
 import { describe, expect, it } from 'vitest'
 import {
+  delimitBareLatex,
   parseDocText,
   repairOverescapedMarkdown,
   serializeDocText,
   stripLegacyFencedDivs,
 } from '../src/renderer/markdown/docText'
+
+describe('delimitBareLatex', () => {
+  it('repairs common unit and Greek formulas emitted without math delimiters', () => {
+    const md = String.raw`质量为 4\text{ kg}，取 g 为 10\text{ N/kg}，拉力 F_1 = 5\text{ N}，且 \mu = 0.2。`
+    expect(delimitBareLatex(md)).toBe(
+      String.raw`质量为 $4\text{ kg}$，取 g 为 $10\text{ N/kg}$，拉力 $F_1 = 5\text{ N}$，且 $\mu = 0.2$。`,
+    )
+  })
+
+  it('preserves existing math, inline code, and fenced code', () => {
+    const md = [
+      String.raw`已有 $F = 5\text{ N}$，代码 \`4\text{ kg}\`。`,
+      '```tex',
+      String.raw`10\text{ N/kg} \mu = 0.3`,
+      '```',
+    ].join('\n')
+    expect(delimitBareLatex(md)).toBe(md)
+  })
+})
 
 describe('repairOverescapedMarkdown', () => {
   it('repairs legacy AI formatting and LaTeX while preserving code fences', () => {

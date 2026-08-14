@@ -115,12 +115,12 @@ export function stripLegacyFencedDivs(body: string): string {
 export function repairOverescapedMarkdown(body: string): string {
   const hasEscapedFormatting = /\\\*\\\*[^\n]+?\\\*\\\*/.test(body)
   const hasDoubledLatex = /\${1,2}[\s\S]*?\\\\(?:[A-Za-z]+|[{}_^])[\s\S]*?\${1,2}/.test(body)
-  if (!hasEscapedFormatting && !hasDoubledLatex) return body
+  if (!hasEscapedFormatting && !hasDoubledLatex) return delimitBareLatex(body)
 
   const lines = body.split('\n')
   let codeFence: string | null = null
   let displayMath = false
-  return lines
+  const repaired = lines
     .map((line) => {
       const fence = /^\s*(`{3,}|~{3,})/.exec(line)
       if (codeFence) {
@@ -156,6 +156,79 @@ export function repairOverescapedMarkdown(body: string): string {
       return repaired
     })
     .join('\n')
+  return delimitBareLatex(repaired)
+}
+
+/**
+ * Some model responses contain valid LaTeX commands but omit Markdown math
+ * delimiters, for example `F_1 = 5\\text{ N}` or `\\mu = 0.2`. TipTap must
+ * receive `$...$` to create an equation node. Repair only unmistakable LaTeX
+ * commands, and leave fenced/inline code plus already-delimited math intact.
+ */
+export function delimitBareLatex(body: string): string {
+  const lines = body.split('\n')
+  let codeFence: string | null = null
+  return lines
+    .map((line) => {
+      const fence = /^\s*(`{3,}|~{3,})/.exec(line)
+      if (codeFence) {
+        if (fence && fence[1][0] === codeFence[0] && fence[1].length >= codeFence.length) {
+          codeFence = null
+        }
+        return line
+      }
+      if (fence) {
+        codeFence = fence[1]
+        return line
+      }
+
+      let out = ''
+      let plain = ''
+      const flushPlain = (): void => {
+        out += delimitBareLatexSegment(plain)
+        plain = ''
+      }
+      for (let index = 0; index < line.length; ) {
+        const char = line[index]
+        if (char !== '`' && char !== '$') {
+          plain += char
+          index++
+          continue
+        }
+        const marker = char
+        let width = 1
+        while (line[index + width] === marker) width++
+        const delimiter = marker.repeat(width)
+        const close = line.indexOf(delimiter, index + width)
+        if (close < 0) {
+          plain += delimiter
+          index += width
+          continue
+        }
+        flushPlain()
+        out += line.slice(index, close + width)
+        index = close + width
+      }
+      flushPlain()
+      return out
+    })
+    .join('\n')
+}
+
+function delimitBareLatexSegment(segment: string): string {
+  // Include the conventional variable/assignment prefix when present so
+  // `F_1 = 5\\text{ N}` becomes one editable equation instead of mixed text.
+  let result = segment.replace(
+    /(?<![\w\\])((?:[A-Za-z](?:_\{?[A-Za-z0-9]+\}?)?\s*=\s*)?[-+]?(?:\d+(?:\.\d+)?|\.\d+)\s*\\text\{[^{}\n]+\})/g,
+    (_all, latex: string) => `$${latex.trim()}$`,
+  )
+  // Greek symbols are also unambiguous LaTeX. An optional numeric assignment
+  // is kept inside the same equation node.
+  result = result.replace(
+    /(?<![\w\\$])(\\(?:alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|rho|sigma|tau|phi|chi|psi|omega|Delta|Gamma|Lambda|Omega)(?:_\{?[A-Za-z0-9]+\}?)?(?:\s*=\s*[-+]?(?:\d+(?:\.\d+)?|\.\d+))?)/g,
+    (_all, latex: string) => `$${latex.trim()}$`,
+  )
+  return result
 }
 
 function normalizeLegacyLatex(latex: string): string {
