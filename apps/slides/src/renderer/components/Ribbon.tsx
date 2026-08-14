@@ -2192,7 +2192,17 @@ export function Ribbon({
                 </span>
                 <span>{t('ribbonRehearse')}</span>
               </button>
-              <DisabledBig icon={<IconRecord size={BIG} />} label={t('ribbonRecord')} />
+              <button
+                className={`rb-big ${recording ? 'active rb-recording' : ''}`}
+                disabled={!hasDoc}
+                onClick={onToggleScreenRecord}
+                data-tip={recording ? t('ribbonStopRecTip') : t('ribbonScreenRecTip')}
+              >
+                <span className="rb-big-icon">
+                  <IconRecord size={BIG} />
+                </span>
+                <span>{recording ? t('ribbonStopRec') : t('ribbonRecord')}</span>
+              </button>
             </Group>
           </>
         ) : tab === 'review' ? (
