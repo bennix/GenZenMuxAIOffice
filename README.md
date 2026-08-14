@@ -21,7 +21,7 @@ This repository is a derivative of the upstream
 retains its Apache-2.0 license. This branch replaces the AI integration with
 ZenMux, adds encrypted local API-key/model settings, cross-editor AI workflows
 and source-preserving message copy, expands equations, Mermaid, review and
-spreadsheet-analysis features, and provides rebuilt macOS and Windows releases.
+spreadsheet-analysis features, and provides rebuilt macOS, Windows, and Linux RPM releases.
 
 Compared with the upstream edition, this derivative offers a user-controlled
 ZenMux model gateway without a Genspark login, consistent AI context/attachment
@@ -31,14 +31,16 @@ and ready-to-download desktop installers (with Developer ID signing and Apple
 notarization on macOS).
 
 > **AI 适配与修改 / AI adaptation and modifications**<br>
-> 由复旦大学计算与智能创新学院徐志平完成 AI 适配与修改，并重新制作 macOS 与 Windows 安装包。<br>
+> 由复旦大学计算与智能创新学院徐志平完成 AI 适配与修改，并重新制作 macOS、Windows 与 Linux RPM 安装包。<br>
 > AI adaptation and modifications by Zhiping Xu, College of Computer Science and Artificial
-> Intelligence, Fudan University; macOS and Windows installers rebuilt for this release.
+> Intelligence, Fudan University; macOS, Windows, and Linux RPM installers rebuilt for this release.
 
 Apple Silicon Mac 用户可从
 [最新 Release 下载签名并经 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.39-arm64.dmg)。
 Windows 10/11 x64 用户可下载
 [GenOfficeSetup-0.6.39-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.39-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
+Fedora、RHEL、Rocky Linux、AlmaLinux 与 openSUSE x86_64 用户可下载
+[genoffice-0.6.39.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.39.x86_64.rpm)。
 AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。
 
 [![Meet GenOffice — the world's first full-featured open-source AI Office (video)](https://img.youtube.com/vi/B2pLdMX95v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=B2pLdMX95v4)
@@ -76,17 +78,17 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 
 ## Download
 
-| Platform                             | Requirements                                          | Download                                                                                                                            |
-| ------------------------------------ | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **macOS** — Apple Silicon (arm64)    | macOS 11+                                             | [GenOffice-0.6.39-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.39-arm64.dmg)       |
-| **macOS** — Intel (x64)              | macOS 11+                                             | [GenOffice-0.6.101.dmg](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.dmg)                  |
-| **Windows** (x64)                    | Windows 10/11; unsigned, SmartScreen may warn         | [GenOfficeSetup-0.6.39-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.39-x64.exe) |
-| **Linux** — Debian / Ubuntu          | x86_64, glibc 2.34+ (Ubuntu 22.04 or newer)           | [genoffice_0.6.101_amd64.deb](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/genoffice_0.6.101_amd64.deb)      |
-| **Linux** — Fedora / RHEL / openSUSE | x86_64, glibc 2.34+ (Fedora 35+, RHEL 9+, Leap 15.6+) | [genoffice-0.6.101.x86_64.rpm](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/genoffice-0.6.101.x86_64.rpm)    |
-| **Linux** — other distributions      | x86_64, glibc 2.34+, FUSE 2                           | [GenOffice-0.6.101.AppImage](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.AppImage)        |
+| Platform                                                | Requirements                                  | Download                                                                                                                            |
+| ------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **macOS** — Apple Silicon (arm64)                       | macOS 11+                                     | [GenOffice-0.6.39-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.39-arm64.dmg)       |
+| **macOS** — Intel (x64)                                 | macOS 11+                                     | [GenOffice-0.6.101.dmg](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.dmg)                  |
+| **Windows** (x64)                                       | Windows 10/11; unsigned, SmartScreen may warn | [GenOfficeSetup-0.6.39-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.39-x64.exe) |
+| **Linux** — Debian / Ubuntu                             | x86_64, glibc 2.34+ (Ubuntu 22.04 or newer)   | [genoffice_0.6.101_amd64.deb](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/genoffice_0.6.101_amd64.deb)      |
+| **Linux RPM** — Fedora / RHEL / Rocky / Alma / openSUSE | x86_64, glibc 2.34+ (RHEL-compatible 9+)      | [genoffice-0.6.39.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.39.x86_64.rpm)     |
+| **Linux** — other distributions                         | x86_64, glibc 2.34+, FUSE 2                   | [GenOffice-0.6.101.AppImage](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.AppImage)        |
 
 All builds come from `main`. The macOS DMG is signed and notarized; the current Windows installer is not Authenticode-signed.
-Older versions are on the [Releases](https://github.com/genspark-ai/genoffice/releases) page.
+Published installers are on this project's [Releases](https://github.com/bennix/GenZenMuxAIOffice/releases) page.
 
 ### Installing on Linux
 
@@ -100,8 +102,8 @@ sudo apt install ./genoffice_0.6.101_amd64.deb
 On Fedora / RHEL-family / openSUSE, install the rpm instead:
 
 ```bash
-sudo dnf install ./genoffice-0.6.101.x86_64.rpm     # Fedora / RHEL family
-sudo zypper install ./genoffice-0.6.101.x86_64.rpm  # openSUSE
+sudo dnf install ./genoffice-0.6.39.x86_64.rpm     # Fedora / RHEL / Rocky / Alma
+sudo zypper install ./genoffice-0.6.39.x86_64.rpm  # openSUSE
 ```
 
 The AppImage instead runs in place: install the FUSE 2 runtime

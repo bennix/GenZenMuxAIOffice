@@ -797,7 +797,7 @@
 
       .platform-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         border: 1px solid var(--ink);
       }
 
@@ -1086,8 +1086,8 @@
           <div class="hero-copy">
             <h2>让文档、表格与演示文稿，拥有同一个 AI 工作台。</h2>
             <p>
-              一款独立的 macOS 与 Windows 办公应用。API Key 只保存在本机；文本生成与 PPT、Word
-              配图统一通过 ZenMux 调用。
+              一款独立的 macOS、Windows 与 Linux 办公应用。API Key 只保存在本机；文本生成与
+              PPT、Word 配图统一通过 ZenMux 调用。
             </p>
             <div class="downloads">
               <a
@@ -1102,10 +1102,17 @@
               >
                 下载 Windows x64 <b>↓</b>
               </a>
+              <a
+                class="download"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.39.x86_64.rpm"
+              >
+                下载 Linux RPM <b>↓</b>
+              </a>
             </div>
             <div class="meta">
               macOS：Apple Silicon · Developer ID 签名与 Apple 公证<br />Windows：Windows 10/11 x64
-              · 暂未 Authenticode 签名，SmartScreen 可能提示未知发布者
+              · 暂未 Authenticode 签名，SmartScreen 可能提示未知发布者<br />Linux：x86_64 RPM ·
+              Fedora / RHEL 兼容发行版与 openSUSE
             </div>
           </div>
         </section>
@@ -1136,6 +1143,19 @@
                 class="download"
                 href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.39-x64.exe"
                 >下载 Windows v0.6.39 <b>↓</b></a
+              >
+            </article>
+            <article class="platform-card">
+              <span class="platform-label">Linux / x86_64 RPM</span>
+              <h3>Linux RPM</h3>
+              <p>
+                适用于 Fedora、RHEL、Rocky Linux、AlmaLinux 与 openSUSE。包含 Linux 原生 xlsx
+                数据引擎。
+              </p>
+              <a
+                class="download"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.39.x86_64.rpm"
+                >下载 Linux RPM v0.6.39 <b>↓</b></a
               >
             </article>
           </div>

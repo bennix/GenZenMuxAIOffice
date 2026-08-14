@@ -1,0 +1,82 @@
+name: Build Linux RPM
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub Release tag that will receive the verified RPM
+        required: true
+        default: v0.6.39
+
+concurrency:
+  group: linux-rpm-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-rpm:
+    runs-on: ubuntu-latest
+    container: rockylinux:9
+    timeout-minutes: 60
+    steps:
+      - name: Install build prerequisites
+        run: |
+          dnf install -y git tar gzip xz curl gcc gcc-c++ make python3 rpm-build rpm cpio file libarchive
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable branch, 2026-07
+        with:
+          toolchain: stable
+
+      - name: Confirm release version
+        shell: bash
+        run: |
+          version=$(node -p "require('./apps/shell/package.json').version")
+          test "${{ inputs.release_tag }}" = "v${version}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate notices and build apps
+        run: |
+          npm run notices
+          npm run build:all
+
+      - name: Build RPM
+        working-directory: apps/shell
+        run: npx electron-builder --linux rpm --x64
+
+      - name: Verify RPM and bundled Linux sidecar
+        shell: bash
+        run: |
+          rpm_file=$(find apps/shell/release -maxdepth 1 -name 'genoffice-*.x86_64.rpm' -print -quit)
+          test -n "$rpm_file"
+          rpm -qpi "$rpm_file"
+          rpm -qlp "$rpm_file" | grep '/resources/native/xlsx-sidecar$'
+          mkdir -p rpm-check
+          (cd rpm-check && rpm2cpio "../$rpm_file" | cpio -id --quiet)
+          sidecar=$(find rpm-check -path '*/resources/native/xlsx-sidecar' -print -quit)
+          test -n "$sidecar"
+          file "$sidecar" | grep 'ELF 64-bit.*x86-64'
+          test -x "$sidecar"
+          sha256sum "$rpm_file"
+
+      - name: Upload verified RPM artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: genoffice-linux-rpm-${{ inputs.release_tag }}
+          path: apps/shell/release/genoffice-*.x86_64.rpm
+          if-no-files-found: error
+          retention-days: 7
