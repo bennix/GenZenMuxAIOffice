@@ -1,6 +1,7 @@
 import { type SectionSettings } from '@genoffice/docx-engine'
 import { WRAP_OPTIONS, wrapOptionLabel } from './ContextMenu'
 import { useI18n, type StringKey } from '../i18n/locale'
+import { imageWrapAttributes } from '../editor/image-wrap'
 import {
   IconCaret,
   IconColumns,
@@ -103,14 +104,10 @@ export function LayoutTab({
   const currentWrap = (protAttrs?.imageWrap as string | null) ?? null
 
   const applyWrap = (value: string | null) => {
-    const cleared =
-      value === null
-        ? { imagePosH: null, imagePosV: null, imageOffsetXEmu: null, imageOffsetYEmu: null }
-        : {}
     editor
       .chain()
       .focus()
-      .updateAttributes('docProtected', { imageWrap: value, ...cleared })
+      .updateAttributes('docProtected', imageWrapAttributes(protAttrs, value))
       .run()
     setDropdown(() => null)
   }

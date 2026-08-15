@@ -30,6 +30,7 @@ import type {
   ThemeFonts,
 } from '@genoffice/docx-engine'
 import { HIGHLIGHT_CSS } from '../editor/extensions'
+import { imageWrapAttributes } from '../editor/image-wrap'
 import { setParagraphDirection, setSelectionAlign } from '../editor/direction'
 import { stepParagraphIndent } from '../editor/indent'
 import { formatNumber } from '../editor/numbering'
@@ -1723,10 +1724,14 @@ function RibbonInner({
                   value={fs.imageWrap ?? ''}
                   onChange={(e) => {
                     if (!canEdit) return
+                    const attrs = editor.getAttributes('docProtected')
                     editor
                       .chain()
                       .focus()
-                      .updateAttributes('docProtected', { imageWrap: e.target.value || null })
+                      .updateAttributes(
+                        'docProtected',
+                        imageWrapAttributes(attrs, e.target.value || null),
+                      )
                       .run()
                   }}
                 >

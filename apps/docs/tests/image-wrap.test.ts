@@ -9,6 +9,7 @@ import {
 } from '../../../packages/docx-engine/tests/helpers/build-docx'
 import { blocksToPmDoc, pmDocToSavePlan, type PmNode } from '../src/renderer/editor/convert'
 import { editorExtensions } from '../src/renderer/editor/extensions'
+import { imageWrapAttributes } from '../src/renderer/editor/image-wrap'
 
 async function openImageDoc(extraRels?: string) {
   const source = await buildDocx({ bodyXml: IMAGE_PARAGRAPH_XML, withImage: true, extraRels })
@@ -86,6 +87,66 @@ describe('image wrap in the editor', () => {
       editor.destroy()
     },
   )
+
+  it('keeps the side-wrap box at the declared picture width', async () => {
+    const { editor } = await openImageDoc()
+    editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, 0)))
+    editor.commands.updateAttributes('docProtected', {
+      imageWrap: 'square-right',
+      imageWidthPx: 559,
+      imageHeightPx: 453,
+    })
+
+    const node = editor.view.dom.querySelector<HTMLElement>('.img-wrap-square-right')
+    const image = node?.querySelector<HTMLImageElement>('.doc-protected-img')
+    expect(node?.style.width).toBe('559px')
+    expect(node?.style.maxWidth).toBe('none')
+    expect(image?.style.width).toBe('559px')
+    editor.destroy()
+  })
+
+  it('drops stale free-position offsets when moving a side-wrapped picture in front of text', async () => {
+    const { editor, parsed } = await openImageDoc()
+    editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, 0)))
+    editor.commands.updateAttributes('docProtected', {
+      imageWrap: 'square-right',
+      imageOffsetXEmu: 11_791_950,
+      imageOffsetYEmu: 3_933_825,
+      imagePosH: null,
+      imagePosV: null,
+    })
+
+    const patch = imageWrapAttributes(editor.getAttributes('docProtected'), 'front')
+    expect(patch).toMatchObject({
+      imageWrap: 'front',
+      imagePosH: 'right',
+      imagePosV: 'top',
+      imageOffsetXEmu: null,
+      imageOffsetYEmu: null,
+    })
+    editor.commands.updateAttributes('docProtected', patch)
+
+    const node = editor.view.dom.querySelector<HTMLElement>('.img-wrap-front')
+    const imageWrap = node?.querySelector<HTMLElement>('.doc-img-wrap')
+    expect(node?.classList.contains('doc-protected-floating')).toBe(true)
+    expect(imageWrap?.style.right).toBe('0px')
+    expect(imageWrap?.style.transform).toBe('translate(0.0px,0.0px)')
+    expect(imageWrap?.querySelector('.doc-protected-img')).toBeTruthy()
+
+    const saved = await saveDocx(
+      parsed,
+      pmDocToSavePlan(editor.getJSON() as PmNode, parsed.blocks).saveBlocks,
+    )
+    const reparsed = await parseDocx(saved)
+    expect(reparsed.blocks[0]).toMatchObject({
+      imageWrap: 'front',
+      imagePosH: 'right',
+      imagePosV: 'top',
+    })
+    expect(reparsed.blocks[0].imageOffsetXEmu).toBeUndefined()
+    expect(reparsed.blocks[0].imageOffsetYEmu).toBeUndefined()
+    editor.destroy()
+  })
 
   it('keeps an untouched image byte-identical', async () => {
     const { editor, parsed, source } = await openImageDoc()

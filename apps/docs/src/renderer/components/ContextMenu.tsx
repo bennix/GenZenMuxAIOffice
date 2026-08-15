@@ -8,6 +8,7 @@ import { setParaAttrs, activeParaAttrs } from './ribbon-tabs'
 import { setSelectionAlign } from '../editor/direction'
 import { IconSparkle } from './icons'
 import { useModalKeys } from './modal-keys'
+import { imageWrapAttributes } from '../editor/image-wrap'
 
 /**
  * Editor context menu (right click in the document body):
@@ -114,7 +115,11 @@ export function EditorContextMenu({
     (Array.isArray(protAttrs?.textboxes) && (protAttrs.textboxes as unknown[]).length > 0)
   const currentWrap = (protAttrs?.imageWrap as string | null) ?? null
   const setWrap = (wrap: string | null) =>
-    editor.chain().focus().updateAttributes('docProtected', { imageWrap: wrap }).run()
+    editor
+      .chain()
+      .focus()
+      .updateAttributes('docProtected', imageWrapAttributes(protAttrs, wrap))
+      .run()
 
   /** Plain-text insertion: no HTML parsing (insertContent(string) would treat < > as tags) */
   const insertPlainText = (text: string) => {

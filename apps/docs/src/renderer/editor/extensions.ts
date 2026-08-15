@@ -1731,6 +1731,16 @@ function protectedDomSpec(node: PmNode): DomSpec {
     if (imageAlign === 'center' || imageAlign === 'right') {
       attrs['style'] = `text-align:${imageAlign}`
     }
+    // The float box must own the same width as its explicitly-sized picture.
+    // Otherwise the generic 60% text-wrap cap narrows only the box and a
+    // right-aligned picture paints past the paper edge in every cloned view.
+    if (imageWidthPx && /^(?:square|tight|through)-(?:left|right)$/.test(String(imageWrap ?? ''))) {
+      const width = Number(imageWidthPx)
+      if (Number.isFinite(width) && width > 0) {
+        attrs['style'] =
+          `${attrs['style'] ? `${attrs['style']};` : ''}width:${width}px;max-width:none`
+      }
+    }
     if (imageWrap) attrs.class += ` img-wrap-${String(imageWrap)}`
     if (imageWrap === 'front' || imageWrap === 'behind') {
       attrs.class += ' doc-protected-floating'
