@@ -6626,15 +6626,17 @@ body.docs-crop-active
 
   .doc-zoom {
     zoom: 1 !important;
-    width: auto !important;
+    width: fit-content !important;
+    margin: 0 !important;
   }
 
   .page-wrap {
+    width: var(--page-w, 816px) !important;
     margin: 0 !important;
   }
 
   .doc-page {
-    width: auto !important;
+    width: var(--page-w, 816px) !important;
     min-height: 0 !important;
     box-shadow: none !important;
     margin: 0 !important;
@@ -6669,6 +6671,7 @@ body.docs-crop-active
 
   /* selection highlight is UI state: the auto-selected first node must not
      print a blue plate/border */
+  .doc-protected,
   .doc-protected.ProseMirror-selectednode {
     border-color: transparent !important;
     outline: none !important;

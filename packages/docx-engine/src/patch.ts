@@ -450,6 +450,40 @@ export async function saveDocx(
     usedExtensions.add(ext)
     return rId
   }
+  /**
+   * Replace a uniquely referenced raster image at its existing package path whenever the MIME
+   * type still matches. Keeping the original rId/media target is important for Word-compatible
+   * readers that cache relationship ordering; it also avoids leaving a stale original image
+   * relationship ahead of the edited image. Shared or format-changing images are safely forked.
+   */
+  const embedReplacementMedia = (
+    xml: string,
+    image: { base64: string; mime: NewImage['mime'] },
+  ): string => {
+    const rId = /<a:blip\b[^>]*\br:embed="([^"]+)"/.exec(xml)?.[1]
+    if (rId) {
+      const relation = (relsXml.match(/<Relationship\b[^>]*\/>/g) ?? []).find((tag) =>
+        new RegExp(`\\bId="${escapeRegExp(rId)}"`).test(tag),
+      )
+      const target = relation ? /\bTarget="([^"]+)"/.exec(relation)?.[1] : undefined
+      const expectedExt = IMAGE_EXT[image.mime]
+      const targetExt = target?.split('.').pop()?.toLowerCase()
+      const mediaPath = target ? `word/${target.replace(/^\/+/, '')}` : ''
+      const references = documentXml.match(
+        new RegExp(`\\br:(?:embed|link)="${escapeRegExp(rId)}"`, 'g'),
+      )
+      if (
+        relation?.includes(`Type="${IMAGE_REL_TYPE}"`) &&
+        references?.length === 1 &&
+        targetExt === expectedExt &&
+        /^word\/media\/[^/]+$/.test(mediaPath)
+      ) {
+        newMedia.push({ path: mediaPath, base64: image.base64 })
+        return rId
+      }
+    }
+    return embedImageMedia(image)
+  }
   const embedImage = (image: NewImage): string => {
     const rId = embedImageMedia(image)
     const cx = Math.max(1, Math.round(image.widthPx * EMU_PER_PX))
@@ -906,7 +940,7 @@ export async function saveDocx(
     } else if (fb.kind === 'xml') {
       xml = fb.xml
       fbDocxIndex = fb.docxIndex
-      if (fb.replaceImage) xml = retargetImageBlip(xml, embedImageMedia(fb.replaceImage))
+      if (fb.replaceImage) xml = retargetImageBlip(xml, embedReplacementMedia(xml, fb.replaceImage))
     } else if (fb.kind === 'chart') {
       xml = await embedChart(fb.chart, fb.extentPx)
     } else {
@@ -1035,6 +1069,16 @@ export async function saveDocx(
       .join('')
     relsXml = relsXml.replace('</Relationships>', `${inserts}</Relationships>`)
     relsChanged = true
+  }
+  // Remove document-level image relationships no longer referenced by the final XML. Older
+  // replacement saves appended a new rId but retained the old one; some third-party Office
+  // readers then displayed the first (stale) image relationship instead of the edited image.
+  if (relsXml) {
+    const cleaned = pruneUnusedDocumentImageRelationships(relsXml, newDocumentXml)
+    if (cleaned !== relsXml) {
+      relsXml = cleaned
+      relsChanged = true
+    }
   }
 
   const contentTypesPath = '[Content_Types].xml'
@@ -1550,6 +1594,20 @@ function maxRelId(relsXml: string | null): number {
     max = Math.max(max, parseInt(m[1], 10))
   }
   return max
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function pruneUnusedDocumentImageRelationships(relsXml: string, documentXml: string): string {
+  return relsXml.replace(/<Relationship\b[^>]*\/>/g, (tag) => {
+    if (!tag.includes(`Type="${IMAGE_REL_TYPE}"`)) return tag
+    const id = /\bId="([^"]+)"/.exec(tag)?.[1]
+    if (!id) return tag
+    const used = new RegExp(`\\br:(?:embed|link|id)="${escapeRegExp(id)}"`).test(documentXml)
+    return used ? tag : ''
+  })
 }
 
 function nextImageSeq(zip: JSZip): number {

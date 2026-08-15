@@ -908,6 +908,7 @@ export function pmDocToSavePlan(doc: PmNode, originalBlocks: Block[]): SavePlan 
         usedIndexes.add(idx)
         mapAnchor(idx)
         const original = originalByIndex.get(idx)!
+        const replacementImage = node.attrs?.genImage as NewImage | null
         if (original.blockRevision && !revision && original.originalXml) {
           changedCount++
           pushBlock({ kind: 'xml', xml: unwrapBlockRevisionXml(original.originalXml) })
@@ -945,10 +946,12 @@ export function pmDocToSavePlan(doc: PmNode, originalBlocks: Block[]): SavePlan 
             chartDisplay.heightPx !== original.chartDisplay?.heightPx)
             ? { w: chartDisplay.widthPx, h: chartDisplay.heightPx }
             : null
-        if (imagePatch && original.originalXml) {
+        if ((imagePatch || replacementImage) && original.originalXml) {
           changedCount++
-          let xml = patchImageParagraphXml(original.originalXml, imagePatch)
-          if (imagePatch.wrap !== undefined) {
+          let xml = imagePatch
+            ? patchImageParagraphXml(original.originalXml, imagePatch)
+            : original.originalXml
+          if (imagePatch?.wrap !== undefined) {
             const posOffset =
               imagePatch.posOffsetX !== undefined && imagePatch.posOffsetY !== undefined
                 ? { x: imagePatch.posOffsetX, y: imagePatch.posOffsetY }
@@ -958,10 +961,24 @@ export function pmDocToSavePlan(doc: PmNode, originalBlocks: Block[]): SavePlan 
                 ? { h: imagePatch.posH, v: imagePatch.posV }
                 : undefined
             xml = applyImageWrap(xml, imagePatch.wrap, posOffset, marginAlign)
-          } else if (imagePatch.posOffsetX !== undefined || imagePatch.posOffsetY !== undefined) {
+          } else if (
+            imagePatch &&
+            (imagePatch.posOffsetX !== undefined || imagePatch.posOffsetY !== undefined)
+          ) {
             // posOffset changed without wrap change: patchImageParagraphXml already rewrote it
           }
-          pushBlock({ kind: 'xml', xml })
+          pushBlock({
+            kind: 'xml',
+            xml,
+            ...(replacementImage
+              ? {
+                  replaceImage: {
+                    base64: replacementImage.base64,
+                    mime: replacementImage.mime,
+                  },
+                }
+              : {}),
+          })
         } else if (tableTexts && original.originalXml) {
           changedCount++
           pushBlock({ kind: 'xml', xml: patchTableCellTexts(original.originalXml, tableTexts) })

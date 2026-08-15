@@ -811,11 +811,10 @@ function RibbonInner({
 
   /**
    * Replace the selected image's bytes (shared by Replace Picture / remove background / crop).
-   * The original image's patch-save only supports size/alignment/wrap; swapping bytes must go
-   * through the genImage new-image embed branch, so docxIndex is cleared (on save the old
-   * block is treated as deleted, the new image is written at the same position, and
-   * alignment/wrap are inherited from attributes).
-   * Display size keeps the current width; height adapts to the new image's aspect ratio.
+   * Existing DOCX images keep their patch anchor so save can replace the package media in place;
+   * newly inserted images continue through the genImage embed branch. Keep both display
+   * dimensions when they already exist: an AI service may return a canvas a few pixels wider or
+   * taller, but applying the edit must not reflow the Word document or distort PDF pagination.
    */
   const applyPictureBytes = async (dataUrl: string) => {
     if (!canEdit) return
@@ -826,8 +825,12 @@ function RibbonInner({
     try {
       const natural = await imageSizeOf(dataUrl)
       const currentW = Number(attrs.imageWidthPx) || Math.min(natural.width, 620)
+      const currentH = Number(attrs.imageHeightPx)
       const w = Math.max(1, Math.round(currentW))
-      const h = Math.max(1, Math.round((currentW * natural.height) / natural.width))
+      const h = Math.max(
+        1,
+        Math.round(currentH > 0 ? currentH : (currentW * natural.height) / natural.width),
+      )
       editor
         .chain()
         .focus()
@@ -836,7 +839,6 @@ function RibbonInner({
           imageWidthPx: w,
           imageHeightPx: h,
           genImage: { base64: m[2], mime: m[1], widthPx: w, heightPx: h },
-          docxIndex: null,
         })
         .run()
     } catch {
