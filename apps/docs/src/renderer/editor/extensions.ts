@@ -1819,7 +1819,11 @@ function protectedDomSpec(node: PmNode): DomSpec {
       [
         'span',
         {
-          class: 'doc-img-wrap',
+          // A picture with an explicit Word extent must paint at that extent.
+          // Capping this shrink-to-fit wrapper at 100% made both the ribbon
+          // width control and the corner handle appear to stop working once
+          // the picture reached the text column.
+          class: `doc-img-wrap${imageWidthPx ? ' doc-img-sized' : ''}`,
           ...(imgWrapStyle ? { style: `display:inline-block;${imgWrapStyle}` } : {}),
         },
         ['img', imgAttrs],
@@ -2570,28 +2574,37 @@ function imageResizePlugin(): Plugin {
           const zoomEl = document.querySelector('.doc-zoom') as HTMLElement | null
           const zoom = zoomEl ? parseFloat(getComputedStyle(zoomEl).zoom || '1') || 1 : 1
           const startRect = img.getBoundingClientRect()
-          const startW = startRect.width / zoom
-          const ratio = startRect.height / startRect.width
+          const startNode = view.state.doc.nodeAt(pos)
+          if (!startNode) return false
+          // Prefer the model extent. The painted rect may have been squeezed
+          // by legacy max-width CSS, which would otherwise corrupt the aspect
+          // ratio as soon as a drag starts.
+          const modelW = Number(startNode.attrs.imageWidthPx)
+          const modelH = Number(startNode.attrs.imageHeightPx)
+          const startW = modelW > 0 ? modelW : startRect.width / zoom
+          const ratio =
+            modelW > 0 && modelH > 0
+              ? modelH / modelW
+              : startRect.width > 0
+                ? startRect.height / startRect.width
+                : 1
           const startX = event.clientX
           let moved = false
+          let lastWidth = startW
+          let pendingWidth: number | null = null
+          let frame: number | null = null
 
           const widthAt = (e: MouseEvent) => Math.max(24, startW + (e.clientX - startX) / zoom)
-          const onMove = (e: MouseEvent) => {
-            if (Math.abs(e.clientX - startX) < 1) return
-            moved = true
-            const w = widthAt(e)
-            img.style.width = `${w}px`
-            img.style.height = `${w * ratio}px`
-          }
-          const onUp = (e: MouseEvent) => {
-            window.removeEventListener('mousemove', onMove)
-            window.removeEventListener('mouseup', onUp)
-            // Selecting or merely pressing the handle must not rewrite a
-            // constrained image's model size. Commit only an actual drag.
-            if (!moved) return
-            const w = Math.round(widthAt(e))
+          const commitWidth = (rawWidth: number) => {
+            const w = Math.round(rawWidth)
             const node = view.state.doc.nodeAt(pos)
-            if (!node) return
+            if (!node || node.type.name !== 'docProtected') return
+            if (
+              Number(node.attrs.imageWidthPx) === w &&
+              Number(node.attrs.imageHeightPx) === Math.round(w * ratio)
+            ) {
+              return
+            }
             view.dispatch(
               view.state.tr.setNodeMarkup(pos, undefined, {
                 ...node.attrs,
@@ -2599,6 +2612,35 @@ function imageResizePlugin(): Plugin {
                 imageHeightPx: Math.round(w * ratio),
               }),
             )
+          }
+          const flushPending = () => {
+            frame = null
+            if (pendingWidth == null) return
+            const w = pendingWidth
+            pendingWidth = null
+            commitWidth(w)
+          }
+          const onMove = (e: MouseEvent) => {
+            if (Math.abs(e.clientX - startX) < 1) return
+            moved = true
+            lastWidth = widthAt(e)
+            pendingWidth = lastWidth
+            // Updating the document model keeps resizing alive even if
+            // pagination recreates the image NodeView in the middle of a drag.
+            if (frame == null) frame = requestAnimationFrame(flushPending)
+          }
+          const onUp = () => {
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+            // Selecting or merely pressing the handle must not rewrite a
+            // constrained image's model size. Commit only an actual drag.
+            if (!moved) return
+            if (frame != null) cancelAnimationFrame(frame)
+            frame = null
+            pendingWidth = null
+            // Always commit the last mousemove. A mouseup can arrive before
+            // the scheduled animation frame, especially during a fast drag.
+            commitWidth(lastWidth)
           }
           window.addEventListener('mousemove', onMove)
           window.addEventListener('mouseup', onUp)

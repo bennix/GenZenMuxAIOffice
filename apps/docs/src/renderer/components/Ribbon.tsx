@@ -276,6 +276,62 @@ export const PICTURE_CM_MIN = 0.03
 export const PICTURE_CM_MAX = 55.87
 export const clampPictureCm = (cm: number) => Math.min(PICTURE_CM_MAX, Math.max(PICTURE_CM_MIN, cm))
 
+/** A live picture-dimension field whose draft survives editor rerenders. */
+function PictureDimensionInput({
+  label,
+  unit,
+  valueCm,
+  onValue,
+}: {
+  label: string
+  unit: string
+  valueCm: number | null
+  onValue: (cm: number) => void
+}) {
+  const [draft, setDraft] = useState(valueCm !== null ? valueCm.toFixed(2) : '')
+  const focused = useRef(false)
+
+  useEffect(() => {
+    if (!focused.current) setDraft(valueCm !== null ? valueCm.toFixed(2) : '')
+  }, [valueCm])
+
+  const apply = (raw: string) => {
+    const value = Number.parseFloat(raw)
+    if (Number.isFinite(value) && value > 0) onValue(value)
+  }
+
+  return (
+    <label>
+      {label}
+      <input
+        type="number"
+        min={PICTURE_CM_MIN}
+        max={PICTURE_CM_MAX}
+        step={0.1}
+        value={draft}
+        onFocus={() => {
+          focused.current = true
+        }}
+        onChange={(e) => {
+          setDraft(e.target.value)
+          // Spinner buttons and valid typed values update the canvas at once.
+          apply(e.target.value)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') apply((e.target as HTMLInputElement).value)
+        }}
+        onBlur={(e) => {
+          focused.current = false
+          const value = Number.parseFloat(e.target.value)
+          if (Number.isFinite(value) && value > 0) onValue(value)
+          else setDraft(valueCm !== null ? valueCm.toFixed(2) : '')
+        }}
+      />
+      {unit}
+    </label>
+  )
+}
+
 /** swallows every command when the document is read-only (protected / read mode) */
 const NOOP_CHAIN = new Proxy(
   {},
@@ -1718,70 +1774,19 @@ function RibbonInner({
             <div className="ribbon-sep" />
             {/* ---- Size: height/width (cm, proportional) + reset ---- */}
             <div className="table-tool-group">
-              <div
-                className="table-tool-row table-size-inputs"
-                key={`${fs.imageWidthPx ?? ''}x${fs.imageHeightPx ?? ''}`}
-              >
-                <label>
-                  {t('ribbonPicHeight')}
-                  <input
-                    type="number"
-                    min={PICTURE_CM_MIN}
-                    max={PICTURE_CM_MAX}
-                    step={0.1}
-                    defaultValue={
-                      fs.imageHeightPx !== null ? (fs.imageHeightPx / PX_PER_CM).toFixed(2) : ''
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const v = parseFloat((e.target as HTMLInputElement).value)
-                        if (Number.isFinite(v) && v > 0) setPictureSizeCm('h', v)
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const v = parseFloat(e.target.value)
-                      const cur = fs.imageHeightPx !== null ? fs.imageHeightPx / PX_PER_CM : null
-                      if (
-                        Number.isFinite(v) &&
-                        v > 0 &&
-                        (cur === null || Math.abs(v - cur) > 0.01)
-                      ) {
-                        setPictureSizeCm('h', v)
-                      }
-                    }}
-                  />
-                  {t('ribbonCm')}
-                </label>
-                <label>
-                  {t('ribbonPicWidth')}
-                  <input
-                    type="number"
-                    min={PICTURE_CM_MIN}
-                    max={PICTURE_CM_MAX}
-                    step={0.1}
-                    defaultValue={
-                      fs.imageWidthPx !== null ? (fs.imageWidthPx / PX_PER_CM).toFixed(2) : ''
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const v = parseFloat((e.target as HTMLInputElement).value)
-                        if (Number.isFinite(v) && v > 0) setPictureSizeCm('w', v)
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const v = parseFloat(e.target.value)
-                      const cur = fs.imageWidthPx !== null ? fs.imageWidthPx / PX_PER_CM : null
-                      if (
-                        Number.isFinite(v) &&
-                        v > 0 &&
-                        (cur === null || Math.abs(v - cur) > 0.01)
-                      ) {
-                        setPictureSizeCm('w', v)
-                      }
-                    }}
-                  />
-                  {t('ribbonCm')}
-                </label>
+              <div className="table-tool-row table-size-inputs">
+                <PictureDimensionInput
+                  label={t('ribbonPicHeight')}
+                  unit={t('ribbonCm')}
+                  valueCm={fs.imageHeightPx !== null ? fs.imageHeightPx / PX_PER_CM : null}
+                  onValue={(value) => setPictureSizeCm('h', value)}
+                />
+                <PictureDimensionInput
+                  label={t('ribbonPicWidth')}
+                  unit={t('ribbonCm')}
+                  valueCm={fs.imageWidthPx !== null ? fs.imageWidthPx / PX_PER_CM : null}
+                  onValue={(value) => setPictureSizeCm('w', value)}
+                />
               </div>
               <div className="table-tool-row">
                 <button title={t('ribbonResetSizeTip')} onClick={() => void resetPictureSize()}>

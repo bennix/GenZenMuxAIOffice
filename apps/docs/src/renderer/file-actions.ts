@@ -58,7 +58,6 @@ import { isDocDirty } from './doc-dirty'
 import { createSaveSerializer } from './save-until-persisted'
 import { checkMissingFonts, collectDocFonts } from './font-check'
 import { defaultEastAsiaFontFor } from './font-list'
-import { hasPrintableHeaderFooter } from './pagination'
 import { showToast } from './components/toast-bus'
 import { exportBibTeX, normalizeRecord } from '@genoffice/citations'
 
@@ -841,58 +840,11 @@ export async function exportPdf(ctx: FileActionContext, outPath?: string): Promi
       return
     }
   }
-  // preview closed: mixed paper auto-opens the preview and uses the merge path; uniform paper exports directly
-  const sizeKey = (w: number, h: number) => `${w}x${h}`
-  const counts = new Map<string, { w: number; h: number; n: number }>()
-  const list =
-    ctx.sections.length > 0
-      ? ctx.sections.map((sec) => sec.settings)
-      : ctx.section
-        ? [ctx.section]
-        : []
-  for (const st of list) {
-    const key = sizeKey(st.pageWidth, st.pageHeight)
-    const cur = counts.get(key) ?? { w: st.pageWidth, h: st.pageHeight, n: 0 }
-    cur.n += 1
-    counts.set(key, cur)
-  }
-  // headers/footers exist once on the edit canvas (not once per page), so direct
-  // print would show them on the last page only — force the preview-merge path too
-  const mixedPaper = counts.size > 1
-  if (
-    mixedPaper ||
-    hasPrintableHeaderFooter({
-      edited: [
-        ctx.header,
-        ctx.footer,
-        ...(ctx.titlePg ? [ctx.hfVariants.headerFirst, ctx.hfVariants.footerFirst] : []),
-        ...(ctx.evenOddHf ? [ctx.hfVariants.headerEven, ctx.hfVariants.footerEven] : []),
-        ...Object.values(ctx.sectionHfEdits),
-      ],
-      sections: ctx.sections,
-      hfParts: doc.parsed.hfParts ?? undefined,
-      evenOddHf: ctx.evenOddHf,
-    })
-  ) {
-    ctx.setShowPagePreview(true)
-    ctx.pendingMixedExportRef.current = outPath ?? true
-    if (mixedPaper) ctx.setStatus(t('appMixedExportOpening'))
-    return
-  }
-  const major = [...counts.values()][0]
-  const result = await withUnzoomedPrintLayout(() =>
-    window.desktop.exportPdf(
-      doc.fileName,
-      major?.w ?? ctx.section?.pageWidth ?? 12240,
-      major?.h ?? ctx.section?.pageHeight ?? 15840,
-      outPath,
-    ),
-  )
-  ctx.setStatus(
-    result.ok
-      ? t('appExportedPdf', { path: result.path ?? '' })
-      : result.error
-        ? t('appExportPdfFailed', { error: result.error })
-        : t('appExportPdfCanceled'),
-  )
+  // Always print the pagination-preview snapshot. Directly printing the live
+  // editor asks Chromium to paginate a second time after page-gap removal;
+  // wide/resized pictures and floating objects can then land at a different
+  // size or position than the page the user saw. The preview clone is the
+  // single source of truth for both on-screen pagination and PDF output.
+  ctx.setShowPagePreview(true)
+  ctx.pendingMixedExportRef.current = outPath ?? true
 }

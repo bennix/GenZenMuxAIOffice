@@ -3709,6 +3709,16 @@ th.cell-rev-del {
   overflow: visible;
 }
 
+/* Keep image anchors measurable. A strictly zero-height top-level NodeView is
+   treated as an empty marker by Chromium's column/pagination layout; its
+   absolutely positioned child can then be culled after switching to “in
+   front of text” or “behind text”. One layout pixel preserves the anchor
+   without making the floating picture materially participate in text flow. */
+.doc-protected.doc-protected-floating[data-doc-protected='image'] {
+  height: 1px;
+  min-height: 1px;
+}
+
 .doc-protected.doc-protected-textboxes.ProseMirror-selectednode {
   border-color: var(--word-blue);
   outline: none;
@@ -4238,6 +4248,18 @@ th.cell-rev-del {
   position: relative;
   display: inline-block;
   max-width: 100%;
+}
+
+/* Explicit DOCX/image-editor dimensions are authoritative. Keeping the
+   wrapper capped at the text column made a larger model width invisible and
+   pinned the resize handle in place. Natural-size fallback images remain
+   responsive through the rule above. */
+.doc-img-wrap.doc-img-sized {
+  max-width: none;
+}
+
+.doc-img-wrap.doc-img-sized > .doc-protected-img {
+  max-width: none;
 }
 
 /* find option toggles (match case / whole word) */

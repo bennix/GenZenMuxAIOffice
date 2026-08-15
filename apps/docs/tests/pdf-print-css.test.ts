@@ -33,7 +33,12 @@ describe('direct PDF print layout', () => {
 
   it('exports at physical size independently of the editor view zoom', () => {
     expect(actions).toContain("zoomEl.style.setProperty('zoom', '1', 'important')")
-    expect(actions.match(/withUnzoomedPrintLayout\(\(\) =>/g)).toHaveLength(3)
+    expect(actions.match(/withUnzoomedPrintLayout\(\(\) =>/g)).toHaveLength(2)
+  })
+
+  it('uses the on-screen pagination snapshot as the PDF source of truth', () => {
+    expect(actions).toContain('Always print the pagination-preview snapshot')
+    expect(actions).not.toContain('uniform paper exports directly')
   })
 
   it('keeps pagination-preview clones at content width so centered objects do not shift right', () => {
