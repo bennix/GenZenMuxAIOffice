@@ -255,7 +255,7 @@ export function listEditFonts(): string[] {
     while pdf.js correctly exposes the visible '-'. Keep both engines on the visible
     representation; otherwise a paragraph containing a wrapped hyphen cannot be
     matched, and preserving the control code into a rebuilt font would make it vanish. */
-export const canonicalPdfiumText = (s: string) => s.replace(/\u0002/g, '-')
+export const canonicalPdfiumText = (s: string) => s.split('\u0002').join('-')
 
 /** Whitespace-insensitive, radical- and NFKC-folded comparison key. pdf.js and pdfium
     disagree on compatibility codepoints — some fonts' cmaps yield radical-block

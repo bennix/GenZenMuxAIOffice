@@ -1696,7 +1696,6 @@ export default function App() {
   useEffect(() => {
     setPageBlocks(new Map())
     clearBlockHover()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc])
 
   /** Cluster paragraph boxes for pages scrolled into view while edit-text mode is on.
