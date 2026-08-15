@@ -44,6 +44,7 @@ import type { HeaderFooterConfig, WatermarkConfig } from './stamps'
 import { buildSearchIndex, searchInIndex } from './search'
 import type { SearchIndex, SearchMatch } from './search'
 import { groupPageBlocks, isCompactCellStack, type TextBlock } from './text-block'
+import { dominantBackdrop } from './text-backdrop'
 import {
   joinBlockLines,
   mapLineRangeToBlock,
@@ -93,6 +94,44 @@ function measureTextWidth(text: string, font: string): number {
   if (!measureCtx) return 0
   measureCtx.font = font
   return measureCtx.measureText(text).width
+}
+
+function sampleTextBackdrop(anchor: HTMLElement | undefined): string | undefined {
+  if (!anchor) return undefined
+  const page = anchor.closest<HTMLElement>('.pdf-page')
+  const canvas = page?.querySelector<HTMLCanvasElement>('canvas')
+  const ctx = canvas?.getContext('2d', { willReadFrequently: true })
+  if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return undefined
+  const cb = canvas.getBoundingClientRect()
+  const ab = anchor.getBoundingClientRect()
+  if (cb.width <= 0 || cb.height <= 0) return undefined
+  const sx = canvas.width / cb.width
+  const sy = canvas.height / cb.height
+  const x1 = Math.max(0, Math.floor((ab.left - cb.left) * sx))
+  const x2 = Math.min(canvas.width - 1, Math.ceil((ab.right - cb.left) * sx))
+  const y1 = Math.max(0, Math.floor((ab.top - cb.top) * sy))
+  const y2 = Math.min(canvas.height - 1, Math.ceil((ab.bottom - cb.top) * sy))
+  if (x2 <= x1 || y2 <= y1) return undefined
+  const samples: [number, number, number, number][] = []
+  const push = (x: number, y: number) => {
+    try {
+      const p = ctx.getImageData(x, y, 1, 1).data
+      samples.push([p[0]!, p[1]!, p[2]!, p[3]!])
+    } catch {
+      // A failed read only disables this visual aid; saving remains unaffected.
+    }
+  }
+  const stepX = Math.max(1, Math.floor((x2 - x1) / 24))
+  const stepY = Math.max(1, Math.floor((y2 - y1) / 12))
+  for (let x = x1; x <= x2; x += stepX) {
+    push(x, Math.max(0, y1 - 2))
+    push(x, Math.min(canvas.height - 1, y2 + 2))
+  }
+  for (let y = y1; y <= y2; y += stepY) {
+    push(Math.max(0, x1 - 2), y)
+    push(Math.min(canvas.width - 1, x2 + 2), y)
+  }
+  return dominantBackdrop(samples)
 }
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4]
@@ -768,6 +807,10 @@ interface LocalTextEdit {
   /** The run's base ink (display-only, from the draft's probe): the pending preview
       shows the document's real color when the edit doesn't change it */
   baseInk?: string
+  /** Original face used by the renderer while an edit is pending. */
+  sourceFontCss?: string
+  /** Dominant page/cell background sampled before opening the editor. */
+  backdrop?: string
 }
 
 /** Area a pending edit must blank: the edit rect grown to the validated ink bounds */
@@ -819,6 +862,8 @@ interface TextDraft {
   /** Original PDF font's closest browser family, for faithful wrap measurement and
       live preview without turning it into a user font override on save. */
   sourceFontCss?: string
+  /** Page/cell background under this run, retained in edit and preview mode. */
+  backdrop?: string
   /** EDIT_FONTS id; undefined = automatic rebuild font */
   font?: string
   /** Style toggles; true = on, undefined = off (resolved via font variants at save) */
@@ -853,11 +898,10 @@ interface TextDraft {
 const seedDraftColors = (d: TextDraft, v: TextEditValidation): TextDraft => {
   let next = d
   if (v.fontCss && !next.sourceFontCss) next = { ...next, sourceFontCss: v.fontCss }
-  // Near-white ink would vanish on the editor's white background; keep default ink
+  // Keep the exact source ink, including white text on dark table cells. The editor
+  // now carries the sampled page/cell backdrop instead of forcing a white surface.
   if (v.baseColor && !next.color && !next.seedInk) {
-    const [r, g, b] = v.baseColor
-    if ((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 <= 0.85)
-      next = { ...next, seedInk: rgb255ToHex(v.baseColor) }
+    next = { ...next, seedInk: rgb255ToHex(v.baseColor) }
   }
   if (!v.colorRuns || v.colorRuns.length === 0) return next
   if (next.charColors || next.seedColorRuns || next.value !== next.oldText) return next
@@ -1993,6 +2037,7 @@ export default function App() {
       editId: fold?.editId,
       foldedIds: fold && fold.foldedIds.length > 0 ? fold.foldedIds : undefined,
       foldBase: fold?.value,
+      backdrop: sampleTextBackdrop(fallbackSpan),
       block: {
         leftPt: block.rect[0],
         firstBaseline: block.lines[0]!.y,
@@ -2198,7 +2243,14 @@ export default function App() {
     setSelected(null)
     draftSelectedRef.current = false
     draftPreselectRef.current = preselect ?? null
-    setTextDraft({ origIdx, rect, oldText, fontSize, value: oldText })
+    setTextDraft({
+      origIdx,
+      rect,
+      oldText,
+      fontSize,
+      value: oldText,
+      backdrop: sampleTextBackdrop(span),
+    })
     // The span rect is a font-metric layout box; the run's glyph ink can poke out of it.
     // Fetch the engine's real ink bounds so the editor/preview cover hides the old run fully.
     if (filePath) {
@@ -2389,10 +2441,27 @@ export default function App() {
     return d.editId
       ? dropFolded(edits).map((e) =>
           e.id === d.editId
-            ? { ...e, input, cover: d.cover ?? e.cover, baseInk: d.seedInk ?? e.baseInk }
+            ? {
+                ...e,
+                input,
+                cover: d.cover ?? e.cover,
+                baseInk: d.seedInk ?? e.baseInk,
+                sourceFontCss: d.sourceFontCss ?? e.sourceFontCss,
+                backdrop: d.backdrop ?? e.backdrop,
+              }
             : e,
         )
-      : [...edits, { id: newId(), input, cover: d.cover, baseInk: d.seedInk }]
+      : [
+          ...edits,
+          {
+            id: newId(),
+            input,
+            cover: d.cover,
+            baseInk: d.seedInk,
+            sourceFontCss: d.sourceFontCss,
+            backdrop: d.backdrop,
+          },
+        ]
   }
 
   /** Current pending text edits for async callbacks (validation results land after renders) */
@@ -2414,7 +2483,18 @@ export default function App() {
           showNotice(t('textEditNoMatch'))
         } else if (v.bounds) {
           const bounds = v.bounds
-          setTextEdits((prev) => prev.map((e) => (e.id === edit.id ? { ...e, cover: bounds } : e)))
+          setTextEdits((prev) =>
+            prev.map((e) =>
+              e.id === edit.id
+                ? {
+                    ...e,
+                    cover: bounds,
+                    sourceFontCss: e.sourceFontCss ?? v.fontCss,
+                    baseInk: e.baseInk ?? (v.baseColor ? rgb255ToHex(v.baseColor) : undefined),
+                  }
+                : e,
+            ),
+          )
         }
       })
       .catch(() => {
@@ -4533,6 +4613,8 @@ export default function App() {
                                 }
                                 if (te.input.newFont) {
                                   style.fontFamily = EDIT_FONT_BY_ID.get(te.input.newFont)?.css
+                                } else if (te.sourceFontCss) {
+                                  style.fontFamily = te.sourceFontCss
                                 }
                                 if (te.input.newBold) style.fontWeight = 700
                                 if (te.input.newItalic) style.fontStyle = 'italic'
@@ -4551,6 +4633,7 @@ export default function App() {
                                 }${fs}px ${
                                   (te.input.newFont &&
                                     EDIT_FONT_BY_ID.get(te.input.newFont)?.css) ||
+                                  te.sourceFontCss ||
                                   getComputedStyle(document.body).fontFamily
                                 }`
                                 const widest = Math.max(
@@ -4575,14 +4658,17 @@ export default function App() {
                                     {te.cover && (
                                       <div
                                         className="pdf-textedit-cover"
-                                        style={inflateCss(
-                                          pdfRectToCss(
-                                            geom,
-                                            unionCover(te.input.rect, te.cover),
-                                            scale,
+                                        style={{
+                                          ...inflateCss(
+                                            pdfRectToCss(
+                                              geom,
+                                              unionCover(te.input.rect, te.cover),
+                                              scale,
+                                            ),
+                                            1.5,
                                           ),
-                                          1.5,
-                                        )}
+                                          ...(te.backdrop ? { background: te.backdrop } : {}),
+                                        }}
                                       />
                                     )}
                                     <div
@@ -4719,6 +4805,8 @@ export default function App() {
                                             editId: te.id,
                                             cover: te.cover,
                                             seedInk: te.baseInk,
+                                            sourceFontCss: te.sourceFontCss,
+                                            backdrop: te.backdrop,
                                             block: blk,
                                           })
                                         } else {
@@ -4826,14 +4914,19 @@ export default function App() {
                                     {textDraft.cover && (
                                       <div
                                         className="pdf-textedit-cover"
-                                        style={inflateCss(
-                                          pdfRectToCss(
-                                            geom,
-                                            unionCover(textDraft.rect, textDraft.cover),
-                                            scale,
+                                        style={{
+                                          ...inflateCss(
+                                            pdfRectToCss(
+                                              geom,
+                                              unionCover(textDraft.rect, textDraft.cover),
+                                              scale,
+                                            ),
+                                            1.5,
                                           ),
-                                          1.5,
-                                        )}
+                                          ...(textDraft.backdrop
+                                            ? { background: textDraft.backdrop }
+                                            : {}),
+                                        }}
                                       />
                                     )}
                                     <div
@@ -4958,6 +5051,9 @@ export default function App() {
                                               }
                                             : {}),
                                           ...(draftCss ? { fontFamily: draftCss } : {}),
+                                          ...(textDraft.backdrop
+                                            ? { background: textDraft.backdrop }
+                                            : {}),
                                           ...(textDraft.bold ? { fontWeight: 700 } : {}),
                                           ...(textDraft.italic ? { fontStyle: 'italic' } : {}),
                                         }}

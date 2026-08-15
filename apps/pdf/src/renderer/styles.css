@@ -1303,7 +1303,7 @@ button {
   overflow: hidden;
   white-space: pre;
   line-height: 1;
-  background: var(--pdf-textedit-paper);
+  background: transparent;
   color: var(--pdf-textedit-ink);
   cursor: pointer;
 }
