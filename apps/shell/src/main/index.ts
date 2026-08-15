@@ -1806,6 +1806,17 @@ function registerHomeIpc(): void {
     if (!result.canceled && result.filePaths[0]) openDocumentPath(result.filePaths[0])
   })
 
+  ipcMain.handle(HOME_CHANNELS.browsePdf, async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) ?? shellWindow
+    if (!win) return
+    const result = await showOpenDialogWithMemory(dialog, win, {
+      title: tm('dlgOpenTitle'),
+      filters: [{ name: tm('filterPdf'), extensions: ['pdf'] }],
+      properties: ['openFile'],
+    })
+    if (!result.canceled && result.filePaths[0]) openDocumentPath(result.filePaths[0])
+  })
+
   ipcMain.handle(HOME_CHANNELS.newDoc, (_event, opts?: { projectId?: string }) => {
     if (opts?.projectId && opts.projectId !== 'default') {
       pendingNewFileProject.set('doc', opts.projectId)

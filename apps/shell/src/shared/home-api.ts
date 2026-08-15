@@ -71,6 +71,8 @@ export interface HomeApi {
   openPath(path: string): Promise<void>
   /** file picker accepting every supported extension, then routes */
   browse(): Promise<void>
+  /** PDF-only picker, then opens the selected file in the PDF editor */
+  browsePdf(): Promise<void>
   /** open a docs window at its start screen */
   newDoc(opts?: { projectId?: string }): Promise<void>
   /** open a sheets window */
@@ -237,6 +239,7 @@ export const HOME_CHANNELS = {
   toggleStar: 'home:toggle-star',
   openPath: 'home:open-path',
   browse: 'home:browse',
+  browsePdf: 'home:browse-pdf',
   newDoc: 'home:new-doc',
   newSheet: 'home:new-sheet',
   newSlide: 'home:new-slide',

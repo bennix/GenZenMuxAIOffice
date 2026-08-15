@@ -75,6 +75,9 @@ const homeApi: HomeApi = {
   async browse() {
     await ipcRenderer.invoke(HOME_CHANNELS.browse)
   },
+  async browsePdf() {
+    await ipcRenderer.invoke(HOME_CHANNELS.browsePdf)
+  },
   async newDoc(opts) {
     await ipcRenderer.invoke(HOME_CHANNELS.newDoc, opts)
   },

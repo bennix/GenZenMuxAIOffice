@@ -1405,6 +1405,7 @@ export function Home() {
     { ext: 'xlsx', title: t('newSheet'), sub: '.xlsx', action: handleNewSheet },
     { ext: 'pptx', title: t('newSlide'), sub: '.pptx', action: handleNewSlide },
     { ext: 'md', title: t('newMarkdown'), sub: '.md', action: handleNewMarkdown },
+    { ext: 'pdf', title: 'AI PDF', sub: '.pdf', action: () => window.aiOffice.browsePdf() },
   ]
 
   function renderQuickCards() {

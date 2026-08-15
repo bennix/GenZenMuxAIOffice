@@ -1,5 +1,11 @@
 import type { Lang } from '@genoffice/i18n'
-import type { AiSettings, AiStreamChunk, AiStreamRequest } from '@genoffice/ai-provider'
+import type {
+  AiChatRequest,
+  AiChatResponse,
+  AiSettings,
+  AiStreamChunk,
+  AiStreamRequest,
+} from '@genoffice/ai-provider'
 
 export const PDF_CHANNELS = {
   consumePending: 'pdf:consume-pending',
@@ -167,6 +173,9 @@ export interface TextEditValidation {
   /** Base fill color of the matched run (its first object in reading order), for
       display while editing — a uniformly colored run has no colorRuns to seed from */
   baseColor?: [number, number, number]
+  /** Closest CSS family class inferred from the original PDF font. Used only for
+      editor measurement/preview; saving still resolves the actual PDF font. */
+  fontCss?: string
 }
 
 /** Curated fonts selectable for rebuilt text runs. Single-face .ttf on every platform we
@@ -359,6 +368,7 @@ export type ExportImagesResult =
 /** AI channels are app-wide shared ipcMain handlers (shell registers via docs-main registerAiIpc); pass-through only */
 export const AI_CHANNELS = {
   getSettings: 'ai:get-settings',
+  chat: 'ai:chat',
   stream: 'ai:stream',
   streamChunk: 'ai:stream-chunk',
   streamCancel: 'ai:stream-cancel',
@@ -432,6 +442,7 @@ export interface PdfApi {
   getTheme(): Promise<UiTheme>
   onThemeChanged(handler: (theme: UiTheme) => void): () => void
   getAiSettings(): Promise<AiSettings>
+  aiChat(request: AiChatRequest): Promise<AiChatResponse>
   aiStream(request: AiStreamRequest): Promise<void>
   aiStreamCancel(requestId: string): Promise<void>
   onAiStream(handler: (chunk: AiStreamChunk) => void): () => void

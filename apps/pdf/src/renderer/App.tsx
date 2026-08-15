@@ -35,6 +35,7 @@ import { OutlinePanel } from './OutlinePanel'
 import type { OutlineNode } from './OutlinePanel'
 import { printPdf } from './print'
 import { PropertiesDialog } from './PropertiesDialog'
+import { PdfEquationDialog } from './PdfEquationDialog'
 import { SignatureDialog, fileToCanvas } from './SignatureDialog'
 import type { SignatureData } from './SignatureDialog'
 import { StampDialog } from './StampDialog'
@@ -815,6 +816,9 @@ interface TextDraft {
   /** The run's base ink in the document (async, from the open probe). Display-only:
       the editor/preview text shows the real color; never committed as a change. */
   seedInk?: string
+  /** Original PDF font's closest browser family, for faithful wrap measurement and
+      live preview without turning it into a user font override on save. */
+  sourceFontCss?: string
   /** EDIT_FONTS id; undefined = automatic rebuild font */
   font?: string
   /** Style toggles; true = on, undefined = off (resolved via font variants at save) */
@@ -848,6 +852,7 @@ interface TextDraft {
     rebuild still preserves the colors on save). */
 const seedDraftColors = (d: TextDraft, v: TextEditValidation): TextDraft => {
   let next = d
+  if (v.fontCss && !next.sourceFontCss) next = { ...next, sourceFontCss: v.fontCss }
   // Near-white ink would vanish on the editor's white background; keep default ink
   if (v.baseColor && !next.color && !next.seedInk) {
     const [r, g, b] = v.baseColor
@@ -1205,6 +1210,7 @@ export default function App() {
   const [order, setOrder] = useState<number[] | null>(null)
   const [metadata, setMetadata] = useState<MetadataInput | null>(null)
   const [stampDlg, setStampDlg] = useState(false)
+  const [equationDlg, setEquationDlg] = useState(false)
   const [propsDlg, setPropsDlg] = useState(false)
   const [protectDlg, setProtectDlg] = useState(false)
   const [protectPassword, setProtectPassword] = useState('')
@@ -2261,6 +2267,7 @@ export default function App() {
       const size = d.size ?? d.fontSize
       const css =
         (d.font ? EDIT_FONT_BY_ID.get(d.font)?.css : undefined) ??
+        d.sourceFontCss ??
         getComputedStyle(document.body).fontFamily
       const cssStyle = `${d.italic ? 'italic ' : ''}${d.bold ? 'bold' : ''}`.trim()
       lineLeading = d.block.lineHeight * (size / d.fontSize)
@@ -4167,6 +4174,21 @@ export default function App() {
                     </span>
                     {t('editImage')}
                   </button>
+                  <button
+                    className={`rb-big${equationDlg ? ' active' : ''}`}
+                    disabled={readOnly}
+                    data-tip={
+                      zhUi
+                        ? '输入 LaTeX，或由 ZenMux 从图片识别公式'
+                        : 'Enter LaTeX or recognize a formula image with ZenMux'
+                    }
+                    onClick={() => setEquationDlg(true)}
+                  >
+                    <span className="rb-big-icon">
+                      <IconEditText />
+                    </span>
+                    {zhUi ? '公式' : 'Equation'}
+                  </button>
                 </div>
               </div>
               <div className="ribbon-sep" />
@@ -4740,7 +4762,7 @@ export default function App() {
                                 const lines = textDraft.value.split('\n')
                                 const draftCss = textDraft.font
                                   ? EDIT_FONT_BY_ID.get(textDraft.font)?.css
-                                  : undefined
+                                  : textDraft.sourceFontCss
                                 const bodyFamily = getComputedStyle(document.body).fontFamily
                                 const blk = textDraft.block
                                 const sizePt = textDraft.size ?? textDraft.fontSize
@@ -5359,6 +5381,17 @@ export default function App() {
             )}
             {stampDlg && (
               <StampDialog t={t} onCancel={() => setStampDlg(false)} onApply={applyStamps} />
+            )}
+            {equationDlg && (
+              <PdfEquationDialog
+                onClose={() => setEquationDlg(false)}
+                onPlace={({ base64, width, height }) => {
+                  setEquationDlg(false)
+                  setEditTextMode(false)
+                  setEditImageMode(false)
+                  setImagePick({ kind: 'image', image: base64, width, height })
+                }}
+              />
             )}
             {protectDlg && (
               <div className="pdf-modal-mask" onClick={() => !protectBusy && setProtectDlg(false)}>

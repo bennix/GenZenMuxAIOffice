@@ -857,6 +857,24 @@ function fontString(m: Pdfium, read: (buf: number, len: number) => number): stri
   }
 }
 
+function previewFontCss(m: Pdfium, font: number): string | undefined {
+  if (!font) return undefined
+  const ps = fontString(m, (b, l) => m._FPDFFont_GetBaseFontName(font, b, l)).replace(
+    /^[A-Z]{6}\+/,
+    '',
+  )
+  const family = fontString(m, (b, l) => m._FPDFFont_GetFamilyName(font, b, l))
+  const name = `${ps} ${family}`.toLowerCase()
+  if (/courier|mono|consol|typewriter|code/.test(name)) return "'Courier New', monospace"
+  if (
+    /times|serif|cambria|georgia|garamond|palatino|minion|baskerville|didot|song|ming|simsun|宋|明/.test(
+      name,
+    )
+  )
+    return "'Times New Roman', Times, serif"
+  return "Arial, 'Helvetica Neue', sans-serif"
+}
+
 /** Font bytes for a rebuilt run, best fidelity first. Explicit choice: that face when its
     cmap covers every replacement char (chars it can't map would subset into .notdef boxes).
     No choice ("keep original"): the run's own embedded font when its subset already holds
@@ -950,7 +968,47 @@ async function rebuildFontBytes(
       }
     }
   }
-  const fallback = loadFallbackFont()
+  // If the original face is unavailable (common for PDFs authored with Cambria,
+  // Minion, corporate fonts, or renamed subset fonts), do not immediately flatten
+  // it to the regular sans-serif Unicode fallback. Pick the closest bundled/system
+  // edit face by the original font's family class and style first. This cannot make
+  // an unavailable proprietary face magically identical, but it preserves the
+  // document's serif/mono character and bold/italic shape instead of producing the
+  // conspicuous Arial-Regular replacement that prompted this fix.
+  let fallback: Buffer | null = null
+  if (font) {
+    const ps = fontString(m, (b, l) => m._FPDFFont_GetBaseFontName(font, b, l)).replace(
+      /^[A-Z]{6}\+/,
+      '',
+    )
+    const family = fontString(m, (b, l) => m._FPDFFont_GetFamilyName(font, b, l))
+    const name = `${ps} ${family}`.toLowerCase()
+    const fallbackStyle: EditFontStyle =
+      /bold|semibold|demi|black|heavy/.test(name) && /italic|oblique/.test(name)
+        ? 'bolditalic'
+        : /bold|semibold|demi|black|heavy/.test(name)
+          ? 'bold'
+          : /italic|oblique/.test(name)
+            ? 'italic'
+            : 'regular'
+    const fallbackFamily = /courier|mono|consol|typewriter|code/.test(name)
+      ? 'courier'
+      : /times|serif|cambria|georgia|garamond|palatino|minion|baskerville|didot|song|ming|simsun|宋|明/.test(
+            name,
+          )
+        ? 'times'
+        : 'arial'
+    for (const s of fallbackStyle === 'regular'
+      ? (['regular'] as const)
+      : ([fallbackStyle, 'regular'] as const)) {
+      const candidate = loadEditFont(fallbackFamily, s)
+      if (candidate && fontCoversText(candidate, drawn)) {
+        fallback = candidate
+        break
+      }
+    }
+  }
+  fallback ??= loadFallbackFont()
   // Chars beyond even the fallback face (emoji, rare CJK extensions) would embed as
   // missing glyphs and then fail read-back verification, blocking the whole save —
   // reject this one edit instead (it is reported as skipped, everything else saves)
@@ -958,6 +1016,33 @@ async function rebuildFontBytes(
     throw new Error('the replacement contains characters no available font can draw')
   }
   return subsetTtf(fallback, drawn)
+}
+
+/** Original object whose style should seed newly typed characters. The old code
+    always used the left-most object in the match, so editing the regular body after
+    a bold lead-in rebuilt it with the lead-in's font (and an unavailable lead-in
+    face then fell all the way to Arial). Use the first changed folded character;
+    pure insertions inherit the preceding object, except at the start of the run. */
+function rebuildAnchor(matches: PageTextObj[], newText: string): PageTextObj {
+  const ordered = readingOrder(matches)
+  const oldUnits = ordered.flatMap((o) => foldMap(o.text).units)
+  const nextUnits = foldMap(newText).units
+  let prefix = 0
+  while (
+    prefix < oldUnits.length &&
+    prefix < nextUnits.length &&
+    oldUnits[prefix] === nextUnits[prefix]
+  )
+    prefix++
+  const insertion = oldUnits.length < nextUnits.length && prefix === oldUnits.length
+  const wanted = insertion && prefix > 0 ? prefix - 1 : Math.min(prefix, oldUnits.length - 1)
+  let at = 0
+  for (const o of ordered) {
+    const n = foldMap(o.text).units.length
+    if (wanted < at + n) return o
+    at += n
+  }
+  return ordered[0]!
 }
 
 /** Extra leading between stacked lines, multiple of the font size (matches the preview CSS) */
@@ -1253,16 +1338,20 @@ async function rebuildRun(
   newText: string,
   textPage: number,
 ): Promise<boolean> {
-  const anchor = matches.reduce((a, b) => (b.bounds[0] < a.bounds[0] ? b : a))
+  // Geometry must stay anchored at the run's visual left edge; font/style comes
+  // from the object at the edit point. Keeping these separate avoids shifting a
+  // fragment edit when its changed text lives in a later object.
+  const layoutAnchor = matches.reduce((a, b) => (b.bounds[0] < a.bounds[0] ? b : a))
+  const styleAnchor = rebuildAnchor(matches, newText)
   const matPtr = m._malloc(24)
   const sizePtr = m._malloc(4)
   const colPtr = m._malloc(16)
   const widthPtr = m._malloc(4)
   try {
-    m._FPDFPageObj_GetMatrix(anchor.obj, matPtr)
+    m._FPDFPageObj_GetMatrix(layoutAnchor.obj, matPtr)
     let matrix = Array.from(m.HEAPF32.subarray(matPtr >> 2, (matPtr >> 2) + 6))
     let fontSize = edit.fontSize
-    if (m._FPDFTextObj_GetFontSize(anchor.obj, sizePtr)) fontSize = m.HEAPF32[sizePtr >> 2]!
+    if (m._FPDFTextObj_GetFontSize(styleAnchor.obj, sizePtr)) fontSize = m.HEAPF32[sizePtr >> 2]!
     if (edit.newFontSize !== undefined && edit.newFontSize > 0) fontSize = edit.newFontSize
     if (edit.origin) {
       // Paragraph rebuild: the renderer measured wrap width, leading and x offsets
@@ -1275,7 +1364,7 @@ async function rebuildRun(
         edit.newFontSize !== undefined && edit.newFontSize > 0 ? edit.newFontSize : edit.fontSize
     }
     const hasColor = m._FPDFPageObj_GetFillColor(
-      anchor.obj,
+      styleAnchor.obj,
       colPtr,
       colPtr + 4,
       colPtr + 8,
@@ -1320,7 +1409,7 @@ async function rebuildRun(
     let font = 0
     let usedTruetype = true
     const loadRebuild = async (text: string) => {
-      const fontBytes = await rebuildFontBytes(m, anchor.font, edit, text.trim() ? text : 'x')
+      const fontBytes = await rebuildFontBytes(m, styleAnchor.font, edit, text.trim() ? text : 'x')
       const fontPtr = m._malloc(fontBytes.length)
       m.HEAPU8.set(fontBytes, fontPtr)
       font = m._FPDFText_LoadFont(
@@ -1829,6 +1918,7 @@ async function validateTextEditsInner(
                   }))
                 : undefined,
             baseColor,
+            fontCss: previewFontCss(m, first.font),
           }
         }
       } finally {

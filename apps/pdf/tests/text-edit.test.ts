@@ -104,6 +104,49 @@ describe('applyTextEdits', () => {
     expect(raw).not.toContain('ArialUnicodeMS')
   })
 
+  it('keeps a mixed-style lead-in and inherits the edited body style', async () => {
+    const doc = await PDFDocument.create()
+    const page = doc.addPage([595, 842])
+    const leadFont = await doc.embedFont(StandardFonts.TimesRomanBold)
+    const bodyFont = await doc.embedFont(StandardFonts.TimesRoman)
+    const lead = 'Critical finding. '
+    const body = 'The original supporting sentence.'
+    const x = 50
+    const y = 700
+    page.drawText(lead, { x, y, size: 18, font: leadFont })
+    const bodyX = x + leadFont.widthOfTextAtSize(lead, 18)
+    page.drawText(body, { x: bodyX, y, size: 12, font: bodyFont })
+    const right = bodyX + bodyFont.widthOfTextAtSize(body, 12)
+    const bytes = await doc.save({ useObjectStreams: false })
+    const replacement = 'The revised evidence remains incomplete.'
+    const out = await applyAll(bytes, [
+      {
+        pageIndex: 0,
+        rect: [45, 694, right + 5, 723],
+        oldText: lead + body,
+        newText: lead + replacement,
+        fontSize: 12,
+      },
+    ])
+    expect((await extractText(out)).replace(/\s+/g, ' ').trim()).toBe((lead + replacement).trim())
+    const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const reopened = await getDocument({ data: out.slice(), useSystemFonts: true }).promise
+    try {
+      const content = await (await reopened.getPage(1)).getTextContent()
+      const items = content.items.filter(
+        (i): i is { str: string; transform: number[] } => 'str' in i && i.str.trim().length > 0,
+      )
+      const leadItem = items.find((i) => i.str.includes('Critical finding'))
+      const bodyItem = items.find((i) => i.str.includes('revised evidence'))
+      expect(leadItem?.transform[3]).toBeCloseTo(18, 1)
+      expect(bodyItem?.transform[3]).toBeCloseTo(12, 1)
+      // The edited body must not silently degrade to the regular sans Unicode fallback.
+      expect(Buffer.from(out).toString('latin1')).not.toContain('ArialUnicodeMS')
+    } finally {
+      await reopened.loadingTask.destroy()
+    }
+  })
+
   it('resolves the same-named installed font when the subset lacks the new glyphs', async () => {
     if (!existsSync('/System/Library/Fonts/Supplemental/Arial.ttf')) return
     const f = await makeFixture('Amount due 500')

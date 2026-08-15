@@ -108,8 +108,22 @@ function clampPanelWidth(w: number): number {
 }
 
 function loadPanelWidth(): number {
-  const saved = Number(localStorage.getItem(PANEL_WIDTH_KEY))
+  const saved = Number(
+    typeof globalThis.localStorage?.getItem === 'function'
+      ? globalThis.localStorage.getItem(PANEL_WIDTH_KEY)
+      : NaN,
+  )
   return Number.isFinite(saved) && saved > 0 ? clampPanelWidth(saved) : PANEL_WIDTH_DEFAULT
+}
+
+const storageGet = (key: string): string | null =>
+  typeof globalThis.localStorage?.getItem === 'function'
+    ? globalThis.localStorage.getItem(key)
+    : null
+
+const storageSet = (key: string, value: string): void => {
+  if (typeof globalThis.localStorage?.setItem === 'function')
+    globalThis.localStorage.setItem(key, value)
 }
 
 /** persisted UI preference: highlight AI edits in yellow and ask for confirmation */
@@ -285,9 +299,7 @@ export function AiPanel({
   const [chat, setChat] = useState<ChatEntry[]>([])
   /** Past conversation restored from JSONL (read-only transcript, not fed to the model) */
   const [historicChat, setHistoricChat] = useState<ChatEntry[]>([])
-  const [trackChanges, setTrackChanges] = useState(
-    () => localStorage.getItem(TRACK_CHANGES_KEY) === '1',
-  )
+  const [trackChanges, setTrackChanges] = useState(() => storageGet(TRACK_CHANGES_KEY) === '1')
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null)
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
   const [attachNotice, setAttachNotice] = useState<string | null>(null)
@@ -845,7 +857,7 @@ export function AiPanel({
   const toggleTrackChanges = () => {
     const next = !trackChanges
     setTrackChanges(next)
-    localStorage.setItem(TRACK_CHANGES_KEY, next ? '1' : '0')
+    storageSet(TRACK_CHANGES_KEY, next ? '1' : '0')
     // switching off keeps nothing pending: accept whatever is still highlighted
     if (!next) acceptChanges()
   }
@@ -885,7 +897,7 @@ export function AiPanel({
       document.body.style.userSelect = ''
       setResizing(false)
       setPanelWidth((w) => {
-        localStorage.setItem(PANEL_WIDTH_KEY, String(Math.round(w)))
+        storageSet(PANEL_WIDTH_KEY, String(Math.round(w)))
         return w
       })
     }
