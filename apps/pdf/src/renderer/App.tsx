@@ -35,7 +35,6 @@ import { OutlinePanel } from './OutlinePanel'
 import type { OutlineNode } from './OutlinePanel'
 import { printPdf } from './print'
 import { PropertiesDialog } from './PropertiesDialog'
-import { PdfEquationDialog } from './PdfEquationDialog'
 import { SignatureDialog, fileToCanvas } from './SignatureDialog'
 import type { SignatureData } from './SignatureDialog'
 import { StampDialog } from './StampDialog'
@@ -425,12 +424,6 @@ const IconStrike = () => (
     <path d="M4.67 12.28 L19.33 12.28" strokeWidth={1.65} />
   </Icon>
 )
-const IconEditText = () => (
-  <Icon>
-    <path d="M5 5.5 L14.5 5.5 M9.75 5.5 L9.75 15.5 M7.5 15.5 L12 15.5" />
-    <path d="M16.7 10.3 L19.7 13.3 L13.4 19.6 L10.4 20.1 L10.9 17.1 Z" />
-  </Icon>
-)
 const IconInk = () => (
   <Icon>
     <path d="M16.15 4.85 L19.15 7.85 L8.9 18.1 L4.9 19.1 L5.9 15.1 Z" />
@@ -478,14 +471,6 @@ const IconInsertImage = () => (
     <circle cx="8" cy="9.2" r="1.1" />
     <path d="M4.8 13.6 L8 11.2 L11 13.4 L13.2 11.8 L15.8 13.9" />
     <path d="M18.6 13.4 V19 M15.8 16.2 H21.4" />
-  </Icon>
-)
-const IconEditImage = () => (
-  <Icon>
-    <rect x="4.5" y="6" width="12.5" height="10" rx="1" />
-    <circle cx="8.3" cy="9.4" r="1.1" />
-    <path d="M4.8 14 L8.3 11.4 L11.5 13.7 L13.8 12" />
-    <path d="M14.2 18.9 L19.7 13.4 A1.06 1.06 0 0 0 18.2 11.9 L12.7 17.4 L12.2 19.4 Z" />
   </Icon>
 )
 const IconNight = () => (
@@ -1254,7 +1239,6 @@ export default function App() {
   const [order, setOrder] = useState<number[] | null>(null)
   const [metadata, setMetadata] = useState<MetadataInput | null>(null)
   const [stampDlg, setStampDlg] = useState(false)
-  const [equationDlg, setEquationDlg] = useState(false)
   const [propsDlg, setPropsDlg] = useState(false)
   const [protectDlg, setProtectDlg] = useState(false)
   const [protectPassword, setProtectPassword] = useState('')
@@ -3889,27 +3873,6 @@ export default function App() {
     </button>
   )
 
-  const editTextBtn = (
-    <button
-      className={`rb-big${editTextMode ? ' active' : ''}`}
-      disabled={readOnly}
-      data-tip={t('editTextHint')}
-      onClick={() => {
-        setTextDraft(null)
-        setDrawTool(null)
-        setPendingSign(null)
-        setImagePick(null)
-        setEditImageMode(false)
-        setEditTextMode((v) => !v)
-      }}
-    >
-      <span className="rb-big-icon">
-        <IconEditText />
-      </span>
-      {t('editText')}
-    </button>
-  )
-
   const viewNavGroup = (
     <div className="ribbon-group">
       <div className="ribbon-group-items">
@@ -4074,10 +4037,7 @@ export default function App() {
               {markupGroup}
               <div className="ribbon-sep" />
               <div className="ribbon-group">
-                <div className="ribbon-group-items">
-                  {searchBtn}
-                  {editTextBtn}
-                </div>
+                <div className="ribbon-group-items">{searchBtn}</div>
               </div>
               <div className="ribbon-sep" />
               {pageZoomGroup}
@@ -4233,7 +4193,6 @@ export default function App() {
             <>
               <div className="ribbon-group">
                 <div className="ribbon-group-items">
-                  {editTextBtn}
                   <button
                     className={`rb-big${imagePick ? ' active' : ''}`}
                     disabled={readOnly}
@@ -4244,39 +4203,6 @@ export default function App() {
                       <IconInsertImage />
                     </span>
                     {t('insertImage')}
-                  </button>
-                  <button
-                    className={`rb-big${editImageMode ? ' active' : ''}`}
-                    disabled={readOnly}
-                    data-tip={t('editImageHint')}
-                    onClick={() => {
-                      setEditTextMode(false)
-                      setTextDraft(null)
-                      setDrawTool(null)
-                      setPendingSign(null)
-                      setImagePick(null)
-                      setEditImageMode((v) => !v)
-                    }}
-                  >
-                    <span className="rb-big-icon">
-                      <IconEditImage />
-                    </span>
-                    {t('editImage')}
-                  </button>
-                  <button
-                    className={`rb-big${equationDlg ? ' active' : ''}`}
-                    disabled={readOnly}
-                    data-tip={
-                      zhUi
-                        ? '输入 LaTeX，或由 ZenMux 从图片识别公式'
-                        : 'Enter LaTeX or recognize a formula image with ZenMux'
-                    }
-                    onClick={() => setEquationDlg(true)}
-                  >
-                    <span className="rb-big-icon">
-                      <IconEditText />
-                    </span>
-                    {zhUi ? '公式' : 'Equation'}
                   </button>
                 </div>
               </div>
@@ -5486,17 +5412,6 @@ export default function App() {
             )}
             {stampDlg && (
               <StampDialog t={t} onCancel={() => setStampDlg(false)} onApply={applyStamps} />
-            )}
-            {equationDlg && (
-              <PdfEquationDialog
-                onClose={() => setEquationDlg(false)}
-                onPlace={({ base64, width, height }) => {
-                  setEquationDlg(false)
-                  setEditTextMode(false)
-                  setEditImageMode(false)
-                  setImagePick({ kind: 'image', image: base64, width, height })
-                }}
-              />
             )}
             {protectDlg && (
               <div className="pdf-modal-mask" onClick={() => !protectBusy && setProtectDlg(false)}>

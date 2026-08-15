@@ -3,6 +3,7 @@ import type { ReactElement } from 'react'
 import { DEFAULT_HEADER_FOOTER, DEFAULT_WATERMARK } from './stamps'
 import type { HeaderFooterConfig, WatermarkConfig } from './stamps'
 import type { TFunc } from './i18n/locale'
+import { pasteWatermarkText } from './watermark-text'
 
 const WM_COLORS = ['#d0342c', '#8a8a8a', '#2b66ff', '#217346']
 
@@ -22,15 +23,17 @@ export function StampDialog({
 
   const hfUsed =
     hf.pageNumber ||
-    [hf.headerLeft, hf.headerCenter, hf.headerRight, hf.footerLeft, hf.footerCenter, hf.footerRight].some((s) =>
-      s.trim(),
-    )
+    [
+      hf.headerLeft,
+      hf.headerCenter,
+      hf.headerRight,
+      hf.footerLeft,
+      hf.footerCenter,
+      hf.footerRight,
+    ].some((s) => s.trim())
   const canApply = wm.text.trim().length > 0 || hfUsed
 
-  const field = (
-    key: keyof HeaderFooterConfig,
-    label: string,
-  ): ReactElement => (
+  const field = (key: keyof HeaderFooterConfig, label: string): ReactElement => (
     <label className="pdf-field">
       <span>{label}</span>
       <input
@@ -46,10 +49,16 @@ export function StampDialog({
       <div className="pdf-modal pdf-modal-wide" onClick={(e) => e.stopPropagation()}>
         <div className="pdf-modal-title">{t('stampTitle')}</div>
         <div className="pdf-sign-tabs">
-          <button className={`pdf-sign-tab${tab === 'watermark' ? ' active' : ''}`} onClick={() => setTab('watermark')}>
+          <button
+            className={`pdf-sign-tab${tab === 'watermark' ? ' active' : ''}`}
+            onClick={() => setTab('watermark')}
+          >
             {t('watermark')}
           </button>
-          <button className={`pdf-sign-tab${tab === 'hf' ? ' active' : ''}`} onClick={() => setTab('hf')}>
+          <button
+            className={`pdf-sign-tab${tab === 'hf' ? ' active' : ''}`}
+            onClick={() => setTab('hf')}
+          >
             {t('headerFooter')}
           </button>
         </div>
@@ -64,6 +73,22 @@ export function StampDialog({
                 placeholder={t('watermarkPlaceholder')}
                 autoFocus
                 onChange={(e) => setWm({ ...wm, text: e.target.value })}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.getData('text/plain')
+                  if (!pasted) return
+                  e.preventDefault()
+                  const input = e.currentTarget
+                  const next = pasteWatermarkText(
+                    wm.text,
+                    pasted,
+                    input.selectionStart ?? wm.text.length,
+                    input.selectionEnd ?? wm.text.length,
+                  )
+                  setWm({ ...wm, text: next.text })
+                  window.requestAnimationFrame(() =>
+                    input.setSelectionRange(next.caret, next.caret),
+                  )
+                }}
               />
             </label>
             <label className="pdf-field">
@@ -116,7 +141,9 @@ export function StampDialog({
               className="pdf-wm-preview"
               style={{ color: wm.color, opacity: Math.max(wm.opacity, 0.25) }}
             >
-              <span style={{ transform: `rotate(${-wm.angle}deg)` }}>{wm.text || t('watermarkPlaceholder')}</span>
+              <span style={{ transform: `rotate(${-wm.angle}deg)` }}>
+                {wm.text || t('watermarkPlaceholder')}
+              </span>
             </div>
           </>
         ) : (
@@ -145,7 +172,9 @@ export function StampDialog({
                   type="number"
                   min={1}
                   value={hf.startAt}
-                  onChange={(e) => setHf({ ...hf, startAt: Math.max(1, Number(e.target.value) || 1) })}
+                  onChange={(e) =>
+                    setHf({ ...hf, startAt: Math.max(1, Number(e.target.value) || 1) })
+                  }
                 />
               </label>
             )}

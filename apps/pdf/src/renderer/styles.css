@@ -3081,7 +3081,7 @@ button {
   padding: 22px;
   border-radius: 12px;
   color: var(--text-primary);
-  background: var(--panel-bg);
+  background: var(--surface);
   box-shadow: var(--shadow-modal-strong);
 }
 
@@ -3099,7 +3099,7 @@ button {
   min-height: 116px;
   padding: 10px 12px;
   resize: vertical;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: 7px;
   font:
     14px/1.5 ui-monospace,
@@ -3107,7 +3107,7 @@ button {
     Menlo,
     monospace;
   color: inherit;
-  background: var(--input-bg, var(--panel-bg));
+  background: var(--surface);
 }
 
 .pdf-equation-preview {
@@ -3117,7 +3117,7 @@ button {
   padding: 14px;
   place-items: center;
   overflow: auto;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: 8px;
   font:
     28px/1.3 'STIX Two Math',
