@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PageEntry } from '../src/renderer/search'
-import { groupPageBlocks } from '../src/renderer/text-block'
+import { groupPageBlocks, isCompactCellStack } from '../src/renderer/text-block'
 
 interface Frag {
   t: string
@@ -350,6 +350,30 @@ describe('groupPageBlocks', () => {
   it('single-line blocks carry no alignment evidence', () => {
     const blocks = groupPageBlocks(page([bodyLine('just one line', 700)]))
     expect(blocks[0]!.align).toBe('left')
+  })
+
+  it('identifies a narrow stack of table values so each cell opens a line editor', () => {
+    const [block] = groupPageBlocks(
+      page([
+        { t: '0.953', x: 410, y: 700, w: 25, h: 9 },
+        { t: '0.953', x: 410, y: 689, w: 25, h: 9 },
+        { t: '0.740', x: 410, y: 678, w: 25, h: 9 },
+        { t: '0.532', x: 410, y: 667, w: 25, h: 9 },
+      ]),
+    )
+    expect(block).toBeDefined()
+    expect(isCompactCellStack(block!)).toBe(true)
+  })
+
+  it('does not mistake a normal body paragraph for a table column', () => {
+    const [block] = groupPageBlocks(
+      page([
+        bodyLine('A normal paragraph line with several words', 700),
+        bodyLine('continues on the next line', 686),
+      ]),
+    )
+    expect(block).toBeDefined()
+    expect(isCompactCellStack(block!)).toBe(false)
   })
 
   it('does not bridge blocks whose font sizes drift within one line (dominant size wins)', () => {

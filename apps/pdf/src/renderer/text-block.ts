@@ -28,6 +28,14 @@ export interface TextBlock {
   lines: BlockLine[]
 }
 
+/** A narrow stack of short lines is normally a table column, not a paragraph.
+    Treating it as one paragraph makes a click on a single cell try to rewrite the
+    whole column (and repeated values then cannot be located safely). */
+export const isCompactCellStack = (block: TextBlock): boolean =>
+  block.lines.length > 1 &&
+  block.rect[2] - block.rect[0] <= block.fontSize * 12 &&
+  block.lines.every((line) => line.text.trim().length <= 24)
+
 interface Frag {
   x: number
   y: number

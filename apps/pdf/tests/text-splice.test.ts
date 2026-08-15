@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { foldMap, norm, spliceIntoEngine } from '../src/main/text-edit'
+import { canonicalPdfiumText, foldMap, norm, spliceIntoEngine } from '../src/main/text-edit'
 import { chainLayers } from '../src/shared/x-layers'
 
 describe('chainLayers', () => {
@@ -55,6 +55,10 @@ describe('norm', () => {
   it('stays whitespace-insensitive', () => {
     expect(norm('a b\tc\n')).toBe('abc')
   })
+  it('folds pdfium pdfTeX control hyphens to the visible hyphen', () => {
+    expect(norm('ob\u0002served')).toBe(norm('ob-served'))
+    expect(canonicalPdfiumText('ob\u0002served')).toBe('ob-served')
+  })
 })
 
 describe('foldMap', () => {
@@ -66,6 +70,11 @@ describe('foldMap', () => {
   it('collapses whitespace runs to one unit when keeping spaces', () => {
     const { units } = foldMap('a  b', true)
     expect(units).toEqual(['a', ' ', 'b'])
+  })
+  it('maps a pdfium control hyphen to a visible hyphen unit', () => {
+    const { units, idx } = foldMap('a\u0002b')
+    expect(units).toEqual(['a', '-', 'b'])
+    expect(idx).toEqual([0, 1, 2, 3])
   })
 })
 

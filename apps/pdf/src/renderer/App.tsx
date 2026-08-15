@@ -43,7 +43,7 @@ import { buildStamps } from './stamps'
 import type { HeaderFooterConfig, WatermarkConfig } from './stamps'
 import { buildSearchIndex, searchInIndex } from './search'
 import type { SearchIndex, SearchMatch } from './search'
-import { groupPageBlocks, type TextBlock } from './text-block'
+import { groupPageBlocks, isCompactCellStack, type TextBlock } from './text-block'
 import {
   joinBlockLines,
   mapLineRangeToBlock,
@@ -1600,7 +1600,17 @@ export default function App() {
     window.pdfApi
       .listPageImages(filePath)
       .then((refs) => {
-        if (!cancelled) setPageImages(refs)
+        if (cancelled) return
+        setPageImages(refs)
+        if (refs.length === 0 && imageEditsRef.current.length === 0) {
+          if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current)
+          setNotice(
+            zhUi
+              ? '当前 PDF 没有可独立编辑的位图；由文字、线条组成的矢量图表不能作为单张图片编辑。'
+              : 'This PDF has no independently editable bitmap images. Vector figures made from text and paths are not a single image object.',
+          )
+          noticeTimerRef.current = window.setTimeout(() => setNotice(null), 8000)
+        }
       })
       .catch(() => {
         /* hit layer simply stays empty */
@@ -1608,7 +1618,7 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [editImageMode, filePath, doc])
+  }, [editImageMode, filePath, doc, zhUi])
 
   // ── Undo/redo: push a full snapshot before each change; consecutive input on the same form field coalesces into one step ──
 
@@ -2132,7 +2142,7 @@ export default function App() {
         const block = blocks.find(
           (b) => px >= b.rect[0] && px <= b.rect[2] && py >= b.rect[1] && py <= b.rect[3],
         )
-        if (block && block.lines.length > 1) {
+        if (block && block.lines.length > 1 && !isCompactCellStack(block)) {
           e.stopPropagation()
           const pre = caret
             ? (mapLineRangeToBlock(

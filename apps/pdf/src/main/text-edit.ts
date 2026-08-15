@@ -251,13 +251,20 @@ export function listEditFonts(): string[] {
   return Object.keys(EDIT_FONT_PATHS).filter((id) => loadEditFont(id) !== null)
 }
 
+/** pdfium occasionally exposes the pdfTeX discretionary-hyphen glyph as U+0002
+    while pdf.js correctly exposes the visible '-'. Keep both engines on the visible
+    representation; otherwise a paragraph containing a wrapped hyphen cannot be
+    matched, and preserving the control code into a rebuilt font would make it vanish. */
+export const canonicalPdfiumText = (s: string) => s.replace(/\u0002/g, '-')
+
 /** Whitespace-insensitive, radical- and NFKC-folded comparison key. pdf.js and pdfium
     disagree on compatibility codepoints — some fonts' cmaps yield radical-block
     codepoints (Kangxi U+2F00, which NFKC decomposes, and the Radicals Supplement
     U+2E80, which it does not) where pdfium extracts unified ideographs — and on
     synthesized spaces; both engines' text must land on the same key or every
     whole-line match fails on such documents. */
-export const norm = (s: string) => foldRadicals(s).normalize('NFKC').replace(/\s+/g, '')
+export const norm = (s: string) =>
+  foldRadicals(canonicalPdfiumText(s)).normalize('NFKC').replace(/\s+/g, '')
 
 /** NFKC-fold `raw` keeping maps from each folded unit back to its source char's start
     and end index. Whitespace runs collapse to one ' ' unit when keepSpaces, else
@@ -271,12 +278,13 @@ export function foldMap(
   const end: number[] = []
   let i = 0
   let inWs = false
-  for (const ch of raw) {
+  for (const sourceCh of raw) {
+    const ch = sourceCh === '\u0002' ? '-' : sourceCh
     if (/\s/.test(ch)) {
       if (keepSpaces && !inWs) {
         units.push(' ')
         idx.push(i)
-        end.push(i + ch.length)
+        end.push(i + sourceCh.length)
       }
       inWs = true
     } else {
@@ -285,10 +293,10 @@ export function foldMap(
         if (/\s/.test(u)) continue
         units.push(u)
         idx.push(i)
-        end.push(i + ch.length)
+        end.push(i + sourceCh.length)
       }
     }
-    i += ch.length
+    i += sourceCh.length
   }
   idx.push(raw.length)
   return { units, idx, end }
@@ -528,7 +536,7 @@ function collectTextObjects(m: Pdfium, page: number, textPage: number): PageText
     if (len > 2) {
       const buf = m._malloc(len)
       m._FPDFTextObj_GetText(obj, textPage, buf, len)
-      text = Buffer.from(m.HEAPU8.buffer, buf, len - 2).toString('utf16le')
+      text = canonicalPdfiumText(Buffer.from(m.HEAPU8.buffer, buf, len - 2).toString('utf16le'))
       m._free(buf)
     }
     if (!m._FPDFPageObj_GetBounds(obj, bl, bb, br, bt)) continue
