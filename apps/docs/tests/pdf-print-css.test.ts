@@ -7,6 +7,10 @@ const cssPath = existsSync(workspacePath)
   ? workspacePath
   : resolve(process.cwd(), 'apps/docs/src/renderer/styles.css')
 const css = readFileSync(cssPath, 'utf8')
+const actionPath = existsSync(resolve(process.cwd(), 'src/renderer/file-actions.ts'))
+  ? resolve(process.cwd(), 'src/renderer/file-actions.ts')
+  : resolve(process.cwd(), 'apps/docs/src/renderer/file-actions.ts')
+const actions = readFileSync(actionPath, 'utf8')
 
 describe('direct PDF print layout', () => {
   it('keeps the physical DOCX page width instead of expanding to the browser viewport', () => {
@@ -22,5 +26,13 @@ describe('direct PDF print layout', () => {
     expect(printCss).toMatch(
       /\.doc-protected,[\s\S]*?border-color:\s*transparent\s*!important;[\s\S]*?outline:\s*none\s*!important/,
     )
+    expect(printCss).toMatch(
+      /\.doc-protected\[data-doc-protected='image'\]\.ProseMirror-selectednode \.doc-img-wrap\s*\{[\s\S]*?outline:\s*none\s*!important;[\s\S]*?box-shadow:\s*none\s*!important/,
+    )
+  })
+
+  it('exports at physical size independently of the editor view zoom', () => {
+    expect(actions).toContain("zoomEl.style.setProperty('zoom', '1', 'important')")
+    expect(actions.match(/withUnzoomedPrintLayout\(\(\) =>/g)).toHaveLength(3)
   })
 })

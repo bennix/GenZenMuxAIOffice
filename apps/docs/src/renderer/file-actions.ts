@@ -742,6 +742,27 @@ async function saveOnce(ctx: FileActionContext, saveAs: boolean, auto: boolean):
   }
 }
 
+/**
+ * Chromium can retain the editor's inline CSS zoom while printing even when a print-media rule
+ * resets it. Temporarily reset that inline value so a 70% screen view still exports at 100%.
+ */
+async function withUnzoomedPrintLayout<T>(print: () => Promise<T>): Promise<T> {
+  const zoomEl = document.querySelector('.doc-zoom') as HTMLElement | null
+  if (!zoomEl) return print()
+  const previousZoom = zoomEl.style.getPropertyValue('zoom')
+  const previousPriority = zoomEl.style.getPropertyPriority('zoom')
+  zoomEl.style.setProperty('zoom', '1', 'important')
+  try {
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    )
+    return await print()
+  } finally {
+    if (previousZoom) zoomEl.style.setProperty('zoom', previousZoom, previousPriority)
+    else zoomEl.style.removeProperty('zoom')
+  }
+}
+
 export async function exportPdf(ctx: FileActionContext, outPath?: string): Promise<void> {
   const { doc } = ctx
   if (!doc) return
@@ -782,7 +803,7 @@ export async function exportPdf(ctx: FileActionContext, outPath?: string): Promi
           pvPages.forEach((page, i) =>
             page.classList.toggle('pv-print-skip', i < g.from || i > g.to),
           )
-          const part = await window.desktop.printPdfBuffer(g.w, g.h)
+          const part = await withUnzoomedPrintLayout(() => window.desktop.printPdfBuffer(g.w, g.h))
           if (!part.ok || !part.base64) {
             ctx.setStatus(
               t('appExportPdfFailed', { error: part.error ?? t('appPrintGroupFailed') }),
@@ -807,7 +828,9 @@ export async function exportPdf(ctx: FileActionContext, outPath?: string): Promi
     // preview open but uniform paper: single export at the preview size
     const g = groups[0]
     if (g) {
-      const result = await window.desktop.exportPdf(doc.fileName, g.w, g.h, outPath)
+      const result = await withUnzoomedPrintLayout(() =>
+        window.desktop.exportPdf(doc.fileName, g.w, g.h, outPath),
+      )
       ctx.setStatus(
         result.ok
           ? t('appExportedPdf', { path: result.path ?? '' })
@@ -857,11 +880,13 @@ export async function exportPdf(ctx: FileActionContext, outPath?: string): Promi
     return
   }
   const major = [...counts.values()][0]
-  const result = await window.desktop.exportPdf(
-    doc.fileName,
-    major?.w ?? ctx.section?.pageWidth ?? 12240,
-    major?.h ?? ctx.section?.pageHeight ?? 15840,
-    outPath,
+  const result = await withUnzoomedPrintLayout(() =>
+    window.desktop.exportPdf(
+      doc.fileName,
+      major?.w ?? ctx.section?.pageWidth ?? 12240,
+      major?.h ?? ctx.section?.pageHeight ?? 15840,
+      outPath,
+    ),
   )
   ctx.setStatus(
     result.ok

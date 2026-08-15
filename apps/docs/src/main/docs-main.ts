@@ -3225,6 +3225,7 @@ export function registerDocsIpc(): void {
       try {
         const data = await event.sender.printToPDF({
           printBackground: true,
+          scale: 1,
           // custom pageSize is in inches; the docx page padding provides the margins
           pageSize: {
             width: pageWidthTwips / TWIPS_PER_INCH,
@@ -3247,6 +3248,7 @@ export function registerDocsIpc(): void {
       try {
         const data = await event.sender.printToPDF({
           printBackground: true,
+          scale: 1,
           pageSize: {
             width: pageWidthTwips / TWIPS_PER_INCH,
             height: pageHeightTwips / TWIPS_PER_INCH,

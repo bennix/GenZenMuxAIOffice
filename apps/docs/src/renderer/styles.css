@@ -6678,6 +6678,11 @@ body.docs-crop-active
     background: none !important;
   }
 
+  .doc-protected[data-doc-protected='image'].ProseMirror-selectednode .doc-img-wrap {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
   /* continuous-flow printing still delegates to Chromium auto-pagination; canvas page gaps don't take part */
   .page-gap {
     display: none !important;
