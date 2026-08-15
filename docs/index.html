@@ -919,6 +919,184 @@
         color: var(--muted);
       }
 
+      .manual {
+        margin: 34px 0 104px;
+        display: grid;
+        grid-template-columns: minmax(340px, 0.82fr) minmax(0, 1.18fr);
+        color: white;
+        background: var(--ink);
+        border: 1px solid var(--ink);
+        overflow: hidden;
+      }
+
+      .manual-visual {
+        min-height: 620px;
+        padding: 52px;
+        display: grid;
+        place-items: center;
+        position: relative;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.13) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.13) 1px, transparent 1px), var(--blue);
+        background-size: 44px 44px;
+      }
+
+      .manual-visual::before {
+        content: 'SOURCE-VERIFIED · 2026';
+        position: absolute;
+        top: 24px;
+        left: 28px;
+        padding: 8px 10px;
+        color: var(--ink);
+        background: var(--acid);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+
+      .manual-cover {
+        width: min(300px, 78%);
+        height: auto;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 22px 24px 0 rgba(22, 23, 20, 0.38);
+        transform: rotate(-2.3deg);
+      }
+
+      .manual-folio {
+        position: absolute;
+        right: 28px;
+        bottom: 24px;
+        font-family: 'Iowan Old Style', Georgia, serif;
+        font-size: 52px;
+        font-style: italic;
+        line-height: 1;
+      }
+
+      .manual-copy {
+        padding: 62px 58px 54px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .manual-kicker {
+        margin-bottom: 28px;
+        color: var(--acid);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .manual h2 {
+        margin: 0 0 24px;
+        max-width: 650px;
+        font-family: 'Iowan Old Style', 'Songti SC', Georgia, serif;
+        font-size: clamp(46px, 6vw, 78px);
+        font-weight: 400;
+        line-height: 0.98;
+        letter-spacing: -0.055em;
+      }
+
+      .manual-copy > p {
+        max-width: 650px;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 17px;
+        line-height: 1.75;
+      }
+
+      .manual-stats {
+        margin: 36px 0 38px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-top: 1px solid rgba(255, 255, 255, 0.24);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.24);
+      }
+
+      .manual-stat {
+        padding: 20px 14px 20px 0;
+        border-right: 1px solid rgba(255, 255, 255, 0.24);
+      }
+
+      .manual-stat:not(:first-child) {
+        padding-left: 20px;
+      }
+
+      .manual-stat:last-child {
+        border-right: 0;
+      }
+
+      .manual-stat strong {
+        display: block;
+        color: var(--acid);
+        font-family: 'Iowan Old Style', Georgia, serif;
+        font-size: 34px;
+        font-style: italic;
+        font-weight: 400;
+      }
+
+      .manual-stat span {
+        display: block;
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .manual-actions {
+        margin-top: auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .manual-btn {
+        min-height: 52px;
+        padding: 0 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        border-radius: 3px;
+        color: white;
+        text-decoration: none;
+        font-weight: 750;
+        transition:
+          transform 160ms ease,
+          color 160ms ease,
+          background 160ms ease;
+      }
+
+      .manual-btn.primary {
+        color: var(--ink);
+        background: var(--acid);
+        border-color: var(--acid);
+      }
+
+      .manual-btn:hover {
+        transform: translateY(-3px);
+      }
+
+      .manual-btn.secondary:hover {
+        color: var(--ink);
+        background: white;
+      }
+
+      .manual-btn:focus-visible {
+        outline: 3px solid var(--acid);
+        outline-offset: 3px;
+      }
+
+      .manual-note {
+        margin-top: 18px;
+        color: rgba(255, 255, 255, 0.48);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 10px;
+        line-height: 1.6;
+      }
+
       footer {
         padding: 30px 0 46px;
         display: flex;
@@ -956,8 +1134,17 @@
         .manifesto,
         .models,
         .platform-grid,
-        .foundation {
+        .foundation,
+        .manual {
           grid-template-columns: 1fr;
+        }
+
+        .manual-visual {
+          min-height: 500px;
+        }
+
+        .manual-copy {
+          padding: 48px 34px;
         }
 
         .app-card,
@@ -1044,6 +1231,34 @@
         .section-title {
           font-size: 46px;
         }
+        .manual-visual {
+          min-height: 410px;
+          padding: 38px 24px;
+        }
+        .manual-cover {
+          width: min(250px, 72%);
+        }
+        .manual-copy {
+          padding: 40px 24px;
+        }
+        .manual-stats {
+          grid-template-columns: 1fr;
+        }
+        .manual-stat,
+        .manual-stat:not(:first-child) {
+          padding: 14px 0;
+          border-right: 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.24);
+        }
+        .manual-stat:last-child {
+          border-bottom: 0;
+        }
+        .manual-actions {
+          flex-direction: column;
+        }
+        .manual-btn {
+          width: 100%;
+        }
       }
 
       @media (prefers-reduced-motion: no-preference) {
@@ -1069,6 +1284,7 @@
       <nav>
         <div class="wordmark"><span class="mark">G/O</span> GenOffice</div>
         <div class="nav-actions">
+          <a class="nav-link" href="#manual">用户手册 · Manual</a>
           <a class="nav-link" href="https://github.com/bennix/GenZenMuxAIOffice"
             >Source on GitHub ↗</a
           >
@@ -1180,6 +1396,58 @@
                 >下载 Ubuntu v0.6.50 <b>↓</b></a
               >
             </article>
+          </div>
+        </section>
+
+        <section class="manual" id="manual" aria-label="GenOffice 中英双语用户手册">
+          <div class="manual-visual">
+            <img
+              class="manual-cover"
+              src="manual/assets/manual-cover.png"
+              alt="GenOffice 中英双语用户入门手册封面"
+              width="910"
+              height="1287"
+              loading="lazy"
+            />
+            <div class="manual-folio" aria-hidden="true">97</div>
+          </div>
+          <div class="manual-copy">
+            <div class="manual-kicker">Bilingual field guide · 中英双语入门手册</div>
+            <h2>从安装到交付，<br />一本手册完整走通。</h2>
+            <p>
+              基于 v0.6.50 当前源码与真实运行态制作。中文页与英文页逐题相邻，覆盖 ZenMux 设置、
+              Word、Excel、PowerPoint、Markdown、PDF、科研引用、LaTeX、Mermaid、录制、
+              @Connect、联网查证与故障排除。
+            </p>
+            <div class="manual-stats" aria-label="手册统计">
+              <div class="manual-stat"><strong>97</strong><span>A4 页面<br />A4 pages</span></div>
+              <div class="manual-stat"><strong>42</strong><span>成对主题<br />paired topics</span></div>
+              <div class="manual-stat"><strong>11</strong><span>真实运行态界面素材<br />runtime UI sources</span></div>
+            </div>
+            <div class="manual-actions">
+              <a
+                class="manual-btn primary"
+                href="manual/GenOffice-User-Manual-ZH-EN.pdf"
+                download
+                >下载中英双语 PDF ↓</a
+              >
+              <a
+                class="manual-btn secondary"
+                href="manual/GenOffice-User-Manual-ZH-EN.tex"
+                download
+                >下载 LaTeX 源文件 ↓</a
+              >
+              <a
+                class="manual-btn secondary"
+                href="manual/GenOffice-User-Manual-ZH-EN.pdf"
+                target="_blank"
+                rel="noopener"
+                >在线阅读 PDF ↗</a
+              >
+            </div>
+            <div class="manual-note">
+              SOURCE-VERIFIED · UI CAPTURED FROM THE CURRENT APPLICATION · PDF AND TEX PUBLISHED TOGETHER
+            </div>
           </div>
         </section>
 
