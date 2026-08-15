@@ -5,6 +5,14 @@ import { AI_CHANNELS, PDF_CHANNELS } from '../shared/ipc'
 import type { PdfApi, UiTheme } from '../shared/ipc'
 
 const api: PdfApi = {
+  listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
+  sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
+  onConnectReceive: (handler) => {
+    const listener = (_e: Electron.IpcRendererEvent, payload: Parameters<typeof handler>[0]) =>
+      handler(payload)
+    ipcRenderer.on('connect:receive', listener)
+    return () => ipcRenderer.removeListener('connect:receive', listener)
+  },
   consumePending: () => ipcRenderer.invoke(PDF_CHANNELS.consumePending),
   readFile: (path) => ipcRenderer.invoke(PDF_CHANNELS.readFile, path),
   save: (request) => ipcRenderer.invoke(PDF_CHANNELS.save, request),

@@ -3,7 +3,8 @@ import type { PointerEvent as ReactPointerEvent, ReactElement } from 'react'
 import { AgentLoop, composeSkills } from '@genoffice/agent-core'
 import type { AgentImage } from '@genoffice/agent-core'
 import type { AiSettings } from '@genoffice/ai-provider'
-import { AiComposer, AiTypingIndicator } from '@genoffice/ui'
+import { AiComposer, AiTypingIndicator, ConnectButton } from '@genoffice/ui'
+import { removeConnectCommand } from '@genoffice/electron-utils/connect'
 import { aiLangDirective, t as tGlobal, useI18n } from '../i18n/locale'
 import { Markdown } from '@genoffice/ui'
 import sendEnterOn from '../assets/send-enter-on.png'
@@ -12,6 +13,7 @@ import sendStop from '../assets/send-stop.png'
 import { createPdfSkill } from './pdf-skill'
 import { createFilesSkill } from './files-skill'
 import { mergeAttachmentResult } from './attachment-state'
+import type { PdfAiRegionContext } from './region-context'
 import { createElectronTransport } from './transport'
 import type { PdfAiDeps } from './tools'
 import type { AttachmentAddResult, AttachmentMeta } from '../../shared/ipc'
@@ -45,6 +47,7 @@ interface ChatEntry {
   undelivered?: boolean
   tools?: ToolActivity[]
   attachments?: AttachmentMeta[]
+  regionContext?: PdfAiRegionContext
 }
 
 type Phase = 'thinking' | 'replying' | 'working'
@@ -53,15 +56,24 @@ export function AiPanel({
   api,
   onCollapse,
   preset,
+  regionContext,
+  regionSelecting,
+  onRequestRegionContext,
+  onClearRegionContext,
 }: {
   api: PdfAiDeps
   onCollapse: () => void
   /** Ribbon AI buttons push a one-shot prompt; a new nonce triggers an auto-run */
   preset?: { text: string; nonce: number } | null
+  regionContext: PdfAiRegionContext | null
+  regionSelecting: boolean
+  onRequestRegionContext: () => void
+  onClearRegionContext: () => void
 }): ReactElement {
   const { lang, t } = useI18n()
   const [chat, setChat] = useState<ChatEntry[]>([])
   const [prompt, setPrompt] = useState('')
+  const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
   const [phase, setPhase] = useState<Phase>('thinking')
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
@@ -87,6 +99,8 @@ export function AiPanel({
   apiRef.current = api
   const attachmentsRef = useRef(attachments)
   attachmentsRef.current = attachments
+  const regionContextRef = useRef(regionContext)
+  regionContextRef.current = regionContext
   const availableAttachmentsRef = useRef<AttachmentMeta[]>([])
 
   const patchLast = (patch: Partial<ChatEntry> | ((last: ChatEntry) => Partial<ChatEntry>)) => {
@@ -207,11 +221,21 @@ export function AiPanel({
     stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48
   }
 
-  const send = (text: string, attachmentOverride?: AttachmentMeta[]): void => {
+  const send = (
+    text: string,
+    overrides?: {
+      attachments?: AttachmentMeta[]
+      regionContext?: PdfAiRegionContext | null
+    },
+  ): void => {
     const instruction = text.trim()
     const loop = loopRef.current
     if (!instruction || !loop || loop.busy) return
-    const sentAttachments = attachmentOverride ?? attachmentsRef.current
+    const sentAttachments = overrides?.attachments ?? attachmentsRef.current
+    const sentRegion =
+      overrides && 'regionContext' in overrides
+        ? (overrides.regionContext ?? null)
+        : regionContextRef.current
     availableAttachmentsRef.current = sentAttachments
     stickToBottomRef.current = true
     setChat((prev) => [
@@ -220,18 +244,21 @@ export function AiPanel({
         role: 'user',
         text: instruction,
         ...(sentAttachments.length ? { attachments: sentAttachments } : {}),
+        ...(sentRegion ? { regionContext: sentRegion } : {}),
       },
       { role: 'assistant', text: '', streaming: true },
     ])
     setPrompt('')
     setAttachments([])
     setAttachNotice('')
+    if (sentRegion) onClearRegionContext()
     setBusy(true)
     setPhase('thinking')
     void (async () => {
       try {
         settingsRef.current = await window.pdfApi.getAiSettings()
         const images: AgentImage[] = []
+        if (sentRegion) images.push({ base64: sentRegion.base64, mime: sentRegion.mime })
         for (const attachment of sentAttachments.filter((file) =>
           ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(file.ext),
         )) {
@@ -240,7 +267,10 @@ export function AiPanel({
             images.push({ base64: result.base64, mime: result.mime })
           }
         }
-        await loop.run(instruction, images)
+        const contextualInstruction = sentRegion
+          ? `[The first attached image is the user-selected region from PDF page ${sentRegion.pageNumber}. Use that region as the primary context for this question.]\n${instruction}`
+          : instruction
+        await loop.run(contextualInstruction, images)
       } catch (err) {
         patchLast({
           streaming: false,
@@ -395,6 +425,8 @@ export function AiPanel({
                 setChat([])
                 setAttachments([])
                 setAttachNotice('')
+                onClearRegionContext()
+                if (regionSelecting) onRequestRegionContext()
               }}
               data-tip={t('aiNewChat')}
               aria-label={t('aiNewChat')}
@@ -435,6 +467,7 @@ export function AiPanel({
                 {entry.attachments && entry.attachments.length > 0 && (
                   <SentAttachments attachments={entry.attachments} previews={attachmentPreviews} />
                 )}
+                {entry.regionContext && <SentRegionContext context={entry.regionContext} />}
                 {entry.text}
                 {entry.undelivered && (
                   <div className="ai-msg-undelivered">
@@ -442,7 +475,12 @@ export function AiPanel({
                     {!busy && (
                       <button
                         className="ai-retry-btn"
-                        onClick={() => send(entry.text, entry.attachments)}
+                        onClick={() =>
+                          send(entry.text, {
+                            attachments: entry.attachments ?? [],
+                            regionContext: entry.regionContext ?? null,
+                          })
+                        }
                       >
                         {t('aiRetry')}
                       </button>
@@ -454,6 +492,9 @@ export function AiPanel({
           }
           const hasTools = (entry.tools?.length ?? 0) > 0
           if (!entry.text && !hasTools) return null
+          const nextEntry = chat[i + 1]
+          const turnEnded = nextEntry ? nextEntry.role === 'user' : !busy
+          const showConnect = !entry.streaming && turnEnded && !!entry.text && !entry.isError
           return (
             <div
               key={i}
@@ -461,6 +502,11 @@ export function AiPanel({
             >
               {hasTools && <ToolChipList tools={entry.tools!} />}
               {entry.text && <Markdown text={entry.text} />}
+              {showConnect && (
+                <div className="ai-msg-toolbar">
+                  <ConnectButton api={window.pdfApi} text={entry.text} />
+                </div>
+              )}
             </div>
           )
         })}
@@ -472,29 +518,55 @@ export function AiPanel({
         {attachNotice && <div className="ai-attach-notice">{attachNotice}</div>}
         <AiComposer
           header={
-            attachments.length > 0 ? (
-              <div className="ai-attachments">
-                {attachments.map((file) => {
-                  const preview = attachmentPreviews[file.path]
-                  return (
-                    <span
-                      key={file.path}
-                      className={preview ? 'ai-attachment-thumb' : 'ai-attachment-card'}
-                      title={file.name}
+            attachments.length > 0 || regionContext ? (
+              <div className="ai-composer-contexts">
+                {regionContext && (
+                  <div className="ai-region-context" title={`PDF page ${regionContext.pageNumber}`}>
+                    <img
+                      src={`data:${regionContext.mime};base64,${regionContext.base64}`}
+                      alt={`PDF page ${regionContext.pageNumber} selected region`}
+                    />
+                    <span>框选上下文 · 第 {regionContext.pageNumber} 页</span>
+                    <button
+                      className="ai-attachment-thumb-remove"
+                      onClick={onClearRegionContext}
+                      aria-label="清除框选上下文 / Clear selected region"
                     >
-                      {preview ? <img src={preview} alt={file.name} /> : <span>{file.name}</span>}
-                      <button
-                        className="ai-attachment-thumb-remove"
-                        onClick={() =>
-                          setAttachments((items) => items.filter((item) => item.path !== file.path))
-                        }
-                        aria-label={`Remove ${file.name}`}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  )
-                })}
+                      ×
+                    </button>
+                  </div>
+                )}
+                {attachments.length > 0 && (
+                  <div className="ai-attachments">
+                    {attachments.map((file) => {
+                      const preview = attachmentPreviews[file.path]
+                      return (
+                        <span
+                          key={file.path}
+                          className={preview ? 'ai-attachment-thumb' : 'ai-attachment-card'}
+                          title={file.name}
+                        >
+                          {preview ? (
+                            <img src={preview} alt={file.name} />
+                          ) : (
+                            <span>{file.name}</span>
+                          )}
+                          <button
+                            className="ai-attachment-thumb-remove"
+                            onClick={() =>
+                              setAttachments((items) =>
+                                items.filter((item) => item.path !== file.path),
+                              )
+                            }
+                            aria-label={`Remove ${file.name}`}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             ) : undefined
           }
@@ -509,23 +581,69 @@ export function AiPanel({
           sendIconEnabled={<img src={sendEnterOn} alt="" aria-hidden />}
           sendIconDisabled={<img src={sendEnterOff} alt="" aria-hidden />}
           stopIcon={<img src={sendStop} alt="" aria-hidden />}
-          onChange={setPrompt}
+          onChange={(value) => {
+            const command = removeConnectCommand(value)
+            setPrompt(command.text)
+            if (command.matched) setConnectNonce((nonce) => nonce + 1)
+          }}
           onSend={() => send(prompt)}
           onStop={stop}
           onPasteFiles={(files) => void pasteFiles(files)}
           footerStart={
-            <button
-              className="ai-attach-btn"
-              onClick={() => void window.pdfApi.pickAttachments().then(mergeAttachments)}
-              title="添加附件 / Attach files (最多 5 个)"
-              aria-label="添加附件 / Attach files"
-            >
-              📎
-            </button>
+            <>
+              <ConnectButton
+                api={window.pdfApi}
+                text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
+                triggerNonce={connectNonce}
+              />
+              <button
+                className="ai-attach-btn"
+                onClick={() => void window.pdfApi.pickAttachments().then(mergeAttachments)}
+                title="添加附件 / Attach files (最多 5 个)"
+                aria-label="添加附件 / Attach files"
+              >
+                📎
+              </button>
+              <button
+                className={`ai-region-select-btn${regionSelecting ? ' is-active' : ''}`}
+                onClick={onRequestRegionContext}
+                title="框选 PDF 页面作为 AI 上下文 / Select page region for AI"
+                aria-label="框选 PDF 页面作为 AI 上下文 / Select page region for AI"
+                aria-pressed={regionSelecting}
+              >
+                <RegionSelectIcon />
+              </button>
+            </>
           }
         />
       </div>
     </aside>
+  )
+}
+
+function RegionSelectIcon(): ReactElement {
+  return (
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" aria-hidden>
+      <path
+        d="M5 8V5h3M16 5h3v3M19 16v3h-3M8 19H5v-3"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      <path d="M8 12h8M12 8v8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function SentRegionContext({ context }: { context: PdfAiRegionContext }): ReactElement {
+  return (
+    <div className="ai-sent-region">
+      <img
+        src={`data:${context.mime};base64,${context.base64}`}
+        alt={`PDF page ${context.pageNumber} selected region`}
+      />
+      <span>框选上下文 · 第 {context.pageNumber} 页</span>
+    </div>
   )
 }
 
