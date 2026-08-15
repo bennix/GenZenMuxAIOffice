@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactElement } from 'react'
-import { AgentLoop } from '@genoffice/agent-core'
+import { AgentLoop, composeSkills } from '@genoffice/agent-core'
+import type { AgentImage } from '@genoffice/agent-core'
 import type { AiSettings } from '@genoffice/ai-provider'
 import { AiComposer, AiTypingIndicator } from '@genoffice/ui'
 import { aiLangDirective, t as tGlobal, useI18n } from '../i18n/locale'
@@ -9,8 +10,11 @@ import sendEnterOn from '../assets/send-enter-on.png'
 import sendEnterOff from '../assets/send-enter-off.png'
 import sendStop from '../assets/send-stop.png'
 import { createPdfSkill } from './pdf-skill'
+import { createFilesSkill } from './files-skill'
+import { mergeAttachmentResult } from './attachment-state'
 import { createElectronTransport } from './transport'
 import type { PdfAiDeps } from './tools'
+import type { AttachmentAddResult, AttachmentMeta } from '../../shared/ipc'
 
 const PANEL_WIDTH_KEY = 'pdf-ai-panel-width'
 const PANEL_WIDTH_DEFAULT = 360
@@ -40,6 +44,7 @@ interface ChatEntry {
   /** the run failed and this user message was rolled back out of the model context */
   undelivered?: boolean
   tools?: ToolActivity[]
+  attachments?: AttachmentMeta[]
 }
 
 type Phase = 'thinking' | 'replying' | 'working'
@@ -59,6 +64,10 @@ export function AiPanel({
   const [prompt, setPrompt] = useState('')
   const [busy, setBusy] = useState(false)
   const [phase, setPhase] = useState<Phase>('thinking')
+  const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
+  const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({})
+  const [attachNotice, setAttachNotice] = useState('')
+  const [dragOver, setDragOver] = useState(false)
   const chatRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
   const [panelWidth, setPanelWidth] = useState(loadPanelWidth)
@@ -76,6 +85,9 @@ export function AiPanel({
   langRef.current = lang
   const apiRef = useRef(api)
   apiRef.current = api
+  const attachmentsRef = useRef(attachments)
+  attachmentsRef.current = attachments
+  const availableAttachmentsRef = useRef<AttachmentMeta[]>([])
 
   const patchLast = (patch: Partial<ChatEntry> | ((last: ChatEntry) => Partial<ChatEntry>)) => {
     setChat((prev) => {
@@ -121,7 +133,10 @@ export function AiPanel({
     }
     loopRef.current = new AgentLoop({
       transport: createElectronTransport(() => settingsRef.current!),
-      skill: createPdfSkill(deps),
+      skill: composeSkills('pdf+files', '', [
+        createPdfSkill(deps),
+        createFilesSkill(() => availableAttachmentsRef.current),
+      ]),
       systemSuffix: () => aiLangDirective(langRef.current),
       events: {
         onText: (text) => {
@@ -192,23 +207,40 @@ export function AiPanel({
     stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48
   }
 
-  const send = (text: string): void => {
+  const send = (text: string, attachmentOverride?: AttachmentMeta[]): void => {
     const instruction = text.trim()
     const loop = loopRef.current
     if (!instruction || !loop || loop.busy) return
+    const sentAttachments = attachmentOverride ?? attachmentsRef.current
+    availableAttachmentsRef.current = sentAttachments
     stickToBottomRef.current = true
     setChat((prev) => [
       ...prev,
-      { role: 'user', text: instruction },
+      {
+        role: 'user',
+        text: instruction,
+        ...(sentAttachments.length ? { attachments: sentAttachments } : {}),
+      },
       { role: 'assistant', text: '', streaming: true },
     ])
     setPrompt('')
+    setAttachments([])
+    setAttachNotice('')
     setBusy(true)
     setPhase('thinking')
     void (async () => {
       try {
         settingsRef.current = await window.pdfApi.getAiSettings()
-        await loop.run(instruction)
+        const images: AgentImage[] = []
+        for (const attachment of sentAttachments.filter((file) =>
+          ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(file.ext),
+        )) {
+          const result = await window.pdfApi.readAttachmentImage(attachment.path)
+          if (result.ok && result.base64 && result.mime) {
+            images.push({ base64: result.base64, mime: result.mime })
+          }
+        }
+        await loop.run(instruction, images)
       } catch (err) {
         patchLast({
           streaming: false,
@@ -221,6 +253,46 @@ export function AiPanel({
   }
 
   const stop = (): void => loopRef.current?.cancel()
+
+  const mergeAttachments = (result: AttachmentAddResult | null): void => {
+    setAttachments((previous) => {
+      const merged = mergeAttachmentResult(previous, result)
+      setAttachNotice(merged.notice)
+      return merged.items
+    })
+  }
+
+  useEffect(() => {
+    for (const file of attachments.filter((item) =>
+      ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(item.ext),
+    )) {
+      if (attachmentPreviews[file.path]) continue
+      void window.pdfApi.readAttachmentImage(file.path).then((result) => {
+        if (result.ok && result.base64 && result.mime) {
+          setAttachmentPreviews((previous) => ({
+            ...previous,
+            [file.path]: `data:${result.mime};base64,${result.base64}`,
+          }))
+        }
+      })
+    }
+  }, [attachments, attachmentPreviews])
+
+  const pasteFiles = async (files: File[]): Promise<void> => {
+    for (const file of files) {
+      const path = window.pdfApi.getPathForFile(file)
+      if (path) {
+        mergeAttachments(await window.pdfApi.addAttachmentPaths([path]))
+      } else if (file.type.startsWith('image/')) {
+        mergeAttachments(
+          await window.pdfApi.addPastedImage(
+            await file.arrayBuffer(),
+            file.type.split('/')[1] || 'png',
+          ),
+        )
+      }
+    }
+  }
 
   // One-click AI actions from the ribbon (same pattern as the docs ribbon presets)
   useEffect(() => {
@@ -280,8 +352,25 @@ export function AiPanel({
   return (
     <aside
       ref={asideRef}
-      className={`copilot${resizing ? ' ai-panel-resizing' : ''}`}
+      className={`copilot${resizing ? ' ai-panel-resizing' : ''}${dragOver ? ' ai-panel-dragover' : ''}`}
       style={{ width: '100%' }}
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes('Files')) {
+          event.preventDefault()
+          setDragOver(true)
+        }
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragOver(false)
+      }}
+      onDrop={(event) => {
+        event.preventDefault()
+        setDragOver(false)
+        const paths = Array.from(event.dataTransfer.files)
+          .map((file) => window.pdfApi.getPathForFile(file))
+          .filter(Boolean)
+        if (paths.length) void window.pdfApi.addAttachmentPaths(paths).then(mergeAttachments)
+      }}
     >
       <div
         className="ai-panel-resizer"
@@ -304,6 +393,8 @@ export function AiPanel({
                 loopRef.current?.reset()
                 setBusy(false)
                 setChat([])
+                setAttachments([])
+                setAttachNotice('')
               }}
               data-tip={t('aiNewChat')}
               aria-label={t('aiNewChat')}
@@ -341,12 +432,18 @@ export function AiPanel({
           if (entry.role === 'user') {
             return (
               <div key={i} className="ai-msg ai-msg-user">
+                {entry.attachments && entry.attachments.length > 0 && (
+                  <SentAttachments attachments={entry.attachments} previews={attachmentPreviews} />
+                )}
                 {entry.text}
                 {entry.undelivered && (
                   <div className="ai-msg-undelivered">
                     {t('aiUndelivered')}
                     {!busy && (
-                      <button className="ai-retry-btn" onClick={() => send(entry.text)}>
+                      <button
+                        className="ai-retry-btn"
+                        onClick={() => send(entry.text, entry.attachments)}
+                      >
                         {t('aiRetry')}
                       </button>
                     )}
@@ -372,7 +469,35 @@ export function AiPanel({
       </div>
 
       <div className="ai-composer">
+        {attachNotice && <div className="ai-attach-notice">{attachNotice}</div>}
         <AiComposer
+          header={
+            attachments.length > 0 ? (
+              <div className="ai-attachments">
+                {attachments.map((file) => {
+                  const preview = attachmentPreviews[file.path]
+                  return (
+                    <span
+                      key={file.path}
+                      className={preview ? 'ai-attachment-thumb' : 'ai-attachment-card'}
+                      title={file.name}
+                    >
+                      {preview ? <img src={preview} alt={file.name} /> : <span>{file.name}</span>}
+                      <button
+                        className="ai-attachment-thumb-remove"
+                        onClick={() =>
+                          setAttachments((items) => items.filter((item) => item.path !== file.path))
+                        }
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )
+                })}
+              </div>
+            ) : undefined
+          }
           value={prompt}
           busy={busy}
           placeholder={t('aiComposerPlaceholder')}
@@ -387,9 +512,42 @@ export function AiPanel({
           onChange={setPrompt}
           onSend={() => send(prompt)}
           onStop={stop}
+          onPasteFiles={(files) => void pasteFiles(files)}
+          footerStart={
+            <button
+              className="ai-attach-btn"
+              onClick={() => void window.pdfApi.pickAttachments().then(mergeAttachments)}
+              title="添加附件 / Attach files (最多 5 个)"
+              aria-label="添加附件 / Attach files"
+            >
+              📎
+            </button>
+          }
         />
       </div>
     </aside>
+  )
+}
+
+function SentAttachments({
+  attachments,
+  previews,
+}: {
+  attachments: AttachmentMeta[]
+  previews: Record<string, string>
+}): ReactElement {
+  return (
+    <div className="ai-sent-attachments">
+      {attachments.map((file) =>
+        previews[file.path] ? (
+          <img key={file.path} src={previews[file.path]} alt={file.name} title={file.name} />
+        ) : (
+          <span key={file.path} title={file.name}>
+            📎 {file.name}
+          </span>
+        ),
+      )}
+    </div>
   )
 }
 

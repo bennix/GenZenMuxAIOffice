@@ -37,6 +37,7 @@ import type {
   ValidateTextEditsRequest,
 } from '../shared/ipc'
 import { extractPagesBytes, insertPdfBytes, protectPdfToPath, savePdfToPath } from './save-pdf'
+import { registerPdfAttachmentIpc } from './attachments-ipc'
 
 const tDlg = createI18n({
   zh: {
@@ -380,6 +381,7 @@ let ipcRegistered = false
 function registerPdfIpc(): void {
   if (ipcRegistered) return
   ipcRegistered = true
+  registerPdfAttachmentIpc()
 
   ipcMain.handle(PDF_CHANNELS.consumePending, (e) => openPathByWc.get(e.sender.id) ?? null)
 

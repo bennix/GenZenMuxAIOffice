@@ -20,6 +20,7 @@
     "@genoffice/ai-search": "*",
     "@genoffice/docx-engine": "*",
     "@genoffice/electron-utils": "*",
+    "@genoffice/file-parse": "*",
     "@genoffice/i18n": "*",
     "@genoffice/ui": "*",
     "@types/react": "^19.2.14",

@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { Lang } from '@genoffice/i18n'
 import type { AiStreamChunk } from '@genoffice/ai-provider'
 import { AI_CHANNELS, PDF_CHANNELS } from '../shared/ipc'
@@ -60,6 +60,13 @@ const api: PdfApi = {
     ipcRenderer.on(AI_CHANNELS.streamChunk, listener)
     return () => ipcRenderer.removeListener(AI_CHANNELS.streamChunk, listener)
   },
+  pickAttachments: () => ipcRenderer.invoke(PDF_CHANNELS.filesPick),
+  addAttachmentPaths: (paths) => ipcRenderer.invoke(PDF_CHANNELS.filesAdd, paths),
+  addPastedImage: (data, ext) => ipcRenderer.invoke(PDF_CHANNELS.filesAddPastedImage, data, ext),
+  readAttachment: (path, offset, maxChars) =>
+    ipcRenderer.invoke(PDF_CHANNELS.filesRead, path, offset, maxChars),
+  readAttachmentImage: (path) => ipcRenderer.invoke(PDF_CHANNELS.filesReadImage, path),
+  getPathForFile: (file) => webUtils.getPathForFile(file),
 }
 
 contextBridge.exposeInMainWorld('pdfApi', api)

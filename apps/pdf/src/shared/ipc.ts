@@ -31,9 +31,47 @@ export const PDF_CHANNELS = {
   languageChanged: 'app:language-changed',
   getTheme: 'app:get-theme',
   themeChanged: 'app:theme-changed',
+  filesPick: 'pdf:files-pick',
+  filesAdd: 'pdf:files-add',
+  filesAddPastedImage: 'pdf:files-add-pasted-image',
+  filesRead: 'pdf:files-read',
+  filesReadImage: 'pdf:files-read-image',
 } as const
 
 export type UiTheme = 'light' | 'dark' | 'system'
+
+// ---- AI chat attachments ----
+
+export const ATTACHMENT_IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp'])
+
+export interface AttachmentMeta {
+  path: string
+  name: string
+  /** Lower-cased extension without the dot. */
+  ext: string
+  sizeBytes: number
+}
+
+export interface AttachmentAddResult {
+  accepted: AttachmentMeta[]
+  rejected: string[]
+}
+
+export interface AttachmentReadResult {
+  ok: boolean
+  error?: string
+  name?: string
+  totalChars?: number
+  text?: string
+  offset?: number
+}
+
+export interface AttachmentImageResult {
+  ok: boolean
+  base64?: string
+  mime?: string
+  error?: string
+}
 
 export type MarkupType = 'highlight' | 'underline' | 'strikeout'
 
@@ -446,4 +484,11 @@ export interface PdfApi {
   aiStream(request: AiStreamRequest): Promise<void>
   aiStreamCancel(requestId: string): Promise<void>
   onAiStream(handler: (chunk: AiStreamChunk) => void): () => void
+  /** Pick, paste, preview, and locally parse up to five AI chat attachments. */
+  pickAttachments(): Promise<AttachmentAddResult | null>
+  addAttachmentPaths(paths: string[]): Promise<AttachmentAddResult>
+  addPastedImage(data: ArrayBuffer, ext: string): Promise<AttachmentAddResult>
+  readAttachment(path: string, offset: number, maxChars: number): Promise<AttachmentReadResult>
+  readAttachmentImage(path: string): Promise<AttachmentImageResult>
+  getPathForFile(file: File): string
 }

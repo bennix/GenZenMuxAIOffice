@@ -2796,6 +2796,117 @@ button {
   font-family: var(--gs-font-sans);
 }
 
+.ai-attachments {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 14px 14px 5px;
+}
+
+.ai-attachment-thumb,
+.ai-attachment-card {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.ai-attachment-thumb img {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-default);
+}
+
+.ai-attachment-card {
+  max-width: 150px;
+  min-height: 38px;
+  padding: 9px 24px 9px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid var(--color-border-default);
+  border-radius: 9px;
+  background: var(--color-bg-page);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.ai-attachment-thumb-remove {
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-btn-primary);
+  color: var(--color-btn-primary-text);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ai-attachment-card .ai-attachment-thumb-remove {
+  top: 2px;
+  right: 2px;
+}
+
+.ai-attach-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 17px;
+}
+
+.ai-attach-btn:hover {
+  filter: brightness(0.7);
+}
+
+.ai-attach-notice {
+  margin: 0 5px 7px;
+  font-size: 11.5px;
+  color: var(--color-error);
+}
+
+.ai-panel-dragover {
+  outline: 2px dashed var(--color-text-primary);
+  outline-offset: -4px;
+}
+
+.ai-sent-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.ai-sent-attachments img {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.ai-sent-attachments span {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
 /* composer card — 16px radius, default border, production float shadow */
 .ai-input-box {
   border: 1px solid var(--color-border-default);
