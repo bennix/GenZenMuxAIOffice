@@ -18,7 +18,7 @@ describe('direct PDF print layout', () => {
     expect(printCss).toMatch(
       /\.doc-page\s*\{[\s\S]*?width:\s*var\(--page-w,\s*816px\)\s*!important/,
     )
-    expect(printCss).not.toMatch(/\.doc-page\s*\{[\s\S]*?width:\s*auto\s*!important/)
+    expect(printCss).not.toMatch(/(?:^|\n)\s*\.doc-page\s*\{[^}]*width:\s*auto\s*!important/)
   })
 
   it('removes protected-object selection chrome from exported pages', () => {
@@ -34,5 +34,10 @@ describe('direct PDF print layout', () => {
   it('exports at physical size independently of the editor view zoom', () => {
     expect(actions).toContain("zoomEl.style.setProperty('zoom', '1', 'important')")
     expect(actions.match(/withUnzoomedPrintLayout\(\(\) =>/g)).toHaveLength(3)
+  })
+
+  it('keeps pagination-preview clones at content width so centered objects do not shift right', () => {
+    const printCss = css.slice(css.indexOf('@media print'))
+    expect(printCss).toMatch(/\.pv-clip \.doc-page\s*\{[\s\S]*?width:\s*auto\s*!important/)
   })
 })

@@ -1757,9 +1757,16 @@ function protectedDomSpec(node: PmNode): DomSpec {
       class: 'doc-protected-img',
     }
     if (imageWidthPx) {
+      const width = Number(imageWidthPx)
+      const height = imageHeightPx ? Number(imageHeightPx) : null
+      // A declared DOCX extent can be wider than the live content box. CSS
+      // max-width then reduces the painted width; keeping an explicit height
+      // would squash only the x axis. Use the declared extent as the preferred
+      // aspect ratio so print/web/preview all scale both axes together. Crop
+      // windows replace this style below and retain their fixed geometry.
       imgAttrs['style'] =
-        `width:${Number(imageWidthPx)}px;` +
-        (imageHeightPx ? `height:${Number(imageHeightPx)}px` : 'height:auto')
+        `width:${width}px;height:auto;` +
+        (height && height > 0 ? `aspect-ratio:${width}/${height};object-fit:fill` : '')
     }
     // a:srcRect source crop / a:fillRect fill placement: an overflow-hidden
     // window at the declared extent over a scaled and offset image
@@ -2566,9 +2573,12 @@ function imageResizePlugin(): Plugin {
           const startW = startRect.width / zoom
           const ratio = startRect.height / startRect.width
           const startX = event.clientX
+          let moved = false
 
           const widthAt = (e: MouseEvent) => Math.max(24, startW + (e.clientX - startX) / zoom)
           const onMove = (e: MouseEvent) => {
+            if (Math.abs(e.clientX - startX) < 1) return
+            moved = true
             const w = widthAt(e)
             img.style.width = `${w}px`
             img.style.height = `${w * ratio}px`
@@ -2576,6 +2586,9 @@ function imageResizePlugin(): Plugin {
           const onUp = (e: MouseEvent) => {
             window.removeEventListener('mousemove', onMove)
             window.removeEventListener('mouseup', onUp)
+            // Selecting or merely pressing the handle must not rewrite a
+            // constrained image's model size. Commit only an actual drag.
+            if (!moved) return
             const w = Math.round(widthAt(e))
             const node = view.state.doc.nodeAt(pos)
             if (!node) return

@@ -22,6 +22,17 @@ async function openImageDoc(extraRels?: string) {
 }
 
 describe('image wrap in the editor', () => {
+  it('uses the declared picture extent as its responsive aspect ratio', async () => {
+    const { editor } = await openImageDoc()
+    const image = editor.view.dom.querySelector<HTMLImageElement>('.doc-protected-img')
+    expect(image).toBeTruthy()
+    expect(image!.style.width).toBe('96px')
+    expect(image!.style.height).toBe('auto')
+    expect(image!.style.aspectRatio).toBe('96/96')
+    expect(image!.style.objectFit).toBe('fill')
+    editor.destroy()
+  })
+
   it('keeps an untouched image byte-identical', async () => {
     const { editor, parsed, source } = await openImageDoc()
     const plan = pmDocToSavePlan(editor.getJSON() as PmNode, parsed.blocks)

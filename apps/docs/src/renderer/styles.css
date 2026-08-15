@@ -6726,6 +6726,15 @@ body.docs-crop-active
     height: calc(var(--pv-page-h, 1056px) - 2px) !important;
   }
 
+  /* The generic print rule above pins an editor .doc-page to the full paper
+     width. A pagination-preview clone lives inside a content-width
+     .pv-offset; pinning that clone to paper width makes centered content move
+     right by exactly the left page margin. Keep the clone fluid, matching the
+     on-screen pagination preview and its measured wrap width. */
+  .pv-clip .doc-page {
+    width: auto !important;
+  }
+
   .pv-page:last-child {
     break-after: auto;
   }
