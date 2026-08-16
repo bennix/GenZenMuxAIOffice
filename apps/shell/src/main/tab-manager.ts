@@ -126,6 +126,10 @@ export class TabManager {
     }))
   }
 
+  ownsWebContents(webContentsId: number): boolean {
+    return this.tabs.some((tab) => tab.view?.webContents.id === webContentsId)
+  }
+
   connectTargets(sourceWebContentsId: number): ConnectTarget[] {
     return this.tabs.flatMap((tab) => {
       if (

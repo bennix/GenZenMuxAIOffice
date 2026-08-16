@@ -2827,6 +2827,444 @@ textarea:focus {
   min-width: 68px;
 }
 
+/* Workbook SQL database — a dense, locally run data console. */
+.sql-workspace-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, #07120d 66%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.sql-workspace {
+  width: min(1540px, 97vw);
+  height: min(900px, 94vh);
+  overflow: hidden;
+  color: #eaf5ef;
+  border: 1px solid #355647;
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgb(41 82 62 / 22%) 0, transparent 38%), #101814;
+  box-shadow: 0 30px 90px rgb(0 0 0 / 48%);
+}
+
+.sql-workspace-header {
+  height: 86px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 22px 0 25px;
+  border-bottom: 1px solid #2b3c34;
+  background: rgb(9 17 13 / 76%);
+}
+
+.sql-workspace-header h2 {
+  margin: 2px 0 0;
+  font-family: Georgia, 'Songti SC', serif;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.sql-workspace-header p,
+.sql-workspace-header .sql-kicker {
+  margin: 0;
+  color: #85a394;
+  font-size: 11px;
+}
+
+.sql-kicker {
+  letter-spacing: 0.18em;
+}
+
+.sql-header-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sql-header-actions > button {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  color: #c9ded2;
+  border: 1px solid #3a5146;
+  border-radius: 50%;
+  background: #18231e;
+  font-size: 22px;
+}
+
+.sql-notice {
+  max-width: 570px;
+  overflow: hidden;
+  color: #abc1b6;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sql-status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #46d789;
+  box-shadow: 0 0 12px #46d789;
+}
+
+.sql-status-dot.loading {
+  animation: sql-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes sql-pulse {
+  to {
+    opacity: 0.25;
+    transform: scale(0.75);
+  }
+}
+
+.sql-workspace-grid {
+  height: calc(100% - 86px);
+  display: grid;
+  grid-template-columns: 230px minmax(460px, 1fr) 390px;
+}
+
+.sql-catalog,
+.sql-schema-panel {
+  min-width: 0;
+  overflow: auto;
+  padding: 18px 14px;
+  background: rgb(9 16 12 / 55%);
+}
+
+.sql-catalog {
+  border-right: 1px solid #293a32;
+}
+.sql-schema-panel {
+  border-left: 1px solid #293a32;
+}
+
+.sql-section-title,
+.sql-index-title,
+.sql-results-head,
+.sql-console-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sql-section-title {
+  margin-bottom: 13px;
+  color: #799789;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.sql-section-title b {
+  padding: 2px 7px;
+  color: #b8ccbf;
+  border-radius: 10px;
+  background: #24342c;
+  font-size: 10px;
+}
+
+.sql-catalog > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 3px 0;
+  padding: 10px;
+  color: #c3d7cc;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+}
+
+.sql-catalog > button:hover {
+  background: #18271f;
+}
+.sql-catalog > button.active {
+  color: #fff;
+  border-color: #3e7158;
+  background: linear-gradient(90deg, #244c37, #183023);
+}
+
+.sql-catalog button span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.sql-catalog button strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sql-catalog button small {
+  color: #789485;
+  font-size: 10px;
+}
+.sql-table-glyph {
+  color: #59d590;
+  font-size: 20px;
+}
+
+.sql-catalog-note {
+  display: grid;
+  gap: 6px;
+  margin: 22px 6px 0;
+  padding: 14px;
+  color: #799488;
+  border: 1px solid #2d493b;
+  border-radius: 9px;
+  background: #14231b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.sql-catalog-note strong {
+  color: #a9c8b8;
+}
+
+.sql-console {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 48px 250px 55px minmax(0, 1fr);
+  background: #121b16;
+}
+
+.sql-console-toolbar {
+  justify-content: flex-start;
+  padding: 0 14px;
+  color: #789287;
+  border-bottom: 1px solid #28382f;
+  font-size: 10px;
+}
+
+.sql-run,
+.sql-save-schema {
+  color: #07150e;
+  border: 0;
+  border-radius: 6px;
+  background: #55d991;
+  font-weight: 700;
+}
+
+.sql-run {
+  padding: 8px 13px;
+}
+.sql-run:disabled,
+.sql-save-schema:disabled {
+  opacity: 0.4;
+}
+
+.sql-write-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #b5c8be;
+}
+.sql-write-toggle input {
+  accent-color: #e0a44a;
+}
+
+.sql-editor {
+  overflow: hidden;
+  border-bottom: 1px solid #2b3b33;
+}
+.sql-editor .cm-editor,
+.sql-editor .cm-gutters {
+  background: #0c120f;
+}
+.sql-editor .cm-editor {
+  height: 250px;
+  color: #d8e9df;
+  font-size: 13px;
+}
+.sql-editor .cm-gutters {
+  color: #5d7468;
+  border-right-color: #233129;
+}
+.sql-editor .cm-activeLine {
+  background: rgb(68 131 98 / 12%);
+}
+
+.sql-results-head {
+  padding: 0 15px;
+  border-bottom: 1px solid #28382f;
+}
+.sql-results-head > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+.sql-results-head strong {
+  color: #87a093;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+}
+.sql-results-head span {
+  color: #c5d7ce;
+  font-size: 11px;
+}
+.sql-result-tabs {
+  display: flex;
+  gap: 4px;
+}
+.sql-result-tabs button,
+.sql-index-title button,
+.sql-index-row button {
+  color: #b9cec2;
+  border: 1px solid #365044;
+  border-radius: 5px;
+  background: #19251f;
+}
+.sql-result-tabs button {
+  padding: 5px 8px;
+}
+.sql-result-tabs button.active {
+  color: #07140e;
+  background: #62d999;
+}
+.sql-result-tabs button:disabled {
+  opacity: 0.35;
+}
+
+.sql-result-scroll {
+  min-height: 0;
+  overflow: auto;
+}
+.sql-result-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.sql-result-scroll th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: #b8d0c3;
+  background: #1d2d25;
+  text-align: left;
+}
+.sql-result-scroll th,
+.sql-result-scroll td {
+  max-width: 280px;
+  padding: 7px 10px;
+  overflow: hidden;
+  border-right: 1px solid #26372e;
+  border-bottom: 1px solid #24342c;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sql-result-scroll tr:nth-child(even) td {
+  background: rgb(33 55 44 / 30%);
+}
+.sql-empty-result {
+  padding: 28px;
+  color: #6f887b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.sql-field-label {
+  display: grid;
+  gap: 5px;
+  color: #829d8f;
+  font-size: 10px;
+}
+.sql-schema-panel input,
+.sql-schema-panel select {
+  min-width: 0;
+  height: 28px;
+  box-sizing: border-box;
+  color: #d4e6dc;
+  border: 1px solid #344a3f;
+  border-radius: 5px;
+  background: #111b16;
+  font-size: 10px;
+}
+.sql-schema-panel input {
+  padding: 0 7px;
+}
+.sql-column-head {
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 1px 7px;
+  color: #769184;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+.sql-columns {
+  display: grid;
+  gap: 5px;
+}
+.sql-column-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 80px 42px 52px;
+  align-items: center;
+  gap: 5px;
+}
+.sql-column-row label,
+.sql-index-row label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #95ac9f;
+  font-size: 9px;
+}
+.sql-column-row input[type='checkbox'],
+.sql-index-row input[type='checkbox'] {
+  width: 12px;
+  height: 12px;
+  accent-color: #50d58d;
+}
+
+.sql-index-title {
+  margin: 18px 0 7px;
+  color: #7d988b;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+.sql-index-title button {
+  width: 25px;
+  height: 24px;
+}
+.sql-index-row {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr 35px 25px;
+  gap: 4px;
+  margin-bottom: 5px;
+}
+.sql-schema-errors {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+  color: #ff9a8e;
+  font-size: 10px;
+}
+.sql-save-schema {
+  width: 100%;
+  margin-top: 14px;
+  padding: 9px;
+}
+
+@media (max-width: 1100px) {
+  .sql-workspace-grid {
+    grid-template-columns: 190px minmax(430px, 1fr);
+  }
+  .sql-schema-panel {
+    position: absolute;
+    right: 24px;
+    width: 360px;
+    height: calc(min(900px, 94vh) - 122px);
+    box-shadow: -20px 0 50px #07100b;
+  }
+}
+
 /* Consolidate dialog */
 .dialog-grid .dialog-span {
   grid-column: 1 / -1;

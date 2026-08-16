@@ -152,6 +152,12 @@ const config = {
   // there. macOS and Windows ignore the field and key off `ext`.
   fileAssociations: [
     {
+      ext: 'doc',
+      name: 'Word 97-2003 Document',
+      role: 'Editor',
+      mimeType: 'application/msword',
+    },
+    {
       ext: 'docx',
       name: 'Word Document',
       role: 'Editor',

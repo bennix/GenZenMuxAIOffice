@@ -1,6 +1,6 @@
 % !TEX program = xelatex
 % GenOffice User Manual — shared Chinese / English content
-% UI screenshots in this manual were captured from the current v0.6.50 source tree.
+% UI screenshots in this manual were captured from the current v0.6.53 source tree.
 \documentclass[11pt,a4paper]{article}
 
 % Edition wrappers define exactly one of these switches before inputting this file.
@@ -19,21 +19,21 @@
   \newcommand{\ManualEditionLine}{中文版 · Chinese Edition}
   \newcommand{\ManualFooter}{GenOffice 快速入门指南 · 中文版}
   \newcommand{\ManualPdfTitle}{GenOffice 快速入门指南（中文版）}
-  \newcommand{\ManualPdfSubject}{GenOffice v0.6.50 中文用户指南}
+  \newcommand{\ManualPdfSubject}{GenOffice v0.6.53 中文用户指南}
 \else\ifManualEnglishOnly
   \newcommand{\CNText}[1]{}
   \newcommand{\ENText}[1]{#1}
   \newcommand{\ManualEditionLine}{English Edition · 英文版}
   \newcommand{\ManualFooter}{GenOffice User Manual · English Edition}
   \newcommand{\ManualPdfTitle}{GenOffice User Manual (English Edition)}
-  \newcommand{\ManualPdfSubject}{GenOffice v0.6.50 English user manual}
+  \newcommand{\ManualPdfSubject}{GenOffice v0.6.53 English user manual}
 \else
   \newcommand{\CNText}[1]{#1}
   \newcommand{\ENText}[1]{#1}
   \newcommand{\ManualEditionLine}{中英双语合订本 · Chinese--English Bilingual Edition}
   \newcommand{\ManualFooter}{中英双语入门手册 · Bilingual Getting-Started Manual}
   \newcommand{\ManualPdfTitle}{GenOffice 用户入门手册 / User Manual}
-  \newcommand{\ManualPdfSubject}{GenOffice v0.6.50 bilingual getting-started manual}
+  \newcommand{\ManualPdfSubject}{GenOffice v0.6.53 bilingual getting-started manual}
 \fi\fi
 
 \usepackage[a4paper,top=19mm,bottom=18mm,left=18mm,right=18mm,headheight=22pt]{geometry}
@@ -98,7 +98,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\footnotesize\bfseries GenOffice \textcolor{GOBlue}{/} ZenMux}
-\fancyhead[R]{\footnotesize\color{GOMuted} v0.6.50 · 2026-08-16}
+\fancyhead[R]{\footnotesize\color{GOMuted} v0.6.53 · 2026-08-17}
 \fancyfoot[L]{\scriptsize\color{GOMuted}\ManualFooter}
 \fancyfoot[R]{\colorbox{GOBlue}{\makebox[8mm][c]{\color{white}\bfseries\thepage}}}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -270,7 +270,7 @@
 \AppStrip
 \vfill
 {\color{white}\bfseries\ManualEditionLine\par}
-{\color{white!70}\small v0.6.50 · 2026-08-16 · macOS / Windows / Ubuntu / RPM\par}
+{\color{white!70}\small v0.6.53 · 2026-08-17 · macOS / Windows / Ubuntu / RPM\par}
 \clearpage
 
 % -----------------------------------------------------------------------------
@@ -280,9 +280,9 @@
 \Kicker{版本与版权 · Edition \& Credits}{SOURCE-VERIFIED MANUAL}
 \TopicTitle{关于本手册}{About this manual}
 
-\CNText{本手册面向第一次使用 GenOffice 的用户，以当前仓库 \textbf{v0.6.50} 源码与真实运行态为依据，说明安装、ZenMux 设置、Word、Excel、PowerPoint、Markdown、PDF 以及跨编辑器 AI 工作流。界面截图于 2026-08-16 在隔离的临时用户目录中从当前应用运行态取得；截图没有包含用户文件、真实 API Key 或个人数据。演示科研稿与工作簿均为专门制作的合成素材，不代表真实科研或企业结论。}
+\CNText{本手册面向第一次使用 GenOffice 的用户，以当前仓库 \textbf{v0.6.53} 源码与真实运行态为依据，说明安装、ZenMux 设置、Word、Excel、PowerPoint、Markdown、PDF、工作簿 SQL 数据库以及跨编辑器 AI 工作流。界面截图于 2026-08-16 至 17 日在隔离的临时用户目录中从当前应用运行态取得；截图没有包含用户文件、真实 API Key 或个人数据。演示科研稿与工作簿均为专门制作的合成素材，不代表真实科研或企业结论。}
 
-\ENText{This manual is based on the current \textbf{v0.6.50} source tree and real runtime UI. It covers installation, ZenMux configuration, Word, Excel, PowerPoint, Markdown, PDF, and cross-editor AI workflows. Screenshots were captured on 16 August 2026 in an isolated temporary profile and contain no user documents, real API Key, or personal data. The research draft and workbook are purpose-built synthetic demonstrations, not real scientific or business findings.}
+\ENText{This manual is based on the current \textbf{v0.6.53} source tree and real runtime UI. It covers installation, ZenMux configuration, Word, Excel, PowerPoint, Markdown, PDF, workbook SQL databases, and cross-editor AI workflows. Screenshots were captured on 16--17 August 2026 in an isolated temporary profile and contain no user documents, real API Key, or personal data. The research draft and workbooks are purpose-built synthetic demonstrations, not real scientific or business findings.}
 
 \vspace{5mm}
 \begin{tikzpicture}
@@ -381,9 +381,9 @@
 \CNPage{01}{安装并验证应用}{Install and verify}{GenOffice 提供 macOS DMG、Windows x64 安装程序、Ubuntu DEB 与通用 RPM。请只从项目 Landing Page 或 GitHub Releases 下载。}{
 \begin{enumerate}
   \item 在 \href{https://bennix.github.io/GenZenMuxAIOffice/}{官方 Landing Page} 选择操作系统；检查页面显示的当前版本与文件名一致。
-  \item macOS：打开 DMG，将 GenOffice 拖入“应用程序”。Apple Silicon 版本使用 Developer ID 签名并经过 Apple 公证。
+  \item macOS：打开 DMG，将 GenOffice 拖入“应用程序”。Apple Silicon 版本使用 Developer ID 签名；是否包含 Apple 公证票据以对应 Release 的验证说明为准。
   \item Windows：运行 x64 安装程序。当前安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”；请核对下载域名与 Release 文件。
-  \item Ubuntu：执行 \texttt{sudo apt install ./genoffice\_0.6.50\_amd64.deb}。Fedora/RHEL 系使用 \texttt{sudo dnf install ./genoffice-0.6.50.x86\_64.rpm}。
+  \item Ubuntu：执行 \texttt{sudo apt install ./genoffice\_0.6.53\_amd64.deb}。Fedora/RHEL 系使用 \texttt{sudo dnf install ./genoffice-0.6.53.x86\_64.rpm}。
 \end{enumerate}
 \begin{center}
 \begin{tabularx}{.95\linewidth}{>{\bfseries}p{28mm}p{43mm}X}
@@ -402,9 +402,9 @@ RPM & .rpm & Fedora/RHEL/Rocky/Alma/openSUSE x86\_64\\
 \ENPage{01}{安装并验证应用}{Install and verify}{GenOffice ships as a macOS DMG, Windows x64 installer, Ubuntu DEB, and RPM. Download only from the project Landing Page or GitHub Releases.}{
 \begin{enumerate}
   \item Open the \href{https://bennix.github.io/GenZenMuxAIOffice/}{official Landing Page}, choose your platform, and confirm that the displayed version matches the filename.
-  \item macOS: open the DMG and drag GenOffice to Applications. The Apple Silicon build is Developer ID signed and Apple notarized.
+  \item macOS: open the DMG and drag GenOffice to Applications. The Apple Silicon build is Developer ID signed; consult the matching Release verification notes for notarization-ticket status.
   \item Windows: run the x64 installer. The current build is not Authenticode-signed, so SmartScreen may report an unknown publisher; verify the domain and Release asset first.
-  \item Ubuntu: run \texttt{sudo apt install ./genoffice\_0.6.50\_amd64.deb}. Fedora/RHEL-family users can run \texttt{sudo dnf install ./genoffice-0.6.50.x86\_64.rpm}.
+  \item Ubuntu: run \texttt{sudo apt install ./genoffice\_0.6.53\_amd64.deb}. Fedora/RHEL-family users can run \texttt{sudo dnf install ./genoffice-0.6.53.x86\_64.rpm}.
 \end{enumerate}
 \begin{center}
 \begin{tabularx}{.95\linewidth}{>{\bfseries}p{28mm}p{43mm}X}
@@ -444,20 +444,22 @@ RPM & .rpm & Fedora/RHEL/Rocky/Alma/openSUSE x86\_64\\
 \Shot{02-home-quick-start.png}{当前源码真实运行态：主页快速新建卡片、项目栏、最近文件筛选与设置入口。}
 \begin{itemize}
   \item 点击 AI Docs、AI Sheets、AI Slides、AI Markdown 或 AI PDF 新建对应内容；“打开本地文件”用于选择已有文件。
+  \item 也可以把 DOC/DOCX、XLS/XLSX/CSV、PPTX、PDF 或 MD 文件直接拖到任意模块窗口；桌面外壳会识别真实格式并自动交给对应编辑器打开。
   \item 左侧“项目”用于组织文件；“最近”和“收藏”可快速返回经常使用的内容。
   \item 右侧筛选条按文档、表格、演示、PDF 或 Markdown 缩小最近文件范围。
 \end{itemize}
-\Tip{同一个文件已经在标签页中打开时，优先切回现有标签，避免产生两个编辑会话。}
+\Tip{拖放用于打开文件，不会把原文件复制进当前文档。同一个文件已经在标签页中打开时，优先切回现有标签，避免产生两个编辑会话。}
 }
 
 \ENPage{03}{主页、项目与最近文件}{Home, projects, and recent files}{The home screen brings together five editors, local-file opening, projects, favorites, and recents. Tabs let one window host several file types.}{
 \Shot{02-home-quick-start.png}{Real runtime UI: quick-create cards, project navigation, recent-file filters, and Settings.}
 \begin{itemize}
   \item Choose AI Docs, AI Sheets, AI Slides, AI Markdown, or AI PDF to create content; Open local file selects an existing file.
+  \item You may also drop DOC/DOCX, XLS/XLSX/CSV, PPTX, PDF, or Markdown onto any module window. The desktop shell detects the actual format and routes it to the matching editor automatically.
   \item Projects organize work. Recent and Favorites provide quick return paths.
   \item The filter strip narrows recents to documents, spreadsheets, presentations, PDF, or Markdown.
 \end{itemize}
-\Tip{If a file is already open in a tab, switch to that tab instead of creating a second editing session.}
+\Tip{Dropping opens the file; it does not insert a copy into the current document. If a file is already open, switch to that tab instead of creating a second editing session.}
 }
 
 \CNPage{04}{快速配置 AI 算力与模型}{Get AI ready: key, model, and connection test}{所有 AI 通道使用统一的 OpenAI 兼容地址 \url{https://zenmux.ai/api/v1}。录入 API Key、选择模型并完成一次短测试，即可开箱使用。}{
@@ -507,7 +509,7 @@ RPM & .rpm & Fedora/RHEL/Rocky/Alma/openSUSE x86\_64\\
 }
 
 \CNPage{06}{确认隐私保护、版本与网络状态}{Verify privacy, version, and connectivity}{API Key 在界面中加密遮罩，并由系统凭据服务安全保存；“设置 > 关于”可核对版本、适配署名和更新通道。}{
-\SmallShot{04-settings-about.png}{当前源码真实运行态：版本 0.6.50、AI 适配与修改署名、稳定版更新通道。}
+\SmallShot{04-settings-about.png}{设置 > 关于的真实运行态；截图采集于旧版界面，发行与手册版本以页眉标注的 v0.6.53 为准。}
 \begin{itemize}
   \item macOS 使用系统安全存储/钥匙串能力；Windows 使用系统凭据加密机制。应用不会把 Key 写进安装包或手册。
   \item 文档打开、编辑和保存以本地为主；调用 ZenMux、联网搜索、文献检索、公式 OCR 或配图时才需要网络。
@@ -518,7 +520,7 @@ RPM & .rpm & Fedora/RHEL/Rocky/Alma/openSUSE x86\_64\\
 }
 
 \ENPage{06}{确认隐私保护、版本与网络状态}{Verify privacy, version, and connectivity}{The API Key is masked and protected by the operating-system credential service. Settings > About confirms version, adaptation credit, and update channel.}{
-\SmallShot{04-settings-about.png}{Real runtime UI: version 0.6.50, AI adaptation credit, and the stable update channel.}
+\SmallShot{04-settings-about.png}{Real Settings > About runtime; the capture predates this release, so use the v0.6.53 header as the authoritative manual version.}
 \begin{itemize}
   \item macOS uses operating-system secure storage/Keychain capabilities; Windows uses system credential encryption. The key is not embedded in installers or this manual.
   \item Opening, editing, and saving files are local-first. ZenMux calls, web search, literature search, formula OCR, and image generation require a network.
@@ -744,23 +746,25 @@ Source remains copyable, rendering remains readable, and inserted equations rema
 \CNPage{11}{创建、打开与保存 DOCX}{Create, open, and save DOCX}{Word 工作台直接处理 DOCX。未修改的文档部分尽量保持原始结构；保存前仍应检查页面、字体、图片和复杂对象。}{
 \Shot{05-word-editor.png}{当前源码真实运行态：Word 编辑器、分页画布、功能区与左侧 ZenMux AI 面板。}
 \begin{itemize}
-  \item 从主页点击 AI Docs 新建，或用“打开本地文件”选择 .docx。标题栏显示当前文件名与保存状态。
+  \item 从主页点击 AI Docs 新建，或用“打开本地文件”选择 .docx/.doc。标题栏显示当前文件名与保存状态。
+  \item 打开旧版 .doc 时，应用优先调用本机 LibreOffice 转换为独立 DOCX；若不可用，则使用纯 JavaScript 文字恢复兜底。转换结果另存为新文件，绝不覆盖原始 .doc。
   \item 使用 Cmd/Ctrl+S 保存，Cmd/Ctrl+Shift+S 另存。首次保存的新文档需要选择位置与文件名。
   \item 自动保存可减少意外损失，但在大幅修改前仍建议另存版本；关闭时留意未保存提示。
   \item 在 Microsoft Word 或其他兼容应用中复核交付文件，尤其是特殊字体、域、目录、浮动对象和跨页表格。
 \end{itemize}
-\Tip{处理重要文件时，保留“原始文件、编辑副本、最终交付”三份，避免覆盖唯一来源。}
+\Tip{旧版 DOC 的复杂版式、嵌入对象或宏可能无法完整转换。处理重要文件时，保留“原始文件、转换后的 DOCX、最终交付”三份。}
 }
 
 \ENPage{11}{创建、打开与保存 DOCX}{Create, open, and save DOCX}{The Word workspace edits real DOCX files. Unchanged areas are preserved as narrowly as possible, but page layout, fonts, images, and complex objects still deserve a final check.}{
 \Shot{05-word-editor.png}{Real runtime UI: Word editor, paginated canvas, ribbon, and the ZenMux AI panel on the left.}
 \begin{itemize}
-  \item Choose AI Docs to create a file or Open local file to select a .docx. The title area shows filename and save state.
+  \item Choose AI Docs to create a file or Open local file to select a .docx/.doc. The title area shows filename and save state.
+  \item For legacy .doc, GenOffice first asks local LibreOffice for a high-fidelity conversion to a separate DOCX. If unavailable, a pure-JavaScript text-recovery path is used. The original .doc is never overwritten.
   \item Use Cmd/Ctrl+S to save and Cmd/Ctrl+Shift+S for Save As. A new document asks for location and name on first save.
   \item Auto-save reduces accidental loss, but create a new version before major edits and respond to unsaved-close prompts.
   \item Review deliverables in Microsoft Word or another compatible app, especially custom fonts, fields, contents, floating objects, and multipage tables.
 \end{itemize}
-\Tip{For important work, keep an untouched original, an editing copy, and a final delivery file instead of overwriting the only source.}
+\Tip{Complex legacy layout, embedded objects, or macros may not convert completely. Keep the untouched DOC, converted DOCX, and final delivery as separate files.}
 }
 
 \CNPage{12}{文字、段落、样式与 AI 修改}{Text, paragraphs, styles, and AI edits}{功能区用于字体、字号、粗斜体、颜色、对齐、列表和样式。选择一段文字后，AI 可以只针对选区润色、翻译、总结或改写。}{
@@ -1032,6 +1036,104 @@ Multivariate profile & Radar, with careful scaling\\
   \item Check number formats, percentages, dates, alignment, conditional formatting, and fill range. Neutral alignment such as right-align should map safely without aborting the batch.
 \end{enumerate}
 \Tip{Creating a new result column beside the source is safer than overwriting it. Replace only after verification.}
+}
+
+\CNPage{21A}{把一个工作簿定义成关系数据库}{Model a workbook as a relational database}{在“数据 > SQL 数据库”中，一个工作簿就是一个本地数据库，每个可见工作表是一张数据表；右侧结构面板把普通表头提升为可验证的字段定义。}{
+\SmallShot{09-sheets-editor.png}{从 Excel 工作台进入“数据 > SQL 数据库”；工作簿仍是可编辑、可保存的 XLSX 文件。}
+\begin{center}
+\begin{tabularx}{.96\linewidth}{>{\bfseries}p{36mm}X}
+\toprule
+结构项 & 用法\\\midrule
+表名与字段名 & 工作表名默认成为表名，首行默认成为字段名；中文或带空格名称在 SQL 中用方括号。\\
+字段类型 & 可设为 TEXT、INTEGER、NUMBER、BOOLEAN、DATE 或 DATETIME，并指定是否允许 NULL。\\
+主键 & 勾选一个字段得到单列主键；同时勾选多个字段得到复合主键，主键自动禁止 NULL。\\
+次级索引 & 为一个或多个字段建立普通或唯一索引；多个字段组成复合次级索引。\\
+本地保存 & 点击“保存结构并重建数据库”；Schema 与键设置永久保存在本机，原工作表数据不上传。\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\Warn{SQL 数据库是当前工作簿的本地查询视图，不是远程服务器。结构变化或未保存的行列调整后，应保存工作簿并重新打开 SQL 工作台。}
+}
+
+\ENPage{21A}{把一个工作簿定义成关系数据库}{Model a workbook as a relational database}{Under Data > SQL Database, one workbook becomes a local database and every visible worksheet becomes a table. The schema panel turns ordinary headers into validated field definitions.}{
+\SmallShot{09-sheets-editor.png}{Open Data > SQL Database from the Excel workspace; the workbook remains an editable, saveable XLSX file.}
+\begin{center}
+\begin{tabularx}{.96\linewidth}{>{\bfseries}p{38mm}X}
+\toprule
+Schema item & Usage\\\midrule
+Table and field names & Sheet names become tables and the first row becomes fields. Wrap Chinese or spaced identifiers in square brackets.\\
+Field types & Choose TEXT, INTEGER, NUMBER, BOOLEAN, DATE, or DATETIME and set nullability.\\
+Primary key & Select one field for a simple key or several for a composite key. Primary-key fields cannot be NULL.\\
+Secondary index & Build ordinary or unique indexes over one or several fields; multiple fields form a composite index.\\
+Local persistence & Choose Save schema \& rebuild. Schema and keys persist locally; worksheet data is not uploaded.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\Warn{This database is a local query view of the current workbook, not a remote server. After structural row/column changes, save the workbook and reopen the SQL workspace.}
+}
+
+\CNPage{21B}{SQL 工作台：写脚本、定位错误并回填结果}{SQL workbench: script, diagnose, and write results}{工作台同时显示数据表目录、SQL 编辑器、查询结果和 Schema；适合对多个工作表做 JOIN、聚合、筛选与可复现分析。}{
+\Flow{读取真实 Schema}{编写或让 AI 生成}{只读验证查询}{回填到新工作表}
+\begin{itemize}
+  \item 编辑器支持 SQL 高亮、行号、多语句脚本、折叠与错误标记。\textbf{Cmd/Ctrl+Enter} 运行选中 SQL 或光标所在语句；\textbf{Shift+Cmd/Ctrl+Enter} 运行完整脚本。
+  \item 错误会定位到对应行与语句；多语句结果用编号页签切换。SELECT 结果可预览，并用“回填 Excel”写入一张\textbf{新工作表}，不覆盖源表。
+  \item 默认“安全只读模式”拒绝修改语句。手动开启“允许本地会话写语句”只改变本次内存数据库，不会自动写回 XLSX。
+  \item AI 必须先读取真实 Catalog，再生成、解释或修复 SQL；自动执行仅允许 SELECT、WITH 或 EXPLAIN。只有用户明确要求时，AI 才可把只读查询结果写入新工作表。
+\end{itemize}
+\Tip{先用 SELECT 验证行数和连接条件，再回填。涉及中文表名、字段名时写成 \texttt{[订单明细].[商品ID]}。}
+}
+
+\ENPage{21B}{SQL 工作台：写脚本、定位错误并回填结果}{SQL workbench: script, diagnose, and write results}{The workbench combines a table catalog, SQL editor, results, and schema inspector for reproducible joins, aggregation, and filtering across worksheets.}{
+\Flow{Load real schema}{Write or ask AI}{Verify read-only}{Write to new sheet}
+\begin{itemize}
+  \item The editor provides syntax highlighting, line numbers, multi-statement scripts, folding, and inline diagnostics. \textbf{Cmd/Ctrl+Enter} runs the selection or current statement; \textbf{Shift+Cmd/Ctrl+Enter} runs the full script.
+  \item Errors point to the relevant line and statement; numbered tabs switch among multiple results. Preview a SELECT result, then Write to Excel to create a \textbf{new worksheet} without overwriting sources.
+  \item Safe read-only mode rejects mutations by default. Enabling session writes changes only the in-memory database and never writes them automatically to XLSX.
+  \item AI must load the real catalog before generating, explaining, or repairing SQL. Automatic execution is restricted to SELECT, WITH, or EXPLAIN; a result is inserted only after an explicit user request.
+\end{itemize}
+\Tip{Verify join conditions and row counts with SELECT before writing back. Use square brackets for Chinese identifiers, for example \texttt{[订单明细].[商品ID]}.}
+}
+
+\CNPage{21C}{下载两个样例数据库并复现实测查询}{Download two sample databases and reproduce the tests}{Landing Page 提供两份可直接打开的 XLSX 样例。它们包含隐藏的 \texttt{\_GenOfficeSchema} 元数据，可自动还原类型、主键和索引，并已通过真实 XLSX 读取与 SQL 查询测试。}{
+\begin{center}
+\begin{tabularx}{.96\linewidth}{>{\bfseries}p{37mm}X}
+\toprule
+样例 & 数据模型与验证重点\\\midrule
+\href{https://bennix.github.io/GenZenMuxAIOffice/samples/\%E9\%9B\%B6\%E5\%94\%AE\%E8\%AE\%A2\%E5\%8D\%95\%E6\%95\%B0\%E6\%8D\%AE\%E5\%BA\%93.xlsx}{零售订单数据库.xlsx} & 客户、订单、订单明细、商品；验证 1:N 关系、\texttt{订单明细(订单ID, 行号)} 复合主键、折扣、状态和缺失值。\\
+\href{https://bennix.github.io/GenZenMuxAIOffice/samples/\%E7\%A7\%91\%E7\%A0\%94\%E9\%A1\%B9\%E7\%9B\%AE\%E6\%95\%B0\%E6\%8D\%AE\%E5\%BA\%93.xlsx}{科研项目数据库.xlsx} & 项目、研究人员、论文、项目成员；验证 M:N 关系、\texttt{项目成员(项目ID, 人员ID)} 复合主键、预算、日期和 ORCID 空值。\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\textbf{零售样例：按城市汇总未取消订单销售额}
+\begin{quote}\small\ttfamily
+SELECT c.[城市], ROUND(SUM(d.[行金额]), 2) AS [销售额]\\
+FROM [客户] c JOIN [订单] o ON o.[客户ID] = c.[客户ID]\\
+JOIN [订单明细] d ON d.[订单ID] = o.[订单ID]\\
+WHERE o.[订单状态] <> '已取消' GROUP BY c.[城市]\\
+ORDER BY [销售额] DESC;
+\end{quote}
+\Tip{下载后：打开 XLSX $\rightarrow$ 数据 $\rightarrow$ SQL 数据库 $\rightarrow$ 粘贴查询 $\rightarrow$ Cmd/Ctrl+Enter $\rightarrow$ 回填 Excel。科研样例还可练习 GROUP BY、HAVING、日期聚合和多对多 JOIN。}
+}
+
+\ENPage{21C}{下载两个样例数据库并复现实测查询}{Download two sample databases and reproduce the tests}{The Landing Page hosts two ready-to-open XLSX samples. Hidden \texttt{\_GenOfficeSchema} metadata restores types, keys, and indexes, and both files pass the real XLSX reader plus SQL test suite.}{
+\begin{center}
+\begin{tabularx}{.96\linewidth}{>{\bfseries}p{41mm}X}
+\toprule
+Sample & Model and validation focus\\\midrule
+\href{https://bennix.github.io/GenZenMuxAIOffice/samples/\%E9\%9B\%B6\%E5\%94\%AE\%E8\%AE\%A2\%E5\%8D\%95\%E6\%95\%B0\%E6\%8D\%AE\%E5\%BA\%93.xlsx}{Retail Orders database} & Customers, orders, lines, and products; validates 1:N relations, composite line key, discounts, status, and missing values.\\
+\href{https://bennix.github.io/GenZenMuxAIOffice/samples/\%E7\%A7\%91\%E7\%A0\%94\%E9\%A1\%B9\%E7\%9B\%AE\%E6\%95\%B0\%E6\%8D\%AE\%E5\%BA\%93.xlsx}{Research Projects database} & Projects, researchers, papers, and membership; validates M:N relations, composite membership key, budgets, dates, and missing ORCID values.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\textbf{Retail sample: sales by city for non-cancelled orders}
+\begin{quote}\small\ttfamily
+SELECT c.[城市], ROUND(SUM(d.[行金额]), 2) AS [销售额]\\
+FROM [客户] c JOIN [订单] o ON o.[客户ID] = c.[客户ID]\\
+JOIN [订单明细] d ON d.[订单ID] = o.[订单ID]\\
+WHERE o.[订单状态] <> '已取消' GROUP BY c.[城市]\\
+ORDER BY [销售额] DESC;
+\end{quote}
+\Tip{Open the XLSX $\rightarrow$ Data $\rightarrow$ SQL Database $\rightarrow$ paste the query $\rightarrow$ Cmd/Ctrl+Enter $\rightarrow$ Write to Excel. Use the research sample for GROUP BY, HAVING, date aggregation, and many-to-many joins.}
 }
 
 % =============================================================================
@@ -1365,7 +1467,7 @@ Rendered multiline: \(\displaystyle\begin{aligned}F&=ma\\E_k&=\frac12mv^2\end{al
 % =============================================================================
 \PartPage{VII}{联网查证、可靠性与交付}{Web verification, reliability \& delivery}{让 AI 参考当前日期和可信来源，同时掌握超时重试、系统权限、保存恢复、隐私和交付检查。}{Ground AI in the current date and credible sources while mastering retries, permissions, recovery, privacy, and delivery checks.}
 
-\CNPage{35}{让“最新”真的最新：按当前日期联网查证}{Make “latest” current: verify against today's date}{本手册生成时系统日期为 2026-08-16。涉及“最新”“今天”“当前政策”或市场与科研进展的问题，应显式要求 AI 参考当前系统时间并联网查证。}{
+\CNPage{35}{让“最新”真的最新：按当前日期联网查证}{Make “latest” current: verify against today's date}{本手册更新时系统日期为 2026-08-17。涉及“最新”“今天”“当前政策”或市场与科研进展的问题，应显式要求 AI 参考当前系统时间并联网查证。}{
 \begin{enumerate}
   \item 在提示词中写明时间边界，例如“以当前系统日期为截止时间，只使用 2025-01-01 之后可验证的资料”。
   \item 要求回答区分“模型已有知识”“联网检索事实”“推断/预测”，并给出来源标题、机构、日期和原始链接。
@@ -1375,7 +1477,7 @@ Rendered multiline: \(\displaystyle\begin{aligned}F&=ma\\E_k&=\frac12mv^2\end{al
 \Warn{网页内容会变化，搜索摘要也可能截断语境。对高风险结论，打开原文、记录访问日期，并至少使用两个独立可信来源。}
 }
 
-\ENPage{35}{让“最新”真的最新：按当前日期联网查证}{Make “latest” current: verify against today's date}{The system date when this manual was generated is 16 August 2026. Questions about “latest,” “today,” current policy, markets, or recent science should explicitly request current-date web verification.}{
+\ENPage{35}{让“最新”真的最新：按当前日期联网查证}{Make “latest” current: verify against today's date}{The system date when this manual was updated is 17 August 2026. Questions about “latest,” “today,” current policy, markets, or recent science should explicitly request current-date web verification.}{
 \begin{enumerate}
   \item Define a time boundary: “Use the current system date as the cutoff and rely only on verifiable material after 1 January 2025.”
   \item Ask the response to distinguish model knowledge, retrieved facts, and inference/forecast, with source title, institution, date, and original URL.
@@ -1661,7 +1763,7 @@ Recording lacks microphone/system audio & Permission, relaunch, or platform-sour
 \CNText{{\color{white!78}\Large 选择内容，提出明确问题，审阅结果，再写回可编辑对象。\par}}
 \ENText{{\color{white!78}\Large Select context, ask precisely, review the result, then write back to editable objects.\par}}
 \vfill
-{\color{white}\bfseries GenOffice v0.6.50 · ZenMux AI\par}
-{\color{white!65}\small\ManualEditionLine · 2026-08-16\par}
+{\color{white}\bfseries GenOffice v0.6.53 · ZenMux AI\par}
+{\color{white!65}\small\ManualEditionLine · 2026-08-17\par}
 
 \end{document}

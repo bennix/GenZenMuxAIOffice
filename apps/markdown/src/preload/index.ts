@@ -1,4 +1,8 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import {
+  DOCUMENT_DROP_CHANNEL,
+  installDocumentDropBridge,
+} from '@genoffice/electron-utils/document-drop'
 import type { Lang } from '@genoffice/i18n'
 import type { AiStreamChunk } from '@genoffice/ai-provider'
 import type { ProjectApi } from '@genoffice/project-store'
@@ -87,3 +91,8 @@ const projectApi: Pick<ProjectApi, 'resolveChat' | 'appendChat' | 'loadChat' | '
 
 contextBridge.exposeInMainWorld('markdownApi', api)
 contextBridge.exposeInMainWorld('projectApi', projectApi)
+
+installDocumentDropBridge({
+  getPathForFile: (file) => webUtils.getPathForFile(file),
+  openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
+})

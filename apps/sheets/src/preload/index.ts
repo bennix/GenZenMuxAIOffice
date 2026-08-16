@@ -1,4 +1,8 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import {
+  DOCUMENT_DROP_CHANNEL,
+  installDocumentDropBridge,
+} from '@genoffice/electron-utils/document-drop'
 
 import type { AiChatResponse, AiSettings, AiStreamChunk } from '@genoffice/ai-provider'
 import type { ProjectApi } from '@genoffice/project-store'
@@ -434,6 +438,11 @@ const projectApi: ProjectApi = {
   getTimeline: (args) => ipcRenderer.invoke('project:timeline', args),
 }
 contextBridge.exposeInMainWorld('projectApi', projectApi)
+
+installDocumentDropBridge({
+  getPathForFile: (file) => webUtils.getPathForFile(file),
+  openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
+})
 
 function parseWorkbookFile(input: unknown): WorkbookFile {
   if (!isRecord(input)) throw new Error('Invalid workbook response.')

@@ -6,9 +6,10 @@ import {
   readFileSync,
   readdirSync,
   renameSync,
+  statSync,
   writeFileSync,
 } from 'node:fs'
-import { basename, dirname, extname, join } from 'node:path'
+import { basename, dirname, extname, isAbsolute, join } from 'node:path'
 import {
   BrowserWindow,
   Menu,
@@ -37,6 +38,7 @@ import menuHomeIcon2x from './assets/menu-home@2x.png?asset'
 import { createI18n, isLang, normalizeLang, setUiLang, type Lang } from '@genoffice/i18n'
 import { ZENMUX_INVITE_URL } from '@genoffice/ai-provider'
 import {
+  DOCUMENT_DROP_CHANNEL,
   DEFAULT_SAVE_DIR_KEY,
   appMenuLabels,
   contextMenuLabels,
@@ -55,6 +57,7 @@ import {
   syncCloudProjects,
 } from './cloud-projects'
 import { ProjectStore } from '@genoffice/project-store'
+import { importLegacyDoc } from './legacy-doc-import'
 
 import {
   buildDocsMenu,
@@ -1557,18 +1560,19 @@ function createShellWindow(): void {
 // ---- routing: one dispatch function for every open path ----
 
 const DOCX_RE = /\.docx$/i
+const DOC_RE = /\.doc$/i
 const XLSX_RE = /\.(xlsx|xls|csv)$/i
 const PPTX_RE = /\.pptx$/i
 const PDF_RE = /\.pdf$/i
 const MD_RE = /\.(md|markdown)$/i
 
 /** document formats we recognize but don't open — surfaced as a dialog, not silently dropped */
-const UNSUPPORTED_DOC_RE = /\.(doc|rtf|odt|ppt|pps|odp|ods|xlsm|xlsb|pages|key|numbers)$/i
+const UNSUPPORTED_DOC_RE = /\.(rtf|odt|ppt|pps|odp|ods|xlsm|xlsb|pages|key|numbers)$/i
 
 /**
  * Single source of truth for the open-dialog filter. Includes the
- * legacy .doc/.ppt binaries so they are selectable and surface the explicit
- * "not supported" dialog via openDocumentPath instead of being grayed out.
+ * legacy .doc for converted import. Legacy .ppt remains selectable so it can
+ * surface an explicit "not supported" dialog instead of being grayed out.
  */
 const OPEN_DIALOG_EXTENSIONS = [
   'docx',
@@ -1588,6 +1592,7 @@ function supportedFileIn(argv: string[]): string | null {
     argv.find(
       (arg) =>
         (DOCX_RE.test(arg) ||
+          DOC_RE.test(arg) ||
           XLSX_RE.test(arg) ||
           PPTX_RE.test(arg) ||
           PDF_RE.test(arg) ||
@@ -1613,9 +1618,42 @@ function notifyUnsupportedFile(filePath: string): void {
   }
 }
 
+const activeLegacyDocImports = new Map<string, Promise<string>>()
+
+function openLegacyDoc(filePath: string): void {
+  let pending = activeLegacyDocImports.get(filePath)
+  if (!pending) {
+    pending = importLegacyDoc(filePath, defaultSaveDir()).then((result) => result.path)
+    activeLegacyDocImports.set(filePath, pending)
+  }
+  void pending
+    .then((convertedPath) => {
+      if (!existsSync(convertedPath)) {
+        activeLegacyDocImports.delete(filePath)
+        return
+      }
+      openDocumentPath(convertedPath)
+    })
+    .catch((error: unknown) => {
+      activeLegacyDocImports.delete(filePath)
+      const detail = error instanceof Error ? error.message : String(error)
+      const options = {
+        type: 'error' as const,
+        message: tm('errUnsupportedExt', { ext: 'doc' }),
+        detail,
+      }
+      if (shellWindow) void dialog.showMessageBox(shellWindow, options)
+      else void dialog.showMessageBox(options)
+    })
+}
+
 /** the single router: extension decides which module owns the file; false = nothing opened */
 function openDocumentPath(filePath: string): boolean {
   if (!existsSync(filePath) || !tabManager) return false
+  if (DOC_RE.test(filePath)) {
+    openLegacyDoc(filePath)
+    return true
+  }
   if (DOCX_RE.test(filePath)) {
     recordRecentFile(filePath)
     const existing = tabManager.findDocsTabByPath(filePath)
@@ -2155,6 +2193,38 @@ function registerConnectIpc(): void {
   })
 }
 
+function registerDocumentDropIpc(): void {
+  ipcMain.on(DOCUMENT_DROP_CHANNEL, (event, input: unknown) => {
+    const trustedSender =
+      event.sender.id === shellWindow?.webContents.id ||
+      (tabManager?.ownsWebContents(event.sender.id) ?? false)
+    if (!trustedSender || !Array.isArray(input) || input.length === 0 || input.length > 10) return
+    const paths: string[] = []
+    const seen = new Set<string>()
+    for (const value of input) {
+      if (
+        typeof value !== 'string' ||
+        value.length === 0 ||
+        value.length > 4096 ||
+        value.includes('\0') ||
+        !isAbsolute(value) ||
+        seen.has(value) ||
+        supportedFileIn([value]) !== value
+      ) {
+        continue
+      }
+      try {
+        if (!statSync(value).isFile()) continue
+      } catch {
+        continue
+      }
+      seen.add(value)
+      paths.push(value)
+    }
+    for (const path of paths) openDocumentPath(path)
+  })
+}
+
 // ---- home menu ----
 
 async function openFileViaDialog(): Promise<void> {
@@ -2496,6 +2566,7 @@ registerDocsIpc()
 registerHomeIpc()
 registerTabsIpc()
 registerConnectIpc()
+registerDocumentDropIpc()
 
 // sheets' project:resolveChat goes through the handler registered by docs-main; the sessionId reverse lookup hooks in here
 setSessionPathResolver(resolveSheetsSessionPath)

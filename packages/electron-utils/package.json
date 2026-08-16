@@ -7,7 +7,8 @@
   "description": "Shared helpers for the Electron main processes (no Electron dependency, pure TS)",
   "exports": {
     ".": "./src/index.ts",
-    "./connect": "./src/connect.ts"
+    "./connect": "./src/connect.ts",
+    "./document-drop": "./src/document-drop.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

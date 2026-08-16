@@ -23,6 +23,12 @@ export {
   type PathProvider,
 } from './default-save-dir'
 export { installNavigationGuard } from './navigation-guard'
+export {
+  DOCUMENT_DROP_CHANNEL,
+  droppedOfficeDocumentPaths,
+  installDocumentDropBridge,
+  isDroppedOfficeDocument,
+} from './document-drop'
 export { safeExternalUrl, type SafeExternalUrlOptions } from './safe-external-url'
 export {
   protectAiSettingsForDisk,

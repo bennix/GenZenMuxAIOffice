@@ -1,4 +1,8 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import {
+  DOCUMENT_DROP_CHANNEL,
+  installDocumentDropBridge,
+} from '@genoffice/electron-utils/document-drop'
 import type { IpcRendererEvent } from 'electron'
 import type {
   AccountLoginEvent,
@@ -299,3 +303,8 @@ const tabsApi: TabsApi = {
 }
 
 contextBridge.exposeInMainWorld('aiOfficeTabs', tabsApi)
+
+installDocumentDropBridge({
+  getPathForFile: (file) => webUtils.getPathForFile(file),
+  openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
+})

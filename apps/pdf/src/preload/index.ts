@@ -1,4 +1,8 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import {
+  DOCUMENT_DROP_CHANNEL,
+  installDocumentDropBridge,
+} from '@genoffice/electron-utils/document-drop'
 import type { Lang } from '@genoffice/i18n'
 import type { AiStreamChunk } from '@genoffice/ai-provider'
 import { AI_CHANNELS, PDF_CHANNELS } from '../shared/ipc'
@@ -78,3 +82,8 @@ const api: PdfApi = {
 }
 
 contextBridge.exposeInMainWorld('pdfApi', api)
+
+installDocumentDropBridge({
+  getPathForFile: (file) => webUtils.getPathForFile(file),
+  openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
+})

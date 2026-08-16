@@ -1882,6 +1882,13 @@ function Ribbon({
     return (
       <div className="ribbon">
         <RibbonGroup label={chinese ? '数据分析' : 'Data Analysis'}>
+          <RibbonButton
+            large
+            label={chinese ? 'SQL 数据库' : 'SQL Database'}
+            detail={chinese ? '工作簿即数据库；查询并回填结果' : 'Query the workbook as a database'}
+            symbol="▦"
+            onClick={() => onCommand('sql-database-open')}
+          />
           {largeMenu(
             chinese ? '分析工具' : 'Analysis Tools',
             '∑',

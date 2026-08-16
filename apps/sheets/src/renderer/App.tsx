@@ -126,6 +126,7 @@ import type { AiChatMessage } from './ai/AiChatPanel'
 import { createWorkbookSkill } from './ai/workbook-skill'
 import { createFilesSkill } from './ai/files-skill'
 import { createSearchSkill } from './ai/search-skill'
+import { createSqlSkill } from './ai/sql-skill'
 import { ATTACHMENT_IMAGE_EXTS } from '../shared/desktop-api'
 import type {
   AttachmentAddResult,
@@ -318,6 +319,15 @@ import {
   type ShapeEditChanges,
 } from './WorkbookVisuals'
 import { ChartFormatPane, SelectDataDialog } from './ChartPanels'
+import { SqlWorkspace } from './SqlWorkspace'
+import { WorkbookSqlEngine } from './sql/sql-engine'
+import type { WorkbookDatabaseSchema } from './sql/sql-types'
+import {
+  inferWorkbookDatabase,
+  materializeDatabase,
+  workbookDatabaseKey,
+} from './sql/sql-workbook-loader'
+import { loadStoredSchema } from './sql/sql-schema'
 
 // Source sheet id of an in-flight copy-sheet command; the next insert-sheet
 // mutation is that copy and must journal as a duplicate, not a blank add.
@@ -371,6 +381,12 @@ export function App(): React.JSX.Element {
   useEffect(() => {
     recomputeSheetContent()
   }, [workbookFile, recomputeSheetContent])
+  useEffect(() => {
+    if (sqlSessionIdRef.current === workbookFile?.sessionId) return
+    sqlEngineRef.current.reset()
+    sqlSchemaRef.current = null
+    sqlSessionIdRef.current = null
+  }, [workbookFile?.sessionId])
   // The close guard lives in the main process; keep it fed with the badge count.
   useEffect(() => {
     window.desktopApi?.notifyPendingEdits?.(pendingEdits)
@@ -449,6 +465,10 @@ export function App(): React.JSX.Element {
   const [screenshotDialogOpen, setScreenshotDialogOpen] = useState(false)
   const [iconsDialogOpen, setIconsDialogOpen] = useState(false)
   const [equationDialogOpen, setEquationDialogOpen] = useState(false)
+  const [sqlWorkspaceOpen, setSqlWorkspaceOpen] = useState(false)
+  const sqlEngineRef = useRef(new WorkbookSqlEngine())
+  const sqlSchemaRef = useRef<WorkbookDatabaseSchema | null>(null)
+  const sqlSessionIdRef = useRef<string | null>(null)
   const [recommendedCharts, setRecommendedCharts] = useState<ChartRecommendations | null>(null)
   /// The focused floating visual (chart/shape/image); charts surface a
   /// contextual Chart Design ribbon tab while selected.
@@ -836,6 +856,34 @@ export function App(): React.JSX.Element {
       skill: composeSkills('sheets+files', '', [
         createResearchSkill(),
         createWorkbookSkill(sheetsSkillDeps()),
+        createSqlSkill({
+          ensureDatabase: ensureSqlDatabase,
+          getSchema: () => sqlSchemaRef.current,
+          runReadOnly: (query) => {
+            const execution = sqlEngineRef.current.execute(query, { readOnly: true, maxRows: 500 })
+            const result = execution.results.at(-1)
+            return {
+              rows: result?.rows ?? [],
+              columns: result?.columns ?? [],
+              error: execution.error
+                ? `Line ${execution.error.line}: ${execution.error.message}`
+                : null,
+            }
+          },
+          writeReadOnlyResult: (query) => {
+            const execution = sqlEngineRef.current.execute(query, {
+              readOnly: true,
+              maxRows: 10_000,
+            })
+            const result = execution.results.at(-1)
+            if (execution.error) {
+              return { rows: 0, error: `Line ${execution.error.line}: ${execution.error.message}` }
+            }
+            if (!result) return { rows: 0, error: 'The query returned no result set.' }
+            const error = writeSqlResult(result.columns, result.rows)
+            return { rows: result.rows.length, error }
+          },
+        }),
         createFilesSkill(availableAttachments),
         createSearchSkill(),
       ]),
@@ -2714,7 +2762,72 @@ export function App(): React.JSX.Element {
   }
 
   function handleRibbonCommand(command: string): void {
+    if (command === 'sql-database-open') {
+      setSqlWorkspaceOpen(true)
+      return
+    }
     handleRibbonCommandImpl(ribbonContext(), command)
+  }
+
+  function writeSqlResult(
+    columns: readonly string[],
+    rows: ReadonlyArray<Readonly<Record<string, unknown>>>,
+  ): string | null {
+    const workbook = univerRef.current?.univerAPI.getActiveWorkbook()
+    if (!workbook) return t('appNoWorkbookOpen')
+    try {
+      const stamp = new Date().toLocaleTimeString('zh-CN', { hour12: false }).replace(/:/g, '')
+      const sheet = workbook.insertSheet(`SQL结果_${stamp}`)
+      const values = [
+        columns.map((column) => ({ v: column })),
+        ...rows.map((row) =>
+          columns.map((column) => {
+            const value = row[column]
+            if (value instanceof Date) return { v: value.toISOString() }
+            if (
+              typeof value === 'string' ||
+              typeof value === 'number' ||
+              typeof value === 'boolean'
+            )
+              return { v: value }
+            return { v: value === null || value === undefined ? '' : JSON.stringify(value) }
+          }),
+        ),
+      ]
+      sheet.getRange(0, 0, values.length, Math.max(1, columns.length)).setValues(values)
+      sheet.getRange(0, 0, 1, Math.max(1, columns.length)).setFontWeight('bold')
+      setPendingEdits((count) => Math.max(1, count))
+      setMessage(`SQL: ${rows.length.toLocaleString()} rows written to ${sheet.getSheetName()}.`)
+      return null
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Cannot write SQL results.'
+    }
+  }
+
+  async function ensureSqlDatabase(): Promise<WorkbookDatabaseSchema> {
+    const state = lazyWorkbookRef.current
+    if (!state) throw new Error('Open a saved Excel workbook before using SQL.')
+    if (
+      sqlEngineRef.current.isReady &&
+      sqlSchemaRef.current &&
+      sqlSessionIdRef.current === state.file.sessionId
+    ) {
+      return sqlSchemaRef.current
+    }
+    const inferred = await inferWorkbookDatabase({
+      file: state.file,
+      journal: state.editJournal,
+      readRange: (request) => window.desktopApi.readWorkbookRange(request),
+    })
+    const stored = loadStoredSchema(workbookDatabaseKey(state.file))
+    const ids = new Set(inferred.schema.tables.map((table) => table.sheetId))
+    const schema = stored?.tables.every((table) => ids.has(table.sheetId))
+      ? stored
+      : inferred.schema
+    sqlEngineRef.current.load(schema, materializeDatabase(schema, inferred.matrices))
+    sqlSchemaRef.current = schema
+    sqlSessionIdRef.current = state.file.sessionId
+    return schema
   }
 
   function selectionStyle(
@@ -3255,6 +3368,19 @@ export function App(): React.JSX.Element {
             handleInsertEquationImpl(visualContext(), dataUrl, width, height)
           }
           onClose={() => setEquationDialogOpen(false)}
+        />
+      )}
+      {sqlWorkspaceOpen && (
+        <SqlWorkspace
+          file={workbookFile}
+          journal={lazyWorkbookRef.current?.editJournal}
+          engine={sqlEngineRef.current}
+          onReady={(schema) => {
+            sqlSchemaRef.current = schema
+            sqlSessionIdRef.current = workbookFile?.sessionId ?? null
+          }}
+          onBackfill={writeSqlResult}
+          onClose={() => setSqlWorkspaceOpen(false)}
         />
       )}
       {recommendedCharts !== null && (
