@@ -65,6 +65,29 @@ describe('Markdown', () => {
     expect(html).toContain('class="katex"')
   })
 
+  it('renders parenthesized inline LaTeX commands in prose and list items', () => {
+    const html = renderToStaticMarkup(
+      <Markdown
+        text={String.raw`- 水平向右：\(F\cos 37^\circ = 60\times 0.8 = 48\,\mathrm{N}\)
+- 气体摩尔体积 \(V_\mathrm{m}\)：\(n = V/V_\mathrm{m}\)
+
+1 mol C 和 1 mol \(\mathrm{O_2}\) 恰好生成 1 mol \(\mathrm{CO_2}\)。`}
+      />,
+    )
+    expect(html.match(/class="katex"/g)?.length).toBe(5)
+    expect(html).not.toContain(String.raw`\(F\cos`)
+    expect(html).not.toContain(String.raw`\(\mathrm{O_2}\)`)
+  })
+
+  it('renders mhchem expressions returned by AI', () => {
+    const html = renderToStaticMarkup(
+      <Markdown text={String.raw`燃烧反应：\(\ce{2H2 + O2 -> 2H2O}\)`} />,
+    )
+    expect(html).toContain('class="katex"')
+    expect(html).not.toContain('katex-error')
+    expect(html).not.toContain(String.raw`\(\ce{2H2 + O2 -> 2H2O}\)`)
+  })
+
   it('keeps an incomplete streaming delimiter visible until it closes', () => {
     const html = renderToStaticMarkup(<Markdown text={'正在生成 $x = \\frac{1}{2'} />)
     expect(html).toContain('$x = \\frac{1}{2')

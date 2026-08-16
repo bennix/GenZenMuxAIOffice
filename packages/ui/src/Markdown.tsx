@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import katex from 'katex'
+import 'katex/contrib/mhchem'
 import 'katex/dist/katex.min.css'
 
 /**
@@ -9,7 +10,7 @@ import 'katex/dist/katex.min.css'
  */
 
 const INLINE_RE =
-  /(`[^`\n]+`|\$\$[^$\n]+?\$\$|\$[^$\n]+?\$|\\\([^\\\n]+?\\\)|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)/g
+  /(`[^`\n]+`|\$\$[^$\n]+?\$\$|\$[^$\n]+?\$|\\\([^\n]+?\\\)|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)/g
 
 function renderMath(tex: string, displayMode: boolean, key: number): ReactNode {
   try {
