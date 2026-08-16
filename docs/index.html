@@ -1045,8 +1045,68 @@
         line-height: 1.45;
       }
 
+      .manual-editions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border: 1px solid rgba(255, 255, 255, 0.28);
+      }
+
+      .manual-edition {
+        min-width: 0;
+        padding: 17px 16px 16px;
+        border-right: 1px solid rgba(255, 255, 255, 0.28);
+      }
+
+      .manual-edition:last-child {
+        border-right: 0;
+      }
+
+      .manual-edition > span {
+        display: block;
+        color: rgba(255, 255, 255, 0.52);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 10px;
+        font-weight: 750;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .manual-edition strong {
+        display: block;
+        min-height: 42px;
+        margin-top: 8px;
+        font-family: 'Iowan Old Style', 'Songti SC', Georgia, serif;
+        font-size: 18px;
+        font-weight: 500;
+        line-height: 1.18;
+      }
+
+      .manual-edition-links {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .manual-edition a {
+        color: var(--acid);
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .manual-edition a:hover {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+
+      .manual-edition a:focus-visible {
+        outline: 2px solid var(--acid);
+        outline-offset: 3px;
+      }
+
       .manual-actions {
-        margin-top: auto;
+        margin-top: 22px;
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
@@ -1244,6 +1304,19 @@
         .manual-stats {
           grid-template-columns: 1fr;
         }
+        .manual-editions {
+          grid-template-columns: 1fr;
+        }
+        .manual-edition {
+          border-right: 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+        }
+        .manual-edition:last-child {
+          border-bottom: 0;
+        }
+        .manual-edition strong {
+          min-height: auto;
+        }
         .manual-stat,
         .manual-stat:not(:first-child) {
           padding: 14px 0;
@@ -1399,54 +1472,68 @@
           </div>
         </section>
 
-        <section class="manual" id="manual" aria-label="GenOffice 中英双语用户手册">
+        <section class="manual" id="manual" aria-label="GenOffice 中文、英文与中英合订用户手册">
           <div class="manual-visual">
             <img
               class="manual-cover"
               src="manual/assets/manual-cover.png"
-              alt="GenOffice 中英双语用户入门手册封面"
+              alt="GenOffice 快速入门指南中文版封面"
               width="910"
               height="1287"
               loading="lazy"
             />
-            <div class="manual-folio" aria-hidden="true">97</div>
+            <div class="manual-folio" aria-hidden="true">3×</div>
           </div>
           <div class="manual-copy">
-            <div class="manual-kicker">Bilingual field guide · 中英双语入门手册</div>
-            <h2>从安装到交付，<br />一本手册完整走通。</h2>
+            <div class="manual-kicker">Three reading paths · 中文 / English / 中英合订</div>
+            <h2>先选语言，<br />3 分钟完成第一个真实任务。</h2>
             <p>
-              基于 v0.6.50 当前源码与真实运行态制作。中文页与英文页逐题相邻，覆盖 ZenMux 设置、
-              Word、Excel、PowerPoint、Markdown、PDF、科研引用、LaTeX、Mermaid、录制、
-              @Connect、联网查证与故障排除。
+              基于 v0.6.50 当前源码和真实运行态重制。用可编辑公式识别、真实 DOI 与 GB/T 7714
+              引用、3 委员 + 1 主席审稿、中文图表和 EDA 完整展示核心工作流；新增三组 Cookbook
+              与一分钟故障排查表，不再以空白文档充当功能截图。
             </p>
             <div class="manual-stats" aria-label="手册统计">
-              <div class="manual-stat"><strong>97</strong><span>A4 页面<br />A4 pages</span></div>
-              <div class="manual-stat"><strong>42</strong><span>成对主题<br />paired topics</span></div>
-              <div class="manual-stat"><strong>11</strong><span>真实运行态界面素材<br />runtime UI sources</span></div>
+              <div class="manual-stat"><strong>62/64/112</strong><span>中 / 英 / 合订 A4 页数<br />ZH / EN / combined pages</span></div>
+              <div class="manual-stat"><strong>46</strong><span>任务与场景主题<br />tasks &amp; recipes</span></div>
+              <div class="manual-stat"><strong>20</strong><span>真实运行态截图<br />real runtime captures</span></div>
+            </div>
+            <div class="manual-editions" aria-label="选择手册版本">
+              <article class="manual-edition">
+                <span>中文 · 62 pages</span>
+                <strong>GenOffice 快速入门指南</strong>
+                <div class="manual-edition-links">
+                  <a href="manual/GenOffice-User-Manual-ZH.pdf" download>下载 PDF ↓</a>
+                  <a href="manual/GenOffice-User-Manual-ZH.pdf" target="_blank" rel="noopener">在线阅读 ↗</a>
+                </div>
+              </article>
+              <article class="manual-edition">
+                <span>English · 64 pages</span>
+                <strong>GenOffice User Manual</strong>
+                <div class="manual-edition-links">
+                  <a href="manual/GenOffice-User-Manual-EN.pdf" download>Download PDF ↓</a>
+                  <a href="manual/GenOffice-User-Manual-EN.pdf" target="_blank" rel="noopener">Read online ↗</a>
+                </div>
+              </article>
+              <article class="manual-edition">
+                <span>中英合订 · 112 pages</span>
+                <strong>Bilingual Edition</strong>
+                <div class="manual-edition-links">
+                  <a href="manual/GenOffice-User-Manual-ZH-EN.pdf" download>下载 PDF ↓</a>
+                  <a href="manual/GenOffice-User-Manual-ZH-EN.pdf" target="_blank" rel="noopener">在线阅读 ↗</a>
+                </div>
+              </article>
             </div>
             <div class="manual-actions">
               <a
-                class="manual-btn primary"
-                href="manual/GenOffice-User-Manual-ZH-EN.pdf"
-                download
-                >下载中英双语 PDF ↓</a
-              >
-              <a
                 class="manual-btn secondary"
-                href="manual/GenOffice-User-Manual-ZH-EN.tex"
-                download
-                >下载 LaTeX 源文件 ↓</a
-              >
-              <a
-                class="manual-btn secondary"
-                href="manual/GenOffice-User-Manual-ZH-EN.pdf"
+                href="https://github.com/bennix/GenZenMuxAIOffice/tree/main/docs/manual"
                 target="_blank"
                 rel="noopener"
-                >在线阅读 PDF ↗</a
+                >查看 LaTeX 源码与全部素材 ↗</a
               >
             </div>
             <div class="manual-note">
-              SOURCE-VERIFIED · UI CAPTURED FROM THE CURRENT APPLICATION · PDF AND TEX PUBLISHED TOGETHER
+              SOURCE-VERIFIED · REAL RUNTIME CAPTURES · SYNTHETIC DEMO DATA · PDF AND TEX PUBLISHED TOGETHER
             </div>
           </div>
         </section>
