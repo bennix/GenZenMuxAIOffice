@@ -12,8 +12,8 @@ import { GlobalWorkerOptions, TextLayer, getDocument } from 'pdfjs-dist/legacy/b
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
 import { AiPanel, ZenMuxMark } from './ai/AiPanel'
-import { normalizeRegionRect } from './ai/region-context'
-import type { PdfAiRegionContext, RegionRect } from './ai/region-context'
+import { layoutRegionCaptures, splitSelectionAcrossPages } from './ai/region-context'
+import type { PageRegionSlice, PdfAiRegionContext } from './ai/region-context'
 import type { PdfAiDeps } from './ai/tools'
 import {
   MARKUP_COLORS,
@@ -158,11 +158,6 @@ const loadSidebarW = (): number => {
 interface PageSize {
   width: number
   height: number
-}
-
-interface AiRegionDraft {
-  pageIndex: number
-  rect: RegionRect
 }
 
 type FitMode = 'width' | 'page' | null
@@ -1105,7 +1100,7 @@ export default function App() {
   /** One-shot prompt pushed by the ribbon AI buttons; the panel auto-runs it (docs preset pattern) */
   const [aiPreset, setAiPreset] = useState<{ text: string; nonce: number } | null>(null)
   const [aiRegionSelecting, setAiRegionSelecting] = useState(false)
-  const [aiRegionDraft, setAiRegionDraft] = useState<AiRegionDraft | null>(null)
+  const [aiRegionDraft, setAiRegionDraft] = useState<PageRegionSlice[]>([])
   const [aiRegionContext, setAiRegionContext] = useState<PdfAiRegionContext | null>(null)
   const aiRegionDragRef = useRef<{
     pageIndex: number
@@ -1113,6 +1108,8 @@ export default function App() {
     pointerId: number
     startX: number
     startY: number
+    lastClientX: number
+    lastClientY: number
   } | null>(null)
   const [ribbonTab, setRibbonTab] = useState<RibbonTab>('home')
   const [spread, setSpread] = useState<1 | 2>(1)
@@ -1307,9 +1304,48 @@ export default function App() {
   )
   const searchJumpRef = useRef<{ matches: SearchMatch[]; cur: number } | null>(null)
 
+  const scrollContentPoint = useCallback((clientX: number, clientY: number) => {
+    const scroll = scrollRef.current
+    if (!scroll) return null
+    const bounds = scroll.getBoundingClientRect()
+    return {
+      x: clientX - bounds.left + scroll.scrollLeft,
+      y: clientY - bounds.top + scroll.scrollTop,
+    }
+  }, [])
+
+  const aiRegionSlicesAt = useCallback(
+    (startX: number, startY: number, clientX: number, clientY: number): PageRegionSlice[] => {
+      const scroll = scrollRef.current
+      const end = scrollContentPoint(clientX, clientY)
+      if (!scroll || !end) return []
+      const scrollBounds = scroll.getBoundingClientRect()
+      const pages = Array.from(
+        scroll.querySelectorAll<HTMLDivElement>('.pdf-page[data-page-index]'),
+      ).map((page) => {
+        const bounds = page.getBoundingClientRect()
+        return {
+          pageIndex: Number(page.dataset.pageIndex),
+          left: bounds.left - scrollBounds.left + scroll.scrollLeft,
+          top: bounds.top - scrollBounds.top + scroll.scrollTop,
+          width: bounds.width,
+          height: bounds.height,
+        }
+      })
+      return splitSelectionAcrossPages(startX, startY, end.x, end.y, pages)
+    },
+    [scrollContentPoint],
+  )
+
+  const refreshAiRegionDraft = useCallback(() => {
+    const drag = aiRegionDragRef.current
+    if (!drag) return
+    setAiRegionDraft(aiRegionSlicesAt(drag.startX, drag.startY, drag.lastClientX, drag.lastClientY))
+  }, [aiRegionSlicesAt])
+
   const cancelAiRegionSelection = useCallback(() => {
     aiRegionDragRef.current = null
-    setAiRegionDraft(null)
+    setAiRegionDraft([])
     setAiRegionSelecting(false)
   }, [])
 
@@ -1322,91 +1358,144 @@ export default function App() {
     setDrawTool(null)
     setEditTextMode(false)
     setSelected(null)
-    setAiRegionDraft(null)
+    setAiRegionDraft([])
     setAiRegionSelecting(true)
   }, [aiRegionSelecting, cancelAiRegionSelection])
 
-  const updateAiRegionDrag = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = aiRegionDragRef.current
-    if (!drag || drag.pointerId !== event.pointerId || drag.page !== event.currentTarget) return
-    const bounds = drag.page.getBoundingClientRect()
-    const rect = normalizeRegionRect(
-      drag.startX,
-      drag.startY,
-      event.clientX - bounds.left,
-      event.clientY - bounds.top,
-      bounds.width,
-      bounds.height,
-    )
-    setAiRegionDraft({ pageIndex: drag.pageIndex, rect })
-  }, [])
+  const updateAiRegionDrag = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const drag = aiRegionDragRef.current
+      if (!drag || drag.pointerId !== event.pointerId || drag.page !== event.currentTarget) return
+      drag.lastClientX = event.clientX
+      drag.lastClientY = event.clientY
+      setAiRegionDraft(aiRegionSlicesAt(drag.startX, drag.startY, event.clientX, event.clientY))
+    },
+    [aiRegionSlicesAt],
+  )
 
-  const captureAiRegion = useCallback(
-    (pageIndex: number, page: HTMLDivElement, rect: RegionRect): boolean => {
-      if (rect.width < 8 || rect.height < 8) return false
-      const source = page.querySelector<HTMLCanvasElement>('.pdf-page-content canvas')
-      if (!source || source.width === 0 || source.height === 0) return false
-      const bounds = page.getBoundingClientRect()
+  const captureAiRegions = useCallback((regions: PageRegionSlice[]): boolean => {
+    const scroll = scrollRef.current
+    if (!scroll) return false
+    const captures: Array<{
+      pageIndex: number
+      source: HTMLCanvasElement
+      sourceX: number
+      sourceY: number
+      sourceWidth: number
+      sourceHeight: number
+    }> = []
+    for (const region of regions) {
+      if (region.rect.width < 8 || region.rect.height < 8) continue
+      const page = scroll.querySelector<HTMLDivElement>(
+        `.pdf-page[data-page-index="${region.pageIndex}"]`,
+      )
+      const source = page?.querySelector<HTMLCanvasElement>('.pdf-page-content canvas')
+      const bounds = page?.getBoundingClientRect()
+      if (!page || !source || !bounds || source.width === 0 || source.height === 0) return false
       if (bounds.width <= 0 || bounds.height <= 0) return false
       const ratioX = source.width / bounds.width
       const ratioY = source.height / bounds.height
-      const sourceWidth = Math.max(1, Math.round(rect.width * ratioX))
-      const sourceHeight = Math.max(1, Math.round(rect.height * ratioY))
-      const maxSide = 2048
-      const shrink = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight))
-      const output = document.createElement('canvas')
-      output.width = Math.max(1, Math.round(sourceWidth * shrink))
-      output.height = Math.max(1, Math.round(sourceHeight * shrink))
-      const context = output.getContext('2d')
-      if (!context) return false
-      context.drawImage(
+      const sourceX = Math.max(0, Math.round(region.rect.left * ratioX))
+      const sourceY = Math.max(0, Math.round(region.rect.top * ratioY))
+      const sourceWidth = Math.max(
+        1,
+        Math.min(source.width - sourceX, Math.round(region.rect.width * ratioX)),
+      )
+      const sourceHeight = Math.max(
+        1,
+        Math.min(source.height - sourceY, Math.round(region.rect.height * ratioY)),
+      )
+      captures.push({
+        pageIndex: region.pageIndex,
         source,
-        Math.round(rect.left * ratioX),
-        Math.round(rect.top * ratioY),
+        sourceX,
+        sourceY,
         sourceWidth,
         sourceHeight,
-        0,
-        0,
-        output.width,
-        output.height,
-      )
-      let mime: PdfAiRegionContext['mime'] = 'image/png'
-      let dataUrl = output.toDataURL(mime)
-      // Keep the multimodal request below the same 5 MB envelope used by image attachments.
-      if (dataUrl.length > 6_500_000) {
-        mime = 'image/jpeg'
-        dataUrl = output.toDataURL(mime, 0.9)
-      }
-      setAiRegionContext({
-        id: `region-${Date.now().toString(36)}`,
-        pageNumber: pageIndex + 1,
-        base64: dataUrl.slice(dataUrl.indexOf(',') + 1),
-        mime,
-        width: output.width,
-        height: output.height,
       })
-      return true
-    },
-    [],
-  )
+    }
+    if (captures.length === 0) return false
+    const layout = layoutRegionCaptures(
+      captures.map((capture) => ({
+        width: capture.sourceWidth,
+        height: capture.sourceHeight,
+      })),
+    )
+    if (layout.width === 0 || layout.height === 0) return false
+    const output = document.createElement('canvas')
+    output.width = layout.width
+    output.height = layout.height
+    const context = output.getContext('2d')
+    if (!context) return false
+    context.fillStyle = '#fff'
+    context.fillRect(0, 0, output.width, output.height)
+    captures.forEach((capture, index) => {
+      const placement = layout.placements[index]!
+      context.drawImage(
+        capture.source,
+        capture.sourceX,
+        capture.sourceY,
+        capture.sourceWidth,
+        capture.sourceHeight,
+        placement.x,
+        placement.y,
+        placement.width,
+        placement.height,
+      )
+      if (index === 0) return
+      const previous = layout.placements[index - 1]!
+      const separatorY = Math.round((previous.y + previous.height + placement.y) / 2) + 0.5
+      context.beginPath()
+      context.moveTo(0, separatorY)
+      context.lineTo(output.width, separatorY)
+      context.strokeStyle = '#c7cbd1'
+      context.lineWidth = 1
+      context.stroke()
+    })
+    let mime: PdfAiRegionContext['mime'] = 'image/png'
+    let dataUrl = output.toDataURL(mime)
+    // Keep the multimodal request below the same 5 MB envelope used by image attachments.
+    if (dataUrl.length > 6_500_000) {
+      mime = 'image/jpeg'
+      dataUrl = output.toDataURL(mime, 0.9)
+    }
+    const pageNumbers = captures.map((capture) => capture.pageIndex + 1)
+    setAiRegionContext({
+      id: `region-${Date.now().toString(36)}`,
+      pageNumber: pageNumbers[0]!,
+      pageNumbers,
+      base64: dataUrl.slice(dataUrl.indexOf(',') + 1),
+      mime,
+      width: output.width,
+      height: output.height,
+    })
+    return true
+  }, [])
 
   const startAiRegionDrag = useCallback(
     (pageIndex: number, event: React.PointerEvent<HTMLDivElement>) => {
       if (!aiRegionSelecting || event.button !== 0) return
+      const start = scrollContentPoint(event.clientX, event.clientY)
+      if (!start) return
       event.preventDefault()
       event.stopPropagation()
       const page = event.currentTarget
       const bounds = page.getBoundingClientRect()
-      const startX = Math.min(Math.max(event.clientX - bounds.left, 0), bounds.width)
-      const startY = Math.min(Math.max(event.clientY - bounds.top, 0), bounds.height)
-      aiRegionDragRef.current = { pageIndex, page, pointerId: event.pointerId, startX, startY }
-      setAiRegionDraft({
+      const localX = Math.min(Math.max(event.clientX - bounds.left, 0), bounds.width)
+      const localY = Math.min(Math.max(event.clientY - bounds.top, 0), bounds.height)
+      aiRegionDragRef.current = {
         pageIndex,
-        rect: { left: startX, top: startY, width: 0, height: 0 },
-      })
+        page,
+        pointerId: event.pointerId,
+        startX: start.x,
+        startY: start.y,
+        lastClientX: event.clientX,
+        lastClientY: event.clientY,
+      }
+      setAiRegionDraft([{ pageIndex, rect: { left: localX, top: localY, width: 0, height: 0 } }])
       page.setPointerCapture(event.pointerId)
     },
-    [aiRegionSelecting],
+    [aiRegionSelecting, scrollContentPoint],
   )
 
   const finishAiRegionDrag = useCallback(
@@ -1415,29 +1504,21 @@ export default function App() {
       if (!drag || drag.pointerId !== event.pointerId || drag.page !== event.currentTarget) return
       event.preventDefault()
       event.stopPropagation()
-      const bounds = drag.page.getBoundingClientRect()
-      const rect = normalizeRegionRect(
-        drag.startX,
-        drag.startY,
-        event.clientX - bounds.left,
-        event.clientY - bounds.top,
-        bounds.width,
-        bounds.height,
-      )
+      const regions = aiRegionSlicesAt(drag.startX, drag.startY, event.clientX, event.clientY)
       if (drag.page.hasPointerCapture(event.pointerId))
         drag.page.releasePointerCapture(event.pointerId)
       aiRegionDragRef.current = null
-      setAiRegionDraft(null)
-      if (captureAiRegion(drag.pageIndex, drag.page, rect)) setAiRegionSelecting(false)
+      setAiRegionDraft([])
+      if (captureAiRegions(regions)) setAiRegionSelecting(false)
     },
-    [captureAiRegion],
+    [aiRegionSlicesAt, captureAiRegions],
   )
 
   const abortAiRegionDrag = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     const drag = aiRegionDragRef.current
     if (!drag || drag.pointerId !== event.pointerId || drag.page !== event.currentTarget) return
     aiRegionDragRef.current = null
-    setAiRegionDraft(null)
+    setAiRegionDraft([])
   }, [])
 
   useEffect(() => {
@@ -4567,6 +4648,7 @@ export default function App() {
               onPointerDown={startPan}
               onScroll={() => {
                 handleScroll()
+                refreshAiRegionDraft()
                 setSelPopup(null)
                 setSelected(null)
                 clearLineHover()
@@ -4585,7 +4667,7 @@ export default function App() {
             >
               {aiRegionSelecting && (
                 <div className="pdf-ai-region-hint">
-                  在页面上拖动框选 AI 上下文 · Drag on a page · Esc 取消
+                  可跨页拖动框选 AI 上下文 · Drag across pages · Esc 取消
                 </div>
               )}
               {rows.map((row, r) => (
@@ -4597,6 +4679,7 @@ export default function App() {
                     return (
                       <div
                         key={origIdx}
+                        data-page-index={origIdx}
                         className={`pdf-page${editTextMode && !readOnly ? ' pdf-editing-text' : ''}`}
                         style={
                           {
@@ -4636,11 +4719,19 @@ export default function App() {
                           pageNo={origIdx + 1}
                           scale={scale}
                           rotationDelta={rotDelta(origIdx)}
-                          visible={rowVisible}
+                          visible={
+                            rowVisible || aiRegionDraft.some((draft) => draft.pageIndex === origIdx)
+                          }
                         />
-                        {aiRegionDraft?.pageIndex === origIdx && (
-                          <div className="pdf-ai-region-draft" style={aiRegionDraft.rect} />
-                        )}
+                        {aiRegionDraft
+                          .filter((draft) => draft.pageIndex === origIdx)
+                          .map((draft) => (
+                            <div
+                              key={draft.pageIndex}
+                              className="pdf-ai-region-draft"
+                              style={draft.rect}
+                            />
+                          ))}
                         {livePreview.has(origIdx) &&
                           (() => {
                             const lp = livePreview.get(origIdx)!

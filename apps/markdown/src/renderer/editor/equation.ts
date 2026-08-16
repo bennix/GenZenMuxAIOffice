@@ -1,10 +1,11 @@
 import { Node, mergeAttributes, type MarkdownToken } from '@tiptap/core'
 import type { DOMOutputSpec } from '@tiptap/pm/model'
 import { latexToOmml, ommlToMathML } from '@genoffice/docx-engine'
+import { stripNestedMathDelimiters } from '@genoffice/ui'
 
 function mathml(latex: string): string {
   try {
-    const omml = latexToOmml(latex)
+    const omml = latexToOmml(stripNestedMathDelimiters(latex))
     return ommlToMathML(`<m:oMath>${omml}</m:oMath>`)
   } catch {
     return ''
@@ -12,7 +13,7 @@ function mathml(latex: string): string {
 }
 
 function equationDom(node: { attrs: Record<string, unknown> }, display: boolean): DOMOutputSpec {
-  const latex = String(node.attrs.latex ?? '')
+  const latex = stripNestedMathDelimiters(String(node.attrs.latex ?? ''))
   return [
     display ? 'div' : 'span',
     mergeAttributes({
@@ -52,17 +53,20 @@ export const InlineEquation = Node.create({
   addNodeView:
     () =>
     ({ node, getPos, HTMLAttributes }) => {
+      const latex = stripNestedMathDelimiters(String(node.attrs.latex))
       const host = document.createElement('span')
       host.className = 'md-equation md-equation-inline'
-      host.title = String(node.attrs.latex)
-      host.innerHTML = mathml(String(node.attrs.latex)) || String(node.attrs.latex)
+      host.title = latex
+      host.innerHTML = mathml(latex) || latex
       Object.entries(HTMLAttributes).forEach(([key, value]) =>
         host.setAttribute(key, String(value)),
       )
-      return dispatchEdit(host, getPos, String(node.attrs.latex), 'inline')
+      return dispatchEdit(host, getPos, latex, 'inline')
     },
   parseMarkdown: (token, helpers) =>
-    helpers.createNode('inlineEquation', { latex: token.text ?? '' }),
+    helpers.createNode('inlineEquation', {
+      latex: stripNestedMathDelimiters(token.text ?? ''),
+    }),
   markdownTokenizer: {
     name: 'inlineEquation',
     level: 'inline',
@@ -73,7 +77,7 @@ export const InlineEquation = Node.create({
       return { type: 'inlineEquation', raw: match[0], text: match[1] } as MarkdownToken
     },
   },
-  renderMarkdown: (node) => `$${String(node.attrs?.latex ?? '')}$`,
+  renderMarkdown: (node) => `$${stripNestedMathDelimiters(String(node.attrs?.latex ?? ''))}$`,
 })
 
 export const BlockEquation = Node.create({
@@ -88,17 +92,20 @@ export const BlockEquation = Node.create({
   addNodeView:
     () =>
     ({ node, getPos, HTMLAttributes }) => {
+      const latex = stripNestedMathDelimiters(String(node.attrs.latex))
       const host = document.createElement('div')
       host.className = 'md-equation md-equation-block'
-      host.title = String(node.attrs.latex)
-      host.innerHTML = mathml(String(node.attrs.latex)) || String(node.attrs.latex)
+      host.title = latex
+      host.innerHTML = mathml(latex) || latex
       Object.entries(HTMLAttributes).forEach(([key, value]) =>
         host.setAttribute(key, String(value)),
       )
-      return dispatchEdit(host, getPos, String(node.attrs.latex), 'block')
+      return dispatchEdit(host, getPos, latex, 'block')
     },
   parseMarkdown: (token, helpers) =>
-    helpers.createNode('blockEquation', { latex: token.text ?? '' }),
+    helpers.createNode('blockEquation', {
+      latex: stripNestedMathDelimiters(token.text ?? ''),
+    }),
   markdownTokenizer: {
     name: 'blockEquation',
     level: 'block',
@@ -109,5 +116,5 @@ export const BlockEquation = Node.create({
       return { type: 'blockEquation', raw: match[0], text: match[1].trim() } as MarkdownToken
     },
   },
-  renderMarkdown: (node) => `$$\n${String(node.attrs?.latex ?? '')}\n$$`,
+  renderMarkdown: (node) => `$$\n${stripNestedMathDelimiters(String(node.attrs?.latex ?? ''))}\n$$`,
 })

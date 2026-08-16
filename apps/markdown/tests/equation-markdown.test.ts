@@ -40,4 +40,29 @@ $$`,
     expect(editor.getMarkdown()).toContain('$$\nF_1 = f\n$$')
     editor.destroy()
   })
+
+  it('normalizes redundant inline dollar delimiters inside a display equation', () => {
+    const editor = createEditor()
+    const parsed = editor.markdown!.parse(String.raw`$$
+$F_1 = 5\mathrm{N}$ < $f_{\max} = 8\mathrm{N}$
+\boxed{f_1 = $F_1 = 5\mathrm{N}$}
+$$`)
+    expect(parsed.content?.[0]).toMatchObject({
+      type: 'blockEquation',
+      attrs: {
+        latex: String.raw`F_1 = 5\mathrm{N} < f_{\max} = 8\mathrm{N}
+\boxed{f_1 = F_1 = 5\mathrm{N}}`,
+      },
+    })
+    editor.destroy()
+  })
+
+  it('preserves escaped dollar signs inside equation text', () => {
+    const editor = createEditor()
+    const parsed = editor.markdown!.parse(String.raw`$$
+\text{Price: \$5}
+$$`)
+    expect(parsed.content?.[0]?.attrs?.latex).toBe(String.raw`\text{Price: \$5}`)
+    editor.destroy()
+  })
 })

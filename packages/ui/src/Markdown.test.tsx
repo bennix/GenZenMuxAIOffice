@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { Markdown } from './Markdown'
+import { stripNestedMathDelimiters } from './latex'
 
 describe('Markdown', () => {
   it('renders a GFM table as semantic table markup', () => {
@@ -86,6 +87,24 @@ describe('Markdown', () => {
     expect(html).toContain('class="katex"')
     expect(html).not.toContain('katex-error')
     expect(html).not.toContain(String.raw`\(\ce{2H2 + O2 -> 2H2O}\)`)
+  })
+
+  it('repairs redundant dollar delimiters inside display math returned by AI', () => {
+    const html = renderToStaticMarkup(
+      <Markdown
+        text={String.raw`$$
+$F_1 = 5\mathrm{N}$ < $f_{\max} = 8\mathrm{N}$
+\boxed{f_1 = $F_1 = 5\mathrm{N}$}
+$$`}
+      />,
+    )
+    expect(html.match(/class="katex-display"/g)?.length).toBe(1)
+    expect(html).toContain('<menclose notation="box">')
+    expect(html).not.toContain('class="mord">$</span>')
+  })
+
+  it('removes only unescaped nested math delimiters', () => {
+    expect(stripNestedMathDelimiters(String.raw`$F_1$ + \$5`)).toBe(String.raw`F_1 + \$5`)
   })
 
   it('keeps an incomplete streaming delimiter visible until it closes', () => {

@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from 'react'
 import katex from 'katex'
 import 'katex/contrib/mhchem'
 import 'katex/dist/katex.min.css'
+import { stripNestedMathDelimiters } from './latex'
 
 /**
  * Minimal dependency-free markdown for chat bubbles: paragraphs, ul/ol,
@@ -16,7 +17,7 @@ function renderMath(tex: string, displayMode: boolean, key: number): ReactNode {
   try {
     // Models often Markdown-escape underscores inside already-delimited math
     // (`F\_1`). In LaTeX that means a literal underscore, not a subscript.
-    const normalized = tex.replace(/\\_/g, '_')
+    const normalized = stripNestedMathDelimiters(tex).replace(/\\_/g, '_')
     return (
       <span
         key={key}

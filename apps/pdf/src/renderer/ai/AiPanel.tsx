@@ -31,6 +31,15 @@ function loadPanelWidth(): number {
   return Number.isFinite(saved) && saved > 0 ? clampPanelWidth(saved) : PANEL_WIDTH_DEFAULT
 }
 
+function regionPageLabel(context: PdfAiRegionContext): string {
+  const pages = context.pageNumbers.length ? context.pageNumbers : [context.pageNumber]
+  if (pages.length === 1) return `第 ${pages[0]} 页`
+  const consecutive = pages.every((page, index) => index === 0 || page === pages[index - 1]! + 1)
+  return consecutive
+    ? `第 ${pages[0]}–${pages[pages.length - 1]} 页（${pages.length} 页）`
+    : `第 ${pages.join('、')} 页`
+}
+
 interface ToolActivity {
   name: string
   summary: string
@@ -268,7 +277,7 @@ export function AiPanel({
           }
         }
         const contextualInstruction = sentRegion
-          ? `[The first attached image is the user-selected region from PDF page ${sentRegion.pageNumber}. Use that region as the primary context for this question.]\n${instruction}`
+          ? `[The first attached image combines the user-selected PDF regions from pages ${sentRegion.pageNumbers.join(', ')} in document order, from top to bottom. Preserve page continuity and use it as the primary context for this question.]\n${instruction}`
           : instruction
         await loop.run(contextualInstruction, images)
       } catch (err) {
@@ -521,12 +530,15 @@ export function AiPanel({
             attachments.length > 0 || regionContext ? (
               <div className="ai-composer-contexts">
                 {regionContext && (
-                  <div className="ai-region-context" title={`PDF page ${regionContext.pageNumber}`}>
+                  <div
+                    className="ai-region-context"
+                    title={`PDF ${regionPageLabel(regionContext)}`}
+                  >
                     <img
                       src={`data:${regionContext.mime};base64,${regionContext.base64}`}
-                      alt={`PDF page ${regionContext.pageNumber} selected region`}
+                      alt={`PDF ${regionPageLabel(regionContext)} selected region`}
                     />
-                    <span>框选上下文 · 第 {regionContext.pageNumber} 页</span>
+                    <span>框选上下文 · {regionPageLabel(regionContext)}</span>
                     <button
                       className="ai-attachment-thumb-remove"
                       onClick={onClearRegionContext}
@@ -607,8 +619,8 @@ export function AiPanel({
               <button
                 className={`ai-region-select-btn${regionSelecting ? ' is-active' : ''}`}
                 onClick={onRequestRegionContext}
-                title="框选 PDF 页面作为 AI 上下文 / Select page region for AI"
-                aria-label="框选 PDF 页面作为 AI 上下文 / Select page region for AI"
+                title="跨页框选 PDF 内容作为 AI 上下文 / Select PDF regions across pages for AI"
+                aria-label="跨页框选 PDF 内容作为 AI 上下文 / Select PDF regions across pages for AI"
                 aria-pressed={regionSelecting}
               >
                 <RegionSelectIcon />
@@ -640,9 +652,9 @@ function SentRegionContext({ context }: { context: PdfAiRegionContext }): ReactE
     <div className="ai-sent-region">
       <img
         src={`data:${context.mime};base64,${context.base64}`}
-        alt={`PDF page ${context.pageNumber} selected region`}
+        alt={`PDF ${regionPageLabel(context)} selected region`}
       />
-      <span>框选上下文 · 第 {context.pageNumber} 页</span>
+      <span>框选上下文 · {regionPageLabel(context)}</span>
     </div>
   )
 }

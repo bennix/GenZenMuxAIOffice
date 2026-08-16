@@ -2,7 +2,11 @@ import { useMemo, useState } from 'react'
 import type { Editor } from '@tiptap/core'
 import { latexToOmml, ommlToMathML } from '@genoffice/docx-engine'
 import { cleanRecognizedLatex, formulaRecognitionRequest } from '@genoffice/ai-provider'
-import { FormulaImageRecognition, type FormulaImageData } from '@genoffice/ui'
+import {
+  FormulaImageRecognition,
+  stripNestedMathDelimiters,
+  type FormulaImageData,
+} from '@genoffice/ui'
 
 export interface MarkdownEquationTarget {
   pos: number
@@ -25,7 +29,7 @@ export function EquationDialog({
   const preview = useMemo(() => {
     if (!latex.trim()) return null
     try {
-      const omml = latexToOmml(latex)
+      const omml = latexToOmml(stripNestedMathDelimiters(latex))
       return { mathml: ommlToMathML(`<m:oMath>${omml}</m:oMath>`) }
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) }
@@ -44,11 +48,12 @@ export function EquationDialog({
 
   const apply = () => {
     if (!valid) return
+    const normalized = stripNestedMathDelimiters(latex.trim())
     if (target) {
       const node = editor.state.doc.nodeAt(target.pos)
       if (node)
         editor.view.dispatch(
-          editor.state.tr.setNodeMarkup(target.pos, undefined, { latex: latex.trim() }),
+          editor.state.tr.setNodeMarkup(target.pos, undefined, { latex: normalized }),
         )
     } else {
       editor
@@ -56,7 +61,7 @@ export function EquationDialog({
         .focus()
         .insertContent({
           type: inline ? 'inlineEquation' : 'blockEquation',
-          attrs: { latex: latex.trim() },
+          attrs: { latex: normalized },
         })
         .run()
     }
