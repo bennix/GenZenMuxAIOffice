@@ -3459,10 +3459,10 @@ button {
 .pdf-review-error {
   margin-top: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--color-danger-border, #f2b8b5);
+  border: 1px solid var(--danger-border);
   border-radius: 6px;
-  color: var(--color-danger-text, #b42318);
-  background: var(--color-danger-bg, #fff1f0);
+  color: var(--danger);
+  background: var(--danger-bg);
 }
 
 .pdf-review-empty {
