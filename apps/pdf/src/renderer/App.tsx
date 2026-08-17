@@ -4555,7 +4555,9 @@ export default function App() {
             </button>
           )}
           <AiPanel
+            key={filePath || 'pdf-unopened'}
             api={aiApi}
+            filePath={filePath || null}
             preset={aiPreset}
             regionContext={aiRegionContext}
             regionSelecting={aiRegionSelecting}

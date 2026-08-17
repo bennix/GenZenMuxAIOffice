@@ -3,10 +3,15 @@ import type { PointerEvent as ReactPointerEvent, ReactElement } from 'react'
 import { AgentLoop, composeSkills } from '@genoffice/agent-core'
 import type { AgentImage } from '@genoffice/agent-core'
 import type { AiSettings } from '@genoffice/ai-provider'
-import { AiComposer, AiTypingIndicator, ConnectButton } from '@genoffice/ui'
+import {
+  AiComposer,
+  AiTypingIndicator,
+  ConnectButton,
+  copyTextToClipboard,
+  Markdown,
+} from '@genoffice/ui'
 import { removeConnectCommand } from '@genoffice/electron-utils/connect'
 import { aiLangDirective, t as tGlobal, useI18n } from '../i18n/locale'
-import { Markdown } from '@genoffice/ui'
 import sendEnterOn from '../assets/send-enter-on.png'
 import sendEnterOff from '../assets/send-enter-off.png'
 import sendStop from '../assets/send-stop.png'
@@ -63,6 +68,7 @@ type Phase = 'thinking' | 'replying' | 'working'
 
 export function AiPanel({
   api,
+  filePath,
   onCollapse,
   preset,
   regionContext,
@@ -71,6 +77,8 @@ export function AiPanel({
   onClearRegionContext,
 }: {
   api: PdfAiDeps
+  /** Absolute path of the open PDF, used as the stable chat-history identity. */
+  filePath: string | null
   onCollapse: () => void
   /** Ribbon AI buttons push a one-shot prompt; a new nonce triggers an auto-run */
   preset?: { text: string; nonce: number } | null
@@ -81,9 +89,11 @@ export function AiPanel({
 }): ReactElement {
   const { lang, t } = useI18n()
   const [chat, setChat] = useState<ChatEntry[]>([])
+  const [historicChat, setHistoricChat] = useState<ChatEntry[]>([])
   const [prompt, setPrompt] = useState('')
   const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [copiedMessage, setCopiedMessage] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>('thinking')
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
   const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({})
@@ -111,6 +121,52 @@ export function AiPanel({
   const regionContextRef = useRef(regionContext)
   regionContextRef.current = regionContext
   const availableAttachmentsRef = useRef<AttachmentMeta[]>([])
+  const chatIdsRef = useRef<{ projectId: string; chatId: string } | null>(null)
+  const pendingPersistRef = useRef<
+    Array<{
+      role: 'user' | 'assistant'
+      text: string
+      tools?: ToolActivity[]
+      attachments?: AttachmentMeta[]
+    }>
+  >([])
+  const runToolsRef = useRef<ToolActivity[]>([])
+
+  const persistMessage = (
+    role: 'user' | 'assistant',
+    text: string,
+    tools?: ToolActivity[],
+    messageAttachments?: AttachmentMeta[],
+  ): void => {
+    const projectApi = window.projectApi
+    if (!projectApi) return
+    const ids = chatIdsRef.current
+    if (!ids) {
+      pendingPersistRef.current.push({ role, text, tools, attachments: messageAttachments })
+      return
+    }
+    void projectApi
+      .appendChat({
+        projectId: ids.projectId,
+        chatId: ids.chatId,
+        role,
+        text,
+        ...(tools?.length ? { tools } : {}),
+        ...(messageAttachments?.length
+          ? {
+              attachments: messageAttachments.map((attachment) => ({
+                name: attachment.name,
+                path: attachment.path,
+                ext: attachment.ext,
+                sizeBytes: attachment.sizeBytes,
+              })),
+            }
+          : {}),
+      })
+      .catch(() => {
+        /* Chat persistence must never interrupt document work. */
+      })
+  }
 
   const patchLast = (patch: Partial<ChatEntry> | ((last: ChatEntry) => Partial<ChatEntry>)) => {
     setChat((prev) => {
@@ -168,6 +224,12 @@ export function AiPanel({
         },
         onToolExecuted: ({ call, execution }) => {
           setPhase('working')
+          runToolsRef.current.push({
+            name: call.name,
+            summary: execution.summary,
+            isError: execution.isError,
+            output: execution.output?.slice(0, 2000),
+          })
           patchLast((last) => ({
             tools: [
               ...(last.tools ?? []),
@@ -193,6 +255,9 @@ export function AiPanel({
             streaming: false,
             text: final || (last.tools?.length ? last.text : tGlobal('aiNoReply')),
           }))
+          if (!cancelled && (final || runToolsRef.current.length > 0)) {
+            persistMessage('assistant', final, runToolsRef.current)
+          }
           setBusy(false)
         },
         onError: (error) => {
@@ -217,6 +282,59 @@ export function AiPanel({
       },
     })
   }
+
+  useEffect(() => {
+    const projectApi = window.projectApi
+    if (!projectApi || !filePath) return
+    let cancelled = false
+    const tempChatId = `unsaved-${Date.now()}`
+    void projectApi
+      .resolveChat({ filePath, tempChatId })
+      .then((ids) => {
+        if (cancelled) return []
+        chatIdsRef.current = ids
+        for (const message of pendingPersistRef.current.splice(0)) {
+          persistMessage(message.role, message.text, message.tools, message.attachments)
+        }
+        return projectApi.loadChat({ projectId: ids.projectId, chatId: ids.chatId, limit: 200 })
+      })
+      .then((messages) => {
+        if (cancelled || messages.length === 0) return
+        setHistoricChat(
+          messages.map((message) => ({
+            role: message.role,
+            text: message.text,
+            tools: message.tools?.map((tool) => ({
+              name: tool.name,
+              summary: tool.summary,
+              isError: tool.isError,
+              output: tool.output?.slice(0, 2000),
+            })),
+            attachments: message.attachments
+              ?.filter((attachment) => attachment.path)
+              .map((attachment) => ({
+                name: attachment.name,
+                path: attachment.path ?? '',
+                ext: attachment.ext ?? '',
+                sizeBytes: attachment.sizeBytes ?? 0,
+              })),
+          })),
+        )
+        if (!loopRef.current?.busy) {
+          loopRef.current?.restore(
+            messages.map((message) => ({ role: message.role, text: message.text })),
+          )
+        }
+      })
+      .catch(() => {
+        /* History load failures are non-fatal. */
+      })
+    return () => {
+      cancelled = true
+    }
+    // The parent keys the panel by file path, so every mounted panel owns one document only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filePath])
 
   useEffect(() => {
     if (stickToBottomRef.current) {
@@ -263,6 +381,8 @@ export function AiPanel({
     if (sentRegion) onClearRegionContext()
     setBusy(true)
     setPhase('thinking')
+    runToolsRef.current = []
+    persistMessage('user', instruction, undefined, sentAttachments)
     void (async () => {
       try {
         settingsRef.current = await window.pdfApi.getAiSettings()
@@ -292,6 +412,15 @@ export function AiPanel({
   }
 
   const stop = (): void => loopRef.current?.cancel()
+
+  const copyMessage = async (text: string, messageKey: string): Promise<void> => {
+    if (!(await copyTextToClipboard(text))) return
+    setCopiedMessage(messageKey)
+    window.setTimeout(
+      () => setCopiedMessage((current) => (current === messageKey ? null : current)),
+      1200,
+    )
+  }
 
   const mergeAttachments = (result: AttachmentAddResult | null): void => {
     setAttachments((previous) => {
@@ -424,7 +553,7 @@ export function AiPanel({
           ZenMux
         </span>
         <div className="ai-panel-header-actions">
-          {chat.length > 0 && (
+          {(chat.length > 0 || historicChat.length > 0) && (
             <button
               className="ai-header-btn"
               onClick={() => {
@@ -432,6 +561,7 @@ export function AiPanel({
                 loopRef.current?.reset()
                 setBusy(false)
                 setChat([])
+                setHistoricChat([])
                 setAttachments([])
                 setAttachNotice('')
                 onClearRegionContext()
@@ -455,7 +585,41 @@ export function AiPanel({
       </header>
 
       <div className="ai-chat" ref={chatRef} onScroll={onChatScroll}>
-        {chat.length === 0 && (
+        {historicChat.length > 0 && (
+          <>
+            {historicChat.map((entry, index) => (
+              <div
+                key={`historic-${index}`}
+                className={`ai-msg ai-msg-${entry.role} ai-msg-historic`}
+              >
+                {entry.role === 'user' && entry.attachments && entry.attachments.length > 0 && (
+                  <SentAttachments attachments={entry.attachments} previews={attachmentPreviews} />
+                )}
+                {entry.tools && entry.tools.length > 0 && <ToolChipList tools={entry.tools} />}
+                {entry.text &&
+                  (entry.role === 'assistant' ? <Markdown text={entry.text} /> : entry.text)}
+                {entry.text && (
+                  <div className="ai-msg-toolbar">
+                    <button
+                      className="ai-msg-tool-btn"
+                      onClick={() => void copyMessage(entry.text, `historic-${index}`)}
+                      aria-label={
+                        entry.role === 'user' ? '复制提示词 / Copy prompt' : '复制回复 / Copy reply'
+                      }
+                      data-tip={
+                        entry.role === 'user' ? '复制提示词 / Copy prompt' : '复制回复 / Copy reply'
+                      }
+                    >
+                      {copiedMessage === `historic-${index}` ? '✓' : '⧉'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+            <div className="ai-history-sep">之前的对话 / Earlier messages</div>
+          </>
+        )}
+        {chat.length === 0 && historicChat.length === 0 && (
           <div className="ai-chat-empty">
             <div className="ai-chat-empty-title">{t('aiEmptyTitle')}</div>
             <div className="ai-chat-empty-body">{t('aiEmptyBody')}</div>
@@ -496,6 +660,18 @@ export function AiPanel({
                     )}
                   </div>
                 )}
+                {entry.text && (
+                  <div className="ai-msg-toolbar">
+                    <button
+                      className="ai-msg-tool-btn"
+                      onClick={() => void copyMessage(entry.text, `current-${i}`)}
+                      aria-label="复制提示词 / Copy prompt"
+                      data-tip="复制提示词 / Copy prompt"
+                    >
+                      {copiedMessage === `current-${i}` ? '✓' : '⧉'}
+                    </button>
+                  </div>
+                )}
               </div>
             )
           }
@@ -514,6 +690,14 @@ export function AiPanel({
               {showConnect && (
                 <div className="ai-msg-toolbar">
                   <ConnectButton api={window.pdfApi} text={entry.text} />
+                  <button
+                    className="ai-msg-tool-btn"
+                    onClick={() => void copyMessage(entry.text, `current-${i}`)}
+                    aria-label="复制回复 / Copy reply"
+                    data-tip="复制回复 / Copy reply"
+                  >
+                    {copiedMessage === `current-${i}` ? '✓' : '⧉'}
+                  </button>
                 </div>
               )}
             </div>

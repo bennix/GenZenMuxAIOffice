@@ -5,6 +5,7 @@ import {
 } from '@genoffice/electron-utils/document-drop'
 import type { Lang } from '@genoffice/i18n'
 import type { AiStreamChunk } from '@genoffice/ai-provider'
+import type { ProjectApi } from '@genoffice/project-store'
 import { AI_CHANNELS, PDF_CHANNELS } from '../shared/ipc'
 import type { PdfApi, UiTheme } from '../shared/ipc'
 
@@ -82,6 +83,15 @@ const api: PdfApi = {
 }
 
 contextBridge.exposeInMainWorld('pdfApi', api)
+
+const projectApi: Pick<ProjectApi, 'resolveChat' | 'appendChat' | 'loadChat' | 'rebindChat'> = {
+  resolveChat: (args) => ipcRenderer.invoke('project:resolveChat', args),
+  appendChat: (args) => ipcRenderer.invoke('project:appendChat', args),
+  loadChat: (args) => ipcRenderer.invoke('project:loadChat', args),
+  rebindChat: (args) => ipcRenderer.invoke('project:rebindChat', args),
+}
+
+contextBridge.exposeInMainWorld('projectApi', projectApi)
 
 installDocumentDropBridge({
   getPathForFile: (file) => webUtils.getPathForFile(file),
