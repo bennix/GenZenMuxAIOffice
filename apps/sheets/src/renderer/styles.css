@@ -3255,20 +3255,69 @@ textarea:focus {
 /* Light SQL workbench. The application theme may still dim the surrounding
  * workbook, but the database surface itself intentionally stays paper-light. */
 .sql-workspace-backdrop {
-  background: rgb(39 52 45 / 28%);
+  --sql-light-overlay: rgb(39 52 45 / 28%);
+  --sql-light-ink: #17231d;
+  --sql-light-surface: #fff;
+  --sql-light-frame: #cbd8d0;
+  --sql-light-shadow: 0 26px 75px rgb(25 43 33 / 28%);
+  --sql-light-header: #f8fbf9;
+  --sql-light-header-border: #dbe4de;
+  --sql-light-muted: #65796d;
+  --sql-light-close-ink: #263b30;
+  --sql-light-close-border: #cad8cf;
+  --sql-light-accent: #168a4d;
+  --sql-light-accent-ring: 0 0 0 4px rgb(22 138 77 / 12%);
+  --sql-light-sidebar: #f6f9f7;
+  --sql-light-divider: #dce5df;
+  --sql-light-badge-ink: #3e5548;
+  --sql-light-badge-bg: #e6eee9;
+  --sql-light-catalog-ink: #31473a;
+  --sql-light-hover: #eaf1ed;
+  --sql-light-catalog-muted: #708579;
+  --sql-light-active-muted: #d9f3e4;
+  --sql-light-note-ink: #64796d;
+  --sql-light-note-border: #cedbd3;
+  --sql-light-note-title: #294136;
+  --sql-light-ai-border: #dfe7e2;
+  --sql-light-ai-start: #eef8f2;
+  --sql-light-drop: #e5f5eb;
+  --sql-light-ai-title: #1d3428;
+  --sql-light-composer-border: #c9d7cf;
+  --sql-light-focus-ring: 0 0 0 3px rgb(22 138 77 / 10%);
+  --sql-light-insert-ink: #17643b;
+  --sql-light-insert-border: #add0ba;
+  --sql-light-toolbar-ink: #697d71;
+  --sql-light-toolbar-bg: #fbfcfb;
+  --sql-light-run: #176b40;
+  --sql-light-gutter: #84968c;
+  --sql-light-gutter-border: #e0e7e2;
+  --sql-light-active-line: #edf6f0;
+  --sql-light-result-ink: #31483b;
+  --sql-light-button-ink: #365143;
+  --sql-light-button-border: #c8d6ce;
+  --sql-light-th-ink: #24392e;
+  --sql-light-th-bg: #eef3f0;
+  --sql-light-grid-border: #e2e8e4;
+  --sql-light-row-alt: #f8faf9;
+  --sql-light-empty: #74877c;
+  --sql-light-field-ink: #22372c;
+  --sql-light-field-border: #cad7cf;
+  --sql-light-danger: #b42318;
+  --sql-light-panel-shadow: -20px 0 50px rgb(28 49 37 / 18%);
+  background: var(--sql-light-overlay);
   backdrop-filter: blur(7px) saturate(0.85);
 }
 
 .sql-workspace {
-  color: #17231d;
-  border-color: #cbd8d0;
-  background: #fff;
-  box-shadow: 0 26px 75px rgb(25 43 33 / 28%);
+  color: var(--sql-light-ink);
+  border-color: var(--sql-light-frame);
+  background: var(--sql-light-surface);
+  box-shadow: var(--sql-light-shadow);
 }
 
 .sql-workspace-header {
-  border-bottom-color: #dbe4de;
-  background: #f8fbf9;
+  border-bottom-color: var(--sql-light-header-border);
+  background: var(--sql-light-header);
 }
 
 .sql-workspace-header p,
@@ -3281,78 +3330,78 @@ textarea:focus {
 .sql-column-head,
 .sql-column-row label,
 .sql-index-row label {
-  color: #65796d;
+  color: var(--sql-light-muted);
 }
 
 .sql-header-actions > button {
-  color: #263b30;
-  border-color: #cad8cf;
-  background: #fff;
+  color: var(--sql-light-close-ink);
+  border-color: var(--sql-light-close-border);
+  background: var(--sql-light-surface);
 }
 
 .sql-status-dot {
-  background: #168a4d;
-  box-shadow: 0 0 0 4px rgb(22 138 77 / 12%);
+  background: var(--sql-light-accent);
+  box-shadow: var(--sql-light-accent-ring);
 }
 
 .sql-catalog,
 .sql-schema-panel {
-  background: #f6f9f7;
+  background: var(--sql-light-sidebar);
 }
 
 .sql-catalog {
-  border-right-color: #dce5df;
+  border-right-color: var(--sql-light-divider);
 }
 
 .sql-schema-panel {
-  border-left-color: #dce5df;
+  border-left-color: var(--sql-light-divider);
 }
 
 .sql-section-title b {
-  color: #3e5548;
-  background: #e6eee9;
+  color: var(--sql-light-badge-ink);
+  background: var(--sql-light-badge-bg);
 }
 
 .sql-catalog > button {
-  color: #31473a;
+  color: var(--sql-light-catalog-ink);
 }
 
 .sql-catalog > button:hover {
-  background: #eaf1ed;
+  background: var(--sql-light-hover);
 }
 
 .sql-catalog > button.active {
-  color: #fff;
-  border-color: #17231d;
-  background: #17231d;
+  color: var(--sql-light-surface);
+  border-color: var(--sql-light-ink);
+  background: var(--sql-light-ink);
 }
 
 .sql-catalog button small {
-  color: #708579;
+  color: var(--sql-light-catalog-muted);
 }
 
 .sql-table-glyph {
-  color: #168a4d;
+  color: var(--sql-light-accent);
 }
 
 .sql-catalog > button.active .sql-table-glyph,
 .sql-catalog > button.active small {
-  color: #d9f3e4;
+  color: var(--sql-light-active-muted);
 }
 
 .sql-catalog-note {
-  color: #64796d;
-  border-color: #cedbd3;
-  background: #fff;
+  color: var(--sql-light-note-ink);
+  border-color: var(--sql-light-note-border);
+  background: var(--sql-light-surface);
 }
 
 .sql-catalog-note strong {
-  color: #294136;
+  color: var(--sql-light-note-title);
 }
 
 .sql-console {
   grid-template-rows: minmax(168px, auto) 48px 250px 55px minmax(0, 1fr);
-  background: #fff;
+  background: var(--sql-light-surface);
 }
 
 .sql-ai-bar {
@@ -3361,14 +3410,14 @@ textarea:focus {
   align-content: start;
   gap: 8px;
   padding: 12px 14px;
-  border-bottom: 1px solid #dfe7e2;
-  background: linear-gradient(90deg, #eef8f2, #f8fbf9);
+  border-bottom: 1px solid var(--sql-light-ai-border);
+  background: linear-gradient(90deg, var(--sql-light-ai-start), var(--sql-light-header));
 }
 
 .sql-ai-bar.is-dragover {
-  outline: 2px dashed #168a4d;
+  outline: 2px dashed var(--sql-light-accent);
   outline-offset: -7px;
-  background: #e5f5eb;
+  background: var(--sql-light-drop);
 }
 
 .sql-ai-heading {
@@ -3384,9 +3433,9 @@ textarea:focus {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  color: #fff;
+  color: var(--sql-light-surface);
   border-radius: 9px;
-  background: #17231d;
+  background: var(--sql-light-ink);
   font-size: 18px;
 }
 
@@ -3397,13 +3446,13 @@ textarea:focus {
 }
 
 .sql-ai-copy strong {
-  color: #1d3428;
+  color: var(--sql-light-ai-title);
   font-size: 11px;
 }
 
 .sql-ai-copy small {
   overflow: hidden;
-  color: #64796d;
+  color: var(--sql-light-note-ink);
   font-size: 9px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3416,14 +3465,14 @@ textarea:focus {
   gap: 9px;
   min-width: 0;
   padding: 8px 9px;
-  border: 1px solid #c9d7cf;
+  border: 1px solid var(--sql-light-composer-border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--sql-light-surface);
 }
 
 .sql-ai-composer:focus-within {
-  border-color: #168a4d;
-  box-shadow: 0 0 0 3px rgb(22 138 77 / 10%);
+  border-color: var(--sql-light-accent);
+  box-shadow: var(--sql-light-focus-ring);
 }
 
 .sql-ai-composer textarea {
@@ -3432,10 +3481,10 @@ textarea:focus {
   max-height: 130px;
   resize: vertical;
   padding: 4px 2px;
-  color: #17231d;
+  color: var(--sql-light-ink);
   border: 0;
   outline: none;
-  background: #fff;
+  background: var(--sql-light-surface);
   font: inherit;
   font-size: 12px;
   line-height: 1.45;
@@ -3465,15 +3514,15 @@ textarea:focus {
 }
 
 .sql-ai-submit {
-  color: #fff;
-  border: 1px solid #17231d;
-  background: #17231d;
+  color: var(--sql-light-surface);
+  border: 1px solid var(--sql-light-ink);
+  background: var(--sql-light-ink);
 }
 
 .sql-ai-insert {
-  color: #17643b;
-  border: 1px solid #add0ba;
-  background: #fff;
+  color: var(--sql-light-insert-ink);
+  border: 1px solid var(--sql-light-insert-border);
+  background: var(--sql-light-surface);
 }
 
 .sql-ai-submit:disabled,
@@ -3494,93 +3543,93 @@ textarea:focus {
 }
 
 .sql-console-toolbar {
-  color: #697d71;
-  border-bottom-color: #dce5df;
-  background: #fbfcfb;
+  color: var(--sql-light-toolbar-ink);
+  border-bottom-color: var(--sql-light-divider);
+  background: var(--sql-light-toolbar-bg);
 }
 
 .sql-run,
 .sql-save-schema {
-  color: #fff;
-  background: #176b40;
+  color: var(--sql-light-surface);
+  background: var(--sql-light-run);
 }
 
 .sql-write-toggle {
-  color: #3e5548;
+  color: var(--sql-light-badge-ink);
 }
 
 .sql-editor {
-  border-bottom-color: #dce5df;
+  border-bottom-color: var(--sql-light-divider);
 }
 
 .sql-editor .cm-editor,
 .sql-editor .cm-gutters {
-  background: #fff;
+  background: var(--sql-light-surface);
 }
 
 .sql-editor .cm-editor {
-  color: #17231d;
+  color: var(--sql-light-ink);
 }
 
 .sql-editor .cm-gutters {
-  color: #84968c;
-  border-right-color: #e0e7e2;
+  color: var(--sql-light-gutter);
+  border-right-color: var(--sql-light-gutter-border);
 }
 
 .sql-editor .cm-activeLine {
-  background: #edf6f0;
+  background: var(--sql-light-active-line);
 }
 
 .sql-results-head {
-  border-bottom-color: #dce5df;
-  background: #fbfcfb;
+  border-bottom-color: var(--sql-light-divider);
+  background: var(--sql-light-toolbar-bg);
 }
 
 .sql-results-head span {
-  color: #31483b;
+  color: var(--sql-light-result-ink);
 }
 
 .sql-result-tabs button,
 .sql-index-title button,
 .sql-index-row button {
-  color: #365143;
-  border-color: #c8d6ce;
-  background: #fff;
+  color: var(--sql-light-button-ink);
+  border-color: var(--sql-light-button-border);
+  background: var(--sql-light-surface);
 }
 
 .sql-result-tabs button.active {
-  color: #fff;
-  background: #176b40;
+  color: var(--sql-light-surface);
+  background: var(--sql-light-run);
 }
 
 .sql-result-scroll th {
-  color: #24392e;
-  background: #eef3f0;
+  color: var(--sql-light-th-ink);
+  background: var(--sql-light-th-bg);
 }
 
 .sql-result-scroll th,
 .sql-result-scroll td {
-  border-right-color: #e2e8e4;
-  border-bottom-color: #e2e8e4;
+  border-right-color: var(--sql-light-grid-border);
+  border-bottom-color: var(--sql-light-grid-border);
 }
 
 .sql-result-scroll tr:nth-child(even) td {
-  background: #f8faf9;
+  background: var(--sql-light-row-alt);
 }
 
 .sql-empty-result {
-  color: #74877c;
+  color: var(--sql-light-empty);
 }
 
 .sql-schema-panel input,
 .sql-schema-panel select {
-  color: #22372c;
-  border-color: #cad7cf;
-  background: #fff;
+  color: var(--sql-light-field-ink);
+  border-color: var(--sql-light-field-border);
+  background: var(--sql-light-surface);
 }
 
 .sql-schema-errors {
-  color: #b42318;
+  color: var(--sql-light-danger);
 }
 
 @media (max-width: 1100px) {
@@ -3592,7 +3641,7 @@ textarea:focus {
     right: 24px;
     width: 360px;
     height: calc(min(900px, 94vh) - 122px);
-    box-shadow: -20px 0 50px rgb(28 49 37 / 18%);
+    box-shadow: var(--sql-light-panel-shadow);
   }
 }
 
