@@ -6,7 +6,13 @@ export default defineConfig({
   // Bundle everything into the shell main (same policy as apps/docs): the
   // imported docs/sheets main modules are TS source with no build artifacts,
   // so externalizing them would break Node ESM resolution at runtime.
-  main: {},
+  main: {
+    resolve: {
+      // sheets-main is bundled into the unified shell. Use AlaSQL's
+      // in-memory browser build instead of its Node entry (react-native-fs).
+      alias: { alasql: resolve(__dirname, '../../node_modules/alasql/dist/alasql.js') },
+    },
+  },
   preload: {
     build: {
       rollupOptions: {

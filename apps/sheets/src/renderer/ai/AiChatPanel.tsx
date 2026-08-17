@@ -22,7 +22,7 @@ import fileGeneralIcon from '../assets/file-general.png'
 
 /** Clipboard bitmap MIME → attachment extension (matches the main process's
  * ATTACHMENT_IMAGE_EXTS) */
-const PASTE_MIME_EXT: Record<string, string> = {
+export const PASTE_MIME_EXT: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/gif': 'gif',
@@ -76,7 +76,7 @@ const ATTACHMENT_CARD_ICONS: Record<string, string> = Object.fromEntries(
   ATTACHMENT_CARD_ICON_GROUPS.flatMap(([icon, exts]) => exts.map((ext) => [ext, icon])),
 )
 
-function AttachmentCardIcon({ ext }: { ext: string }) {
+export function AttachmentCardIcon({ ext }: { ext: string }) {
   return <img src={ATTACHMENT_CARD_ICONS[ext] ?? fileGeneralIcon} alt="" aria-hidden />
 }
 
@@ -86,7 +86,7 @@ let cardNameCtx: CanvasRenderingContext2D | null = null
 
 /** Ellipsize like the design: cut at the limit, strip trailing -_./spaces so
  *  punctuation never sits against the …; CSS text-overflow stays as fallback */
-function truncateCardName(name: string): string {
+export function truncateCardName(name: string): string {
   cardNameCtx ??= document.createElement('canvas').getContext('2d')
   if (!cardNameCtx) return name
   // must match the stack the card name actually renders with (body font in styles.css)
@@ -103,7 +103,7 @@ function truncateCardName(name: string): string {
   return `${name.slice(0, lo).replace(/[-_.\s]+$/, '')}…`
 }
 
-function formatAttachmentSize(bytes: number): string {
+export function formatAttachmentSize(bytes: number): string {
   return bytes >= 1024 * 1024
     ? `${(bytes / (1024 * 1024)).toFixed(2)} MB`
     : `${(bytes / 1024).toFixed(2)} KB`

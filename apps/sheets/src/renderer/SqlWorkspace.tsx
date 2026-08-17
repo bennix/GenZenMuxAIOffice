@@ -3,9 +3,21 @@ import { sql } from '@codemirror/lang-sql'
 import { lintGutter, setDiagnostics } from '@codemirror/lint'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import type { WorkbookFile } from '../shared/desktop-api'
+import {
+  ATTACHMENT_IMAGE_EXTS,
+  type AttachmentMeta,
+  type WorkbookFile,
+} from '../shared/desktop-api'
 import type { EditJournal } from './edit-journal'
-import { WorkbookSqlEngine } from './sql/sql-engine'
+import attachIcon from './assets/attach-icon.png'
+import fileImageIcon from './assets/file-image.png'
+import {
+  AttachmentCardIcon,
+  formatAttachmentSize,
+  PASTE_MIME_EXT,
+  truncateCardName,
+} from './ai/AiChatPanel'
+import { WorkbookSqlBridge } from './sql/sql-bridge'
 import { loadStoredSchema, saveStoredSchema, validateDatabaseSchema } from './sql/sql-schema'
 import {
   inferWorkbookDatabase,
@@ -25,12 +37,23 @@ import { sqlForSelectionOrCursor } from './sql/sql-script'
 interface SqlWorkspaceProps {
   readonly file: WorkbookFile | null
   readonly journal: EditJournal | undefined
-  readonly engine: WorkbookSqlEngine
+  readonly engine: WorkbookSqlBridge
   readonly onReady: (schema: WorkbookDatabaseSchema) => void
   readonly onBackfill: (
     columns: readonly string[],
     rows: ReadonlyArray<Readonly<Record<string, unknown>>>,
   ) => string | null
+  readonly aiBusy: boolean
+  readonly aiConfigured: boolean
+  readonly aiFailed: boolean
+  readonly aiReply: string
+  readonly attachments: readonly AttachmentMeta[]
+  readonly attachNotice: string | null
+  readonly onPickAttachments: () => void
+  readonly onAddAttachmentPaths: (paths: readonly string[]) => void
+  readonly onAddPastedImage: (data: ArrayBuffer, ext: string) => void
+  readonly onRemoveAttachment: (path: string) => void
+  readonly onAskAi: (question: string, retryAttachments?: readonly AttachmentMeta[]) => void
   readonly onClose: () => void
 }
 
@@ -60,12 +83,30 @@ function resultLabel(result: SqlExecutionResult): string {
   return `已完成 · ${result.elapsedMs.toFixed(1)} ms`
 }
 
+function sqlFromAiReply(reply: string): string | null {
+  const fenced = /```sql\s*([\s\S]*?)```/i.exec(reply)?.[1]?.trim()
+  if (fenced) return fenced
+  const statement = /\b(?:SELECT|WITH|EXPLAIN)\b[\s\S]*?(?:;|$)/i.exec(reply)?.[0]?.trim()
+  return statement || null
+}
+
 export function SqlWorkspace({
   file,
   journal,
   engine,
   onReady,
   onBackfill,
+  aiBusy,
+  aiConfigured,
+  aiFailed,
+  aiReply,
+  attachments,
+  attachNotice,
+  onPickAttachments,
+  onAddAttachmentPaths,
+  onAddPastedImage,
+  onRemoveAttachment,
+  onAskAi,
   onClose,
 }: SqlWorkspaceProps): React.JSX.Element {
   const chinese = navigator.language.toLowerCase().startsWith('zh')
@@ -80,7 +121,46 @@ export function SqlWorkspace({
   const [allowWrites, setAllowWrites] = useState(false)
   const [results, setResults] = useState<readonly SqlExecutionResult[]>([])
   const [resultIndex, setResultIndex] = useState(0)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [lastAiRequest, setLastAiRequest] = useState<{
+    readonly question: string
+    readonly attachments: readonly AttachmentMeta[]
+  } | null>(null)
+  const [aiDragOver, setAiDragOver] = useState(false)
+  const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({})
+  const previewRequestedRef = useRef(new Set<string>())
   const editorRef = useRef<ReactCodeMirrorRef>(null)
+
+  useEffect(() => {
+    const alive = new Set(attachments.map((attachment) => attachment.path))
+    setAttachmentPreviews((previous) => {
+      const stale = Object.keys(previous).filter((path) => !alive.has(path))
+      if (stale.length === 0) return previous
+      const next = { ...previous }
+      for (const path of stale) delete next[path]
+      return next
+    })
+    for (const path of previewRequestedRef.current) {
+      if (!alive.has(path)) previewRequestedRef.current.delete(path)
+    }
+    for (const attachment of attachments) {
+      if (
+        !ATTACHMENT_IMAGE_EXTS.has(attachment.ext) ||
+        previewRequestedRef.current.has(attachment.path)
+      )
+        continue
+      previewRequestedRef.current.add(attachment.path)
+      void window.desktopApi.readAttachmentImage(attachment.path).then((result) => {
+        if (!previewRequestedRef.current.has(attachment.path)) return
+        if (result.ok && result.base64 && result.mime) {
+          setAttachmentPreviews((previous) => ({
+            ...previous,
+            [attachment.path]: `data:${result.mime};base64,${result.base64}`,
+          }))
+        }
+      })
+    }
+  }, [attachments])
 
   useEffect(() => {
     if (!file) {
@@ -99,7 +179,7 @@ export function SqlWorkspace({
       readRange: (request) => window.desktopApi.readWorkbookRange(request),
       signal: controller.signal,
     })
-      .then((inferred) => {
+      .then(async (inferred) => {
         if (controller.signal.aborted) return
         const stored = loadStoredSchema(workbookDatabaseKey(file))
         const inferredIds = new Set(inferred.schema.tables.map((table) => table.sheetId))
@@ -107,7 +187,7 @@ export function SqlWorkspace({
           ? stored
           : null
         const next = usableStored ?? inferred.schema
-        engine.load(next, materializeDatabase(next, inferred.matrices))
+        await engine.load(next, materializeDatabase(next, inferred.matrices))
         setSchema(next)
         setMatrices(inferred.matrices)
         setActiveSheetId(next.tables[0]?.sheetId ?? '')
@@ -138,12 +218,13 @@ export function SqlWorkspace({
 
   const activeTable = schema?.tables.find((table) => table.sheetId === activeSheetId) ?? null
   const activeResult = results[resultIndex] ?? null
+  const aiSql = useMemo(() => sqlFromAiReply(aiReply), [aiReply])
   const schemaErrors = useMemo(() => (schema ? validateDatabaseSchema(schema) : []), [schema])
 
-  const applySchema = (): void => {
+  const applySchema = async (): Promise<void> => {
     if (!schema || schemaErrors.length > 0) return
     try {
-      engine.load(schema, materializeDatabase(schema, matrices))
+      await engine.load(schema, materializeDatabase(schema, matrices))
       saveStoredSchema(schema)
       onReady(schema)
       setNotice(
@@ -154,14 +235,14 @@ export function SqlWorkspace({
     }
   }
 
-  const runSource = (source: string): void => {
+  const runSource = async (source: string): Promise<void> => {
     if (!schema || schemaErrors.length > 0) return
     try {
       const editor = editorRef.current?.view
       if (editor) editor.dispatch(setDiagnostics(editor.state, []))
       // Rebuild before each run so field/type edits in the inspector take effect.
-      engine.load(schema, materializeDatabase(schema, matrices))
-      const execution = engine.execute(source, { readOnly: !allowWrites })
+      await engine.load(schema, materializeDatabase(schema, matrices))
+      const execution = await engine.execute(source, { readOnly: !allowWrites })
       setResults(execution.results)
       setResultIndex(Math.max(0, execution.results.length - 1))
       if (execution.error) {
@@ -194,7 +275,7 @@ export function SqlWorkspace({
     }
   }
 
-  const runScript = (): void => runSource(script)
+  const runScript = (): void => void runSource(script)
 
   const runCurrent = (): void => {
     const selection = editorRef.current?.view?.state.selection.main
@@ -208,7 +289,7 @@ export function SqlWorkspace({
       )
       return
     }
-    runSource(source)
+    void runSource(source)
   }
 
   return (
@@ -262,6 +343,192 @@ export function SqlWorkspace({
           </aside>
 
           <main className="sql-console">
+            <form
+              className={`sql-ai-bar${aiDragOver ? ' is-dragover' : ''}`}
+              onSubmit={(event) => {
+                event.preventDefault()
+                const question = aiPrompt.trim()
+                if (!question || aiBusy || !aiConfigured) return
+                setLastAiRequest({ question, attachments: [...attachments] })
+                onAskAi(question)
+                setAiPrompt('')
+              }}
+              onDragEnter={(event) => {
+                event.preventDefault()
+                setAiDragOver(true)
+              }}
+              onDragOver={(event) => event.preventDefault()}
+              onDragLeave={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  setAiDragOver(false)
+                }
+              }}
+              onDrop={(event) => {
+                event.preventDefault()
+                setAiDragOver(false)
+                const paths = Array.from(event.dataTransfer.files)
+                  .map((file) => window.desktopApi.getPathForFile(file))
+                  .filter(Boolean)
+                if (paths.length > 0) onAddAttachmentPaths(paths)
+              }}
+            >
+              <div className="sql-ai-heading">
+                <span className="sql-ai-mark" aria-hidden="true">
+                  ✦
+                </span>
+                <div className="sql-ai-copy">
+                  <strong>ZenMux AI · SQL</strong>
+                  <small>
+                    {aiBusy
+                      ? chinese
+                        ? '正在读取真实表结构、生成并验证查询…'
+                        : 'Reading the real schema, generating and verifying SQL…'
+                      : aiReply
+                        ? aiReply
+                            .replace(/```[a-z]*|```/gi, '')
+                            .replace(/\s+/g, ' ')
+                            .slice(0, 220)
+                        : chinese
+                          ? '用自然语言提问；可添加最多 5 个附件、拖放文件或粘贴图片。AI 会读取真实字段并运行只读查询。'
+                          : 'Ask in plain language; attach up to 5 files, drop files, or paste images. AI reads real fields and runs a read-only query.'}
+                  </small>
+                </div>
+              </div>
+              {attachNotice && <div className="ai-attach-notice">{attachNotice}</div>}
+              {attachments.length > 0 && (
+                <div className="ai-attachments sql-ai-attachments">
+                  {attachments.map((attachment) =>
+                    ATTACHMENT_IMAGE_EXTS.has(attachment.ext) ? (
+                      <span
+                        key={attachment.path}
+                        className="ai-attachment-thumb"
+                        title={attachment.path}
+                      >
+                        {attachmentPreviews[attachment.path] ? (
+                          <img src={attachmentPreviews[attachment.path]} alt={attachment.name} />
+                        ) : (
+                          <span className="ai-attachment-thumb-pending" aria-hidden>
+                            <img src={fileImageIcon} alt="" />
+                          </span>
+                        )}
+                        <button
+                          className="ai-attachment-thumb-remove"
+                          type="button"
+                          onClick={() => onRemoveAttachment(attachment.path)}
+                          aria-label={chinese ? '移除附件' : 'Remove attachment'}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ) : (
+                      <span
+                        key={attachment.path}
+                        className="ai-attachment-card"
+                        title={attachment.path}
+                      >
+                        <span className="ai-attachment-card-icon">
+                          <AttachmentCardIcon ext={attachment.ext} />
+                        </span>
+                        <span className="ai-attachment-card-meta">
+                          <span className="ai-attachment-card-name">
+                            {truncateCardName(attachment.name)}
+                          </span>
+                          <span className="ai-attachment-card-size">
+                            {formatAttachmentSize(attachment.sizeBytes)}
+                          </span>
+                        </span>
+                        <button
+                          className="ai-attachment-thumb-remove"
+                          type="button"
+                          onClick={() => onRemoveAttachment(attachment.path)}
+                          aria-label={chinese ? '移除附件' : 'Remove attachment'}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ),
+                  )}
+                </div>
+              )}
+              <div className="sql-ai-composer">
+                <button
+                  className="ai-attach-btn sql-ai-attach"
+                  type="button"
+                  onClick={onPickAttachments}
+                  title={chinese ? '添加附件（最多 5 个）' : 'Add attachments (up to 5)'}
+                  aria-label={chinese ? '添加附件' : 'Add attachments'}
+                >
+                  <img src={attachIcon} alt="" aria-hidden />
+                </button>
+                <textarea
+                  value={aiPrompt}
+                  onChange={(event) => setAiPrompt(event.target.value)}
+                  onPaste={(event) => {
+                    const files = Array.from(event.clipboardData.files)
+                    if (files.length === 0) return
+                    const paths: string[] = []
+                    for (const file of files) {
+                      const path = window.desktopApi.getPathForFile(file)
+                      if (path) paths.push(path)
+                      else {
+                        const ext =
+                          PASTE_MIME_EXT[file.type] ??
+                          file.name.split('.').pop()?.toLowerCase() ??
+                          'bin'
+                        void file.arrayBuffer().then((data) => onAddPastedImage(data, ext))
+                      }
+                    }
+                    if (paths.length > 0) onAddAttachmentPaths(paths)
+                  }}
+                  placeholder={
+                    aiConfigured
+                      ? chinese
+                        ? '例如：按项目类型汇总预算，并按总额降序排列'
+                        : 'Example: total budget by project type, highest first'
+                      : chinese
+                        ? '请先在设置中配置 ZenMux API Key'
+                        : 'Configure a ZenMux API Key in Settings first'
+                  }
+                  disabled={!aiConfigured || aiBusy}
+                  aria-label={
+                    chinese ? '向 ZenMux AI 描述 SQL 查询' : 'Describe a SQL query to ZenMux AI'
+                  }
+                />
+                <div className="sql-ai-actions">
+                  {aiFailed && lastAiRequest && !aiBusy && (
+                    <button
+                      className="sql-ai-insert"
+                      type="button"
+                      onClick={() => onAskAi(lastAiRequest.question, lastAiRequest.attachments)}
+                    >
+                      {chinese ? '重试原请求' : 'Retry request'}
+                    </button>
+                  )}
+                  {aiSql && !aiBusy && (
+                    <button
+                      className="sql-ai-insert"
+                      type="button"
+                      onClick={() => setScript(aiSql)}
+                    >
+                      {chinese ? '插入 AI SQL' : 'Insert AI SQL'}
+                    </button>
+                  )}
+                  <button
+                    className="sql-ai-submit"
+                    type="submit"
+                    disabled={!aiConfigured || aiBusy || !aiPrompt.trim()}
+                  >
+                    {aiBusy
+                      ? chinese
+                        ? '分析中…'
+                        : 'Working…'
+                      : chinese
+                        ? 'AI 生成并验证'
+                        : 'Generate & verify'}
+                  </button>
+                </div>
+              </div>
+            </form>
             <div className="sql-console-toolbar">
               <button
                 className="sql-run"
@@ -612,7 +879,7 @@ export function SqlWorkspace({
                   className="sql-save-schema"
                   type="button"
                   disabled={schemaErrors.length > 0}
-                  onClick={applySchema}
+                  onClick={() => void applySchema()}
                 >
                   {chinese ? '保存结构并重建数据库' : 'Save schema & rebuild'}
                 </button>

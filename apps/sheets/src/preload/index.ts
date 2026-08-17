@@ -218,6 +218,18 @@ const desktopApi: DesktopApi = {
     }
     return result as { canceled: true } | { canceled: false; path: string }
   },
+  async loadSqlDatabase(schema, tables) {
+    await ipcRenderer.invoke(IPC_CHANNELS.sqlLoad, { schema, tables })
+  },
+  async executeSql(script, options = {}) {
+    if (typeof script !== 'string' || script.length === 0 || script.length > 1_000_000) {
+      throw new Error('Invalid SQL script.')
+    }
+    return ipcRenderer.invoke(IPC_CHANNELS.sqlExecute, { script, options })
+  },
+  async resetSqlDatabase() {
+    await ipcRenderer.invoke(IPC_CHANNELS.sqlReset)
+  },
   async closeWorkbook(sessionId) {
     if (!isUuid(sessionId)) throw new Error('Invalid workbook session.')
     await ipcRenderer.invoke(IPC_CHANNELS.closeWorkbook, sessionId)

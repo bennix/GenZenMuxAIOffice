@@ -9,6 +9,11 @@ import type {
   AiStreamRequest,
 } from '@genoffice/ai-provider'
 import type { ConnectApi } from '@genoffice/electron-utils/connect'
+import type {
+  SqlMaterializedTable,
+  SqlScriptExecution,
+  WorkbookDatabaseSchema,
+} from '../renderer/sql/sql-types'
 
 const MAX_RANGE_CELLS = 20_000
 const cellScalarSchema = z.union([z.string(), z.number().finite(), z.boolean(), z.null()])
@@ -1949,6 +1954,16 @@ export interface DesktopApi extends ConnectApi {
     baseName: string,
   ): Promise<{ renamed: boolean; name?: string }>
   exportPdf(request: WorkbookExportPdfRequest): Promise<WorkbookExportPdfResult>
+  /** Execute SQL outside the renderer so AlaSQL never requires unsafe-eval in the page CSP. */
+  loadSqlDatabase(
+    schema: WorkbookDatabaseSchema,
+    tables: readonly SqlMaterializedTable[],
+  ): Promise<void>
+  executeSql(
+    script: string,
+    options?: { readOnly?: boolean; maxRows?: number },
+  ): Promise<SqlScriptExecution>
+  resetSqlDatabase(): Promise<void>
   closeWorkbook(sessionId: string): Promise<void>
   openExternal(url: string): Promise<void>
   /// Application-menu File commands (Open/Save/Save As); returns unsubscribe.

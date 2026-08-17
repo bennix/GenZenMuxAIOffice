@@ -4,12 +4,12 @@ import type { WorkbookDatabaseSchema } from '../sql/sql-types'
 export interface SqlSkillDeps {
   ensureDatabase(): Promise<WorkbookDatabaseSchema>
   getSchema(): WorkbookDatabaseSchema | null
-  runReadOnly(query: string): {
+  runReadOnly(query: string): Promise<{
     rows: ReadonlyArray<Readonly<Record<string, unknown>>>
     columns: readonly string[]
     error: string | null
-  }
-  writeReadOnlyResult(query: string): { rows: number; error: string | null }
+  }>
+  writeReadOnlyResult(query: string): Promise<{ rows: number; error: string | null }>
 }
 
 const prompt = `# Workbook SQL database
@@ -111,7 +111,7 @@ export function createSqlSkill(deps: SqlSkillDeps): AgentSkill {
       try {
         await deps.ensureDatabase()
         if (call.name === 'run_sql_query') {
-          const result = deps.runReadOnly(query)
+          const result = await deps.runReadOnly(query)
           if (result.error) return failure('Run SQL query', result.error)
           return {
             output: JSON.stringify(
@@ -124,7 +124,7 @@ export function createSqlSkill(deps: SqlSkillDeps): AgentSkill {
           }
         }
         if (call.name === 'write_sql_result') {
-          const result = deps.writeReadOnlyResult(query)
+          const result = await deps.writeReadOnlyResult(query)
           if (result.error) return failure('Write SQL result', result.error)
           return {
             output: `Inserted ${result.rows} query result row(s) into a new worksheet. Source tables were unchanged.`,

@@ -106,6 +106,8 @@ import { IPC_CHANNELS } from '../shared/ipc-channels'
 import { closeGuardDecision } from './close-guard'
 import { exportPdf } from './pdf-export'
 import { XlsxSidecarClient } from './xlsx-sidecar-client'
+import { WorkbookSqlEngine } from '../renderer/sql/sql-engine'
+import type { SqlMaterializedTable, WorkbookDatabaseSchema } from '../renderer/sql/sql-types'
 
 /**
  * Sheets main-process logic as an embeddable module: no top-level lifecycle.
@@ -1047,6 +1049,7 @@ interface SheetsTabSession {
   readonly client: XlsxSidecarClient
   readonly sessions: Map<string, SessionInfo>
   readonly aiStreams: Map<string, AbortController>
+  readonly sqlEngine: WorkbookSqlEngine
 }
 
 /** per-tab session state, keyed by webContents.id — replaces the old single-window closures
@@ -1082,12 +1085,21 @@ async function saveFileDialog(event: IpcMainInvokeEvent, options: SaveDialogOpti
 
 /** register a tab's webContents/client pair and wire up cleanup on teardown */
 function registerSheetsSession(webContents: WebContents, client: XlsxSidecarClient): void {
-  sheetsTabs.set(webContents.id, { webContents, client, sessions: new Map(), aiStreams: new Map() })
+  sheetsTabs.set(webContents.id, {
+    webContents,
+    client,
+    sessions: new Map(),
+    aiStreams: new Map(),
+    sqlEngine: new WorkbookSqlEngine(),
+  })
   activeSheetsWebContents = webContents
   webContents.once('destroyed', () => {
     const entry = sheetsTabs.get(webContents.id)
     sheetsTabs.delete(webContents.id)
-    if (entry) void closeAllSessions(entry)
+    if (entry) {
+      entry.sqlEngine.reset()
+      void closeAllSessions(entry)
+    }
     if (activeSheetsWebContents === webContents) activeSheetsWebContents = null
   })
 }
@@ -1899,6 +1911,58 @@ export function registerSheetsIpc(): void {
     sessionFor(event)
     const request = workbookExportPdfRequestSchema.parse(input)
     return exportPdf(event, request)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.sqlLoad, (event, input: unknown) => {
+    const entry = sessionFor(event)
+    if (!input || typeof input !== 'object') throw new Error('Invalid SQL database payload.')
+    const payload = input as {
+      schema?: WorkbookDatabaseSchema
+      tables?: readonly SqlMaterializedTable[]
+    }
+    if (!payload.schema || !Array.isArray(payload.tables) || payload.tables.length > 256) {
+      throw new Error('Invalid SQL database payload.')
+    }
+    let rowCount = 0
+    for (const table of payload.tables) {
+      if (!table || typeof table !== 'object' || !Array.isArray(table.rows)) {
+        throw new Error('Invalid SQL table payload.')
+      }
+      rowCount += table.rows.length
+      if (rowCount > 2_000_000) throw new Error('SQL session row limit exceeded.')
+    }
+    entry.sqlEngine.load(payload.schema, payload.tables)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.sqlExecute, (event, input: unknown) => {
+    const entry = sessionFor(event)
+    if (!input || typeof input !== 'object') throw new Error('Invalid SQL execution request.')
+    const payload = input as {
+      script?: unknown
+      options?: { readOnly?: unknown; maxRows?: unknown }
+    }
+    if (
+      typeof payload.script !== 'string' ||
+      payload.script.length === 0 ||
+      payload.script.length > 1_000_000
+    ) {
+      throw new Error('Invalid SQL script.')
+    }
+    const maxRows = payload.options?.maxRows
+    if (
+      maxRows !== undefined &&
+      (typeof maxRows !== 'number' || !Number.isInteger(maxRows) || maxRows < 1 || maxRows > 10_000)
+    ) {
+      throw new Error('Invalid SQL row limit.')
+    }
+    return entry.sqlEngine.execute(payload.script, {
+      readOnly: payload.options?.readOnly === true,
+      ...(typeof maxRows === 'number' ? { maxRows } : {}),
+    })
+  })
+
+  ipcMain.handle(IPC_CHANNELS.sqlReset, (event) => {
+    sessionFor(event).sqlEngine.reset()
   })
 
   ipcMain.handle(IPC_CHANNELS.saveWorkbook, async (event, input: unknown) => {

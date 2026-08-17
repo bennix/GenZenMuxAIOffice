@@ -1,6 +1,6 @@
 % !TEX program = xelatex
 % GenOffice User Manual — shared Chinese / English content
-% UI screenshots in this manual were captured from the current v0.6.53 source tree.
+% UI screenshots in this manual were captured from the current v0.6.54 source tree.
 \documentclass[11pt,a4paper]{article}
 
 % Edition wrappers define exactly one of these switches before inputting this file.
@@ -19,21 +19,21 @@
   \newcommand{\ManualEditionLine}{中文版 · Chinese Edition}
   \newcommand{\ManualFooter}{GenOffice 快速入门指南 · 中文版}
   \newcommand{\ManualPdfTitle}{GenOffice 快速入门指南（中文版）}
-  \newcommand{\ManualPdfSubject}{GenOffice v0.6.53 中文用户指南}
+  \newcommand{\ManualPdfSubject}{GenOffice v0.6.54 中文用户指南}
 \else\ifManualEnglishOnly
   \newcommand{\CNText}[1]{}
   \newcommand{\ENText}[1]{#1}
   \newcommand{\ManualEditionLine}{English Edition · 英文版}
   \newcommand{\ManualFooter}{GenOffice User Manual · English Edition}
   \newcommand{\ManualPdfTitle}{GenOffice User Manual (English Edition)}
-  \newcommand{\ManualPdfSubject}{GenOffice v0.6.53 English user manual}
+  \newcommand{\ManualPdfSubject}{GenOffice v0.6.54 English user manual}
 \else
   \newcommand{\CNText}[1]{#1}
   \newcommand{\ENText}[1]{#1}
   \newcommand{\ManualEditionLine}{中英双语合订本 · Chinese--English Bilingual Edition}
   \newcommand{\ManualFooter}{中英双语入门手册 · Bilingual Getting-Started Manual}
   \newcommand{\ManualPdfTitle}{GenOffice 用户入门手册 / User Manual}
-  \newcommand{\ManualPdfSubject}{GenOffice v0.6.53 bilingual getting-started manual}
+  \newcommand{\ManualPdfSubject}{GenOffice v0.6.54 bilingual getting-started manual}
 \fi\fi
 
 \usepackage[a4paper,top=19mm,bottom=18mm,left=18mm,right=18mm,headheight=22pt]{geometry}
@@ -98,7 +98,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\footnotesize\bfseries GenOffice \textcolor{GOBlue}{/} ZenMux}
-\fancyhead[R]{\footnotesize\color{GOMuted} v0.6.53 · 2026-08-17}
+\fancyhead[R]{\footnotesize\color{GOMuted} v0.6.54 · 2026-08-17}
 \fancyfoot[L]{\scriptsize\color{GOMuted}\ManualFooter}
 \fancyfoot[R]{\colorbox{GOBlue}{\makebox[8mm][c]{\color{white}\bfseries\thepage}}}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -270,7 +270,7 @@
 \AppStrip
 \vfill
 {\color{white}\bfseries\ManualEditionLine\par}
-{\color{white!70}\small v0.6.53 · 2026-08-17 · macOS / Windows / Ubuntu / RPM\par}
+{\color{white!70}\small v0.6.54 · 2026-08-17 · macOS / Windows / Ubuntu / RPM\par}
 \clearpage
 
 % -----------------------------------------------------------------------------
@@ -280,9 +280,9 @@
 \Kicker{版本与版权 · Edition \& Credits}{SOURCE-VERIFIED MANUAL}
 \TopicTitle{关于本手册}{About this manual}
 
-\CNText{本手册面向第一次使用 GenOffice 的用户，以当前仓库 \textbf{v0.6.53} 源码与真实运行态为依据，说明安装、ZenMux 设置、Word、Excel、PowerPoint、Markdown、PDF、工作簿 SQL 数据库以及跨编辑器 AI 工作流。界面截图于 2026-08-16 至 17 日在隔离的临时用户目录中从当前应用运行态取得；截图没有包含用户文件、真实 API Key 或个人数据。演示科研稿与工作簿均为专门制作的合成素材，不代表真实科研或企业结论。}
+\CNText{本手册面向第一次使用 GenOffice 的用户，以当前仓库 \textbf{v0.6.54} 源码与真实运行态为依据，说明安装、ZenMux 设置、Word、Excel、PowerPoint、Markdown、PDF、工作簿 SQL 数据库以及跨编辑器 AI 工作流。界面截图于 2026-08-16 至 17 日在隔离的临时用户目录中从当前应用运行态取得；截图没有包含用户文件、真实 API Key 或个人数据。演示科研稿与工作簿均为专门制作的合成素材，不代表真实科研或企业结论。}
 
-\ENText{This manual is based on the current \textbf{v0.6.53} source tree and real runtime UI. It covers installation, ZenMux configuration, Word, Excel, PowerPoint, Markdown, PDF, workbook SQL databases, and cross-editor AI workflows. Screenshots were captured on 16--17 August 2026 in an isolated temporary profile and contain no user documents, real API Key, or personal data. The research draft and workbooks are purpose-built synthetic demonstrations, not real scientific or business findings.}
+\ENText{This manual is based on the current \textbf{v0.6.54} source tree and real runtime UI. It covers installation, ZenMux configuration, Word, Excel, PowerPoint, Markdown, PDF, workbook SQL databases, and cross-editor AI workflows. Screenshots were captured on 16--17 August 2026 in an isolated temporary profile and contain no user documents, real API Key, or personal data. The research draft and workbooks are purpose-built synthetic demonstrations, not real scientific or business findings.}
 
 \vspace{5mm}
 \begin{tikzpicture}
@@ -383,7 +383,7 @@
   \item 在 \href{https://bennix.github.io/GenZenMuxAIOffice/}{官方 Landing Page} 选择操作系统；检查页面显示的当前版本与文件名一致。
   \item macOS：打开 DMG，将 GenOffice 拖入“应用程序”。Apple Silicon 版本使用 Developer ID 签名；是否包含 Apple 公证票据以对应 Release 的验证说明为准。
   \item Windows：运行 x64 安装程序。当前安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”；请核对下载域名与 Release 文件。
-  \item Ubuntu：执行 \texttt{sudo apt install ./genoffice\_0.6.53\_amd64.deb}。Fedora/RHEL 系使用 \texttt{sudo dnf install ./genoffice-0.6.53.x86\_64.rpm}。
+  \item Ubuntu：执行 \texttt{sudo apt install ./genoffice\_0.6.54\_amd64.deb}。Fedora/RHEL 系使用 \texttt{sudo dnf install ./genoffice-0.6.54.x86\_64.rpm}。
 \end{enumerate}
 \begin{center}
 \begin{tabularx}{.95\linewidth}{>{\bfseries}p{28mm}p{43mm}X}
@@ -404,7 +404,7 @@ RPM & .rpm & Fedora/RHEL/Rocky/Alma/openSUSE x86\_64\\
   \item Open the \href{https://bennix.github.io/GenZenMuxAIOffice/}{official Landing Page}, choose your platform, and confirm that the displayed version matches the filename.
   \item macOS: open the DMG and drag GenOffice to Applications. The Apple Silicon build is Developer ID signed; consult the matching Release verification notes for notarization-ticket status.
   \item Windows: run the x64 installer. The current build is not Authenticode-signed, so SmartScreen may report an unknown publisher; verify the domain and Release asset first.
-  \item Ubuntu: run \texttt{sudo apt install ./genoffice\_0.6.53\_amd64.deb}. Fedora/RHEL-family users can run \texttt{sudo dnf install ./genoffice-0.6.53.x86\_64.rpm}.
+  \item Ubuntu: run \texttt{sudo apt install ./genoffice\_0.6.54\_amd64.deb}. Fedora/RHEL-family users can run \texttt{sudo dnf install ./genoffice-0.6.54.x86\_64.rpm}.
 \end{enumerate}
 \begin{center}
 \begin{tabularx}{.95\linewidth}{>{\bfseries}p{28mm}p{43mm}X}
@@ -509,7 +509,7 @@ RPM & .rpm & Fedora/RHEL/Rocky/Alma/openSUSE x86\_64\\
 }
 
 \CNPage{06}{确认隐私保护、版本与网络状态}{Verify privacy, version, and connectivity}{API Key 在界面中加密遮罩，并由系统凭据服务安全保存；“设置 > 关于”可核对版本、适配署名和更新通道。}{
-\SmallShot{04-settings-about.png}{设置 > 关于的真实运行态；截图采集于旧版界面，发行与手册版本以页眉标注的 v0.6.53 为准。}
+\SmallShot{04-settings-about.png}{设置 > 关于的真实运行态；截图采集于旧版界面，发行与手册版本以页眉标注的 v0.6.54 为准。}
 \begin{itemize}
   \item macOS 使用系统安全存储/钥匙串能力；Windows 使用系统凭据加密机制。应用不会把 Key 写进安装包或手册。
   \item 文档打开、编辑和保存以本地为主；调用 ZenMux、联网搜索、文献检索、公式 OCR 或配图时才需要网络。
@@ -520,7 +520,7 @@ RPM & .rpm & Fedora/RHEL/Rocky/Alma/openSUSE x86\_64\\
 }
 
 \ENPage{06}{确认隐私保护、版本与网络状态}{Verify privacy, version, and connectivity}{The API Key is masked and protected by the operating-system credential service. Settings > About confirms version, adaptation credit, and update channel.}{
-\SmallShot{04-settings-about.png}{Real Settings > About runtime; the capture predates this release, so use the v0.6.53 header as the authoritative manual version.}
+\SmallShot{04-settings-about.png}{Real Settings > About runtime; the capture predates this release, so use the v0.6.54 header as the authoritative manual version.}
 \begin{itemize}
   \item macOS uses operating-system secure storage/Keychain capabilities; Windows uses system credential encryption. The key is not embedded in installers or this manual.
   \item Opening, editing, and saving files are local-first. ZenMux calls, web search, literature search, formula OCR, and image generation require a network.
@@ -1075,10 +1075,12 @@ Local persistence & Choose Save schema \& rebuild. Schema and keys persist local
 \CNPage{21B}{SQL 工作台：写脚本、定位错误并回填结果}{SQL workbench: script, diagnose, and write results}{工作台同时显示数据表目录、SQL 编辑器、查询结果和 Schema；适合对多个工作表做 JOIN、聚合、筛选与可复现分析。}{
 \Flow{读取真实 Schema}{编写或让 AI 生成}{只读验证查询}{回填到新工作表}
 \begin{itemize}
+  \item v0.6.54 起 SQL 工作台采用明亮界面；顶部 ZenMux AI 使用可调整高度的多行输入区，直接接受自然语言需求，读取真实 Catalog、生成并验证只读 SQL，返回的 SQL 可一键插入编辑器。
+  \item SQL AI 与 Word、Excel、PPT、Markdown、PDF 的 AI 入口遵循同一附件规则：一次最多 5 个，可用选择器添加或直接拖入文件，也可从剪贴板粘贴图片；图片以可删除缩略图显示，普通文件显示名称和大小。
   \item 编辑器支持 SQL 高亮、行号、多语句脚本、折叠与错误标记。\textbf{Cmd/Ctrl+Enter} 运行选中 SQL 或光标所在语句；\textbf{Shift+Cmd/Ctrl+Enter} 运行完整脚本。
   \item 错误会定位到对应行与语句；多语句结果用编号页签切换。SELECT 结果可预览，并用“回填 Excel”写入一张\textbf{新工作表}，不覆盖源表。
   \item 默认“安全只读模式”拒绝修改语句。手动开启“允许本地会话写语句”只改变本次内存数据库，不会自动写回 XLSX。
-  \item AI 必须先读取真实 Catalog，再生成、解释或修复 SQL；自动执行仅允许 SELECT、WITH 或 EXPLAIN。只有用户明确要求时，AI 才可把只读查询结果写入新工作表。
+  \item AI 必须先读取真实 Catalog，再生成、解释或修复 SQL；自动执行仅允许 SELECT、WITH 或 EXPLAIN。只有用户明确要求时，AI 才可把只读查询结果写入新工作表。网络失败后重试会沿用原提示词与附件；重发前仍应核对附件条。
 \end{itemize}
 \Tip{先用 SELECT 验证行数和连接条件，再回填。涉及中文表名、字段名时写成 \texttt{[订单明细].[商品ID]}。}
 }
@@ -1086,10 +1088,12 @@ Local persistence & Choose Save schema \& rebuild. Schema and keys persist local
 \ENPage{21B}{SQL 工作台：写脚本、定位错误并回填结果}{SQL workbench: script, diagnose, and write results}{The workbench combines a table catalog, SQL editor, results, and schema inspector for reproducible joins, aggregation, and filtering across worksheets.}{
 \Flow{Load real schema}{Write or ask AI}{Verify read-only}{Write to new sheet}
 \begin{itemize}
+  \item From v0.6.54, the workbench uses a light interface. Its ZenMux AI area provides a resizable multiline prompt, reads the real catalog, generates and verifies read-only SQL, and can insert the returned SQL into the editor.
+  \item SQL AI follows the same attachment rules as the Word, Excel, PowerPoint, Markdown, and PDF assistants: up to five files per request, added through the picker or drag-and-drop, plus clipboard images. Images appear as removable thumbnails; other files show their names and sizes.
   \item The editor provides syntax highlighting, line numbers, multi-statement scripts, folding, and inline diagnostics. \textbf{Cmd/Ctrl+Enter} runs the selection or current statement; \textbf{Shift+Cmd/Ctrl+Enter} runs the full script.
   \item Errors point to the relevant line and statement; numbered tabs switch among multiple results. Preview a SELECT result, then Write to Excel to create a \textbf{new worksheet} without overwriting sources.
   \item Safe read-only mode rejects mutations by default. Enabling session writes changes only the in-memory database and never writes them automatically to XLSX.
-  \item AI must load the real catalog before generating, explaining, or repairing SQL. Automatic execution is restricted to SELECT, WITH, or EXPLAIN; a result is inserted only after an explicit user request.
+  \item AI must load the real catalog before generating, explaining, or repairing SQL. Automatic execution is restricted to SELECT, WITH, or EXPLAIN; a result is inserted only after an explicit user request. A failed network run retains its prompt and attachments for retry; verify the attachment strip before resending.
 \end{itemize}
 \Tip{Verify join conditions and row counts with SELECT before writing back. Use square brackets for Chinese identifiers, for example \texttt{[订单明细].[商品ID]}.}
 }
@@ -1763,7 +1767,7 @@ Recording lacks microphone/system audio & Permission, relaunch, or platform-sour
 \CNText{{\color{white!78}\Large 选择内容，提出明确问题，审阅结果，再写回可编辑对象。\par}}
 \ENText{{\color{white!78}\Large Select context, ask precisely, review the result, then write back to editable objects.\par}}
 \vfill
-{\color{white}\bfseries GenOffice v0.6.53 · ZenMux AI\par}
+{\color{white}\bfseries GenOffice v0.6.54 · ZenMux AI\par}
 {\color{white!65}\small\ManualEditionLine · 2026-08-17\par}
 
 \end{document}

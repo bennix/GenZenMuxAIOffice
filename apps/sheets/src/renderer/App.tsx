@@ -320,7 +320,7 @@ import {
 } from './WorkbookVisuals'
 import { ChartFormatPane, SelectDataDialog } from './ChartPanels'
 import { SqlWorkspace } from './SqlWorkspace'
-import { WorkbookSqlEngine } from './sql/sql-engine'
+import { WorkbookSqlBridge } from './sql/sql-bridge'
 import type { WorkbookDatabaseSchema } from './sql/sql-types'
 import {
   inferWorkbookDatabase,
@@ -383,7 +383,7 @@ export function App(): React.JSX.Element {
   }, [workbookFile, recomputeSheetContent])
   useEffect(() => {
     if (sqlSessionIdRef.current === workbookFile?.sessionId) return
-    sqlEngineRef.current.reset()
+    void sqlEngineRef.current.reset()
     sqlSchemaRef.current = null
     sqlSessionIdRef.current = null
   }, [workbookFile?.sessionId])
@@ -466,7 +466,7 @@ export function App(): React.JSX.Element {
   const [iconsDialogOpen, setIconsDialogOpen] = useState(false)
   const [equationDialogOpen, setEquationDialogOpen] = useState(false)
   const [sqlWorkspaceOpen, setSqlWorkspaceOpen] = useState(false)
-  const sqlEngineRef = useRef(new WorkbookSqlEngine())
+  const sqlEngineRef = useRef(new WorkbookSqlBridge())
   const sqlSchemaRef = useRef<WorkbookDatabaseSchema | null>(null)
   const sqlSessionIdRef = useRef<string | null>(null)
   const [recommendedCharts, setRecommendedCharts] = useState<ChartRecommendations | null>(null)
@@ -859,8 +859,11 @@ export function App(): React.JSX.Element {
         createSqlSkill({
           ensureDatabase: ensureSqlDatabase,
           getSchema: () => sqlSchemaRef.current,
-          runReadOnly: (query) => {
-            const execution = sqlEngineRef.current.execute(query, { readOnly: true, maxRows: 500 })
+          runReadOnly: async (query) => {
+            const execution = await sqlEngineRef.current.execute(query, {
+              readOnly: true,
+              maxRows: 500,
+            })
             const result = execution.results.at(-1)
             return {
               rows: result?.rows ?? [],
@@ -870,8 +873,8 @@ export function App(): React.JSX.Element {
                 : null,
             }
           },
-          writeReadOnlyResult: (query) => {
-            const execution = sqlEngineRef.current.execute(query, {
+          writeReadOnlyResult: async (query) => {
+            const execution = await sqlEngineRef.current.execute(query, {
               readOnly: true,
               maxRows: 10_000,
             })
@@ -2824,7 +2827,7 @@ export function App(): React.JSX.Element {
     const schema = stored?.tables.every((table) => ids.has(table.sheetId))
       ? stored
       : inferred.schema
-    sqlEngineRef.current.load(schema, materializeDatabase(schema, inferred.matrices))
+    await sqlEngineRef.current.load(schema, materializeDatabase(schema, inferred.matrices))
     sqlSchemaRef.current = schema
     sqlSessionIdRef.current = state.file.sessionId
     return schema
@@ -3380,6 +3383,22 @@ export function App(): React.JSX.Element {
             sqlSessionIdRef.current = workbookFile?.sessionId ?? null
           }}
           onBackfill={writeSqlResult}
+          aiBusy={aiBusy}
+          aiConfigured={isAgentConfigured()}
+          aiFailed={Boolean(chat.at(-1)?.isError || chat.at(-1)?.undelivered)}
+          aiReply={chat.at(-1)?.role === 'assistant' ? (chat.at(-1)?.text ?? '') : ''}
+          attachments={attachments}
+          attachNotice={attachNotice}
+          onPickAttachments={() => void handlePickAttachments()}
+          onAddAttachmentPaths={(paths) => void handleAddAttachmentPaths(paths)}
+          onAddPastedImage={(data, ext) => void handleAddPastedImage(data, ext)}
+          onRemoveAttachment={handleRemoveAttachment}
+          onAskAi={(question, retryAttachments) => {
+            handleSend(
+              `请使用工作簿 SQL 工具读取真实表结构，并根据下面的需求生成可执行的只读 SQL。请先调用工具验证 SQL，再用 \`\`\`sql 代码块给出最终 SQL，并简要说明查询结果。不得虚构表名或字段名，不得执行写操作。\n\n用户需求：${question}`,
+              retryAttachments,
+            )
+          }}
           onClose={() => setSqlWorkspaceOpen(false)}
         />
       )}

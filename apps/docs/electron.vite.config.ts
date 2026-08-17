@@ -19,7 +19,9 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin({ exclude: ['@genoffice/electron-utils'] })],
     resolve: { alias: localAlias },
   },
-  preload: {},
+  preload: {
+    plugins: [externalizeDepsPlugin({ exclude: ['@genoffice/electron-utils'] })],
+  },
   renderer: {
     plugins: [react()],
     resolve: { alias: localAlias },
