@@ -3324,6 +3324,164 @@ button {
   background: var(--color-bg-overlay);
 }
 
+.pdf-review-dialog {
+  width: min(1100px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  padding: 22px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  background: var(--surface);
+  box-shadow: var(--shadow-modal-strong);
+}
+
+.pdf-review-dialog > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.pdf-review-dialog h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.pdf-review-dialog p {
+  margin: 0 0 16px;
+  color: var(--text-secondary);
+}
+
+.pdf-review-dialog > header > button {
+  align-self: start;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.pdf-review-options {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pdf-review-options label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pdf-review-options select,
+.pdf-review-options button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  background: var(--surface);
+}
+
+.pdf-review-options select {
+  min-width: 180px;
+}
+
+.pdf-review-options button.primary {
+  border-color: var(--color-btn-primary);
+  color: var(--color-btn-primary-text);
+  background: var(--color-btn-primary);
+}
+
+.pdf-review-connect-report {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding-right: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  background: var(--surface);
+  font-size: 12px;
+}
+
+.pdf-review-options button:disabled,
+.pdf-review-dialog > header > button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.pdf-review-results {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.pdf-review-card {
+  min-width: 0;
+  padding: 14px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.pdf-review-card.featured {
+  grid-column: 1 / -1;
+  border-color: var(--color-btn-primary);
+}
+
+.pdf-review-card > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pdf-review-card > header span {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.pdf-review-card > header em {
+  font-size: 11px;
+}
+
+.pdf-review-reply-actions {
+  justify-content: flex-end;
+}
+
+.pdf-review-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-danger-border, #f2b8b5);
+  border-radius: 6px;
+  color: var(--color-danger-text, #b42318);
+  background: var(--color-danger-bg, #fff1f0);
+}
+
+.pdf-review-empty {
+  grid-column: 1 / -1;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 820px) {
+  .pdf-review-results {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-review-card.featured {
+    grid-column: auto;
+  }
+}
+
 .pdf-equation-dialog {
   width: min(680px, calc(100vw - 40px));
   max-height: calc(100vh - 40px);

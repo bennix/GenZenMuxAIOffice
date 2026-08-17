@@ -37,6 +37,7 @@ import { OutlinePanel } from './OutlinePanel'
 import type { OutlineNode } from './OutlinePanel'
 import { printPdf } from './print'
 import { PropertiesDialog } from './PropertiesDialog'
+import { PdfReviewCommitteeModal } from './PdfReviewCommitteeModal'
 import { SignatureDialog, fileToCanvas } from './SignatureDialog'
 import type { SignatureData } from './SignatureDialog'
 import { StampDialog } from './StampDialog'
@@ -774,6 +775,20 @@ const IconAiKeyPoints = () => (
     />
   </svg>
 )
+const IconAiReview = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+  >
+    <path d="M8 3.5h8M9 2.5h6v3H9zM6 4.5H5.5A1.5 1.5 0 0 0 4 6v14h16V6a1.5 1.5 0 0 0-1.5-1.5H18" />
+    <path d="m8 11 1.5 1.5L12 9.5M8 16l1.5 1.5L12 14.5M14 11h3M14 16h3" />
+  </svg>
+)
 
 /** Drawing stroke width (PDF pt); thin lines stay crisp under zoom */
 const STROKE_WIDTH = 2
@@ -1099,6 +1114,7 @@ export default function App() {
   const [aiCollapsed, setAiCollapsed] = useState(false)
   /** One-shot prompt pushed by the ribbon AI buttons; the panel auto-runs it (docs preset pattern) */
   const [aiPreset, setAiPreset] = useState<{ text: string; nonce: number } | null>(null)
+  const [reviewOpen, setReviewOpen] = useState(false)
   const [aiRegionSelecting, setAiRegionSelecting] = useState(false)
   const [aiRegionDraft, setAiRegionDraft] = useState<PageRegionSlice[]>([])
   const [aiRegionContext, setAiRegionContext] = useState<PdfAiRegionContext | null>(null)
@@ -4271,6 +4287,18 @@ export default function App() {
                     </span>
                     <span>{t('aiKeyPointsBtn')}</span>
                   </button>
+                  <button
+                    className="rb-big ai-entry"
+                    data-tip={lang === 'zh' || lang === 'zh-TW' ? 'PDF AI 审稿' : 'PDF AI Review'}
+                    onClick={() => setReviewOpen(true)}
+                  >
+                    <span className="rb-big-icon">
+                      <span className="ai-feature-icon" aria-hidden="true">
+                        <IconAiReview />
+                      </span>
+                    </span>
+                    <span>{lang === 'zh' || lang === 'zh-TW' ? 'AI 审稿' : 'AI Review'}</span>
+                  </button>
                 </div>
               </div>
               <div className="ribbon-sep" />
@@ -5885,6 +5913,14 @@ export default function App() {
               <span className="zoom-value">{Math.round(scale * 100)}%</span>
             </div>
           </footer>
+          {reviewOpen && (
+            <PdfReviewCommitteeModal
+              doc={doc}
+              language={lang}
+              getSearchIndex={getSearchIndex}
+              onClose={() => setReviewOpen(false)}
+            />
+          )}
         </div>
       </div>
     </div>
