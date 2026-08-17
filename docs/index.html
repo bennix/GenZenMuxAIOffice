@@ -885,6 +885,135 @@
         line-height: 1.65;
       }
 
+      .native-contrast {
+        padding: 118px 0 28px;
+      }
+
+      .object-address {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 30px 0 24px;
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 11px;
+      }
+
+      .object-address span {
+        padding: 8px 10px;
+        border: 1px solid var(--ink);
+        background: var(--acid);
+      }
+
+      .surgery-board {
+        border: 1px solid var(--ink);
+        background: rgba(255, 255, 255, 0.38);
+      }
+
+      .comparison-head,
+      .comparison-row {
+        display: grid;
+        grid-template-columns: minmax(0, 0.86fr) 68px minmax(0, 1.14fr);
+      }
+
+      .comparison-head {
+        border-bottom: 1px solid var(--ink);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .comparison-head span {
+        padding: 13px 20px;
+      }
+
+      .comparison-head span:last-child {
+        color: white;
+        background: var(--blue);
+      }
+
+      .comparison-row {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .comparison-row:last-child {
+        border-bottom: 0;
+      }
+
+      .contrast-old,
+      .contrast-native {
+        min-height: 220px;
+        padding: 28px;
+      }
+
+      .contrast-old {
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.26);
+      }
+
+      .contrast-shift {
+        display: grid;
+        place-items: center;
+        border-right: 1px solid var(--line);
+        border-left: 1px solid var(--line);
+        color: var(--blue);
+        font-family: 'Iowan Old Style', Georgia, serif;
+        font-size: 32px;
+        font-style: italic;
+      }
+
+      .contrast-native {
+        background: color-mix(in srgb, var(--blue) 8%, transparent);
+      }
+
+      .contrast-index,
+      .contrast-tag {
+        display: block;
+        margin-bottom: 30px;
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .contrast-tag {
+        color: var(--blue);
+      }
+
+      .comparison-row h3 {
+        margin: 0 0 10px;
+        font-size: 22px;
+        line-height: 1.15;
+        letter-spacing: -0.035em;
+      }
+
+      .comparison-row p {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.72;
+      }
+
+      .contrast-native p {
+        color: #363830;
+      }
+
+      .native-thesis {
+        margin: 24px 0 0;
+        padding: 30px;
+        color: white;
+        background: var(--ink);
+        font-family: 'Iowan Old Style', 'Songti SC', Georgia, serif;
+        font-size: clamp(25px, 3.5vw, 44px);
+        line-height: 1.18;
+        letter-spacing: -0.035em;
+      }
+
+      .native-thesis em {
+        color: var(--acid);
+      }
+
       .models {
         padding: 110px 0;
         display: grid;
@@ -1261,6 +1390,28 @@
 
         .feature:last-child {
           border-bottom: 0;
+        }
+
+        .comparison-head,
+        .comparison-row {
+          grid-template-columns: 1fr;
+        }
+
+        .comparison-head span:nth-child(-n + 2) {
+          display: none;
+        }
+
+        .contrast-old,
+        .contrast-native {
+          min-height: auto;
+        }
+
+        .contrast-shift {
+          min-height: 54px;
+          border: 0;
+          border-top: 1px solid var(--line);
+          border-bottom: 1px solid var(--line);
+          transform: rotate(90deg);
         }
 
         .models {
@@ -1709,6 +1860,116 @@
               个附件、文件选择与拖放、剪贴板图片缩略图、附件移除和网络失败重试。
             </p>
           </article>
+        </section>
+
+        <section class="native-contrast" aria-label="GenOffice 与普通 AI 办公套壳的核心差异">
+          <div class="section-kicker">Native document intelligence · 不只是侧边栏聊天</div>
+          <h2 class="section-title">AI 不是贴在文件旁边，<br />而是进入文件结构工作。</h2>
+          <p class="section-lead">
+            普通 AI 办公产品往往止步于生成一段可复制的文本。GenOffice
+            把模型接入本地文档引擎、学术工具链与跨编辑器通路，让结果能够落回真实对象，同时保留用户对文件、模型和成本的控制。
+          </p>
+          <div class="object-address" aria-label="原生文档对象地址示意">
+            <span>DOCX / word/document.xml / paragraph</span>
+            <span>XLSX / worksheet / cell + formula</span>
+            <span>PPTX / slide / shape + layout</span>
+            <span>PDF / page / visual region</span>
+          </div>
+          <div class="surgery-board">
+            <div class="comparison-head" aria-hidden="true">
+              <span>普通 AI 套壳</span><span>→</span><span>GenOffice 原生工作流</span>
+            </div>
+            <article class="comparison-row">
+              <div class="contrast-old">
+                <span class="contrast-index">Sidebar chat / copy &amp; paste</span>
+                <h3>生成一段文本，再由用户手工搬运</h3>
+                <p>
+                  侧边栏不知道真正的段落、单元格、公式或幻灯片对象；复制粘贴容易丢失样式与位置。
+                </p>
+              </div>
+              <div class="contrast-shift" aria-hidden="true">→</div>
+              <div class="contrast-native">
+                <span class="contrast-tag">Native AST &amp; OOXML patch</span>
+                <h3>在真实 Office 对象上做局部 Patch</h3>
+                <p>
+                  AI 可针对 Word 段落、Excel 单元格与公式、PPT Shape/Layout
+                  对象树执行结构化修改；尽量只改变目标对象，保留未触碰的样式、布局和文件结构。
+                </p>
+              </div>
+            </article>
+            <article class="comparison-row">
+              <div class="contrast-old">
+                <span class="contrast-index">Summary without evidence</span>
+                <h3>摘要看似完整，引用与公式却无法验证</h3>
+                <p>
+                  仅靠模型记忆容易产生虚构 DOI；复杂公式常停留在未渲染代码，审稿也只有单一视角。
+                </p>
+              </div>
+              <div class="contrast-shift" aria-hidden="true">→</div>
+              <div class="contrast-native">
+                <span class="contrast-tag">Research-grade workflow</span>
+                <h3>从真元数据、公式 OCR 到多 Agent 审稿</h3>
+                <p>
+                  连接 OpenAlex、Crossref、arXiv 与 PubMed，插入 GB/T 7714 等规范引文并导出
+                  BibTeX；截图公式转为可编辑 LaTeX/OMML；3 名独立委员与 1
+                  名主席对方法、统计、公式和证据链做交叉压力测试。
+                </p>
+              </div>
+            </article>
+            <article class="comparison-row">
+              <div class="contrast-old">
+                <span class="contrast-index">Single-sheet arithmetic</span>
+                <h3>只会写 SUM，跨表关系仍靠手工拼接</h3>
+                <p>简单公式能够生成，但复杂多表关联、字段约束和可复用查询缺少统一工作台。</p>
+              </div>
+              <div class="contrast-shift" aria-hidden="true">→</div>
+              <div class="contrast-native">
+                <span class="contrast-tag">Workbook as local database</span>
+                <h3>一个工作簿，就是一套本地关系数据库</h3>
+                <p>
+                  每张工作表可映射为数据表，定义字段、类型、单列或复合主键及次键；专业 SQL
+                  工作台支持 JOIN、分组、只读安全验证，并可把结果一键回填为新工作表。
+                </p>
+              </div>
+            </article>
+            <article class="comparison-row">
+              <div class="contrast-old">
+                <span class="contrast-index">Disposable one-shot session</span>
+                <h3>图片另开工具处理，对话关闭即失忆</h3>
+                <p>文档清理、问答和编辑分散在不同应用；重新打开文件后，很难延续上一次的上下文。</p>
+              </div>
+              <div class="contrast-shift" aria-hidden="true">→</div>
+              <div class="contrast-native">
+                <span class="contrast-tag">Image restoration + durable context</span>
+                <h3>图像原位增强，历史与文件强绑定</h3>
+                <p>
+                  扫描件增强与手写痕迹清理可在文档内完成；文件拖放即开，AI
+                  问答按本地文件路径保存，再次打开同一文件即可继续此前的思路与约束。
+                </p>
+              </div>
+            </article>
+            <article class="comparison-row">
+              <div class="contrast-old">
+                <span class="contrast-index">Vendor cloud lock-in</span>
+                <h3>文档、模型与订阅都被绑定在云端黑盒</h3>
+                <p>用户难以选择模型与成本结构，也不容易判断哪些数据被保存或如何迁移。</p>
+              </div>
+              <div class="contrast-shift" aria-hidden="true">→</div>
+              <div class="contrast-native">
+                <span class="contrast-tag">Local-first + BYOK</span>
+                <h3>本地处理优先，算力入口由用户决定</h3>
+                <p>
+                  Office 解析、编辑、文件历史与加密 API Key 保存在本机；ZenMux
+                  提供可配置模型路由和按量使用选择。只有用户主动提交给 AI
+                  的提示词、附件或选定上下文会通过网络发送，项目代码全面开源可审计。
+                </p>
+              </div>
+            </article>
+          </div>
+          <p class="native-thesis">
+            普通产品像是<em>给旧马车绑上喷气发动机</em>；GenOffice 从文档对象、Agent
+            协作到本地数据主权，重新设计整条生产力链路。
+          </p>
         </section>
 
         <section class="atlas" aria-label="项目来源与改造说明">
