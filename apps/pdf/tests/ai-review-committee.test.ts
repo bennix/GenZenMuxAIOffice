@@ -36,7 +36,11 @@ describe('PDF AI review committee', () => {
   it('reuses the AI reply copy and Connect delivery paths for every report', () => {
     expect(modal).toContain('copyTextToClipboard')
     expect(modal).toContain('<ConnectButton api={window.pdfApi} text={result.content} />')
-    expect(modal).toContain('<ConnectButton api={window.pdfApi} text={report} />')
+    expect(modal).toContain('className="pdf-review-connect-report"')
+    expect(modal).toContain('label={<span>{reportSendLabel}</span>}')
+    expect(modal).toContain('onSendResult={(ok) =>')
+    expect(modal).toContain('copyCompleteReport')
+    expect(modal).toContain('已复制完整报告 ✓')
     expect(modal).toContain('复制回复 / Copy reply')
   })
 })

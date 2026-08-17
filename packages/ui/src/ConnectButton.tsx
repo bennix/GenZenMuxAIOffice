@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { ConnectApi, ConnectTarget } from '@genoffice/electron-utils/connect'
 
@@ -44,10 +45,17 @@ export function ConnectButton({
   api,
   text,
   triggerNonce = 0,
+  label,
+  className,
+  onSendResult,
 }: {
   api: ConnectApi
   text: string
   triggerNonce?: number
+  /** Optional visible label; it remains inside the same clickable button as the arrow. */
+  label?: ReactNode
+  className?: string
+  onSendResult?: (ok: boolean) => void
 }) {
   const [targets, setTargets] = useState<ConnectTarget[] | null>(null)
   const [notice, setNotice] = useState('')
@@ -70,9 +78,14 @@ export function ConnectButton({
       setTargets([])
       return
     }
-    const next = await api.listConnectTargets()
-    setTargets(next)
-    setNotice(next.length ? '' : '请先打开另一个可编辑文件 / Open another editable file')
+    try {
+      const next = await api.listConnectTargets()
+      setTargets(next)
+      setNotice(next.length ? '' : '请先打开另一个可编辑文件 / Open another editable file')
+    } catch {
+      setTargets([])
+      setNotice('无法读取可连接文档，请重试 / Unable to list documents')
+    }
   }
 
   useEffect(() => {
@@ -107,21 +120,28 @@ export function ConnectButton({
   }, [targets, updateMenuPosition])
 
   const send = async (target: ConnectTarget) => {
-    const result = await api.sendConnect(target.id, text)
-    setTargets(null)
-    if (!result.ok) setNotice('发送失败，请重试 / Send failed')
+    try {
+      const result = await api.sendConnect(target.id, text)
+      setTargets(null)
+      if (!result.ok) setNotice('发送失败，请重试 / Send failed')
+      onSendResult?.(result.ok)
+    } catch {
+      setTargets(null)
+      setNotice('发送失败，请重试 / Send failed')
+      onSendResult?.(false)
+    }
   }
 
   return (
     <span ref={rootRef} style={{ position: 'relative', display: 'inline-flex' }}>
       <button
         type="button"
-        className="ai-msg-tool-btn"
+        className={`ai-msg-tool-btn${className ? ` ${className}` : ''}`}
         onClick={() => void open()}
         aria-label="发送到其他编辑器 / Connect to another editor"
         data-tip="@Connect · 发送到 Word / PPT / MD / Excel"
       >
-        ↗
+        ↗{label}
       </button>
       {targets !== null &&
         createPortal(

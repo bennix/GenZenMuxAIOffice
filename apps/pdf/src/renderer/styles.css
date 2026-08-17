@@ -3398,8 +3398,10 @@ button {
 .pdf-review-connect-report {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   min-height: 34px;
-  padding-right: 10px;
+  width: auto;
+  padding: 7px 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-primary);

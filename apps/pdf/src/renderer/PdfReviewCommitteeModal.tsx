@@ -89,6 +89,8 @@ export function PdfReviewCommitteeModal({
   const [running, setRunning] = useState(false)
   const [keyMissing, setKeyMissing] = useState(false)
   const [preparing, setPreparing] = useState(false)
+  const [reportCopyStatus, setReportCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const [reportSendStatus, setReportSendStatus] = useState<'idle' | 'sent' | 'failed'>('idle')
   const runRef = useRef(0)
   const profile = useMemo(
     () => REVIEW_PROFILES.find((item) => item.id === profileId) ?? REVIEW_PROFILES[0]!,
@@ -214,6 +216,37 @@ export function PdfReviewCommitteeModal({
     .join('\n\n')
   const busy = preparing || running
 
+  const copyCompleteReport = async (): Promise<void> => {
+    const copied = await copyTextToClipboard(report)
+    setReportCopyStatus(copied ? 'copied' : 'failed')
+    window.setTimeout(() => setReportCopyStatus('idle'), 1600)
+  }
+
+  const reportCopyLabel =
+    reportCopyStatus === 'copied'
+      ? chinese
+        ? '已复制完整报告 ✓'
+        : 'Report copied ✓'
+      : reportCopyStatus === 'failed'
+        ? chinese
+          ? '复制失败，请重试'
+          : 'Copy failed; retry'
+        : chinese
+          ? '复制完整报告'
+          : 'Copy report'
+  const reportSendLabel =
+    reportSendStatus === 'sent'
+      ? chinese
+        ? '完整报告已发送 ✓'
+        : 'Report sent ✓'
+      : reportSendStatus === 'failed'
+        ? chinese
+          ? '发送失败，请重试'
+          : 'Send failed; retry'
+        : chinese
+          ? '发送完整报告'
+          : 'Connect report'
+
   return (
     <div
       className="pdf-modal-backdrop"
@@ -274,13 +307,19 @@ export function PdfReviewCommitteeModal({
           </button>
           {report && (
             <>
-              <button onClick={() => void copyTextToClipboard(report)}>
-                {chinese ? '复制完整报告' : 'Copy report'}
+              <button type="button" onClick={() => void copyCompleteReport()}>
+                {reportCopyLabel}
               </button>
-              <span className="pdf-review-connect-report">
-                <ConnectButton api={window.pdfApi} text={report} />
-                <span>{chinese ? '发送完整报告' : 'Connect report'}</span>
-              </span>
+              <ConnectButton
+                api={window.pdfApi}
+                text={report}
+                className="pdf-review-connect-report"
+                label={<span>{reportSendLabel}</span>}
+                onSendResult={(ok) => {
+                  setReportSendStatus(ok ? 'sent' : 'failed')
+                  window.setTimeout(() => setReportSendStatus('idle'), 1600)
+                }}
+              />
             </>
           )}
         </div>
