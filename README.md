@@ -27,8 +27,8 @@ Compared with the upstream edition, this derivative offers a user-controlled
 ZenMux model gateway without a Genspark login, consistent AI context/attachment
 workflows across Word, Excel, PowerPoint and Markdown, stronger academic review,
 formula/Mermaid and data-analysis capabilities, encrypted local credentials,
-and ready-to-download desktop installers (with Developer ID signing on macOS;
-the current release is not Apple-notarized).
+and ready-to-download desktop installers (with Developer ID signing and Apple
+notarization on the current macOS release).
 
 > **AI 适配与修改 / AI adaptation and modifications**<br>
 > 由复旦大学计算与智能创新学院徐志平完成 AI 适配与修改，并重新制作 macOS、Windows、Ubuntu DEB 与 Linux RPM 安装包。<br>
@@ -36,7 +36,7 @@ the current release is not Apple-notarized).
 > Intelligence, Fudan University; macOS, Windows, Ubuntu DEB, and Linux RPM installers rebuilt for this release.
 
 Apple Silicon Mac 用户可从
-[最新 Release 下载 Developer ID 签名的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.54-arm64.dmg)；当前版本尚未完成 Apple 公证。
+[最新 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.54-arm64.dmg)。
 Windows 10/11 x64 用户可下载
 [GenOfficeSetup-0.6.54-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.54-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
 Ubuntu 22.04/24.04 x86_64 用户可下载
@@ -96,7 +96,7 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 | **Linux RPM** — Fedora / RHEL / Rocky / Alma / openSUSE | x86_64, glibc 2.34+ (RHEL-compatible 9+)      | [genoffice-0.6.54.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.54.x86_64.rpm)     |
 | **Linux** — other distributions                         | x86_64, glibc 2.34+, FUSE 2                   | [GenOffice-0.6.101.AppImage](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.AppImage)        |
 
-All builds come from `main`. The macOS DMG is Developer ID signed but the current release is not Apple-notarized; the Windows installer is not Authenticode-signed.
+All builds come from `main`. The current macOS DMG is Developer ID signed and Apple-notarized; the Windows installer is not Authenticode-signed.
 Published installers are on this project's [Releases](https://github.com/bennix/GenZenMuxAIOffice/releases) page.
 
 ### Installing on Linux
