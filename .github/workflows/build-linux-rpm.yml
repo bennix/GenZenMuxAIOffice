@@ -56,7 +56,7 @@ jobs:
 
       - name: Build RPM
         working-directory: apps/shell
-        run: npx electron-builder --linux rpm --x64
+        run: npx electron-builder --linux rpm --x64 --publish never
 
       - name: Verify RPM and bundled Linux sidecar
         shell: bash
