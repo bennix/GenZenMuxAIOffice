@@ -322,6 +322,14 @@
   overflow: auto;
 }
 
+/* The shared help style uses a negative top margin beneath form fields.
+   Reset it inside the clipped results viewport so the empty state stays visible. */
+.set-knowledge-list > .set-ai-help {
+  margin: 0;
+  padding: 2px 0;
+  line-height: 1.5;
+}
+
 .set-knowledge-card {
   padding: 12px;
   border: 1px solid var(--border-subtle);
