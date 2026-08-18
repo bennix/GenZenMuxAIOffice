@@ -324,9 +324,9 @@
 
 .set-knowledge-card {
   padding: 12px;
-  border: 1px solid var(--set-border, #dedede);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  background: var(--set-field-bg, #fff);
+  background: var(--surface);
 }
 
 .set-knowledge-card-head {
@@ -338,7 +338,7 @@
 
 .set-knowledge-card p {
   margin: 8px 0;
-  color: var(--text-secondary, #555);
+  color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -349,6 +349,6 @@
 }
 
 .set-knowledge-card small {
-  color: var(--text-tertiary, #777);
+  color: var(--text-tertiary);
   word-break: break-all;
 }
