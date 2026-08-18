@@ -58,7 +58,7 @@ jobs:
 
       - name: Build Ubuntu package
         working-directory: apps/shell
-        run: npx electron-builder --linux deb --x64
+        run: npx electron-builder --linux deb --x64 --publish never
 
       - name: Verify DEB and bundled Linux sidecar
         shell: bash
