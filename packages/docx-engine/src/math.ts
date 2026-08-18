@@ -428,11 +428,13 @@ const NARY_OPS: Record<string, { chr: string; limLoc: 'undOvr' | 'subSup' }> = {
 
 const ACCENT_CHARS: Record<string, string> = {
   hat: '\u0302',
+  widehat: '\u0302',
   bar: '\u0304',
   vec: '\u20D7',
   dot: '\u0307',
   ddot: '\u0308',
   tilde: '\u0303',
+  widetilde: '\u0303',
   check: '\u030C',
   breve: '\u0306',
 }
