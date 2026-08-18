@@ -178,6 +178,16 @@ describe('latexToOmml', () => {
     expect(`<m:oMath>${latexToOmml(decompiled!)}</m:oMath>`).toContain('<m:borderBox>')
   })
 
+  it('supports wide accents used by AI-generated tracking equations', () => {
+    const latex = 'F_t^{kpt} = \\widetilde{Q}_t^S + \\widehat{R}_{t-1}'
+    const omml = latexToOmml(latex)
+    expect(omml.match(/<m:acc>/g)).toHaveLength(2)
+    const mathml = ommlToMathML(`<m:oMath>${omml}</m:oMath>`)
+    expect(mathml.match(/<mover accent="true">/g)).toHaveLength(2)
+    expect(mathml).toContain('Q')
+    expect(mathml).toContain('R')
+  })
+
   it('rejects unsupported commands with a helpful error', () => {
     expect(() => latexToOmml('\\unknowncmd{x}')).toThrow(/Unsupported command/)
     expect(() => latexToOmml('{unclosed')).toThrow(/Missing matching/)
