@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useI18n } from './locale'
 import type { StringKey } from './locale'
+import { LANGUAGE_OPTIONS } from '@genoffice/i18n'
 import type {
   AccountStatus,
   KnowledgeMemoryItem,
@@ -20,30 +21,6 @@ import './settings.css'
 // ── Settings modal (opened from the account menu) ─────────
 // Zoom-style two-pane dialog: section nav on the left, fields on the right.
 // All values go through the existing home IPC; nothing is stored locally.
-
-// sorted by ISO 639 language code — native-script labels have no natural
-// shared alphabet, so the code is the ordering key
-const LANG_OPTIONS = [
-  { value: 'ar', label: 'العربية' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Español' },
-  { value: 'fr', label: 'Français' },
-  { value: 'he', label: 'עברית' },
-  { value: 'hi', label: 'हिन्दी' },
-  { value: 'id', label: 'Bahasa Indonesia' },
-  { value: 'it', label: 'Italiano' },
-  { value: 'ja', label: '日本語' },
-  { value: 'ko', label: '한국어' },
-  { value: 'ms', label: 'Bahasa Melayu' },
-  { value: 'nl', label: 'Nederlands' },
-  { value: 'pl', label: 'Polski' },
-  { value: 'pt', label: 'Português' },
-  { value: 'ru', label: 'Русский' },
-  { value: 'th', label: 'ไทย' },
-  { value: 'zh', label: '简体中文' },
-  { value: 'zh-TW', label: '繁體中文' },
-] as const
 
 const THEME_OPTIONS = [
   { value: 'light', labelKey: 'themeLight' },
@@ -454,12 +431,17 @@ export function SettingsModal({
                     value={lang}
                     onChange={(e) => setLang(e.target.value as typeof lang)}
                   >
-                    {LANG_OPTIONS.map((opt) => (
+                    {LANGUAGE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>
                     ))}
                   </select>
+                </div>
+                <div className="set-ai-help set-language-ai-help">
+                  {isChinese
+                    ? '该语言也是 AI 的默认回复语言；如果您本次使用另一种语言提问，AI 会跟随提问语言。'
+                    : 'This is also the default AI reply language. If you ask in another language, AI follows the language of that request.'}
                 </div>
                 <div className="set-field">
                   <div className="set-field-text">

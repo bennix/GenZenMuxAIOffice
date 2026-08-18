@@ -1,7 +1,8 @@
 import { ZENMUX_MODELS } from './providers'
 import type { AiSettings } from './types'
+import { languageEnglishName, type Lang } from '@genoffice/i18n'
 
-export type ReviewLanguage = 'zh' | 'en'
+export type ReviewLanguage = Lang
 
 export interface ReviewProfile {
   id: string
@@ -230,11 +231,11 @@ export function reviewerSystemPrompt(
   member: ReviewProfile['members'][number],
   language: ReviewLanguage,
 ): string {
-  const outputLanguage = language === 'zh' ? 'Simplified Chinese' : 'English'
+  const outputLanguage = languageEnglishName(language)
   return `You are the ${member.roleEn} on a strict ${profile.labelEn} review committee. Your assigned focus is ${member.focus}. The venue-specific bar is: ${profile.criteria}.\n\nReview only the supplied document. Inspect its text, Markdown structure, LaTeX formulas, tables, images, charts, diagrams, and Mermaid source/rendering evidence. Explicitly disclose anything you could not assess. Do not invent experiments, citations, requirements, or facts. Separate fatal flaws from fixable issues and cite the relevant section, claim, table, figure, diagram, or equation whenever possible. Be demanding, specific, and constructive; do not rewrite the document.\n\nWrite entirely in ${outputLanguage}, using Markdown with exactly these sections:\n1. Summary and contribution\n2. Strengths\n3. Critical concerns\n4. Major revisions required\n5. Minor comments\n6. Questions for the authors/applicant\n7. Independent verdict (${profile.verdictScale}) and confidence (1-5)`
 }
 
 export function chairSystemPrompt(profile: ReviewProfile, language: ReviewLanguage): string {
-  const outputLanguage = language === 'zh' ? 'Simplified Chinese' : 'English'
+  const outputLanguage = languageEnglishName(language)
   return `You are the chair of a strict ${profile.labelEn} review committee. Synthesize the independent reviews without hiding disagreement. Do not add claims that are absent from the document or reviews.\n\nWrite entirely in ${outputLanguage}, using Markdown with these sections:\n1. Committee decision (${profile.verdictScale})\n2. Executive assessment\n3. Consensus strengths\n4. Blocking issues\n5. Prioritized revision checklist\n6. Reviewer disagreements and chair resolution\n7. Readiness score (0-100) with a one-sentence justification`
 }

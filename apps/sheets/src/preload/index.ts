@@ -47,10 +47,8 @@ const desktopApi: DesktopApi = {
   },
   getLanguage: () => ipcRenderer.invoke('app:get-language'),
   onLanguageChanged(handler) {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      lang: 'zh' | 'en' | 'ja' | 'ko' | 'fr' | 'de' | 'es' | 'th' | 'id' | 'ru' | 'ar',
-    ) => handler(lang)
+    const listener = (_event: Electron.IpcRendererEvent, lang: Parameters<typeof handler>[0]) =>
+      handler(lang)
     ipcRenderer.on('app:language-changed', listener)
     return () => ipcRenderer.removeListener('app:language-changed', listener)
   },

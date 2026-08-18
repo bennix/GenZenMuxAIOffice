@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/core'
 import { Markdown } from '@genoffice/ui'
+import { LANGUAGE_OPTIONS } from '@genoffice/i18n'
 import type { AiSettings } from '../../shared/ipc'
 import { serializeRangeToHtml } from '../ai/protocol'
 import {
@@ -37,7 +38,7 @@ export function AiReviewCommitteeModal({
   const { lang } = useI18n()
   const chineseUi = lang === 'zh' || lang === 'zh-TW'
   const [profileId, setProfileId] = useState('science')
-  const [language, setLanguage] = useState<ReviewLanguage>('zh')
+  const [language, setLanguage] = useState<ReviewLanguage>(lang)
   const [members, setMembers] = useState<MemberResult[]>([])
   const [chair, setChair] = useState<MemberResult | null>(null)
   const [running, setRunning] = useState(false)
@@ -55,7 +56,7 @@ export function AiReviewCommitteeModal({
     setChair(null)
     const assignments = assignReviewModels(models, profile.members.length + 1)
     const initial = profile.members.map((member, index) => ({
-      role: language === 'zh' ? member.roleZh : member.roleEn,
+      role: language === 'zh' || language === 'zh-TW' ? member.roleZh : member.roleEn,
       model: assignments[index]!,
       status: 'pending' as const,
     }))
@@ -107,7 +108,7 @@ export function AiReviewCommitteeModal({
       const successful = results.filter((result) => result.status === 'done' && result.content)
       if (successful.length === 0) return
       const chairModel = assignments.at(-1)!
-      const chairRole = language === 'zh' ? '委员会主席' : 'Committee Chair'
+      const chairRole = language === 'zh' || language === 'zh-TW' ? '委员会主席' : 'Committee Chair'
       setChair({ role: chairRole, model: chairModel, status: 'running' })
       try {
         const chairResponse = await window.desktop.aiChat({
@@ -206,8 +207,11 @@ export function AiReviewCommitteeModal({
               disabled={running}
               onChange={(e) => setLanguage(e.target.value as ReviewLanguage)}
             >
-              <option value="zh">中文</option>
-              <option value="en">English</option>
+              {LANGUAGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <button

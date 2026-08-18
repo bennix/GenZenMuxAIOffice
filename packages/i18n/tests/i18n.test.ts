@@ -1,13 +1,31 @@
 import { describe, expect, it } from 'vitest'
 import {
+  aiReplyLanguageDirective,
   createI18n,
   format,
   htmlLang,
   isLang,
   LANGS,
+  LANGUAGE_OPTIONS,
+  languageEnglishName,
   macShortcutsToWin,
   normalizeLang,
 } from '../src/index'
+
+describe('shared AI languages', () => {
+  it('offers exactly one picker option for every supported language', () => {
+    expect(LANGUAGE_OPTIONS.map((option) => option.value).sort()).toEqual([...LANGS].sort())
+    expect(new Set(LANGUAGE_OPTIONS.map((option) => option.label)).size).toBe(LANGS.length)
+  })
+
+  it('uses the configured language by default but follows a clearly different question', () => {
+    expect(languageEnglishName('zh-TW')).toBe('Traditional Chinese')
+    const directive = aiReplyLanguageDirective('ja')
+    expect(directive).toContain('Japanese as the default reply language')
+    expect(directive).toContain("user's current request is clearly written in a different language")
+    expect(directive).toContain('quoted text')
+  })
+})
 
 describe('normalizeLang', () => {
   it('maps zh variants to zh', () => {

@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import type { Editor, JSONContent } from '@tiptap/core'
 import { Markdown } from '@genoffice/ui'
+import { LANGUAGE_OPTIONS } from '@genoffice/i18n'
 import {
   REVIEW_PROFILES,
   assignReviewModels,
@@ -11,6 +12,7 @@ import {
   type AiSettings,
   type ReviewLanguage,
 } from '@genoffice/ai-provider'
+import { useI18n } from '../i18n/locale'
 
 interface Result {
   role: string
@@ -53,9 +55,10 @@ export function AiReviewCommitteeModal({
   editor: Editor
   onClose: () => void
 }) {
-  const chinese = navigator.language.startsWith('zh')
+  const { lang: uiLanguage } = useI18n()
+  const chinese = uiLanguage === 'zh' || uiLanguage === 'zh-TW'
   const [profileId, setProfileId] = useState('science')
-  const [language, setLanguage] = useState<ReviewLanguage>('zh')
+  const [language, setLanguage] = useState<ReviewLanguage>(uiLanguage)
   const [members, setMembers] = useState<Result[]>([])
   const [chair, setChair] = useState<Result | null>(null)
   const [running, setRunning] = useState(false)
@@ -82,7 +85,7 @@ export function AiReviewCommitteeModal({
       profile.members.length + 1,
     )
     const initial = profile.members.map((member, i) => ({
-      role: language === 'zh' ? member.roleZh : member.roleEn,
+      role: language === 'zh' || language === 'zh-TW' ? member.roleZh : member.roleEn,
       model: assignments[i]!,
       status: 'pending' as const,
     }))
@@ -128,7 +131,7 @@ export function AiReviewCommitteeModal({
       const successful = reviews.filter((r) => r.content)
       if (!successful.length || runRef.current !== runId) return
       const model = assignments.at(-1)!
-      const role = language === 'zh' ? '委员会主席' : 'Committee Chair'
+      const role = language === 'zh' || language === 'zh-TW' ? '委员会主席' : 'Committee Chair'
       setChair({ role, model, status: 'running' })
       const response = await window.markdownApi.aiChat({
         settings: settingsForReviewModel(settings, model),
@@ -193,8 +196,11 @@ export function AiReviewCommitteeModal({
               disabled={running}
               onChange={(e) => setLanguage(e.target.value as ReviewLanguage)}
             >
-              <option value="zh">中文</option>
-              <option value="en">English</option>
+              {LANGUAGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <button className="btn-primary" disabled={running} onClick={() => void start()}>
