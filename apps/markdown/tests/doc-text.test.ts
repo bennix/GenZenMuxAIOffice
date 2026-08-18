@@ -1,12 +1,51 @@
 import { describe, expect, it } from 'vitest'
 import {
   delimitBareLatex,
+  normalizeAlternateMathDelimiters,
   parseDocText,
   repairEscapedWhitespaceEntities,
   repairOverescapedMarkdown,
   serializeDocText,
   stripLegacyFencedDivs,
 } from '../src/renderer/markdown/docText'
+
+describe('normalizeAlternateMathDelimiters', () => {
+  it('repairs parenthesized inline math and bracketed multiline display math', () => {
+    const md = String.raw`第 3.2 节将关键点坐标定义为 \(R_{t-1}\in\mathbb{R}^{N_q\times3}\)，但式（13）写为
+\[
+R_t^{gt}=T_\theta R_{t-1}+t_{gt},
+\]
+其中 \(T_\theta\in\mathbb{R}^{3\times3}\)。`
+    expect(normalizeAlternateMathDelimiters(md))
+      .toBe(String.raw`第 3.2 节将关键点坐标定义为 $R_{t-1}\in\mathbb{R}^{N_q\times3}$，但式（13）写为
+$$
+R_t^{gt}=T_\theta R_{t-1}+t_{gt},
+$$
+其中 $T_\theta\in\mathbb{R}^{3\times3}$。`)
+    expect(repairOverescapedMarkdown(md)).toBe(normalizeAlternateMathDelimiters(md))
+  })
+
+  it('repairs a one-line display delimiter and preserves code', () => {
+    const md = [
+      String.raw`\[ E = mc^2 \]`,
+      String.raw`正文代码 \`\(x\)\` 不转换。`,
+      '```tex',
+      String.raw`\[ y = x^2 \]`,
+      '```',
+    ].join('\n')
+    expect(normalizeAlternateMathDelimiters(md)).toBe(
+      [
+        '$$',
+        'E = mc^2',
+        '$$',
+        String.raw`正文代码 \`\(x\)\` 不转换。`,
+        '```tex',
+        String.raw`\[ y = x^2 \]`,
+        '```',
+      ].join('\n'),
+    )
+  })
+})
 
 describe('repairEscapedWhitespaceEntities', () => {
   it('removes single and repeatedly escaped nbsp placeholders', () => {

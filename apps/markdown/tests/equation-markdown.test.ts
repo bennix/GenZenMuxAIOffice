@@ -3,6 +3,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { Markdown } from '@tiptap/markdown'
 import { describe, expect, it } from 'vitest'
 import { BlockEquation, InlineEquation } from '../src/renderer/editor/equation'
+import { repairOverescapedMarkdown } from '../src/renderer/markdown/docText'
 
 function createEditor(): Editor {
   return new Editor({
@@ -38,6 +39,25 @@ $$`,
     )
     expect(editor.getMarkdown()).toContain(String.raw`$F_2 = G \cos\theta$`)
     expect(editor.getMarkdown()).toContain('$$\nF_1 = f\n$$')
+    editor.destroy()
+  })
+
+  it('creates equation nodes from alternate LaTeX delimiters after normalization', () => {
+    const editor = createEditor()
+    const markdown =
+      repairOverescapedMarkdown(String.raw`坐标 \(R_{t-1}\in\mathbb{R}^{N_q\times3}\)。
+\[
+R_t^{gt}=T_\theta R_{t-1}+t_{gt}
+\]`)
+    const parsed = editor.markdown!.parse(markdown)
+    expect(parsed.content?.[0]?.content).toContainEqual({
+      type: 'inlineEquation',
+      attrs: { latex: String.raw`R_{t-1}\in\mathbb{R}^{N_q\times3}` },
+    })
+    expect(parsed.content?.[1]).toEqual({
+      type: 'blockEquation',
+      attrs: { latex: String.raw`R_t^{gt}=T_\theta R_{t-1}+t_{gt}` },
+    })
     editor.destroy()
   })
 

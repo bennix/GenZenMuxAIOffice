@@ -114,6 +114,7 @@ export function stripLegacyFencedDivs(body: string): string {
  */
 export function repairOverescapedMarkdown(body: string): string {
   body = repairEscapedWhitespaceEntities(body)
+  body = normalizeAlternateMathDelimiters(body)
   const hasEscapedFormatting = /\\\*\\\*[^\n]+?\\\*\\\*/.test(body)
   const hasDoubledLatex = /\${1,2}[\s\S]*?\\\\(?:[A-Za-z]+|[{}_^])[\s\S]*?\${1,2}/.test(body)
   if (!hasEscapedFormatting && !hasDoubledLatex) return delimitBareLatex(body)
@@ -158,6 +159,77 @@ export function repairOverescapedMarkdown(body: string): string {
     })
     .join('\n')
   return delimitBareLatex(repaired)
+}
+
+/**
+ * Convert the standard LaTeX `\(...\)` and `\[...\]` delimiters to the
+ * dollar delimiters understood by the Tiptap Markdown equation extensions.
+ * Markdown otherwise treats the leading backslash as punctuation escaping,
+ * leaving visible `(R_...)` or standalone `[` / `]` text in the document.
+ * Explicit inline and fenced code stays byte-for-byte unchanged.
+ */
+export function normalizeAlternateMathDelimiters(body: string): string {
+  const lines = body.split('\n')
+  let codeFence: string | null = null
+  let displayMath = false
+  return lines
+    .map((line) => {
+      const fence = /^\s*(`{3,}|~{3,})/.exec(line)
+      if (codeFence) {
+        if (fence && fence[1][0] === codeFence[0] && fence[1].length >= codeFence.length) {
+          codeFence = null
+        }
+        return line
+      }
+      if (fence) {
+        codeFence = fence[1]
+        return line
+      }
+
+      if (!displayMath) {
+        const oneLineDisplay = /^(\s*)\\\[\s*(.*?)\s*\\\](\s*)$/.exec(line)
+        if (oneLineDisplay?.[2]) {
+          return `${oneLineDisplay[1]}$$\n${oneLineDisplay[2]}\n${oneLineDisplay[3]}$$`
+        }
+        if (/^\s*\\\[\s*$/.test(line)) {
+          displayMath = true
+          return line.replace(/\\\[\s*$/, () => '$$')
+        }
+      } else if (/^\s*\\\]\s*$/.test(line)) {
+        displayMath = false
+        return line.replace(/\\\]\s*$/, () => '$$')
+      }
+
+      if (displayMath) return line
+      return transformOutsideInlineCode(line, (plain) =>
+        plain.replace(/\\\((.+?)\\\)/g, (_all, latex: string) => `$${latex.trim()}$`),
+      )
+    })
+    .join('\n')
+}
+
+function transformOutsideInlineCode(line: string, transform: (plain: string) => string): string {
+  let out = ''
+  let cursor = 0
+  while (cursor < line.length) {
+    const open = line.indexOf('`', cursor)
+    if (open < 0) {
+      out += transform(line.slice(cursor))
+      break
+    }
+    out += transform(line.slice(cursor, open))
+    let width = 1
+    while (line[open + width] === '`') width++
+    const delimiter = '`'.repeat(width)
+    const close = line.indexOf(delimiter, open + width)
+    if (close < 0) {
+      out += line.slice(open)
+      break
+    }
+    out += line.slice(open, close + width)
+    cursor = close + width
+  }
+  return out
 }
 
 /**
