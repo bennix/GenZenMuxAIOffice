@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useI18n } from './locale'
 import type { StringKey } from './locale'
-import type { AccountStatus, UiTheme } from '../../shared/home-api'
+import type {
+  AccountStatus,
+  KnowledgeMemoryItem,
+  KnowledgeSettingsItem,
+  UiTheme,
+} from '../../shared/home-api'
 import { removeActiveModel, resolveModelOptions } from './model-options'
 import {
   ZENMUX_BASE_URL,
@@ -51,10 +56,11 @@ const CHANNEL_OPTIONS = [
   { value: 'beta', labelKey: 'channelBeta' },
 ] as const satisfies readonly { value: 'stable' | 'beta'; labelKey: StringKey }[]
 
-type SectionId = 'account' | 'ai' | 'general' | 'about'
+type SectionId = 'account' | 'ai' | 'knowledge' | 'general' | 'about'
 
 const SECTIONS: readonly { id: SectionId; labelKey?: StringKey }[] = [
   { id: 'ai' },
+  { id: 'knowledge' },
   { id: 'general', labelKey: 'setSecGeneral' },
   { id: 'about', labelKey: 'setSecAbout' },
 ]
@@ -95,6 +101,22 @@ function SectionIcon({ id }: { id: SectionId }) {
           stroke="currentColor"
           strokeWidth="1.1"
           strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
+  if (id === 'knowledge') {
+    return (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M3 3.2C3 2.5 5.2 2 8 2s5 .5 5 1.2v9.6c0 .7-2.2 1.2-5 1.2s-5-.5-5-1.2V3.2z"
+          stroke="currentColor"
+          strokeWidth="1.2"
+        />
+        <path
+          d="M3 6.4c0 .7 2.2 1.2 5 1.2s5-.5 5-1.2M3 9.6c0 .7 2.2 1.2 5 1.2s5-.5 5-1.2"
+          stroke="currentColor"
+          strokeWidth="1.2"
         />
       </svg>
     )
@@ -178,6 +200,9 @@ export function SettingsModal({
   const [removedImageModels, setRemovedImageModels] = useState<string[]>([])
   const [newImageModel, setNewImageModel] = useState('')
   const [aiSaved, setAiSaved] = useState(false)
+  const [knowledgeSettings, setKnowledgeSettings] = useState<KnowledgeSettingsItem | null>(null)
+  const [memories, setMemories] = useState<KnowledgeMemoryItem[]>([])
+  const [knowledgeQuery, setKnowledgeQuery] = useState('')
 
   useEffect(() => {
     let alive = true
@@ -218,6 +243,12 @@ export function SettingsModal({
         ),
       )
     })
+    void window.aiOfficeProject?.getKnowledgeSettings().then((settings) => {
+      if (alive) setKnowledgeSettings(settings)
+    })
+    void window.aiOfficeProject?.listKnowledge('', 100).then((items) => {
+      if (alive) setMemories(items)
+    })
     return () => {
       alive = false
     }
@@ -248,6 +279,18 @@ export function SettingsModal({
   const email = status?.email ?? ''
   const isChinese = lang === 'zh' || lang === 'zh-TW'
   const aiLabel = isChinese ? 'AI 模型' : 'AI Models'
+  const knowledgeLabel = isChinese ? '个人知识库' : 'Personal Knowledge'
+
+  const refreshMemories = (query = knowledgeQuery) => {
+    void window.aiOfficeProject?.listKnowledge(query, 100).then(setMemories)
+  }
+
+  const updateKnowledgeSettings = (patch: Partial<KnowledgeSettingsItem>) => {
+    if (!knowledgeSettings) return
+    const optimistic = { ...knowledgeSettings, ...patch }
+    setKnowledgeSettings(optimistic)
+    void window.aiOfficeProject?.setKnowledgeSettings(patch).then(setKnowledgeSettings)
+  }
 
   const addModel = () => {
     const next = newModel.trim()
@@ -343,7 +386,7 @@ export function SettingsModal({
                 onClick={() => setSection(s.id)}
               >
                 <SectionIcon id={s.id} />
-                {s.labelKey ? t(s.labelKey) : aiLabel}
+                {s.labelKey ? t(s.labelKey) : s.id === 'knowledge' ? knowledgeLabel : aiLabel}
               </button>
             ))}
           </nav>
@@ -616,6 +659,140 @@ export function SettingsModal({
                     disabled={!aiSettings || !model}
                   >
                     {isChinese ? '保存' : 'Save'}
+                  </button>
+                </div>
+              </>
+            )}
+            {section === 'knowledge' && (
+              <>
+                <h3 className="set-pane-title">{knowledgeLabel}</h3>
+                <div className="set-ai-help">
+                  {isChinese
+                    ? 'AI 成功回答会保存在本机并形成可搜索记忆。只有与当前问题相关的少量片段会随本次请求发送给 ZenMux；完整知识库不会上传。历史回答可能过时或有误，您可以随时关闭、删除或清空。'
+                    : 'Successful AI answers are saved locally as searchable memories. Only a few relevant excerpts are sent to ZenMux with the current request; the complete library is never uploaded. Memories may be outdated or wrong and can be disabled or deleted at any time.'}
+                </div>
+                {knowledgeSettings && (
+                  <div className="set-knowledge-options">
+                    <label className="set-check-row">
+                      <input
+                        type="checkbox"
+                        checked={knowledgeSettings.autoCapture}
+                        onChange={(event) =>
+                          updateKnowledgeSettings({ autoCapture: event.target.checked })
+                        }
+                      />
+                      <span>
+                        {isChinese
+                          ? '自动保存成功的 AI 问答'
+                          : 'Automatically save completed AI conversations'}
+                      </span>
+                    </label>
+                    <label className="set-check-row">
+                      <input
+                        type="checkbox"
+                        checked={knowledgeSettings.useForReplies}
+                        onChange={(event) =>
+                          updateKnowledgeSettings({ useForReplies: event.target.checked })
+                        }
+                      />
+                      <span>
+                        {isChinese
+                          ? '回答前检索本地记忆（本地 RAG）'
+                          : 'Retrieve local memories before replying (local RAG)'}
+                      </span>
+                    </label>
+                    <label className="set-check-row">
+                      <input
+                        type="checkbox"
+                        checked={knowledgeSettings.sameProjectBoost}
+                        onChange={(event) =>
+                          updateKnowledgeSettings({ sameProjectBoost: event.target.checked })
+                        }
+                      />
+                      <span>
+                        {isChinese
+                          ? '优先当前文件与项目的记忆'
+                          : 'Prefer memories from the current file and project'}
+                      </span>
+                    </label>
+                    <label className="set-ai-field" htmlFor="set-memory-limit">
+                      <span>
+                        {isChinese ? '每次最多引用的记忆条数' : 'Maximum memories per request'}
+                      </span>
+                      <input
+                        id="set-memory-limit"
+                        className="set-input"
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={knowledgeSettings.maxResults}
+                        onChange={(event) =>
+                          updateKnowledgeSettings({ maxResults: Number(event.target.value) || 1 })
+                        }
+                      />
+                    </label>
+                  </div>
+                )}
+                <div className="set-ai-add-row set-knowledge-search">
+                  <input
+                    className="set-input"
+                    value={knowledgeQuery}
+                    placeholder={
+                      isChinese ? '搜索问题、回答或主题' : 'Search questions, answers, or topics'
+                    }
+                    onChange={(event) => setKnowledgeQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') refreshMemories()
+                    }}
+                  />
+                  <button className="set-btn" onClick={() => refreshMemories()}>
+                    {isChinese ? '搜索' : 'Search'}
+                  </button>
+                </div>
+                <div className="set-knowledge-list">
+                  {memories.length === 0 && (
+                    <div className="set-ai-help">
+                      {isChinese ? '暂无匹配的本地记忆。' : 'No matching local memories.'}
+                    </div>
+                  )}
+                  {memories.map((memory) => (
+                    <article className="set-knowledge-card" key={memory.id}>
+                      <div className="set-knowledge-card-head">
+                        <strong>{memory.question}</strong>
+                        <button
+                          className="set-btn danger"
+                          onClick={() =>
+                            void window.aiOfficeProject
+                              ?.deleteKnowledge(memory.id)
+                              .then(() => refreshMemories())
+                          }
+                        >
+                          {isChinese ? '删除' : 'Delete'}
+                        </button>
+                      </div>
+                      <p>{memory.answer}</p>
+                      <small>
+                        {new Date(memory.createdAt).toLocaleString()}
+                        {memory.sourceFile ? ` · ${memory.sourceFile}` : ''}
+                      </small>
+                    </article>
+                  ))}
+                </div>
+                <div className="set-pane-footer">
+                  <button
+                    className="set-btn danger"
+                    disabled={memories.length === 0}
+                    onClick={() => {
+                      const confirmed = window.confirm(
+                        isChinese
+                          ? '确定清空全部个人知识库？此操作无法撤销。'
+                          : 'Clear the entire personal knowledge base? This cannot be undone.',
+                      )
+                      if (confirmed)
+                        void window.aiOfficeProject?.clearKnowledge().then(() => refreshMemories())
+                    }}
+                  >
+                    {isChinese ? '清空知识库' : 'Clear knowledge base'}
                   </button>
                 </div>
               </>

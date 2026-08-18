@@ -11,6 +11,7 @@ import {
   Markdown,
 } from '@genoffice/ui'
 import { removeConnectCommand } from '@genoffice/electron-utils/connect'
+import { appendLocalMemoryContext } from '@genoffice/project-store/knowledge-context'
 import { aiLangDirective, t as tGlobal, useI18n } from '../i18n/locale'
 import sendEnterOn from '../assets/send-enter-on.png'
 import sendEnterOff from '../assets/send-enter-off.png'
@@ -399,7 +400,15 @@ export function AiPanel({
         const contextualInstruction = sentRegion
           ? `[The first attached image combines the user-selected PDF regions from pages ${sentRegion.pageNumbers.join(', ')} in document order, from top to bottom. Preserve page continuity and use it as the primary context for this question.]\n${instruction}`
           : instruction
-        await loop.run(contextualInstruction, images)
+        const ids = chatIdsRef.current
+        const memories = ids
+          ? await window.projectApi?.searchKnowledge({
+              query: instruction,
+              projectId: ids.projectId,
+              ...(filePath ? { sourceFile: filePath } : {}),
+            })
+          : []
+        await loop.run(appendLocalMemoryContext(contextualInstruction, memories ?? []), images)
       } catch (err) {
         patchLast({
           streaming: false,

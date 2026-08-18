@@ -31,6 +31,7 @@ import {
   syncUniver,
   univerDefinedNames,
 } from './univer-sync'
+import { appendLocalMemoryContext } from '@genoffice/project-store/knowledge-context'
 import {
   journalSuppression,
   type ActiveWorkbook,
@@ -1070,9 +1071,16 @@ export function App(): React.JSX.Element {
     setMessage(t('appAiThinking'))
     appendChat({ role: 'assistant', text: '', tools: [], streaming: true })
     void collectImageAttachments(sentAttachments)
-      .then((images) => {
+      .then(async (images) => {
+        const ids = chatRefIdsRef.current
+        const memories = ids
+          ? await window.projectApi.searchKnowledge({
+              query: instruction,
+              projectId: ids.projectId,
+            })
+          : []
         runStartingRef.current = false
-        loop.run(instruction, images)
+        loop.run(appendLocalMemoryContext(instruction, memories), images)
       })
       .catch(() => {
         runStartingRef.current = false

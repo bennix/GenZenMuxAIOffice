@@ -6,7 +6,8 @@
   "type": "module",
   "description": "Local project-based document storage and chat history persistence (no Electron dependency)",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./knowledge-context": "./src/knowledge-context.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

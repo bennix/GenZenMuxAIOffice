@@ -20,6 +20,7 @@ import { createElectronTransport } from './transport'
 import { useI18n, t as tModule, aiLangDirective, type StringKey } from '../i18n/locale'
 import { ConnectButton, copyTextToClipboard, Markdown } from '@genoffice/ui'
 import { removeConnectCommand } from '@genoffice/electron-utils/connect'
+import { appendLocalMemoryContext } from '@genoffice/project-store/knowledge-context'
 import { AiComposer, AiTypingIndicator } from '@genoffice/ui'
 import { ZenMuxMark } from '../components/icons'
 import sendEnterOn from '../assets/send-enter-on.png'
@@ -776,7 +777,17 @@ export function AiPanel({
         window.setTimeout(() => setAttachNotice(null), 5000)
         return []
       })
-      .then((images) => loop.run(instruction, images))
+      .then(async (images) => {
+        const ids = chatRefIds.current
+        const memories = ids
+          ? await window.projectApi.searchKnowledge({
+              query: instruction,
+              projectId: ids.projectId,
+              ...(filePath ? { sourceFile: filePath } : {}),
+            })
+          : []
+        return loop.run(appendLocalMemoryContext(instruction, memories), images)
+      })
   }
 
   const cancel = () => loopRef.current?.cancel()

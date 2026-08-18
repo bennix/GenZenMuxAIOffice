@@ -1,0 +1,74 @@
+name: Build Windows Installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub Release tag that will receive the verified installer
+        required: true
+        default: v0.6.58
+
+concurrency:
+  group: windows-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-2025
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable branch, 2026-07
+        with:
+          toolchain: stable
+
+      - name: Confirm release version
+        shell: pwsh
+        run: |
+          $version = node -p "require('./apps/shell/package.json').version"
+          if ('${{ inputs.release_tag }}' -ne "v$version") { throw "Release tag/version mismatch" }
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate notices and build apps
+        run: |
+          npm run notices
+          npm run build:all
+
+      - name: Build Windows installer and update metadata
+        working-directory: apps/shell
+        run: npx electron-builder --win nsis --x64 --publish never
+
+      - name: Verify installer, metadata, and bundled sidecar
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem apps/shell/release/GenOfficeSetup-*-x64.exe | Select-Object -First 1
+          if (-not $installer) { throw 'Windows installer missing' }
+          if (-not (Test-Path apps/shell/release/latest.yml)) { throw 'latest.yml missing' }
+          if (-not (Test-Path apps/shell/release/win-unpacked/resources/native/xlsx-sidecar.exe)) { throw 'Windows xlsx sidecar missing' }
+          Get-FileHash $installer.FullName -Algorithm SHA256
+
+      - name: Upload verified Windows artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: genoffice-windows-${{ inputs.release_tag }}
+          path: |
+            apps/shell/release/GenOfficeSetup-*-x64.exe
+            apps/shell/release/GenOfficeSetup-*-x64.exe.blockmap
+            apps/shell/release/latest.yml
+          if-no-files-found: error
+          retention-days: 7

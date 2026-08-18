@@ -268,6 +268,25 @@ const projectApi: ProjectHomeApi = {
     })
     return Array.isArray(result) ? (result as TimelineEntryItem[]) : []
   },
+  async listKnowledge(query, limit) {
+    const result: unknown = await ipcRenderer.invoke(PROJECT_CHANNELS.knowledgeList, {
+      query,
+      limit,
+    })
+    return Array.isArray(result) ? result : []
+  },
+  async deleteKnowledge(id) {
+    await ipcRenderer.invoke(PROJECT_CHANNELS.knowledgeDelete, { id })
+  },
+  async clearKnowledge() {
+    await ipcRenderer.invoke(PROJECT_CHANNELS.knowledgeClear)
+  },
+  async getKnowledgeSettings() {
+    return ipcRenderer.invoke(PROJECT_CHANNELS.knowledgeGetSettings)
+  },
+  async setKnowledgeSettings(settings) {
+    return ipcRenderer.invoke(PROJECT_CHANNELS.knowledgeSetSettings, { settings })
+  },
 }
 
 contextBridge.exposeInMainWorld('aiOfficeProject', projectApi)

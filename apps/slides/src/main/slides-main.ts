@@ -4042,6 +4042,24 @@ export function registerProjectIpc(): void {
       return { projectId: args.projectId, chatId: args.newChatId ?? args.tempChatId }
     },
   )
+  ipcMain.handle(
+    'knowledge:search',
+    (_event, args: { query: string; projectId?: string; sourceFile?: string; limit?: number }) =>
+      getSlidesProjectStore().searchKnowledge(args.query, args),
+  )
+  ipcMain.handle('knowledge:list', (_event, args?: { query?: string; limit?: number }) =>
+    getSlidesProjectStore().listKnowledge(args?.query, args?.limit),
+  )
+  ipcMain.handle('knowledge:delete', (_event, args: { id: string }) =>
+    getSlidesProjectStore().deleteKnowledge(args.id),
+  )
+  ipcMain.handle('knowledge:clear', () => getSlidesProjectStore().clearKnowledge())
+  ipcMain.handle('knowledge:getSettings', () => getSlidesProjectStore().getKnowledgeSettings())
+  ipcMain.handle(
+    'knowledge:setSettings',
+    (_event, args: { settings: Parameters<ProjectStore['setKnowledgeSettings']>[0] }) =>
+      getSlidesProjectStore().setKnowledgeSettings(args.settings),
+  )
 }
 
 export function createSlidesWindow(openPath?: string | null): BrowserWindow {

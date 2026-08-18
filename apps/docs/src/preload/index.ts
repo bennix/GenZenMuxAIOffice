@@ -154,6 +154,12 @@ const projectApi: ProjectApi = {
   deleteProject: (args) => ipcRenderer.invoke('project:delete', args),
   moveFile: (args) => ipcRenderer.invoke('project:moveFile', args),
   getTimeline: (args) => ipcRenderer.invoke('project:timeline', args),
+  searchKnowledge: (args) => ipcRenderer.invoke('knowledge:search', args),
+  listKnowledge: (args) => ipcRenderer.invoke('knowledge:list', args),
+  deleteKnowledge: (args) => ipcRenderer.invoke('knowledge:delete', args),
+  clearKnowledge: () => ipcRenderer.invoke('knowledge:clear'),
+  getKnowledgeSettings: () => ipcRenderer.invoke('knowledge:getSettings'),
+  setKnowledgeSettings: (args) => ipcRenderer.invoke('knowledge:setSettings', args),
 }
 
 contextBridge.exposeInMainWorld('desktop', api)

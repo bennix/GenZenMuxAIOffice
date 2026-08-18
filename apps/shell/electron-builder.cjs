@@ -3,15 +3,14 @@
  * auto-update feed URL can be injected at build time instead of living in
  * the repo).
  *
- * GENOFFICE_UPDATE_URL — public base URL of the update channel (the generic
- * provider prefix that serves latest.yml / latest-mac.yml). Required for
- * release builds; CI provides it as a repository secret. For local release
- * builds put it in apps/shell/electron-builder.env (gitignored) — the
- * electron-builder CLI loads that file automatically.
+ * GENOFFICE_UPDATE_URL — optional override for a private generic update
+ * channel. When omitted, release builds use this public GitHub repository's
+ * Releases feed, so packaged apps can discover updates without private CDN
+ * configuration.
  *
- * When the variable is unset (forks, PR smoke builds, plain local packaging)
- * the publish config is omitted: electron-builder then bakes no
- * app-update.yml into the app and in-app auto-update stays disabled.
+ * The default GitHub provider bakes resources/app-update.yml into packaged
+ * apps and generates latest.yml/latest-mac.yml beside the installers. Those
+ * metadata files must be uploaded to the matching GitHub Release.
  */
 
 const { execFileSync } = require('node:child_process')
@@ -28,6 +27,10 @@ const updateUrl = process.env.GENOFFICE_UPDATE_URL
 // alias) keys off which dmgs exist, so flipping this flag is the single
 // switch.
 const includeMacX64 = process.env.GENOFFICE_MAC_X64 === '1'
+const windowsSidecar =
+  process.platform === 'win32'
+    ? '../sheets/native/xlsx-engine/target/release/xlsx-sidecar.exe'
+    : '../sheets/native/xlsx-engine/target/x86_64-pc-windows-gnu/release/xlsx-sidecar.exe'
 
 // LICENSES.chromium.html only exists after the Electron binary download —
 // since Electron 42 that no longer happens during `npm ci` (the postinstall
@@ -247,7 +250,7 @@ const config = {
     ],
     extraResources: [
       {
-        from: '../sheets/native/xlsx-engine/target/x86_64-pc-windows-gnu/release/xlsx-sidecar.exe',
+        from: windowsSidecar,
         to: 'native/xlsx-sidecar.exe',
       },
     ],
@@ -348,6 +351,15 @@ if (updateUrl) {
       provider: 'generic',
       url: updateUrl.replace(/\/+$/, ''),
       channel: 'latest',
+    },
+  ]
+} else {
+  config.publish = [
+    {
+      provider: 'github',
+      owner: 'bennix',
+      repo: 'GenZenMuxAIOffice',
+      releaseType: 'release',
     },
   ]
 }

@@ -215,6 +215,26 @@ export interface TimelineEntryItem {
   seq: number
 }
 
+export interface KnowledgeMemoryItem {
+  id: string
+  createdAt: string
+  updatedAt: string
+  projectId: string
+  chatId: string
+  sourceFile?: string
+  question: string
+  answer: string
+  topics: string[]
+  status: 'active' | 'archived'
+}
+
+export interface KnowledgeSettingsItem {
+  autoCapture: boolean
+  useForReplies: boolean
+  sameProjectBoost: boolean
+  maxResults: number
+}
+
 export interface ProjectHomeApi {
   /** list all projects (with file count + last-active time) */
   listProjects(): Promise<ProjectSummaryEntry[]>
@@ -230,6 +250,11 @@ export interface ProjectHomeApi {
   moveFile(filePath: string, projectId: string): Promise<void>
   /** fetch the project timeline */
   getTimeline(projectId: string, limit?: number): Promise<TimelineEntryItem[]>
+  listKnowledge(query?: string, limit?: number): Promise<KnowledgeMemoryItem[]>
+  deleteKnowledge(id: string): Promise<void>
+  clearKnowledge(): Promise<void>
+  getKnowledgeSettings(): Promise<KnowledgeSettingsItem>
+  setKnowledgeSettings(settings: Partial<KnowledgeSettingsItem>): Promise<KnowledgeSettingsItem>
 }
 
 export const HOME_CHANNELS = {
@@ -282,4 +307,9 @@ export const PROJECT_CHANNELS = {
   delete: 'project:delete',
   moveFile: 'project:moveFile',
   timeline: 'project:timeline',
+  knowledgeList: 'knowledge:list',
+  knowledgeDelete: 'knowledge:delete',
+  knowledgeClear: 'knowledge:clear',
+  knowledgeGetSettings: 'knowledge:getSettings',
+  knowledgeSetSettings: 'knowledge:setSettings',
 } as const

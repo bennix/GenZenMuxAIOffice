@@ -298,3 +298,57 @@
   justify-content: flex-end;
   gap: 8px;
 }
+.set-knowledge-options {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.set-check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.set-knowledge-search {
+  margin: 14px 0;
+}
+
+.set-knowledge-list {
+  display: grid;
+  gap: 10px;
+  max-height: 310px;
+  overflow: auto;
+}
+
+.set-knowledge-card {
+  padding: 12px;
+  border: 1px solid var(--set-border, #dedede);
+  border-radius: 8px;
+  background: var(--set-field-bg, #fff);
+}
+
+.set-knowledge-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.set-knowledge-card p {
+  margin: 8px 0;
+  color: var(--text-secondary, #555);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.set-knowledge-card small {
+  color: var(--text-tertiary, #777);
+  word-break: break-all;
+}
