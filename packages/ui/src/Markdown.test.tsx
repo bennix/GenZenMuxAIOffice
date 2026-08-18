@@ -112,4 +112,45 @@ $$`}
     expect(html).toContain('$x = \\frac{1}{2')
     expect(html).not.toContain('class="katex"')
   })
+
+  it('repairs review Markdown with bare LaTeX and malformed strong spacing', () => {
+    const html = renderToStaticMarkup(
+      <Markdown
+        text={String.raw`## 2. Strengths
+
+- **问题具有现实意义。 **将“一类一个模型”改为单模型多类别跟踪。
+
+第 3.2 节将关键点坐标定义为 (R_{t-1}\in\mathbb{R}^{N_q\times3})，上一帧为 (R_{t-1})，但式（13）写为
+
+$$
+R_t^{gt}=T_\theta R_{t-1}+t_{gt},
+$$
+
+其中 (T_\theta\in\mathbb{R}^{3\times3})。`}
+      />,
+    )
+    expect(html).toContain('<strong>问题具有现实意义。</strong> 将')
+    expect(html.match(/class="katex"/g)?.length).toBe(4)
+    expect(html).toContain('class="katex-display"')
+    expect(html).not.toContain('**')
+    expect(html).not.toContain('$$')
+  })
+
+  it('does not normalize Markdown or bare LaTeX inside code', () => {
+    const markdown =
+      '行内：`**raw** (R\\in\\mathbb{R})`\n\n' + '```md\n**raw ** (R\\in\\mathbb{R})\n```'
+    const html = renderToStaticMarkup(<Markdown text={markdown} />)
+    expect(html).toContain('<code>**raw** (R\\in\\mathbb{R})</code>')
+    expect(html).toContain('**raw ** (R\\in\\mathbb{R})')
+  })
+
+  it('repairs escaped and zero-width Markdown delimiters returned by AI', () => {
+    const html = renderToStaticMarkup(
+      <Markdown text={'- \\*\\*第一项 \\*\\*正文\n- **第\u200B二项**正文'} />,
+    )
+    expect(html).toContain('<strong>第一项</strong> 正文')
+    expect(html).toContain('<strong>第二项</strong>正文')
+    expect(html).not.toContain('\\*')
+    expect(html).not.toContain('\u200B')
+  })
 })

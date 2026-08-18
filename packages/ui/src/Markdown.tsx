@@ -13,6 +13,95 @@ import { stripNestedMathDelimiters } from './latex'
 const INLINE_RE =
   /(`[^`\n]+`|\$\$[^$\n]+?\$\$|\$[^$\n]+?\$|\\\([^\n]+?\\\)|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)/g
 
+/**
+ * AI providers do not always return strict CommonMark. Repair only patterns
+ * whose intent is unambiguous before the small chat renderer tokenizes them.
+ * Code fences and inline code are deliberately left byte-for-byte unchanged.
+ */
+function normalizeAiMarkdown(text: string): string {
+  const lines = text.split('\n')
+  let codeFence: string | null = null
+  return lines
+    .map((line) => {
+      const fence = /^\s*(`{3,}|~{3,})/.exec(line)
+      if (codeFence) {
+        const closingFence = fence?.[1]
+        if (
+          closingFence &&
+          closingFence[0] === codeFence[0] &&
+          closingFence.length >= codeFence.length
+        ) {
+          codeFence = null
+        }
+        return line
+      }
+      const openingFence = fence?.[1]
+      if (openingFence) {
+        codeFence = openingFence
+        return line
+      }
+      return transformOutsideCodeAndMath(line, (plain) => {
+        let normalized = plain
+          // Zero-width characters copied from rich text can split Markdown
+          // delimiters while remaining invisible in the UI.
+          .replace(/[\u200B\u200C\u200D\u2060\uFEFF]/g, '')
+          // Some models escape Markdown even though their response is already
+          // being rendered as Markdown.
+          .replace(/\\\*\\\*/g, '**')
+          .replace(/\\_\\_/g, '__')
+          .replace(/\\\$\\\$/g, '$$$$')
+          // CommonMark does not permit whitespace immediately before a strong
+          // closing delimiter. Move it after the delimiter.
+          .replace(/(\*\*|__)([^\n]*?\S)[ \t]+\1/g, '$1$2$1 ')
+          // Standard TeX delimiters are normalized so block parsing and inline
+          // parsing follow the same path.
+          .replace(/\\\((.+?)\\\)/g, (_all, latex: string) => `$${latex.trim()}$`)
+
+        // Review models sometimes drop only the surrounding `\(` and `\)` and
+        // leave `(R_{t-1}\in\mathbb{R}^{...})`. A parenthesized span containing
+        // a real LaTeX command is safe to recognize; ordinary prose, filenames
+        // and parenthetical English remain untouched.
+        normalized = normalized.replace(
+          /\(([^()\n]*\\(?:mathbb|mathcal|mathrm|mathbf|operatorname|frac|sqrt|sum|prod|int|in|notin|subset|supset|times|theta|lambda|mu|sigma|ell|hat|widetilde|tilde|overline|underline|cdot|leq|geq|neq)[^()\n]*)\)/g,
+          (_all, latex: string) => `$${latex.trim()}$`,
+        )
+        normalized = normalized.replace(
+          /\(([A-Za-z][^()\n]*?(?:_\{[^{}\n]+\}|_[A-Za-z0-9]|\^\{[^{}\n]+\})[^()\n]*)\)/g,
+          (_all, latex: string) => `$${latex.trim()}$`,
+        )
+        return normalized
+      })
+    })
+    .join('\n')
+}
+
+function transformOutsideCodeAndMath(line: string, transform: (plain: string) => string): string {
+  let out = ''
+  let cursor = 0
+  while (cursor < line.length) {
+    const codeOpen = line.indexOf('`', cursor)
+    const mathOpen = line.indexOf('$', cursor)
+    const open = codeOpen < 0 ? mathOpen : mathOpen < 0 ? codeOpen : Math.min(codeOpen, mathOpen)
+    if (open < 0) {
+      out += transform(line.slice(cursor))
+      break
+    }
+    out += transform(line.slice(cursor, open))
+    const marker = line[open]!
+    let width = 1
+    while (line[open + width] === marker) width++
+    const delimiter = marker.repeat(width)
+    const close = line.indexOf(delimiter, open + width)
+    if (close < 0) {
+      out += line.slice(open)
+      break
+    }
+    out += line.slice(open, close + width)
+    cursor = close + width
+  }
+  return out
+}
+
 function renderMath(tex: string, displayMode: boolean, key: number): ReactNode {
   try {
     // Models often Markdown-escape underscores inside already-delimited math
@@ -66,6 +155,7 @@ type MdBlock =
   | { kind: 'ol'; items: string[] }
   | { kind: 'h'; text: string }
   | { kind: 'math'; tex: string }
+  | { kind: 'code'; language: string; text: string }
   | {
       kind: 'table'
       header: string[]
@@ -125,6 +215,38 @@ function parseBlocks(text: string): MdBlock[] {
       continue
     }
     const trimmed = line.trim()
+    const codeOpen = /^\s*(`{3,}|~{3,})\s*([^\s`]*)?.*$/.exec(line)
+    const delimiter = codeOpen?.[1]
+    if (codeOpen && delimiter) {
+      flush()
+      const body: string[] = []
+      let closeIndex = -1
+      for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+        const candidate = lines[cursor] ?? ''
+        const close = /^\s*(`{3,}|~{3,})\s*$/.exec(candidate)
+        const closingDelimiter = close?.[1]
+        if (
+          closingDelimiter &&
+          closingDelimiter[0] === delimiter[0] &&
+          closingDelimiter.length >= delimiter.length
+        ) {
+          closeIndex = cursor
+          break
+        }
+        body.push(candidate)
+      }
+      if (closeIndex >= 0) {
+        blocks.push({
+          kind: 'code',
+          language: codeOpen[2] ?? '',
+          text: body.join('\n'),
+        })
+        index = closeIndex
+        continue
+      }
+      // Streaming may deliver the opener before the closing fence. Keep the
+      // source visible until the block is complete instead of losing content.
+    }
     const mathOpen = trimmed.startsWith('$$') ? '$$' : trimmed.startsWith('\\[') ? '\\[' : null
     if (mathOpen) {
       const mathClose = mathOpen === '$$' ? '$$' : '\\]'
@@ -202,14 +324,22 @@ function parseBlocks(text: string): MdBlock[] {
 }
 
 export function Markdown({ text }: { text: string }): React.JSX.Element {
+  const normalizedText = normalizeAiMarkdown(text)
   return (
     <div className="ai-md">
-      {parseBlocks(text).map((b, i) => {
+      {parseBlocks(normalizedText).map((b, i) => {
         if (b.kind === 'math') {
           return (
             <div key={i} className="ai-md-math-block">
               {renderMath(b.tex, true, 0)}
             </div>
+          )
+        }
+        if (b.kind === 'code') {
+          return (
+            <pre key={i} className="ai-md-code-block">
+              <code className={b.language ? `language-${b.language}` : undefined}>{b.text}</code>
+            </pre>
           )
         }
         if (b.kind === 'h') {
