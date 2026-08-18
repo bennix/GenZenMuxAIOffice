@@ -1,7 +1,8 @@
 import { ZENMUX_MODELS, type AiImageReference, type AiSettings } from '@genoffice/ai-provider'
+import { languageEnglishName, type Lang } from '@genoffice/i18n'
 import type { Editor, JSONContent } from '@tiptap/core'
 
-export type ReviewLanguage = 'zh' | 'en'
+export type ReviewLanguage = Lang
 
 export interface ReviewProfile {
   id: string
@@ -300,7 +301,7 @@ export function reviewerSystemPrompt(
   member: ReviewProfile['members'][number],
   language: ReviewLanguage,
 ): string {
-  const outputLanguage = language === 'zh' ? 'Simplified Chinese' : 'English'
+  const outputLanguage = languageEnglishName(language)
   return `You are the ${member.roleEn} on a strict ${profile.labelEn} review committee. Your assigned focus is ${member.focus}. The venue-specific bar is: ${profile.criteria}.
 
 Review only the supplied manuscript/proposal. Inspect the body, formulas, tables, images, charts, and shapes included in the document evidence, and explicitly disclose any visual evidence you could not assess. Do not invent experiments, citations, requirements, or facts. Separate fatal flaws from fixable issues and cite the relevant section, claim, table, figure, chart, shape, or equation whenever possible. Be demanding, specific, and constructive; do not rewrite the document.
@@ -316,7 +317,7 @@ Write entirely in ${outputLanguage}, using Markdown with exactly these sections:
 }
 
 export function chairSystemPrompt(profile: ReviewProfile, language: ReviewLanguage): string {
-  const outputLanguage = language === 'zh' ? 'Simplified Chinese' : 'English'
+  const outputLanguage = languageEnglishName(language)
   return `You are the chair of a strict ${profile.labelEn} review committee. Synthesize the independent reviews without hiding disagreement. Do not add claims that are absent from the document or reviews.
 
 Write entirely in ${outputLanguage}, using Markdown with these sections:

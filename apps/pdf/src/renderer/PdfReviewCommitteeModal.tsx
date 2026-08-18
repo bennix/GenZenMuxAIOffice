@@ -11,7 +11,7 @@ import {
   type AiSettings,
   type ReviewLanguage,
 } from '@genoffice/ai-provider'
-import type { Lang } from '@genoffice/i18n'
+import { LANGUAGE_OPTIONS, type Lang } from '@genoffice/i18n'
 import type { SearchIndex } from './search'
 
 interface ReviewResult {
@@ -83,7 +83,7 @@ export function PdfReviewCommitteeModal({
 }) {
   const chinese = uiLanguage === 'zh' || uiLanguage === 'zh-TW'
   const [profileId, setProfileId] = useState('science')
-  const [language, setLanguage] = useState<ReviewLanguage>(chinese ? 'zh' : 'en')
+  const [language, setLanguage] = useState<ReviewLanguage>(uiLanguage)
   const [members, setMembers] = useState<ReviewResult[]>([])
   const [chair, setChair] = useState<ReviewResult | null>(null)
   const [running, setRunning] = useState(false)
@@ -136,7 +136,7 @@ export function PdfReviewCommitteeModal({
         profile.members.length + 1,
       )
       const initial = profile.members.map((member, index) => ({
-        role: language === 'zh' ? member.roleZh : member.roleEn,
+        role: language === 'zh' || language === 'zh-TW' ? member.roleZh : member.roleEn,
         model: assignments[index]!,
         status: 'pending' as const,
       }))
@@ -174,7 +174,7 @@ export function PdfReviewCommitteeModal({
       const successful = reviews.filter((review) => review.content)
       if (!successful.length || runRef.current !== runId) return
       const model = assignments.at(-1)!
-      const role = language === 'zh' ? '委员会主席' : 'Committee Chair'
+      const role = language === 'zh' || language === 'zh-TW' ? '委员会主席' : 'Committee Chair'
       setChair({ role, model, status: 'running' })
       const response = await window.pdfApi.aiChat({
         settings: settingsForReviewModel(settings, model),
@@ -288,8 +288,11 @@ export function PdfReviewCommitteeModal({
               disabled={busy}
               onChange={(event) => setLanguage(event.target.value as ReviewLanguage)}
             >
-              <option value="zh">中文</option>
-              <option value="en">English</option>
+              {LANGUAGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <button className="primary" disabled={busy} onClick={() => void start()}>

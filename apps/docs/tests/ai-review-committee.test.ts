@@ -54,6 +54,11 @@ describe('AI review committee', () => {
     expect(prompt).toContain('Do not invent')
   })
 
+  it('supports every General language in review reports', () => {
+    const prompt = reviewerSystemPrompt(REVIEW_PROFILES[0]!, REVIEW_PROFILES[0]!.members[0]!, 'ja')
+    expect(prompt).toContain('Write entirely in Japanese')
+  })
+
   it('collects equations and deduplicated visual evidence for multimodal review', () => {
     const dataUrl = 'data:image/png;base64,QUJD'
     const editor = {

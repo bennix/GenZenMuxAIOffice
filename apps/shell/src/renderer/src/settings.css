@@ -220,6 +220,11 @@
   font-size: 12px;
 }
 
+.set-language-ai-help {
+  margin: -6px 0 16px;
+  line-height: 1.5;
+}
+
 .set-link {
   padding: 0;
   border: none;

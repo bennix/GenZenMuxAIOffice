@@ -41,6 +41,46 @@ export const LANGS: readonly Lang[] = [
   'zh-TW',
 ]
 
+/** Shared language picker options, ordered by ISO 639 code. */
+export const LANGUAGE_OPTIONS = [
+  { value: 'ar', label: 'العربية', englishName: 'Arabic' },
+  { value: 'de', label: 'Deutsch', englishName: 'German' },
+  { value: 'en', label: 'English', englishName: 'English' },
+  { value: 'es', label: 'Español', englishName: 'Spanish' },
+  { value: 'fr', label: 'Français', englishName: 'French' },
+  { value: 'he', label: 'עברית', englishName: 'Hebrew' },
+  { value: 'hi', label: 'हिन्दी', englishName: 'Hindi' },
+  { value: 'id', label: 'Bahasa Indonesia', englishName: 'Indonesian' },
+  { value: 'it', label: 'Italiano', englishName: 'Italian' },
+  { value: 'ja', label: '日本語', englishName: 'Japanese' },
+  { value: 'ko', label: '한국어', englishName: 'Korean' },
+  { value: 'ms', label: 'Bahasa Melayu', englishName: 'Malay' },
+  { value: 'nl', label: 'Nederlands', englishName: 'Dutch' },
+  { value: 'pl', label: 'Polski', englishName: 'Polish' },
+  { value: 'pt', label: 'Português', englishName: 'Portuguese' },
+  { value: 'ru', label: 'Русский', englishName: 'Russian' },
+  { value: 'th', label: 'ไทย', englishName: 'Thai' },
+  { value: 'zh', label: '简体中文', englishName: 'Simplified Chinese' },
+  { value: 'zh-TW', label: '繁體中文', englishName: 'Traditional Chinese' },
+] as const satisfies readonly { value: Lang; label: string; englishName: string }[]
+
+const LANGUAGE_ENGLISH_NAMES = Object.fromEntries(
+  LANGUAGE_OPTIONS.map((option) => [option.value, option.englishName]),
+) as Record<Lang, string>
+
+export function languageEnglishName(lang: Lang): string {
+  return LANGUAGE_ENGLISH_NAMES[lang]
+}
+
+/**
+ * System-prompt policy shared by every AI editor. The General language is the
+ * primary response language, while an explicitly different user-message
+ * language wins for that request. Quoted document context must not switch it.
+ */
+export function aiReplyLanguageDirective(lang: Lang): string {
+  return `\n\nLanguage policy: Use ${languageEnglishName(lang)} as the default reply language. If the user's current request is clearly written in a different language, reply in that language instead. Do not switch languages merely because quoted text, selected document context, retrieved memory, or an attachment uses another language.`
+}
+
 export function isLang(value: unknown): value is Lang {
   return typeof value === 'string' && (LANGS as readonly string[]).includes(value)
 }
