@@ -12,20 +12,18 @@ import {
 } from './update-window'
 
 /**
- * Full-package auto-update over the generic provider (Azure CDN).
+ * Full-package auto-update from this project's public GitHub Releases by
+ * default, with an optional generic-provider override for private deployments.
  *
- * The release pipeline publishes `latest.yml` + the versioned installer to
- * the update channel prefix (production builds only). The packaged app reads
- * that URL from resources/app-update.yml, which electron-builder bakes in
- * from the `publish` config in apps/shell/electron-builder.cjs — the URL
- * itself is injected at build time via the GENOFFICE_UPDATE_URL env var and
- * is intentionally not committed to the repo.
+ * The release publishes `latest.yml` / `latest-mac.yml` with the versioned
+ * installer/archive. The packaged app reads the provider configuration from
+ * resources/app-update.yml, which electron-builder bakes from
+ * apps/shell/electron-builder.cjs. Public builds therefore follow the latest
+ * stable GitHub Release without requiring a private update URL.
  *
  * UX is the strong-guidance modal card (update-window.ts), not a native
  * dialog. Windows updates through the NSIS installer (latest.yml); macOS
- * through the zip target (latest-mac.yml); Linux through the AppImage
- * target (latest-linux.yml) — all published by the internal release
- * pipeline. On Linux only AppImage runs self-update (electron-updater
+ * through the signed zip target (latest-mac.yml). On Linux only AppImage runs self-update (electron-updater
  * replaces the .AppImage file in place, no root needed); deb installs have
  * no updater — users upgrade via `apt install ./<new>.deb`.
  *
@@ -391,7 +389,7 @@ export function initAutoUpdater(
     initFakeUpdate(getWindow, process.env.GENOFFICE_FAKE_UPDATE)
     return
   }
-  // Unpacked runs have no app-update.yml and must not hit the CDN with a
+  // Unpacked runs have no app-update.yml and must not hit GitHub with a
   // dev version. Windows updates via NSIS (latest.yml), macOS via the zip
   // target + latest-mac.yml (Squirrel.Mac requires a signed, notarized app
   // — dmg is first-install only), Linux via the AppImage target +

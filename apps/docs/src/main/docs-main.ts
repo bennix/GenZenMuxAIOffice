@@ -2895,6 +2895,25 @@ export function registerProjectIpc(): void {
   ipcMain.handle('project:timeline', (_event, args: { projectId: string; limit?: number }) => {
     return getProjectStore().getProjectTimeline(args.projectId, args.limit ?? 20)
   })
+
+  ipcMain.handle(
+    'knowledge:search',
+    (_event, args: { query: string; projectId?: string; sourceFile?: string; limit?: number }) =>
+      getProjectStore().searchKnowledge(args.query, args),
+  )
+  ipcMain.handle('knowledge:list', (_event, args?: { query?: string; limit?: number }) =>
+    getProjectStore().listKnowledge(args?.query, args?.limit),
+  )
+  ipcMain.handle('knowledge:delete', (_event, args: { id: string }) =>
+    getProjectStore().deleteKnowledge(args.id),
+  )
+  ipcMain.handle('knowledge:clear', () => getProjectStore().clearKnowledge())
+  ipcMain.handle('knowledge:getSettings', () => getProjectStore().getKnowledgeSettings())
+  ipcMain.handle(
+    'knowledge:setSettings',
+    (_event, args: { settings: Parameters<ProjectStore['setKnowledgeSettings']>[0] }) =>
+      getProjectStore().setKnowledgeSettings(args.settings),
+  )
 }
 
 /** document/attachment/window IPC (everything except the AI proxy above) */

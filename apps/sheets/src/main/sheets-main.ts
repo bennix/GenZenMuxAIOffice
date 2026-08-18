@@ -2397,6 +2397,24 @@ export function registerProjectIpc(): void {
       return { projectId: args.projectId, chatId: args.newChatId ?? args.tempChatId }
     },
   )
+  ipcMain.handle(
+    'knowledge:search',
+    (_event, args: { query: string; projectId?: string; sourceFile?: string; limit?: number }) =>
+      getSheetsProjectStore().searchKnowledge(args.query, args),
+  )
+  ipcMain.handle('knowledge:list', (_event, args?: { query?: string; limit?: number }) =>
+    getSheetsProjectStore().listKnowledge(args?.query, args?.limit),
+  )
+  ipcMain.handle('knowledge:delete', (_event, args: { id: string }) =>
+    getSheetsProjectStore().deleteKnowledge(args.id),
+  )
+  ipcMain.handle('knowledge:clear', () => getSheetsProjectStore().clearKnowledge())
+  ipcMain.handle('knowledge:getSettings', () => getSheetsProjectStore().getKnowledgeSettings())
+  ipcMain.handle(
+    'knowledge:setSettings',
+    (_event, args: { settings: Parameters<ProjectStore['setKnowledgeSettings']>[0] }) =>
+      getSheetsProjectStore().setKnowledgeSettings(args.settings),
+  )
 }
 
 /**

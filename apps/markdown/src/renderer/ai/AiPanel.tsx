@@ -11,6 +11,7 @@ import {
   Markdown,
 } from '@genoffice/ui'
 import { removeConnectCommand } from '@genoffice/electron-utils/connect'
+import { appendLocalMemoryContext } from '@genoffice/project-store/knowledge-context'
 import type { Editor } from '@tiptap/core'
 import { aiLangDirective, t as tGlobal, useI18n } from '../i18n/locale'
 import sendEnterOn from '../assets/send-enter-on.png'
@@ -385,7 +386,15 @@ export function AiPanel({
           if (result.ok && result.base64 && result.mime)
             images.push({ base64: result.base64, mime: result.mime })
         }
-        loop.run(instruction, images)
+        const ids = chatIdsRef.current
+        const memories = ids
+          ? await window.projectApi?.searchKnowledge({
+              query: instruction,
+              projectId: ids.projectId,
+              ...(filePathRef.current ? { sourceFile: filePathRef.current } : {}),
+            })
+          : []
+        loop.run(appendLocalMemoryContext(instruction, memories ?? []), images)
       } catch (err) {
         patchLast({
           streaming: false,

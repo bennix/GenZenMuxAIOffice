@@ -82,11 +82,15 @@ const api: MarkdownApi = {
 }
 
 /** Chat persistence: the shared project:* handlers are registered once by the shell (docs-main registerProjectIpc) */
-const projectApi: Pick<ProjectApi, 'resolveChat' | 'appendChat' | 'loadChat' | 'rebindChat'> = {
+const projectApi: Pick<
+  ProjectApi,
+  'resolveChat' | 'appendChat' | 'loadChat' | 'rebindChat' | 'searchKnowledge'
+> = {
   resolveChat: (args) => ipcRenderer.invoke('project:resolveChat', args),
   appendChat: (args) => ipcRenderer.invoke('project:appendChat', args),
   loadChat: (args) => ipcRenderer.invoke('project:loadChat', args),
   rebindChat: (args) => ipcRenderer.invoke('project:rebindChat', args),
+  searchKnowledge: (args) => ipcRenderer.invoke('knowledge:search', args),
 }
 
 contextBridge.exposeInMainWorld('markdownApi', api)

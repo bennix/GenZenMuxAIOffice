@@ -121,3 +121,33 @@ export interface TimelineEntry {
   /** Message seq within the chat */
   seq: number
 }
+
+// ────────────────────────────────────────────────────────────
+// Local personal knowledge base
+// ────────────────────────────────────────────────────────────
+
+export interface KnowledgeMemory {
+  id: string
+  createdAt: string
+  updatedAt: string
+  projectId: string
+  chatId: string
+  sourceFile?: string
+  question: string
+  answer: string
+  topics: string[]
+  status: 'active' | 'archived'
+}
+
+export interface KnowledgeSearchResult {
+  memory: KnowledgeMemory
+  score: number
+  matchedTerms: string[]
+}
+
+export interface KnowledgeSettings {
+  autoCapture: boolean
+  useForReplies: boolean
+  sameProjectBoost: boolean
+  maxResults: number
+}

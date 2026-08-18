@@ -31,6 +31,9 @@ import { basename, dirname, join } from 'node:path'
 import type {
   ChatMeta,
   ChatMessage,
+  KnowledgeMemory,
+  KnowledgeSearchResult,
+  KnowledgeSettings,
   ProjectData,
   ProjectIndex,
   ProjectInfo,
@@ -44,6 +47,13 @@ import type {
 
 /** Max stored characters for a single tool input/output field */
 const TOOL_FIELD_MAX_CHARS = 16_000
+const MEMORY_TEXT_MAX_CHARS = 24_000
+const DEFAULT_KNOWLEDGE_SETTINGS: KnowledgeSettings = {
+  autoCapture: true,
+  useForReplies: true,
+  sameProjectBoost: true,
+  maxResults: 4,
+}
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -70,15 +80,66 @@ function writeJson(filePath: string, data: unknown): void {
   renameSync(tmpPath, filePath)
 }
 
+function tokenize(text: string): string[] {
+  const normalized = text.normalize('NFKC').toLocaleLowerCase()
+  const terms = normalized.match(/[a-z0-9][a-z0-9._+-]{1,}|[\p{Script=Han}]+/gu) ?? []
+  const tokens: string[] = []
+  for (const term of terms) {
+    if (/^[\p{Script=Han}]+$/u.test(term)) {
+      const chars = [...term]
+      tokens.push(...chars)
+      for (let index = 0; index < chars.length - 1; index += 1) {
+        tokens.push((chars[index] ?? '') + (chars[index + 1] ?? ''))
+      }
+    } else {
+      tokens.push(term)
+    }
+  }
+  return tokens
+}
+
+function extractTopics(text: string): string[] {
+  const ignored = new Set([
+    'the',
+    'and',
+    'for',
+    'with',
+    'this',
+    'that',
+    'from',
+    'have',
+    'not',
+    'you',
+    '是',
+    '的',
+    '了',
+    '在',
+    '和',
+    '与',
+    '及',
+  ])
+  const counts = new Map<string, number>()
+  for (const term of tokenize(text)) {
+    if (term.length < 2 || ignored.has(term)) continue
+    counts.set(term, (counts.get(term) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || b[0].length - a[0].length)
+    .slice(0, 8)
+    .map(([term]) => term)
+}
+
 // ────────────────────────────────────────────────────────────
 // ProjectStore class
 // ────────────────────────────────────────────────────────────
 
 export class ProjectStore {
   private baseDir: string
+  private knowledgeDir: string
 
   constructor(userDataPath: string) {
     this.baseDir = join(userDataPath, 'projects')
+    this.knowledgeDir = join(userDataPath, 'knowledge')
   }
 
   // ── Path helpers ──────────────────────────────────────────
@@ -101,6 +162,14 @@ export class ProjectStore {
 
   private chatPath(projectId: string, chatId: string): string {
     return join(this.chatsDir(projectId), `${chatId}.jsonl`)
+  }
+
+  private memoriesPath(): string {
+    return join(this.knowledgeDir, 'memories.jsonl')
+  }
+
+  private knowledgeSettingsPath(): string {
+    return join(this.knowledgeDir, 'settings.json')
   }
 
   // ── seq counters (in-memory cache, initialized from JSONL line count on first read) ──
@@ -261,6 +330,15 @@ export class ProjectStore {
     if (index.chatIdByPath?.[oldPath] !== undefined) delete index.chatIdByPath[oldPath]
     index.chatIdByPath = { ...(index.chatIdByPath ?? {}), [newPath]: chatId }
     this.writeIndex(index)
+    const memories = this.loadMemories()
+    let changed = false
+    for (const memory of memories) {
+      if (memory.sourceFile !== oldPath) continue
+      memory.sourceFile = newPath
+      memory.updatedAt = nowIso()
+      changed = true
+    }
+    if (changed) this.writeMemories(memories)
   }
 
   /**
@@ -284,6 +362,205 @@ export class ProjectStore {
     } catch (err) {
       console.warn('[project-store] flushPending failed:', err)
     }
+  }
+
+  getKnowledgeSettings(): KnowledgeSettings {
+    const stored = readJson<Partial<KnowledgeSettings>>(this.knowledgeSettingsPath()) ?? {}
+    return {
+      autoCapture: stored.autoCapture ?? DEFAULT_KNOWLEDGE_SETTINGS.autoCapture,
+      useForReplies: stored.useForReplies ?? DEFAULT_KNOWLEDGE_SETTINGS.useForReplies,
+      sameProjectBoost: stored.sameProjectBoost ?? DEFAULT_KNOWLEDGE_SETTINGS.sameProjectBoost,
+      maxResults: Math.max(
+        1,
+        Math.min(10, stored.maxResults ?? DEFAULT_KNOWLEDGE_SETTINGS.maxResults),
+      ),
+    }
+  }
+
+  setKnowledgeSettings(settings: Partial<KnowledgeSettings>): KnowledgeSettings {
+    const next = { ...this.getKnowledgeSettings(), ...settings }
+    next.maxResults = Math.max(1, Math.min(10, Math.round(next.maxResults)))
+    writeJson(this.knowledgeSettingsPath(), next)
+    return next
+  }
+
+  private loadMemories(): KnowledgeMemory[] {
+    const path = this.memoriesPath()
+    if (!existsSync(path)) return []
+    const memories: KnowledgeMemory[] = []
+    try {
+      for (const line of readFileSync(path, 'utf8').split('\n')) {
+        if (!line.trim()) continue
+        try {
+          const item = JSON.parse(line) as KnowledgeMemory
+          if (item.id && item.question && item.answer && item.status) memories.push(item)
+        } catch {
+          // Keep valid memories when a single JSONL line is damaged.
+        }
+      }
+    } catch {
+      return []
+    }
+    return memories
+  }
+
+  private writeMemories(memories: KnowledgeMemory[]): void {
+    ensureDir(this.knowledgeDir)
+    const path = this.memoriesPath()
+    const tmpPath = `${path}.tmp`
+    writeFileSync(
+      tmpPath,
+      memories.map((item) => JSON.stringify(item)).join('\n') + (memories.length ? '\n' : ''),
+      'utf8',
+    )
+    renameSync(tmpPath, path)
+  }
+
+  private rebindKnowledgeSource(
+    fromProjectId: string,
+    fromChatId: string,
+    toProjectId: string,
+    toChatId: string,
+    sourceFile?: string,
+  ): void {
+    const memories = this.loadMemories()
+    let changed = false
+    for (const memory of memories) {
+      if (memory.projectId !== fromProjectId || memory.chatId !== fromChatId) continue
+      memory.projectId = toProjectId
+      memory.chatId = toChatId
+      if (sourceFile) memory.sourceFile = sourceFile
+      memory.updatedAt = nowIso()
+      changed = true
+    }
+    if (changed) this.writeMemories(memories)
+  }
+
+  private sourceFileForChat(projectId: string, chatId: string): string | undefined {
+    const index = this.readIndex()
+    return Object.entries(index.fileMap).find(([filePath, pid]) => {
+      if (pid !== projectId) return false
+      return (index.chatIdByPath?.[filePath] ?? ProjectStore.chatIdForFile(filePath)) === chatId
+    })?.[0]
+  }
+
+  private captureKnowledge(
+    projectId: string,
+    chatId: string,
+    assistant: ChatMessage,
+    justFlushed: ChatMessage[],
+  ): void {
+    if (!this.getKnowledgeSettings().autoCapture || !assistant.text.trim()) return
+    const prior = [...this.loadChat(projectId, chatId, 500), ...justFlushed]
+      .filter(
+        (message) => message.seq < assistant.seq && message.role === 'user' && message.text.trim(),
+      )
+      .sort((a, b) => b.seq - a.seq)[0]
+    if (!prior) return
+    const question = prior.text.trim().slice(0, MEMORY_TEXT_MAX_CHARS)
+    const answer = assistant.text.trim().slice(0, MEMORY_TEXT_MAX_CHARS)
+    const id = createHash('sha256')
+      .update(`${projectId}\0${chatId}\0${prior.seq}\0${assistant.seq}\0${question}\0${answer}`)
+      .digest('hex')
+      .slice(0, 24)
+    const memories = this.loadMemories()
+    if (
+      memories.some(
+        (memory) =>
+          memory.id === id ||
+          (memory.projectId === projectId &&
+            memory.chatId === chatId &&
+            memory.question === question &&
+            memory.answer === answer),
+      )
+    )
+      return
+    const sourceFile =
+      prior.fileRef ?? assistant.fileRef ?? this.sourceFileForChat(projectId, chatId)
+    const createdAt = assistant.ts || nowIso()
+    const memory: KnowledgeMemory = {
+      id,
+      createdAt,
+      updatedAt: createdAt,
+      projectId,
+      chatId,
+      ...(sourceFile ? { sourceFile } : {}),
+      question,
+      answer,
+      topics: extractTopics(`${question} ${answer}`),
+      status: 'active',
+    }
+    ensureDir(this.knowledgeDir)
+    appendFileSync(this.memoriesPath(), `${JSON.stringify(memory)}\n`, 'utf8')
+  }
+
+  listKnowledge(query = '', limit = 200): KnowledgeMemory[] {
+    const normalized = query.trim().toLocaleLowerCase()
+    return this.loadMemories()
+      .filter((item) => item.status === 'active')
+      .filter(
+        (item) =>
+          !normalized ||
+          `${item.question}\n${item.answer}\n${item.topics.join(' ')}`
+            .toLocaleLowerCase()
+            .includes(normalized),
+      )
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, Math.max(1, Math.min(1000, limit)))
+  }
+
+  deleteKnowledge(id: string): void {
+    this.writeMemories(this.loadMemories().filter((item) => item.id !== id))
+  }
+
+  clearKnowledge(): void {
+    this.writeMemories([])
+  }
+
+  searchKnowledge(
+    query: string,
+    context: { projectId?: string; sourceFile?: string; limit?: number } = {},
+  ): KnowledgeSearchResult[] {
+    const settings = this.getKnowledgeSettings()
+    if (!settings.useForReplies || !query.trim()) return []
+    const memories = this.loadMemories().filter((item) => item.status === 'active')
+    if (!memories.length) return []
+    const queryTerms = tokenize(query)
+    if (!queryTerms.length) return []
+    const docTerms = memories.map((memory) =>
+      tokenize(`${memory.question} ${memory.answer} ${memory.topics.join(' ')}`),
+    )
+    const documentFrequency = new Map<string, number>()
+    for (const terms of docTerms) {
+      for (const term of new Set(terms))
+        documentFrequency.set(term, (documentFrequency.get(term) ?? 0) + 1)
+    }
+    const averageLength =
+      docTerms.reduce((sum, terms) => sum + terms.length, 0) / docTerms.length || 1
+    const results = memories.map((memory, index): KnowledgeSearchResult => {
+      const terms = docTerms[index] ?? []
+      const frequencies = new Map<string, number>()
+      for (const term of terms) frequencies.set(term, (frequencies.get(term) ?? 0) + 1)
+      let score = 0
+      const matchedTerms: string[] = []
+      for (const term of new Set(queryTerms)) {
+        const tf = frequencies.get(term) ?? 0
+        if (!tf) continue
+        matchedTerms.push(term)
+        const df = documentFrequency.get(term) ?? 0
+        const idf = Math.log(1 + (memories.length - df + 0.5) / (df + 0.5))
+        score += idf * ((tf * 2.2) / (tf + 1.2 * (0.25 + 0.75 * (terms.length / averageLength))))
+      }
+      if (settings.sameProjectBoost && context.projectId && memory.projectId === context.projectId)
+        score *= 1.2
+      if (context.sourceFile && memory.sourceFile === context.sourceFile) score *= 1.35
+      return { memory, score, matchedTerms: matchedTerms.slice(0, 12) }
+    })
+    const limit = Math.max(1, Math.min(10, context.limit ?? settings.maxResults))
+    return results
+      .filter((result) => result.score > 0)
+      .sort((a, b) => b.score - a.score || b.memory.updatedAt.localeCompare(a.memory.updatedAt))
+      .slice(0, limit)
   }
 
   /**
@@ -324,6 +601,7 @@ export class ProjectStore {
       this.pendingFirstWrite.delete(key)
       const lines = [...buf, record].map((r) => JSON.stringify(r) + '\n').join('')
       appendFileSync(this.chatPath(projectId, chatId), lines, 'utf8')
+      if (record.role === 'assistant') this.captureKnowledge(projectId, chatId, record, buf)
     } catch (err) {
       console.warn('[project-store] appendChatMessage failed:', err)
     }
@@ -437,6 +715,7 @@ export class ProjectStore {
     if (next !== undefined) {
       this.seqCounters.set(this.seqKey(toProjectId, toId), next)
     }
+    this.rebindKnowledgeSource(fromProjectId, fromId, toProjectId, toId)
   }
 
   /**
@@ -459,6 +738,7 @@ export class ProjectStore {
   ): { projectId: string; chatId: string } {
     const { projectId, chatId } = this.resolveChatForFile(filePath)
     this.renameOrMergeChat(tempProjectId, tempChatId, projectId, chatId)
+    this.rebindKnowledgeSource(projectId, chatId, projectId, chatId, filePath)
     return { projectId, chatId }
   }
 
@@ -669,6 +949,7 @@ export class ProjectStore {
     const cur = this.seqCounters.get(oldKey)
     this.seqCounters.delete(oldKey)
     if (cur !== undefined) this.seqCounters.set(newKey, cur)
+    this.rebindKnowledgeSource(fromProjectId, chatId, targetProjectId, chatId, filePath)
   }
 
   /**

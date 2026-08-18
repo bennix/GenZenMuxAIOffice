@@ -2,9 +2,29 @@
  * IPC interface type definitions (shared by the renderer and main processes).
  * No Electron dependency; importable from the renderer.
  */
-import type { ChatAttachment, ChatMessage, ChatMeta, ProjectSummary, TimelineEntry, ToolActivity } from './types.js'
+import type {
+  ChatAttachment,
+  ChatMessage,
+  ChatMeta,
+  KnowledgeMemory,
+  KnowledgeSearchResult,
+  KnowledgeSettings,
+  ProjectSummary,
+  TimelineEntry,
+  ToolActivity,
+} from './types.js'
 
-export type { ChatAttachment, ChatMessage, ChatMeta, ProjectSummary, TimelineEntry, ToolActivity }
+export type {
+  ChatAttachment,
+  ChatMessage,
+  ChatMeta,
+  KnowledgeMemory,
+  KnowledgeSearchResult,
+  KnowledgeSettings,
+  ProjectSummary,
+  TimelineEntry,
+  ToolActivity,
+}
 
 export interface AppendChatArgs {
   projectId: string
@@ -71,6 +91,26 @@ export interface GetTimelineArgs {
   limit?: number
 }
 
+export interface SearchKnowledgeArgs {
+  query: string
+  projectId?: string
+  sourceFile?: string
+  limit?: number
+}
+
+export interface ListKnowledgeArgs {
+  query?: string
+  limit?: number
+}
+
+export interface DeleteKnowledgeArgs {
+  id: string
+}
+
+export interface SetKnowledgeSettingsArgs {
+  settings: Partial<KnowledgeSettings>
+}
+
 /** Project storage API the main process exposes to the renderer */
 export interface ProjectApi {
   /**
@@ -97,4 +137,10 @@ export interface ProjectApi {
   moveFile(args: MoveFileArgs): Promise<void>
   /** Gets the project timeline */
   getTimeline(args: GetTimelineArgs): Promise<TimelineEntry[]>
+  searchKnowledge(args: SearchKnowledgeArgs): Promise<KnowledgeSearchResult[]>
+  listKnowledge(args?: ListKnowledgeArgs): Promise<KnowledgeMemory[]>
+  deleteKnowledge(args: DeleteKnowledgeArgs): Promise<void>
+  clearKnowledge(): Promise<void>
+  getKnowledgeSettings(): Promise<KnowledgeSettings>
+  setKnowledgeSettings(args: SetKnowledgeSettingsArgs): Promise<KnowledgeSettings>
 }

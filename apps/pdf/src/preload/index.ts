@@ -84,11 +84,15 @@ const api: PdfApi = {
 
 contextBridge.exposeInMainWorld('pdfApi', api)
 
-const projectApi: Pick<ProjectApi, 'resolveChat' | 'appendChat' | 'loadChat' | 'rebindChat'> = {
+const projectApi: Pick<
+  ProjectApi,
+  'resolveChat' | 'appendChat' | 'loadChat' | 'rebindChat' | 'searchKnowledge'
+> = {
   resolveChat: (args) => ipcRenderer.invoke('project:resolveChat', args),
   appendChat: (args) => ipcRenderer.invoke('project:appendChat', args),
   loadChat: (args) => ipcRenderer.invoke('project:loadChat', args),
   rebindChat: (args) => ipcRenderer.invoke('project:rebindChat', args),
+  searchKnowledge: (args) => ipcRenderer.invoke('knowledge:search', args),
 }
 
 contextBridge.exposeInMainWorld('projectApi', projectApi)

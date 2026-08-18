@@ -26,6 +26,7 @@ import { isQcEnabled, mergeQcPages, qcSlidePage, QC_MAX_PAGES } from './slide-qc
 import { useI18n, t as tGlobal, aiLangDirective, type TFunc } from '../i18n/locale'
 import { ConnectButton, copyTextToClipboard, Markdown } from '@genoffice/ui'
 import { removeConnectCommand } from '@genoffice/electron-utils/connect'
+import { appendLocalMemoryContext } from '@genoffice/project-store/knowledge-context'
 import { ZenMuxMark } from '../components/icons'
 import sendEnterOn from '../assets/send-enter-on.png'
 import sendEnterOff from '../assets/send-enter-off.png'
@@ -1417,6 +1418,15 @@ export function AiPanel({
             modelInstruction += `\n\n(Attached image: the current rendering of this slide, slideIndex ${currentRef.current}. Use it to spot visual issues the element inventory can't show.)`
           }
         }
+        const ids = chatRefIds.current
+        const memories = ids
+          ? await window.projectApi.searchKnowledge({
+              query: instruction,
+              projectId: ids.projectId,
+              ...(currentFilePath ? { sourceFile: currentFilePath } : {}),
+            })
+          : []
+        modelInstruction = appendLocalMemoryContext(modelInstruction, memories)
         // Clear the flag before run: loop.run sets running synchronously, leaving no re-entry window
         runStartingRef.current = false
         if (await window.slidesApi.beginHistoryBatch()) historyBatchActiveRef.current = true

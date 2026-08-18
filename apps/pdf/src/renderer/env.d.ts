@@ -6,7 +6,10 @@ import type { ProjectApi } from '@genoffice/project-store'
 declare global {
   interface Window {
     pdfApi: PdfApi
-    projectApi?: Pick<ProjectApi, 'resolveChat' | 'appendChat' | 'loadChat' | 'rebindChat'>
+    projectApi?: Pick<
+      ProjectApi,
+      'resolveChat' | 'appendChat' | 'loadChat' | 'rebindChat' | 'searchKnowledge'
+    >
   }
 }
 
