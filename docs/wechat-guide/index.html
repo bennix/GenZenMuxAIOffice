@@ -1,0 +1,1404 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="GenOffice 20 章功能专刊：逐章预览并一键复制到微信公众号编辑器。"
+    />
+    <meta name="theme-color" content="#efe9dc" />
+    <title>GenOffice 功能专刊 · 20 章微信公众号内容中心</title>
+    <style>
+      :root {
+        --paper: #f3eee3;
+        --paper-deep: #e8dfcf;
+        --ink: #171714;
+        --muted: #706b61;
+        --line: rgba(23, 23, 20, 0.14);
+        --red: #b4382f;
+        --red-dark: #7c211c;
+        --moss: #3f5546;
+        --white: #fffdf8;
+        --shadow: 0 22px 70px rgba(55, 46, 32, 0.13);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.35) 1px, transparent 1px), var(--paper);
+        background-size: 34px 34px;
+        font-family: 'Songti SC', 'Noto Serif CJK SC', 'STSong', Georgia, serif;
+      }
+
+      button,
+      input,
+      a {
+        font: inherit;
+      }
+
+      button,
+      a {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .app-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: minmax(280px, 22vw) 1fr;
+      }
+
+      .rail {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: #171714;
+        color: #f8f1e4;
+        border-right: 1px solid rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+      }
+
+      .rail-head {
+        padding: 26px 24px 18px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .brand-mark {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: 50%;
+        font-size: 21px;
+        font-weight: 700;
+        color: #fff8e9;
+      }
+
+      .brand-copy {
+        flex: 1;
+      }
+
+      .brand-copy strong {
+        display: block;
+        font-size: 16px;
+        letter-spacing: 0.09em;
+      }
+
+      .brand-copy span {
+        display: block;
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.54);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .back-link {
+        color: rgba(255, 255, 255, 0.72);
+        text-decoration: none;
+        font-size: 12px;
+      }
+
+      .back-link:hover {
+        color: #fff;
+      }
+
+      .rail-intro {
+        margin: 18px 0 0;
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 12px;
+        line-height: 1.8;
+      }
+
+      .search-wrap {
+        position: relative;
+        margin-top: 16px;
+      }
+
+      .search-wrap::before {
+        content: '⌕';
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-53%);
+        color: rgba(255, 255, 255, 0.48);
+        font-size: 18px;
+      }
+
+      #search {
+        width: 100%;
+        height: 40px;
+        padding: 0 12px 0 36px;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 5px;
+        outline: none;
+        font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        font-size: 12px;
+      }
+
+      #search:focus {
+        border-color: rgba(255, 255, 255, 0.45);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+      }
+
+      .chapter-list {
+        flex: 1;
+        padding: 10px 12px 24px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+      }
+
+      .chapter-item {
+        display: grid;
+        grid-template-columns: 34px 1fr 34px;
+        align-items: center;
+        gap: 8px;
+        min-height: 54px;
+        padding: 7px 7px 7px 4px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .chapter-item[hidden] {
+        display: none;
+      }
+
+      .chapter-open,
+      .chapter-copy {
+        border: 0;
+        color: inherit;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .chapter-open {
+        display: contents;
+      }
+
+      .chapter-index {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        color: rgba(255, 255, 255, 0.58);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 10px;
+      }
+
+      .chapter-name {
+        overflow: hidden;
+        color: rgba(255, 255, 255, 0.72);
+        font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        font-size: 12px;
+        line-height: 1.45;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .chapter-copy {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 15px;
+      }
+
+      .chapter-copy:hover,
+      .chapter-copy:focus-visible {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+        outline: none;
+      }
+
+      .chapter-item.active {
+        background: rgba(255, 255, 255, 0.09);
+      }
+
+      .chapter-item.active .chapter-index {
+        color: #fff;
+        background: var(--red);
+        border-color: var(--red);
+      }
+
+      .chapter-item.active .chapter-name {
+        color: #fff;
+      }
+
+      .rail-foot {
+        padding: 14px 20px 18px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .progress-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        color: rgba(255, 255, 255, 0.54);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+      }
+
+      .progress-track {
+        height: 2px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.14);
+      }
+
+      #progressBar {
+        width: 5%;
+        height: 100%;
+        background: #e1665d;
+        transition: width 320ms ease;
+      }
+
+      .workspace {
+        min-width: 0;
+        padding: 24px clamp(22px, 5vw, 84px) 72px;
+      }
+
+      .topbar {
+        max-width: 980px;
+        margin: 0 auto 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .edition {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .edition::before {
+        content: '';
+        width: 24px;
+        height: 1px;
+        background: var(--red);
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .tool-button {
+        min-height: 40px;
+        padding: 0 15px;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        color: var(--ink);
+        background: rgba(255, 253, 248, 0.58);
+        cursor: pointer;
+        font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        font-size: 12px;
+        transition:
+          transform 160ms ease,
+          background 160ms ease,
+          color 160ms ease;
+      }
+
+      .tool-button:hover {
+        transform: translateY(-1px);
+        background: var(--white);
+      }
+
+      .tool-button.primary {
+        color: #fff;
+        background: var(--red);
+        border-color: var(--red);
+      }
+
+      .tool-button.primary:hover {
+        background: var(--red-dark);
+      }
+
+      .paper {
+        position: relative;
+        max-width: 980px;
+        min-height: 760px;
+        margin: 0 auto;
+        padding: clamp(34px, 6vw, 78px) clamp(24px, 7vw, 92px) 62px;
+        background: var(--white);
+        border: 1px solid rgba(23, 23, 20, 0.12);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .paper::before {
+        content: '';
+        position: absolute;
+        inset: 14px;
+        pointer-events: none;
+        border: 1px solid rgba(180, 56, 47, 0.16);
+      }
+
+      .paper::after {
+        content: 'GENOFFICE / FEATURE MONOGRAPH';
+        position: absolute;
+        right: -84px;
+        top: 210px;
+        transform: rotate(90deg);
+        color: rgba(23, 23, 20, 0.16);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 9px;
+        letter-spacing: 0.18em;
+      }
+
+      .article-stage {
+        position: relative;
+        z-index: 1;
+        animation: reveal 420ms ease both;
+      }
+
+      @keyframes reveal {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .page-controls {
+        max-width: 980px;
+        margin: 18px auto 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .page-button {
+        width: min(48%, 300px);
+        min-height: 58px;
+        padding: 10px 15px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        color: var(--ink);
+        background: rgba(255, 253, 248, 0.48);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .page-button:last-child {
+        text-align: right;
+      }
+
+      .page-button span {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .page-button strong {
+        font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .page-button:disabled {
+        visibility: hidden;
+      }
+
+      .toast {
+        position: fixed;
+        right: 26px;
+        bottom: 26px;
+        z-index: 20;
+        max-width: min(420px, calc(100vw - 40px));
+        padding: 14px 18px;
+        color: #fff;
+        background: #171714;
+        border-left: 4px solid #e1665d;
+        box-shadow: 0 16px 44px rgba(0, 0, 0, 0.22);
+        font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        font-size: 13px;
+        line-height: 1.6;
+        opacity: 0;
+        transform: translateY(12px);
+        pointer-events: none;
+        transition: 220ms ease;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .empty-search {
+        padding: 40px 18px;
+        color: rgba(255, 255, 255, 0.52);
+        font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        font-size: 12px;
+        line-height: 1.8;
+        text-align: center;
+      }
+
+      @media (max-width: 900px) {
+        .app-shell {
+          display: block;
+        }
+
+        .rail {
+          position: relative;
+          height: auto;
+        }
+
+        .rail-head {
+          padding-bottom: 14px;
+        }
+
+        .rail-intro,
+        .rail-foot {
+          display: none;
+        }
+
+        .chapter-list {
+          display: flex;
+          gap: 7px;
+          padding: 8px 14px 14px;
+          overflow-x: auto;
+        }
+
+        .chapter-item {
+          flex: 0 0 auto;
+          display: flex;
+          min-height: 38px;
+          padding: 4px 8px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 3px;
+        }
+
+        .chapter-name,
+        .chapter-copy {
+          display: none;
+        }
+
+        .workspace {
+          padding: 18px 13px 44px;
+        }
+
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .toolbar {
+          width: 100%;
+        }
+
+        .tool-button {
+          flex: 1;
+          padding: 0 8px;
+        }
+
+        .paper {
+          padding: 42px 22px 46px;
+        }
+
+        .paper::after {
+          display: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="rail" aria-label="20 章目录">
+        <div class="rail-head">
+          <div class="brand">
+            <div class="brand-mark" aria-hidden="true">G</div>
+            <div class="brand-copy">
+              <strong>GenOffice 功能专刊</strong>
+              <span>20 chapters · WeChat ready</span>
+            </div>
+            <a class="back-link" href="../" aria-label="返回 GenOffice 首页">返回 ↗</a>
+          </div>
+          <p class="rail-intro">
+            每章都是一篇独立、完整的公众号文章。选择章节预览，点击复制即可粘贴到微信公众号编辑器。
+          </p>
+          <div class="search-wrap">
+            <input
+              id="search"
+              type="search"
+              placeholder="搜索功能、场景或关键词"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+        <nav id="chapterList" class="chapter-list"></nav>
+        <div class="rail-foot">
+          <div class="progress-row">
+            <span>READING PROGRESS</span><span id="progressText">01 / 20</span>
+          </div>
+          <div class="progress-track"><div id="progressBar"></div></div>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="edition">GenOffice Feature Monograph · v0.6.57</div>
+          <div class="toolbar" aria-label="文章操作">
+            <button id="copyPlain" class="tool-button" type="button">复制纯文本</button>
+            <button id="copyRich" class="tool-button primary" type="button">
+              复制本章到公众号
+            </button>
+          </div>
+        </header>
+
+        <section class="paper" aria-live="polite">
+          <article id="articleStage" class="article-stage"></article>
+        </section>
+
+        <nav class="page-controls" aria-label="章节翻页">
+          <button id="prevChapter" class="page-button" type="button"></button>
+          <button id="nextChapter" class="page-button" type="button"></button>
+        </nav>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const chapters = [
+        {
+          title: '为什么 GenOffice 不是普通 AI 套壳',
+          eyebrow: 'CHAPTER 01 · NATIVE DOCUMENT INTELLIGENCE',
+          summary: '从“侧边栏聊天”转向“进入文档结构工作”，是理解 GenOffice 的第一把钥匙。',
+          quote: '普通产品把 AI 贴在文件旁边；GenOffice 让 AI 进入真实文档对象。',
+          sections: [
+            {
+              title: '普通套壳的断点',
+              paragraphs: [
+                '很多 AI 办公工具只能在侧边栏生成一段 Markdown。用户仍要复制、粘贴、重新排版，并承担样式丢失、对象错位和公式损坏的风险。对话看似聪明，实际并不知道当前选中的是哪一段、哪一个单元格或哪一个幻灯片对象。',
+                '当任务从“写一段话”升级为“只修改第三段结论、保留脚注与字号”时，纯文本链路就会暴露局限。',
+              ],
+            },
+            {
+              title: '对象级 Patch 的意义',
+              paragraphs: [
+                'GenOffice 通过本地解析引擎理解 Word 段落、Excel 单元格与公式、PPT Shape/Layout 对象树，并针对选定对象执行局部修改。未触碰的结构尽量保持原样，修改结果可以直接回填，而不是变成一段等待搬运的文字。',
+              ],
+              bullets: [
+                'Word：定位真实段落和格式范围',
+                'Excel：定位工作表、单元格、字段和公式',
+                'PPT：定位文本框、形状、布局和图表对象',
+                'PDF：定位页面和用户框选的视觉区域',
+              ],
+            },
+          ],
+          takeaway:
+            '判断 AI 办公工具是否真正理解文件，不要只看回答质量，要看它能否把结果准确落回目标对象。',
+        },
+        {
+          title: 'Local-First 与 ZenMux：数据主权如何落地',
+          eyebrow: 'CHAPTER 02 · LOCAL-FIRST + BYOK',
+          summary:
+            '本地优先不是“完全断网”，而是明确哪些数据留在设备、哪些内容由用户主动提交给模型。',
+          quote: '文件处理留在本地，算力入口由用户选择，网络边界清楚可见。',
+          sections: [
+            {
+              title: '本地保存的内容',
+              paragraphs: [
+                'Office 文件解析、编辑操作、按文件绑定的 AI 历史和 API Key 凭据均保存在本机。API Key 通过操作系统凭据服务加密保存，并在设置界面中遮罩显示。',
+              ],
+              bullets: [
+                '无需登录 Genspark 账号',
+                '支持 ZenMux 预置模型和自定义模型名称',
+                '文本模型与视觉模型均可增加或删除',
+                '更换模型不需要迁移本地文件',
+              ],
+            },
+            {
+              title: '必须经过网络的内容',
+              paragraphs: [
+                '当用户发起 AI 请求时，提示词、主动选择的文档上下文以及附件会发送到 ZenMux 兼容接口。联网检索和事实核查同样受网络、代理和上游服务状态影响。应用会给出可理解的错误提示，并尽量在重试时保留上下文。',
+              ],
+            },
+          ],
+          takeaway:
+            'Local-first 的核心不是回避云端推理，而是让用户知道、选择并控制每一次数据外发。',
+        },
+        {
+          title: '从安装到第一次 AI 对话',
+          eyebrow: 'CHAPTER 03 · FIRST RUN',
+          summary: '完成安装、设置 ZenMux API Key、选择模型，三步进入可用状态。',
+          quote: '第一次启动就把算力入口交还给用户。',
+          sections: [
+            {
+              title: '跨平台安装',
+              paragraphs: [
+                'GenOffice 提供 macOS Apple Silicon DMG、Windows x64 安装程序、Ubuntu amd64 DEB 与 Linux x86_64 RPM。macOS 版本使用 Developer ID 签名并完成 Apple 公证。',
+              ],
+              bullets: [
+                'macOS：打开 DMG 后拖入 Applications',
+                'Windows：运行安装程序，首次运行可能出现 SmartScreen 提示',
+                'Ubuntu：使用系统软件安装器或 apt 安装 DEB',
+                'RPM 系：通过发行版的软件包管理器安装',
+              ],
+            },
+            {
+              title: '配置 ZenMux',
+              paragraphs: [
+                '在欢迎页或设置页填写 API Key，选择文本模型和视觉模型，再执行连接测试。若没有 API Key，可通过应用提供的 ZenMux 邀请入口申请。网络环境不稳定时，建议先用短问题测试连接。',
+              ],
+            },
+          ],
+          takeaway: '安装完成后先做一次短对话和一次图片识别测试，可以同时验证文本与视觉模型通路。',
+        },
+        {
+          title: '统一 AI 对话：附件、剪贴板、复制与历史',
+          eyebrow: 'CHAPTER 04 · AI CONVERSATION',
+          summary: '五类编辑器共享一致的 AI 输入规则，减少在不同工具之间重新学习。',
+          quote: '同一套交互，贯穿 Word、Excel、PPT、Markdown 与 PDF。',
+          sections: [
+            {
+              title: '完整输入通路',
+              paragraphs: [
+                'AI 输入支持文件选择、拖放和剪贴板图片粘贴，单次最多添加 5 个附件。图片以可删除缩略图显示；普通文件先在本机解析，再按用户请求作为上下文提交。',
+              ],
+              bullets: [
+                '复制用户发出的提示词',
+                '复制 AI 回复或完整报告',
+                '网络失败后保留附件并重试',
+                '使用当前选区、页面区域或对象作为上下文',
+              ],
+            },
+            {
+              title: '历史与文件强绑定',
+              paragraphs: [
+                'AI 问答历史按照本地文件路径保存。关闭应用后再次打开同一份文件，仍可延续上一次的思路、术语约定和工作进度。对于另存的新文件，会形成独立历史，避免不同版本互相污染。',
+              ],
+            },
+          ],
+          takeaway: '把附件、选区和历史都绑定到具体文件，AI 才能从一次性回答者变成持续协作者。',
+        },
+        {
+          title: 'Word：在真实 OOXML 段落上精确修改',
+          eyebrow: 'CHAPTER 05 · WORD / REAL OOXML',
+          summary: 'Word 工作台面向真实 DOCX，而不是把页面截图当作不可编辑图片。',
+          quote: '选中一段文字，AI 只处理这一段；文档仍然是可编辑的 Word。',
+          sections: [
+            {
+              title: '原生编辑能力',
+              paragraphs: [
+                'GenOffice 支持 DOCX 打开、分页编辑和保存，覆盖字体、字号、段落、样式、列表、表格、图片、图表和图形。旧版 DOC 会优先转换为独立 DOCX 副本，避免覆盖原文件。',
+              ],
+              bullets: [
+                '选中文本作为 AI 上下文',
+                '在锚点前后插入 AI 回复',
+                '局部改写、扩写、压缩、翻译和润色',
+                '尽量保留未修改区域的样式和布局',
+              ],
+            },
+            {
+              title: '适合怎样的任务',
+              paragraphs: [
+                '它尤其适合格式已经成型、只需要精确修订的论文、标书、合同说明和项目报告。用户无需把全文交给 AI，也不需要在复制粘贴后重新修复标题、脚注或表格。',
+              ],
+            },
+          ],
+          takeaway: '对严肃文档而言，“改对位置并保留格式”与“写出好句子”同样重要。',
+        },
+        {
+          title: 'Word 图片：环绕、上下层与 1:1 导出',
+          eyebrow: 'CHAPTER 06 · WORD IMAGE LAYOUT',
+          summary: '图片不仅能插入，还能像现代 Word 一样参与真实页面布局。',
+          quote: '图片的位置、层级和尺寸，应该在编辑、预览与导出中保持一致。',
+          sections: [
+            {
+              title: '版式控制',
+              paragraphs: [
+                '图片支持嵌入文字流、被文字包裹、浮于文字上方或置于文字下方。用户可以移动、等比缩放，也可以连续调整宽度和高度。页面裁剪会限制图像越界，避免预览时跑出纸张。',
+              ],
+              bullets: [
+                '拖放图片进入 Word',
+                '宽高实时输入',
+                '横向和纵向连续缩放',
+                '上下层切换',
+                '文字环绕与锚点定位',
+              ],
+            },
+            {
+              title: '保存与 PDF 导出',
+              paragraphs: [
+                '图片修改会写回文档对象，重新用其他 Office 软件打开仍能看到修改结果。PDF 导出按页面纸张和对象坐标计算，避免无故边框、偏移、压缩变形或预览与输出尺寸不一致。',
+              ],
+            },
+          ],
+          takeaway: '版式功能的验收标准不是编辑器里“看起来差不多”，而是保存和导出后仍然一致。',
+        },
+        {
+          title: 'Markdown：写作、LaTeX、Mermaid 与 Word 互转',
+          eyebrow: 'CHAPTER 07 · MARKDOWN STUDIO',
+          summary: '从纯文本写作到公式、图形和学术引用，Markdown 工作台保持源码可控。',
+          quote: '既保留 Markdown 的开放性，也补齐科研写作需要的渲染链路。',
+          sections: [
+            {
+              title: '标准语法与实时渲染',
+              paragraphs: [
+                '支持标题、列表、任务、引用、GFM 表格、链接、代码块、本地图片，以及行内和多行 LaTeX。数学环境会处理常见的重复美元符号嵌套问题，降低 AI 返回内容直接粘贴后无法渲染的概率。',
+              ],
+              bullets: [
+                '图片文件插入、拖放和剪贴板粘贴',
+                'Mermaid fenced code 插入、编辑与渲染',
+                '选区翻译、审稿和 AI 锚点插入',
+                'Markdown 与 Word 双向转换',
+              ],
+            },
+            {
+              title: '源码仍然属于用户',
+              paragraphs: [
+                '所有内容以标准 Markdown 保存，不把页面封装成专有数据库。公式、链接、代码与 Mermaid 语法在 AI 修改时会受到保护，便于继续在 Git、Obsidian、Typora 或其他编辑器中使用。',
+              ],
+            },
+          ],
+          takeaway: 'Markdown 的价值在于可迁移；增强功能不应以牺牲标准源码为代价。',
+        },
+        {
+          title: 'PowerPoint：AI 生成可编辑对象，而不是整页图片',
+          eyebrow: 'CHAPTER 08 · EDITABLE PRESENTATIONS',
+          summary: '标题、正文、形状、图表和版式都保持为可以继续修改的幻灯片对象。',
+          quote: 'AI 负责搭建内容，用户保留最后一厘米的设计控制权。',
+          sections: [
+            {
+              title: '对象级生成与修改',
+              paragraphs: [
+                'GenOffice 打开并保存真实 PPTX。AI 生成的文字、形状和图表不是一张扁平图片，可继续改变字体、颜色、数据源、对齐和层级。用户也可以选中当前对象作为上下文，让 AI 只修改这张幻灯片的指定内容。',
+              ],
+              bullets: [
+                '母版、版式和主题',
+                '文本框、表格、图片和可编辑图表',
+                '智能参考线与对象排列',
+                '非破坏性图片裁剪',
+                'LaTeX 公式和图片公式识别',
+              ],
+            },
+            {
+              title: '多媒体与录制',
+              paragraphs: [
+                '支持插入 MP4、M4V、MOV 与 WebM，在编辑预览和幻灯放映时按插入比例播放。录制可组合麦克风与系统声音，并导出 H.264/AAC MP4。系统音频捕获能力仍取决于操作系统权限与平台支持。',
+              ],
+            },
+          ],
+          takeaway: '真正可用的 AI PPT，必须允许用户继续编辑，而不是把每一页锁死成图片。',
+        },
+        {
+          title: 'Excel：从单元格计算到完整数据分析',
+          eyebrow: 'CHAPTER 09 · DATA ANALYSIS',
+          summary: '让当前工作表中的列、字段和选区直接成为分析上下文。',
+          quote: '数据分析不是只写一个 SUM，而是理解字段、质量、关系与不确定性。',
+          sections: [
+            {
+              title: '分析方法',
+              paragraphs: [
+                '工作台支持描述统计、数据质量检查、相关性、协方差、回归、时间序列、趋势预测、分组汇总、交叉分析、异常值识别、分布分析与情景分析。AI 可以读取真实选区和字段结构，解释结果并生成后续步骤。',
+              ],
+              bullets: [
+                '公式、函数与自动重算',
+                '排序、筛选与条件格式',
+                '数据透视表、切片器和时间线',
+                'AI 选区修改与公式 OCR',
+              ],
+            },
+            {
+              title: '中文数据可视化',
+              paragraphs: [
+                '提供柱、条、线、面积、饼、环形、散点、雷达和组合等 9 类可编辑原生图表。标题、坐标轴、图例、标签、颜色和数据源均可继续编辑，并兼顾中文字体和悬停数值显示。',
+              ],
+            },
+          ],
+          takeaway: '图表不是最终答案；它应当能追溯到原始字段，并允许用户继续修改数据映射。',
+        },
+        {
+          title: '把 Excel 工作簿变成本地 SQL 数据库',
+          eyebrow: 'CHAPTER 10 · WORKBOOK AS DATABASE',
+          summary: '每张工作表是一张表，字段和键约束让多表分析不再依赖手工拼接。',
+          quote: '一个工作簿，也可以是一套结构清晰的本地关系数据库。',
+          sections: [
+            {
+              title: 'Schema 建模',
+              paragraphs: [
+                '用户可以为工作表配置表名、字段名和字段类型，并定义单列或复合主键、次键。设置完成后，工作簿可在本地内存中转换为可查询的数据结构。',
+              ],
+              bullets: [
+                '跨工作表 JOIN',
+                '分组、聚合与日期分析',
+                '多语句脚本',
+                '运行选中语句或光标所在语句',
+                '查询结果回填为新工作表',
+              ],
+            },
+            {
+              title: 'SQL 工作台与 AI',
+              paragraphs: [
+                'SQL 控制台提供语法高亮、错误行定位和受控只读查询。AI 可以读取真实 Schema，生成、解释或修复 SQL；附件、剪贴板图片和网络失败重试规则与其他 AI 入口保持一致。',
+              ],
+            },
+          ],
+          takeaway:
+            '先把字段和关系说清楚，再让 AI 写 SQL，结果会比直接对着杂乱工作表猜测可靠得多。',
+        },
+        {
+          title: 'PDF 工作台：查看、页面管理、水印与安全',
+          eyebrow: 'CHAPTER 11 · PDF REVIEW WORKSPACE',
+          summary: 'PDF 模块聚焦可靠查看、页面级处理和审阅，避免高风险的伪原生文字改写。',
+          quote: '对 PDF，先保证页面对象不被破坏，再谈增强能力。',
+          sections: [
+            {
+              title: '查看与页面操作',
+              paragraphs: [
+                '支持连续滚动、逐页导航、双页查看、缩放、适合页面、适合宽度和手形平移。页面可提取、插入、旋转、重排与删除，也可以加入图片、批注、表单、签名、印章、页眉页脚和自动页码。',
+              ],
+              bullets: [
+                '水印支持剪贴板粘贴与样式预览',
+                '水印可写入全部页面',
+                '打开需要密码的 PDF',
+                '另存 AES-128 密码保护副本',
+              ],
+            },
+            {
+              title: '明确的功能边界',
+              paragraphs: [
+                '为减少字体替换、颜色丢失和对象结构损坏，PDF 功能区不提供编辑文字、编辑图片和公式插入入口。密码保护副本不会覆盖原文件，密码也不会在本机持久保存。',
+              ],
+            },
+          ],
+          takeaway: 'PDF 本质是固定版面；可靠页面处理比承诺无法保证的深度文字编辑更重要。',
+        },
+        {
+          title: '公式 OCR：从截图到 LaTeX 与 OMML',
+          eyebrow: 'CHAPTER 12 · FORMULA OCR',
+          summary: '公式可以来自文件或剪贴板图片，并回到可编辑的数学表达式。',
+          quote: '识别不是终点，可编辑、可渲染、可保存才是完整链路。',
+          sections: [
+            {
+              title: '通用公式入口',
+              paragraphs: [
+                'Word、PPT、Excel 和 Markdown 均支持图片公式识别。用户可以从文件选择公式截图，也可以直接粘贴剪贴板图片。视觉模型识别后返回 LaTeX，用户确认或修改，再按目标编辑器支持的形式插入。',
+              ],
+              bullets: [
+                '行内公式',
+                '多行推导',
+                '矩阵与行列式',
+                '上下标、分式与积分',
+                '物理量和单位',
+              ],
+            },
+            {
+              title: '渲染与编辑',
+              paragraphs: [
+                'Markdown 使用数学渲染器显示 LaTeX；Word 侧可转换为 OMML 矢量公式；PPT 保持公式对象可编辑。对 AI 返回内容中的转义符、嵌套分隔符和大段多行公式，会先做兼容处理。',
+              ],
+            },
+          ],
+          takeaway: '公式 OCR 的最佳输入是边界清晰、裁掉无关正文且对比度足够的局部截图。',
+        },
+        {
+          title: '化学表达式：补齐反应式、上下标与电荷',
+          eyebrow: 'CHAPTER 13 · CHEMISTRY RENDERING',
+          summary: '化学式不能只按普通数学公式处理，否则元素、反应箭头和条件容易缺失。',
+          quote: 'H₂O 的“2”、Fe³⁺ 的电荷和反应条件，都必须完整保留。',
+          sections: [
+            {
+              title: '常见难点',
+              paragraphs: [
+                'AI 返回的化学表达式可能混合普通文本、LaTeX 和 mhchem 风格语法。若简单按数学变量逐字渲染，元素符号会变成斜体，配平系数、上下标、电荷、可逆箭头或箭头上方条件也可能显示不完整。',
+              ],
+              bullets: [
+                '分子式与结构简式',
+                '离子电荷与电子转移',
+                '反应箭头和催化条件',
+                '沉淀、气体和状态符号',
+                '多行反应机理',
+              ],
+            },
+            {
+              title: '兼容策略',
+              paragraphs: [
+                'GenOffice 在 AI 回复区和 Markdown 预览中识别化学表达式边界，保留反斜杠与花括号，避免 Markdown 提前吞掉语法。用户仍可查看并编辑原始表达式，再重新渲染确认。',
+              ],
+            },
+          ],
+          takeaway: '化学内容应同时检查“语义是否正确”和“排版是否完整”，两者缺一不可。',
+        },
+        {
+          title: '科研文献：从真实元数据到参考文献与 BibTeX',
+          eyebrow: 'CHAPTER 14 · SCHOLARLY REFERENCES',
+          summary: '检索、引用、文末条目和 BibTeX 导出形成一个可追溯闭环。',
+          quote: '引用必须来自可核对的元数据，而不是模型凭记忆生成的 DOI。',
+          sections: [
+            {
+              title: '多入口检索',
+              paragraphs: [
+                '科研检索连接 OpenAlex、Crossref、arXiv 和 PubMed 等公开元数据入口。用户可以按标题、作者、关键词或 DOI 搜索，查看年份、来源与标识符，再把确认后的文献加入本地文献库。',
+              ],
+              bullets: [
+                'Word、PPT 与 Markdown 均提供文献入口',
+                '支持 BibTeX、RIS 和 CSL-JSON 导入',
+                '区分预印本与正式发表版本',
+                '优先展示合法开放获取入口',
+              ],
+            },
+            {
+              title: '引用和导出',
+              paragraphs: [
+                '输入 /cite 会打开本地文献条目列表供用户选择。插入后，文章末尾自动维护参考文献条目，并可生成 BibTeX 文件。引用样式覆盖 GB/T 7714、APA、IEEE、Nature 和 Vancouver。',
+              ],
+            },
+          ],
+          takeaway: '先验证题名、作者、年份和 DOI，再插入引用，是降低学术幻觉最有效的步骤。',
+        },
+        {
+          title: '严格 AI 审稿委员会：3 名委员 + 1 名主席',
+          eyebrow: 'CHAPTER 15 · MULTI-AGENT REVIEW',
+          summary: '不是让一个模型写一段泛泛建议，而是用独立视角交叉审查并联合仲裁。',
+          quote: '审稿的价值在于寻找证据链最薄弱的地方，而不是替作者说好话。',
+          sections: [
+            {
+              title: '委员会结构',
+              paragraphs: [
+                '系统从用户配置的可用模型中为至少 3 名委员分配模型。委员分别检查研究问题、方法设计、统计推断、公式、图表、文献与写作；主席汇总分歧并给出最终判断。用户可以选择中文或英文报告。',
+              ],
+              bullets: [
+                'Science、Nature、Cell 与 Elsevier',
+                'IEEE 顶刊、顶级会议和一般会议',
+                '国家自然科学基金、863 与科技项目标书',
+                '商业标书与综合严肃文档',
+              ],
+            },
+            {
+              title: '多模态审阅',
+              paragraphs: [
+                '审稿范围不只包括正文。公式、图片、图表、表格和图形可以共同进入证据检查，重点发现时序泄漏、样本置信度不足、统计方法不匹配、图文矛盾和公式推导脱节等问题。完整报告支持复制与 @Connect。',
+              ],
+            },
+          ],
+          takeaway: '多 Agent 不等于简单重复三次；角色、检查维度和主席仲裁规则必须彼此独立。',
+        },
+        {
+          title: '@Connect：让 AI 结果跨文档流动',
+          eyebrow: 'CHAPTER 16 · CROSS-EDITOR CONNECT',
+          summary: 'AI 回复可以直接送到另一个已打开的 Word、PPT、Excel 或 Markdown 文件。',
+          quote: '信息不再困在聊天框里，而是沿着用户指定的目标继续工作。',
+          sections: [
+            {
+              title: '典型工作流',
+              paragraphs: [
+                '在 PDF 中框选论文图表并提问，将解释通过 @Connect 送入 Word 研究笔记；在 Excel 中完成数据分析后，把摘要送入 PPT；在 Markdown 中整理提纲，再送入 Word 形成正式报告。',
+              ],
+              bullets: [
+                '目标列表只显示当前可接收的编辑器',
+                '发送前由用户明确选择目标',
+                '支持普通回复和完整审稿报告',
+                '发送成功、失败均显示明确状态',
+              ],
+            },
+            {
+              title: '边界与可控性',
+              paragraphs: [
+                '@Connect 不会在后台自动覆盖文档。结果到达目标编辑器后，用户仍可决定插入位置、写回方式或是否继续修改，从而避免跨文件自动化造成不可逆变化。',
+              ],
+            },
+          ],
+          takeaway: '跨编辑器连接应当缩短搬运路径，同时保留最后一步的用户确认。',
+        },
+        {
+          title: '图像增强：扫描件、手写痕迹与文档内处理',
+          eyebrow: 'CHAPTER 17 · IMAGE RESTORATION',
+          summary: '图像清理的目标是忠于印刷内容，而不是把页面重新“画”成另一份材料。',
+          quote: '去除手写痕迹时，印刷体、线框、公式和页面结构必须尽量保留。',
+          sections: [
+            {
+              title: '黑白扫描件增强',
+              paragraphs: [
+                '拍摄或低对比度扫描的材料可以进行灰度校正、背景净化和清晰度增强。处理应避免过度锐化、字符断裂、表格线消失和页面纹理被错误识别为笔迹。',
+              ],
+              bullets: [
+                '支持文件选择和剪贴板图片',
+                '处理结果可直接回到文档',
+                '保留原图作为可恢复来源',
+                '适合试卷、讲义、表格和论文扫描页',
+              ],
+            },
+            {
+              title: '印刷体上的手写内容',
+              paragraphs: [
+                '当笔记覆盖印刷体时，系统需要区分手写轨迹与底层材料。视觉模型给出修复区域后，以最小改动重建被遮挡部分；不确定区域应保守保留，避免“清干净了，却把原题也删掉”。',
+              ],
+            },
+          ],
+          takeaway: '任何自动清理都应保留原文件，并对关键文本进行人工复核。',
+        },
+        {
+          title: 'Mermaid、104 种形状与艺术字',
+          eyebrow: 'CHAPTER 18 · VISUAL AUTHORING',
+          summary: '流程图、基础绘图形状和艺术字都应当可编辑、可保存、可再次打开。',
+          quote: '视觉表达不是贴图，而是由可修改对象组成的文档结构。',
+          sections: [
+            {
+              title: 'Mermaid 与 AI',
+              paragraphs: [
+                'Markdown 支持标准 Mermaid fenced code 的插入、源码编辑和渲染。用户可以用自然语言让 ZenMux 生成流程图、时序图或状态图，也可以选中现有 Mermaid 源码要求 AI 局部修改，再次渲染检查。',
+              ],
+            },
+            {
+              title: 'Office 绘图能力',
+              paragraphs: [
+                'Word 和 PPT 绘图页签内置 104 种可编辑形状，覆盖常用基本图形、箭头、流程图、标注和连接对象。艺术字支持文字编辑、描边、填充和导出一致性，避免在画布与保存结果之间变形。',
+              ],
+              bullets: [
+                '保持矢量对象',
+                '支持层级与排列',
+                '可作为 AI 审阅上下文',
+                '重新打开后继续编辑',
+              ],
+            },
+          ],
+          takeaway: '图形功能是否成熟，要看它能否往返保存，而不只是插入当下看起来正确。',
+        },
+        {
+          title: '联网搜索、当前时间与事实核查',
+          eyebrow: 'CHAPTER 19 · FRESH KNOWLEDGE',
+          summary: '模型知识有截止时间，事实性问题需要把当前系统时间和可信来源纳入回答。',
+          quote: '越新的事实，越不能只依赖模型记忆。',
+          sections: [
+            {
+              title: '可信来源优先',
+              paragraphs: [
+                'GenOffice 在需要时可使用互联网搜索，并以当前系统时间作为参考。通用事实应优先核对官方机构、主流媒体和原始公告；科研问题优先使用期刊、学术索引和论文原文。',
+              ],
+              bullets: [
+                '通用新闻：官方来源、BBC、CNN、The Times 等',
+                '科研：Science、Nature、PubMed、Crossref、OpenAlex',
+                '工程与标准：标准组织和项目官方文档',
+                '保留来源链接与检索日期',
+              ],
+            },
+            {
+              title: '网络限制提示',
+              paragraphs: [
+                'AI、学术检索、图片生成和联网核查都可能受到网络、代理、模型繁忙或供应商超时影响。应用会提示用户检查网络或重试；对长任务，建议拆成“大纲—分段生成—统一校验”三步。',
+              ],
+            },
+          ],
+          takeaway: '事实核查的最低标准是：来源可访问、时间可说明、结论能回到原始证据。',
+        },
+        {
+          title: '四个 3 分钟工作流：把能力连成闭环',
+          eyebrow: 'CHAPTER 20 · PRACTICAL COOKBOOK',
+          summary: '用四个真实场景结束功能专刊：公式、文献、数据和跨文档协作。',
+          quote: '工具的价值不在功能清单，而在能否把一个任务从输入带到交付。',
+          sections: [
+            {
+              title: '场景 A：公式截图进入论文',
+              paragraphs: [
+                '把公式截图粘贴到 Word 公式识别入口，确认 LaTeX 后插入 OMML；再用 AI 检查符号定义是否与上下文一致。',
+              ],
+              bullets: ['裁剪公式主体', '识别并人工校对', '插入可编辑公式', '保存后重新打开验证'],
+            },
+            {
+              title: '场景 B：文献检索与引用',
+              paragraphs: [
+                '用标题或 DOI 检索真实元数据，加入本地文献库；输入 /cite 选择条目，自动维护文末参考文献并导出 BibTeX。',
+              ],
+            },
+            {
+              title: '场景 C：Excel 到 PPT',
+              paragraphs: [
+                '在 Excel 中选择字段完成 EDA 与图表，使用 SQL 进行多表 JOIN，把结论通过 @Connect 发送到 PPT，再调整为可编辑的演示对象。',
+              ],
+            },
+            {
+              title: '场景 D：PDF 审阅到 Word 报告',
+              paragraphs: [
+                '在 PDF 中跨页框选关键方法与图表，启动严格审稿委员会；复制完整报告或通过 @Connect 送到 Word，形成可继续修改的正式评审文档。',
+              ],
+            },
+          ],
+          takeaway: 'GenOffice 的最终目标，是让文档、数据、证据与 AI 结果在用户控制下顺畅流动。',
+        },
+      ]
+
+      const state = { current: 0, query: '' }
+      const list = document.getElementById('chapterList')
+      const stage = document.getElementById('articleStage')
+      const search = document.getElementById('search')
+      const toast = document.getElementById('toast')
+      const progressText = document.getElementById('progressText')
+      const progressBar = document.getElementById('progressBar')
+      const prevButton = document.getElementById('prevChapter')
+      const nextButton = document.getElementById('nextChapter')
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;')
+      }
+
+      function chapterNumber(index) {
+        return String(index + 1).padStart(2, '0')
+      }
+
+      function buildSection(section) {
+        const paragraphs = (section.paragraphs || [])
+          .map(
+            (text) =>
+              `<p style="margin:0 0 15px;color:#35342f;font-size:16px;line-height:1.95;letter-spacing:.02em;text-align:justify;">${escapeHtml(text)}</p>`,
+          )
+          .join('')
+        const bullets = section.bullets?.length
+          ? `<ul style="margin:20px 0 24px;padding:18px 20px 10px 42px;background:#f5f1e8;border-left:4px solid #3f5546;border-radius:2px;">${section.bullets
+              .map(
+                (item) =>
+                  `<li style="margin:0 0 10px;color:#35342f;font-size:15px;line-height:1.75;">${escapeHtml(item)}</li>`,
+              )
+              .join('')}</ul>`
+          : ''
+        return `<section style="margin:0 0 34px;">
+          <h2 style="margin:0 0 16px;padding:0 0 10px;border-bottom:1px solid #d8d0c1;color:#171714;font-size:21px;line-height:1.45;font-weight:700;">${escapeHtml(section.title)}</h2>
+          ${paragraphs}${bullets}
+        </section>`
+      }
+
+      function buildWechatChapter(chapter, index) {
+        return `<section data-wechat-article="true" style="max-width:677px;margin:0 auto;padding:8px 4px 24px;background:#fffdf8;font-family:'PingFang SC','Microsoft YaHei',sans-serif;">
+          <p style="margin:0 0 20px;color:#b4382f;font-size:11px;line-height:1.5;letter-spacing:.12em;text-align:center;">${escapeHtml(chapter.eyebrow)}</p>
+          <h1 style="margin:0;color:#171714;font-family:'Songti SC','STSong',serif;font-size:34px;line-height:1.35;font-weight:700;letter-spacing:.02em;text-align:center;">${escapeHtml(chapter.title)}</h1>
+          <p style="margin:18px auto 0;max-width:570px;color:#706b61;font-size:15px;line-height:1.85;text-align:center;">${escapeHtml(chapter.summary)}</p>
+          <div style="width:48px;height:3px;margin:24px auto 30px;background:#b4382f;"></div>
+          <blockquote style="margin:0 0 34px;padding:22px 24px;background:#171714;border:0;color:#fffdf8;font-family:'Songti SC','STSong',serif;font-size:19px;line-height:1.75;text-align:center;">${escapeHtml(chapter.quote)}</blockquote>
+          ${chapter.sections.map(buildSection).join('')}
+          <section style="margin:38px 0 10px;padding:22px 24px;border:1px solid #b4382f;background:#fff8ef;">
+            <p style="margin:0 0 8px;color:#b4382f;font-size:11px;line-height:1.5;letter-spacing:.12em;font-weight:700;">本章要点 · TAKEAWAY</p>
+            <p style="margin:0;color:#171714;font-family:'Songti SC','STSong',serif;font-size:18px;line-height:1.8;font-weight:700;">${escapeHtml(chapter.takeaway)}</p>
+          </section>
+          <p style="margin:28px 0 0;color:#9a9387;font-size:10px;line-height:1.6;letter-spacing:.08em;text-align:center;">GenOffice 功能专刊 · 第 ${chapterNumber(index)} / 20 章 · Apache-2.0 开源项目</p>
+        </section>`
+      }
+
+      function buildList() {
+        list.innerHTML = chapters
+          .map(
+            (
+              chapter,
+              index,
+            ) => `<div class="chapter-item${index === state.current ? ' active' : ''}" data-index="${index}" data-search="${escapeHtml(
+              `${chapter.title} ${chapter.summary} ${chapter.sections.map((section) => section.title).join(' ')}`.toLowerCase(),
+            )}">
+              <button class="chapter-open" type="button" aria-label="打开第 ${chapterNumber(index)} 章 ${escapeHtml(chapter.title)}">
+                <span class="chapter-index">${chapterNumber(index)}</span>
+                <span class="chapter-name">${escapeHtml(chapter.title)}</span>
+              </button>
+              <button class="chapter-copy" type="button" title="复制本章到公众号" aria-label="复制第 ${chapterNumber(index)} 章到公众号">⧉</button>
+            </div>`,
+          )
+          .join('')
+
+        list.querySelectorAll('.chapter-item').forEach((item) => {
+          const index = Number(item.dataset.index)
+          item.querySelector('.chapter-open').addEventListener('click', () => showChapter(index))
+          item.querySelector('.chapter-copy').addEventListener('click', (event) => {
+            event.stopPropagation()
+            copyChapter(index, true)
+          })
+        })
+        applySearch()
+      }
+
+      function showChapter(index) {
+        state.current = Math.max(0, Math.min(chapters.length - 1, index))
+        stage.style.animation = 'none'
+        stage.offsetHeight
+        stage.style.animation = ''
+        stage.innerHTML = buildWechatChapter(chapters[state.current], state.current)
+        document.querySelectorAll('.chapter-item').forEach((item) => {
+          item.classList.toggle('active', Number(item.dataset.index) === state.current)
+        })
+        const activeItem = list.querySelector(`[data-index="${state.current}"]`)
+        activeItem?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+        progressText.textContent = `${chapterNumber(state.current)} / 20`
+        progressBar.style.width = `${((state.current + 1) / chapters.length) * 100}%`
+        updatePager()
+        document.title = `${chapterNumber(state.current)} · ${chapters[state.current].title} | GenOffice 功能专刊`
+        if (window.innerWidth < 900)
+          document.querySelector('.workspace').scrollIntoView({ behavior: 'smooth' })
+      }
+
+      function updatePager() {
+        const prev = chapters[state.current - 1]
+        const next = chapters[state.current + 1]
+        prevButton.disabled = !prev
+        nextButton.disabled = !next
+        prevButton.innerHTML = prev
+          ? `<span>← Previous · ${chapterNumber(state.current - 1)}</span><strong>${escapeHtml(prev.title)}</strong>`
+          : ''
+        nextButton.innerHTML = next
+          ? `<span>Next · ${chapterNumber(state.current + 1)} →</span><strong>${escapeHtml(next.title)}</strong>`
+          : ''
+      }
+
+      function applySearch() {
+        const query = state.query.trim().toLowerCase()
+        let visible = 0
+        list.querySelectorAll('.chapter-item').forEach((item) => {
+          const match = !query || item.dataset.search.includes(query)
+          item.hidden = !match
+          if (match) visible += 1
+        })
+        list.querySelector('.empty-search')?.remove()
+        if (!visible) {
+          list.insertAdjacentHTML(
+            'beforeend',
+            '<div class="empty-search">没有找到相关章节。<br />试试“公式”“PDF”或“审稿”。</div>',
+          )
+        }
+      }
+
+      function plainTextFor(index) {
+        const holder = document.createElement('div')
+        holder.innerHTML = buildWechatChapter(chapters[index], index)
+        return holder.innerText
+      }
+
+      async function writeRichClipboard(html, plain) {
+        if (navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/html': new Blob([html], { type: 'text/html' }),
+              'text/plain': new Blob([plain], { type: 'text/plain' }),
+            }),
+          ])
+          return
+        }
+
+        const sandbox = document.createElement('div')
+        sandbox.contentEditable = 'true'
+        sandbox.style.cssText = 'position:fixed;left:-99999px;top:0;opacity:0;pointer-events:none;'
+        sandbox.innerHTML = html
+        document.body.appendChild(sandbox)
+        const selection = window.getSelection()
+        const range = document.createRange()
+        range.selectNodeContents(sandbox)
+        selection.removeAllRanges()
+        selection.addRange(range)
+        const copied = document.execCommand('copy')
+        selection.removeAllRanges()
+        sandbox.remove()
+        if (!copied) throw new Error('copy command failed')
+      }
+
+      async function copyChapter(index, rich) {
+        const chapter = chapters[index]
+        const html = buildWechatChapter(chapter, index)
+        const plain = plainTextFor(index)
+        try {
+          if (rich) {
+            await writeRichClipboard(html, plain)
+            showToast(`第 ${chapterNumber(index)} 章已按公众号富文本格式复制`)
+          } else {
+            await navigator.clipboard.writeText(plain)
+            showToast(`第 ${chapterNumber(index)} 章纯文本已复制`)
+          }
+        } catch (error) {
+          try {
+            const textarea = document.createElement('textarea')
+            textarea.value = plain
+            textarea.style.cssText = 'position:fixed;left:-99999px;top:0;'
+            document.body.appendChild(textarea)
+            textarea.select()
+            const copied = document.execCommand('copy')
+            textarea.remove()
+            if (!copied) throw error
+            showToast('浏览器限制了富文本剪贴板，已复制纯文本版本')
+          } catch {
+            showToast('复制失败，请允许浏览器使用剪贴板后重试')
+          }
+        }
+      }
+
+      let toastTimer
+      function showToast(message) {
+        toast.textContent = message
+        toast.classList.add('show')
+        window.clearTimeout(toastTimer)
+        toastTimer = window.setTimeout(() => toast.classList.remove('show'), 2600)
+      }
+
+      search.addEventListener('input', () => {
+        state.query = search.value
+        applySearch()
+      })
+      document
+        .getElementById('copyRich')
+        .addEventListener('click', () => copyChapter(state.current, true))
+      document
+        .getElementById('copyPlain')
+        .addEventListener('click', () => copyChapter(state.current, false))
+      prevButton.addEventListener('click', () => showChapter(state.current - 1))
+      nextButton.addEventListener('click', () => showChapter(state.current + 1))
+      document.addEventListener('keydown', (event) => {
+        if (event.target.matches('input, textarea')) return
+        if (event.key === 'ArrowLeft' && state.current > 0) showChapter(state.current - 1)
+        if (event.key === 'ArrowRight' && state.current < chapters.length - 1)
+          showChapter(state.current + 1)
+      })
+
+      buildList()
+      showChapter(0)
+    </script>
+  </body>
+</html>
