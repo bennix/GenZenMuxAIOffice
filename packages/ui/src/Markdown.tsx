@@ -44,7 +44,7 @@ function normalizeAiMarkdown(text: string): string {
         let normalized = plain
           // Zero-width characters copied from rich text can split Markdown
           // delimiters while remaining invisible in the UI.
-          .replace(/[\u200B\u200C\u200D\u2060\uFEFF]/g, '')
+          .replace(/\u200B|\u200C|\u200D|\u2060|\uFEFF/g, '')
           // Some models escape Markdown even though their response is already
           // being rendered as Markdown.
           .replace(/\\\*\\\*/g, '**')
