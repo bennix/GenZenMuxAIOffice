@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import type { Editor } from '@tiptap/core'
-import { latexToOmml, ommlToMathML } from '@genoffice/docx-engine'
 import { cleanRecognizedLatex, formulaRecognitionRequest } from '@genoffice/ai-provider'
 import {
   FormulaImageRecognition,
+  renderLatexToHtml,
   stripNestedMathDelimiters,
   type FormulaImageData,
 } from '@genoffice/ui'
@@ -29,13 +29,12 @@ export function EquationDialog({
   const preview = useMemo(() => {
     if (!latex.trim()) return null
     try {
-      const omml = latexToOmml(stripNestedMathDelimiters(latex))
-      return { mathml: ommlToMathML(`<m:oMath>${omml}</m:oMath>`) }
+      return { html: renderLatexToHtml(latex, !inline, { throwOnError: true }) }
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) }
     }
-  }, [latex])
-  const valid = preview !== null && 'mathml' in preview && Boolean(preview.mathml)
+  }, [inline, latex])
+  const valid = preview !== null && 'html' in preview && Boolean(preview.html)
 
   const recognize = async (image: FormulaImageData) => {
     const settings = await window.markdownApi.getAiSettings()
@@ -91,7 +90,7 @@ export function EquationDialog({
           ) : 'error' in preview ? (
             <span className="formula-image-error">{preview.error}</span>
           ) : (
-            <span dangerouslySetInnerHTML={{ __html: preview.mathml }} />
+            <span dangerouslySetInnerHTML={{ __html: preview.html }} />
           )}
         </div>
         <FormulaImageRecognition onRecognize={recognize} />

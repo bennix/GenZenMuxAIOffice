@@ -42,6 +42,7 @@ export {
   type FetchWithSsrfGuardOptions,
 } from './safe-remote-url'
 export { fetchRemoteImage, remoteImageHeaders } from './remote-image'
+export { normalizeAiMarkdownText } from './markdown-normalize'
 export {
   CONNECT_CHANNELS,
   CONNECT_MAX_TEXT_BYTES,

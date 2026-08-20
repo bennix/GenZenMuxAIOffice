@@ -1,3 +1,5 @@
+import { normalizeAiMarkdownText } from '@genoffice/electron-utils/markdown-normalize'
+
 /**
  * Round-trip envelope for a .md file: the TipTap editor only ever sees the
  * markdown body; the YAML frontmatter block, EOL style and EOF-newline state
@@ -117,7 +119,9 @@ export function repairOverescapedMarkdown(body: string): string {
   body = normalizeAlternateMathDelimiters(body)
   const hasEscapedFormatting = /\\\*\\\*[^\n]+?\\\*\\\*/.test(body)
   const hasDoubledLatex = /\${1,2}[\s\S]*?\\\\(?:[A-Za-z]+|[{}_^])[\s\S]*?\${1,2}/.test(body)
-  if (!hasEscapedFormatting && !hasDoubledLatex) return delimitBareLatex(body)
+  if (!hasEscapedFormatting && !hasDoubledLatex) {
+    return delimitBareLatex(normalizeAiMarkdownText(body))
+  }
 
   const lines = body.split('\n')
   let codeFence: string | null = null
@@ -158,7 +162,7 @@ export function repairOverescapedMarkdown(body: string): string {
       return repaired
     })
     .join('\n')
-  return delimitBareLatex(repaired)
+  return delimitBareLatex(normalizeAiMarkdownText(repaired))
 }
 
 /**
@@ -348,6 +352,13 @@ export function delimitBareLatex(body: string): string {
         return line
       }
 
+      // Invisible rich-text separators can split `**`, `$...$`, or a LaTeX
+      // command while looking like ordinary text in the source application.
+      // Strip them outside inline code before looking for Markdown markers.
+      line = transformOutsideInlineCode(line, (plain) =>
+        plain.replace(/\u200B|\u200C|\u200D|\u2060|\uFEFF/g, ''),
+      )
+
       let out = ''
       let plain = ''
       const flushPlain = (): void => {
@@ -393,7 +404,13 @@ function delimitBareLatexSegment(segment: string): string {
     // example the `\\pi` rule must not inject nested dollar delimiters).
     return `\uE000${index}\uE001`
   }
-  let result = segment.replace(
+  let result = segment
+    // CommonMark does not accept whitespace immediately before a strong
+    // closing delimiter. AI review reports frequently emit `**text。 **next`,
+    // which otherwise leaves the asterisks visible after @Connect.
+    .replace(/(\*\*|__)([^\n]*?\S)[ \t]+\1/g, '$1$2$1 ')
+  result = protectParenthesizedLatex(result, protectFormula)
+  result = result.replace(
     /(\\left\s*(?:\\[A-Za-z]+|\\.|[()[\]|])[\s\S]*?\\right\s*(?:\\[A-Za-z]+|\\.|[()[\]|]))/g,
     protectFormula,
   )
@@ -420,6 +437,45 @@ function delimitBareLatexSegment(segment: string): string {
     const latex = bareFormulas[Number(index)]
     return latex === undefined ? _all : `$${latex}$`
   })
+}
+
+/**
+ * Wrap balanced parenthesized expressions that unmistakably contain LaTeX.
+ * A small balanced scanner is used instead of a flat regex because real model
+ * output commonly nests commands, e.g. `(\mathcal F(\hat b_t,b_t^{gt}))`.
+ */
+function protectParenthesizedLatex(
+  segment: string,
+  protect: (_all: string, latex: string) => string,
+): string {
+  let out = ''
+  let cursor = 0
+  while (cursor < segment.length) {
+    const open = segment.indexOf('(', cursor)
+    if (open < 0) {
+      out += segment.slice(cursor)
+      break
+    }
+    out += segment.slice(cursor, open)
+    let depth = 1
+    let close = open + 1
+    for (; close < segment.length && depth > 0; close++) {
+      if (segment[close] === '(') depth++
+      else if (segment[close] === ')') depth--
+    }
+    if (depth !== 0) {
+      out += segment.slice(open)
+      break
+    }
+    const expression = segment.slice(open, close)
+    const latex = expression.slice(1, -1)
+    const hasLatexCommand = /\\[A-Za-z]+/.test(latex)
+    const hasMathScript = /(?:_[A-Za-z0-9]|_\{|\^[A-Za-z0-9]|\^\{)/.test(latex)
+    if (hasLatexCommand || hasMathScript) out += protect(expression, latex)
+    else out += expression
+    cursor = close
+  }
+  return out
 }
 
 function normalizeLegacyLatex(latex: string): string {

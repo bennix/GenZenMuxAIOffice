@@ -28,6 +28,8 @@ img { max-width: 100%; height: auto; }
 table { border-collapse: collapse; width: 100%; margin: 0; break-inside: avoid; }
 .md-equation-inline { display: inline-flex; vertical-align: middle; margin: 0 2px; }
 .md-equation-block { display: block; margin: 1em 0; padding: 0.5em; overflow: visible; text-align: center; break-inside: avoid; }
+.md-equation .katex-html { display: none; }
+.md-equation .katex-mathml { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
 th, td { border: 1px solid #d0d5db; padding: 6px 10px; vertical-align: top; text-align: start; }
 th > p, td > p { margin: 0; }
 th { background: #f6f8fa; font-weight: 600; }

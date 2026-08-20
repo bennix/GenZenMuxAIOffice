@@ -609,6 +609,9 @@ export function AiPanel({
                   (entry.role === 'assistant' ? <Markdown text={entry.text} /> : entry.text)}
                 {entry.text && (
                   <div className="ai-msg-toolbar">
+                    {entry.role === 'assistant' && (
+                      <ConnectButton api={window.pdfApi} text={entry.text} />
+                    )}
                     <button
                       className="ai-msg-tool-btn"
                       onClick={() => void copyMessage(entry.text, `historic-${index}`)}
