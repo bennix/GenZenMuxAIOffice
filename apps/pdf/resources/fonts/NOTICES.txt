@@ -1,0 +1,18 @@
+Built-in PDF edit fonts (SIL Open Font License 1.1). These files are bundled
+with GenOffice so text rebuilds do not depend on which fonts the OS has installed.
+
+Liberation Fonts 2.1.5
+  Copyright (c) 2012 Red Hat, Inc., with Reserved Font Name Liberation.
+  Metric-compatible substitutes for Arial, Times New Roman, and Courier New.
+  https://github.com/liberationfonts/liberation-fonts
+
+Noto Sans / Noto Serif / Noto CJK (Sans + Serif, SC/TC/JP/KR)
+  Copyright 2015–2024 Google LLC.
+  https://github.com/notofonts/noto-fonts
+  https://github.com/notofonts/noto-cjk
+
+The full SIL OFL 1.1 text is at https://scripts.sil.org/OFL
+The fonts, including any derivative works, may be bundled and embedded with
+this software provided they remain under OFL and reserved names are not used
+by derivatives. Documents created using the fonts are not required to stay
+under OFL.

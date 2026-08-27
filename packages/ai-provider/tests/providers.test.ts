@@ -6,6 +6,7 @@ import {
   ZENMUX_MODELS,
   defaultAiSettings,
   resolveAiSettings,
+  resolveZenmuxBaseUrl,
 } from '../src/providers'
 
 describe('defaultAiSettings', () => {
@@ -89,5 +90,26 @@ describe('resolveAiSettings', () => {
     expect(resolved.providers.zenmux.models).toEqual(['vendor/new-model'])
     expect(resolved.providers.zenmux.model).toBe('vendor/new-model')
     expect(resolved.providers.zenmux.imageModel).toBe(ZENMUX_DEFAULT_IMAGE_MODEL)
+  })
+
+  it('preserves a custom ZenMux Base URL and fills an empty one', () => {
+    expect(resolveZenmuxBaseUrl({ baseUrl: ' https://proxy.example/v1/ ' })).toBe(
+      'https://proxy.example/v1',
+    )
+    expect(resolveZenmuxBaseUrl({ baseUrl: '' })).toBe(ZENMUX_BASE_URL)
+    const resolved = resolveAiSettings(
+      {
+        provider: 'zenmux',
+        providers: {
+          zenmux: {
+            apiKey: 'zen-key',
+            model: ZENMUX_MODELS[0],
+            baseUrl: 'https://proxy.example/v1/',
+          },
+        } as never,
+      },
+      defaultAiSettings(),
+    )
+    expect(resolved.providers.zenmux.baseUrl).toBe('https://proxy.example/v1')
   })
 })

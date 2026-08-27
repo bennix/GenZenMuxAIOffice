@@ -1,6 +1,12 @@
 import type { AiProviderId, AiProviderMeta, AiSettings, LegacyAiSettings } from './types'
 
 export const ZENMUX_BASE_URL = 'https://zenmux.ai/api/v1'
+
+/** OpenAI-compatible chat endpoint for ZenMux, or a user-supplied compatible Base URL. */
+export function resolveZenmuxBaseUrl(config?: { baseUrl?: string | undefined } | null): string {
+  const url = config?.baseUrl?.trim().replace(/\/+$/, '')
+  return url || ZENMUX_BASE_URL
+}
 export const ZENMUX_INVITE_URL = 'https://zenmux.ai/invite/GBQMC5'
 export const ZENMUX_MODELS = [
   'anthropic/claude-sonnet-4.6',
@@ -139,5 +145,6 @@ export function resolveAiSettings(
     providers: { ...defaults.providers, ...stored.providers },
   }
   resolved.providers.zenmux.imageModel ??= ZENMUX_DEFAULT_IMAGE_MODEL
+  resolved.providers.zenmux.baseUrl = resolveZenmuxBaseUrl(resolved.providers.zenmux)
   return resolved
 }

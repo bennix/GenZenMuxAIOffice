@@ -41,6 +41,8 @@ for (const rel of [
   '../../node_modules/electron/dist/LICENSES.chromium.html',
   '../../node_modules/@embedpdf/pdfium/dist/pdfium.wasm',
   '../pdf/node_modules/harfbuzzjs/hb-subset.wasm',
+  '../pdf/resources/fonts/LiberationSerif-Regular.ttf',
+  '../pdf/resources/fonts/NotoSerifSC-Regular.otf',
 ]) {
   if (!existsSync(join(__dirname, rel))) {
     throw new Error(
@@ -148,6 +150,10 @@ const config = {
     {
       from: '../pdf/node_modules/harfbuzzjs/hb-subset.wasm',
       to: 'wasm/hb-subset.wasm',
+    },
+    {
+      from: '../pdf/resources/fonts',
+      to: 'fonts',
     },
   ],
   // `mimeType` is read only by the Linux target, where it becomes the

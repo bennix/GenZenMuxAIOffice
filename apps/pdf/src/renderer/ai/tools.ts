@@ -163,7 +163,17 @@ export const AGENT_TOOLS: AgentToolDef[] = [
         },
         font: {
           type: 'string',
-          enum: ['arial', 'times', 'courier'],
+          enum: [
+            'arial',
+            'times',
+            'courier',
+            'noto-sc',
+            'noto-tc',
+            'noto-serif-sc',
+            'noto-serif',
+            'noto-jp',
+            'noto-kr',
+          ],
           description:
             'Font for the replacement; ignored when the face lacks glyphs for it (e.g. CJK). Omit for automatic',
         },
@@ -201,7 +211,17 @@ export const AGENT_TOOLS: AgentToolDef[] = [
         },
         font: {
           type: 'string',
-          enum: ['arial', 'times', 'courier'],
+          enum: [
+            'arial',
+            'times',
+            'courier',
+            'noto-sc',
+            'noto-tc',
+            'noto-serif-sc',
+            'noto-serif',
+            'noto-jp',
+            'noto-kr',
+          ],
           description:
             'Font for the replacement; ignored when the face lacks glyphs for it (e.g. CJK). Omit for automatic',
         },

@@ -31,6 +31,7 @@ interface Props {
   onInsertImage: () => void
   onInsertEquation: () => void
   onInsertMermaid: () => void
+  onOpenWechat: () => void
   onOpenCitations: () => void
   onTranslate: (language: 'zh' | 'en') => void
   onReview: () => void
@@ -153,6 +154,7 @@ export function Ribbon({
   onInsertImage,
   onInsertEquation,
   onInsertMermaid,
+  onOpenWechat,
   onOpenCitations,
   onTranslate,
   onReview,
@@ -363,6 +365,47 @@ export function Ribbon({
 
         <div className="rb-sep" />
 
+        <div className="ribbon-group">
+          <div className="ribbon-group-items">
+            <button
+              type="button"
+              className="rb-big ai-entry"
+              data-tip={
+                navigator.language.startsWith('zh')
+                  ? 'Pretty Mermaid 与编辑级图表'
+                  : 'Pretty Mermaid and editorial diagrams'
+              }
+              disabled={off}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onInsertMermaid}
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon">◇</span>
+              </span>
+              <span>{navigator.language.startsWith('zh') ? '图表' : 'Diagrams'}</span>
+            </button>
+            <button
+              type="button"
+              className="rb-big ai-entry"
+              data-tip={
+                navigator.language.startsWith('zh')
+                  ? '内联样式排版，复制后粘贴到微信公众号'
+                  : 'Copy inline-styled HTML for WeChat MP'
+              }
+              disabled={off}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onOpenWechat}
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon">微</span>
+              </span>
+              <span>{navigator.language.startsWith('zh') ? '公众号排版' : 'WeChat'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="rb-sep" />
+
         <select
           className="rb-style"
           value={state?.style ?? 'paragraph'}
@@ -484,15 +527,6 @@ export function Ribbon({
           </IconBtn>
           <IconBtn title={t('insertImage')} disabled={off || !imageEnabled} onClick={onInsertImage}>
             <IconPicture size={ICON} />
-          </IconBtn>
-          <IconBtn
-            title={
-              navigator.language.startsWith('zh') ? '插入 Mermaid 图形' : 'Insert Mermaid diagram'
-            }
-            disabled={off}
-            onClick={onInsertMermaid}
-          >
-            <span className="rb-glyph">◇</span>
           </IconBtn>
           <IconBtn
             title={

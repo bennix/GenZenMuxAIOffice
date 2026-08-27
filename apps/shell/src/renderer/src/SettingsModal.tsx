@@ -168,6 +168,7 @@ export function SettingsModal({
   const [appVersion, setAppVersion] = useState('')
   const [aiSettings, setAiSettings] = useState<AiSettings | null>(null)
   const [apiKey, setApiKey] = useState('')
+  const [baseUrl, setBaseUrl] = useState(ZENMUX_BASE_URL)
   const [model, setModel] = useState<string>(ZENMUX_MODELS[0])
   const [models, setModels] = useState<string[]>([...ZENMUX_MODELS])
   const [removedModels, setRemovedModels] = useState<string[]>([])
@@ -203,6 +204,7 @@ export function SettingsModal({
       const savedRemovedModels = config.removedModels ?? []
       setAiSettings(settings)
       setApiKey(config.apiKey)
+      setBaseUrl(config.baseUrl?.trim() || ZENMUX_BASE_URL)
       setModel(activeModel)
       setRemovedModels(savedRemovedModels)
       setModels(resolveModelOptions(ZENMUX_MODELS, savedModels, savedRemovedModels, activeModel))
@@ -322,7 +324,7 @@ export function SettingsModal({
           imageModel,
           imageModels,
           removedImageModels,
-          baseUrl: ZENMUX_BASE_URL,
+          baseUrl: baseUrl.trim().replace(/\/+$/, '') || ZENMUX_BASE_URL,
         },
       },
     }
@@ -508,13 +510,36 @@ export function SettingsModal({
                 </div>
                 <label className="set-ai-field" htmlFor="set-zenmux-url">
                   <span>Base URL</span>
-                  <input
-                    id="set-zenmux-url"
-                    className="set-input"
-                    value={ZENMUX_BASE_URL}
-                    readOnly
-                  />
+                  <div className="set-ai-add-row">
+                    <input
+                      id="set-zenmux-url"
+                      className="set-input"
+                      value={baseUrl}
+                      placeholder={ZENMUX_BASE_URL}
+                      spellCheck={false}
+                      onChange={(e) => {
+                        setBaseUrl(e.target.value)
+                        setAiSaved(false)
+                      }}
+                    />
+                    <button
+                      className="set-btn"
+                      type="button"
+                      disabled={baseUrl.trim().replace(/\/+$/, '') === ZENMUX_BASE_URL}
+                      onClick={() => {
+                        setBaseUrl(ZENMUX_BASE_URL)
+                        setAiSaved(false)
+                      }}
+                    >
+                      {isChinese ? '恢复默认' : 'Reset'}
+                    </button>
+                  </div>
                 </label>
+                <div className="set-ai-help">
+                  {isChinese
+                    ? '默认走 ZenMux。可改为任意 OpenAI 兼容网关的 Base URL；API Key 与模型名按该网关填写。'
+                    : 'ZenMux is the default. You can point this at any OpenAI-compatible Base URL; use that gateway’s API Key and model names.'}
+                </div>
                 <div className="set-ai-field">
                   <span>{isChinese ? '当前模型' : 'Active model'}</span>
                   <div className="set-ai-model-row">

@@ -61,7 +61,6 @@ describe('applyTextEdits', () => {
   })
 
   it('rebuilds the run with an embedded subset font for chars outside the original', async () => {
-    if (!existsSync('/System/Library/Fonts/Supplemental/Arial Unicode.ttf')) return
     const f = await makeFixture('Amount due 500')
     const out = await applyAll(f.bytes, [edit(f, 'Amount due 500', '应付金额 900 元')])
     expect(await extractText(out)).toBe('应付金额 900 元')

@@ -24,6 +24,7 @@ import { SlashMenu, type SlashMenuHandle } from './components/SlashMenu'
 import { TableMenu } from './components/TableMenu'
 import { EquationDialog, type MarkdownEquationTarget } from './components/EquationDialog'
 import { MermaidDialog } from './components/MermaidDialog'
+import { WechatExportDialog } from './components/WechatExportDialog'
 import { AiReviewCommitteeModal } from './components/AiReviewCommitteeModal'
 import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
 import { DOCX_MAX_IMAGE_PX, exportDocxBytes } from './export/docxExport'
@@ -95,6 +96,8 @@ export default function App() {
   const [equationOpen, setEquationOpen] = useState(false)
   const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
   const [mermaidOpen, setMermaidOpen] = useState(false)
+  const [mermaidTab, setMermaidTab] = useState<'pretty' | 'editorial' | 'wechat'>('pretty')
+  const [wechatOpen, setWechatOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
   const citationRecordsRef = useRef(new Map<string, CitationRecord>())
   const citationStyleRef = useRef<CitationStyle>('gb7714')
@@ -141,7 +144,11 @@ export default function App() {
       slashItems: () =>
         buildSlashItems({
           insertImage,
-          insertMermaid: () => setMermaidOpen(true),
+          insertMermaid: () => {
+            setMermaidTab('pretty')
+            setMermaidOpen(true)
+          },
+          openWechat: () => setWechatOpen(true),
           openCitations: () => {
             setCitationInitialTab('library')
             setCitationsOpen(true)
@@ -465,7 +472,11 @@ export default function App() {
           setEquationTarget(undefined)
           setEquationOpen(true)
         }}
-        onInsertMermaid={() => setMermaidOpen(true)}
+        onInsertMermaid={() => {
+          setMermaidTab('pretty')
+          setMermaidOpen(true)
+        }}
+        onOpenWechat={() => setWechatOpen(true)}
         onOpenCitations={() => {
           setCitationInitialTab('search')
           setCitationsOpen(true)
@@ -542,7 +553,14 @@ export default function App() {
         />
       )}
       {mermaidOpen && editor && (
-        <MermaidDialog editor={editor} onClose={() => setMermaidOpen(false)} />
+        <MermaidDialog
+          editor={editor}
+          initialTab={mermaidTab}
+          onClose={() => setMermaidOpen(false)}
+        />
+      )}
+      {wechatOpen && editor && (
+        <WechatExportDialog editorRoot={editor.view.dom} onClose={() => setWechatOpen(false)} />
       )}
       {reviewOpen && editor && (
         <AiReviewCommitteeModal editor={editor} onClose={() => setReviewOpen(false)} />

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { PDFDict, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } from 'pdf-lib'
 import { fontCoversText } from './font-cmap'
+import { findAliasedBundledFont, bundledFontPath, pickBundledFallback } from './font-bundle'
 import { findSystemFont, isTruetype } from './font-locate'
 import { identityCffCharset, subsetTtf } from './font-subset'
 import { pdfiumWasmPath } from './wasm-path'
@@ -130,6 +131,8 @@ export function loadPdfium(): Promise<Pdfium> {
 
 /** Fallback fonts for rebuilt runs, first readable file wins; must be single-face sfnt (no .ttc) */
 const FALLBACK_FONTS = [
+  bundledFontPath('NotoSansSC-Regular.otf'),
+  bundledFontPath('NotoSans-Regular.ttf'),
   '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
   'C:\\Windows\\Fonts\\arialuni.ttf',
   '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
@@ -137,7 +140,9 @@ const FALLBACK_FONTS = [
 
 let fallbackFontBytes: Buffer | null | undefined
 
-function loadFallbackFont(): Buffer {
+function loadFallbackFont(text = ''): Buffer {
+  const bundled = pickBundledFallback(text)
+  if (bundled) return bundled
   if (fallbackFontBytes === undefined) {
     fallbackFontBytes = null
     for (const p of FALLBACK_FONTS) {
@@ -162,21 +167,25 @@ const EDIT_FONT_PATHS: Record<string, Record<EditFontStyle, string[]>> = {
     regular: [
       '/System/Library/Fonts/Supplemental/Arial.ttf',
       'C:\\Windows\\Fonts\\arial.ttf',
+      bundledFontPath('LiberationSans-Regular.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
     ],
     bold: [
       '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
       'C:\\Windows\\Fonts\\arialbd.ttf',
+      bundledFontPath('LiberationSans-Bold.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
     ],
     italic: [
       '/System/Library/Fonts/Supplemental/Arial Italic.ttf',
       'C:\\Windows\\Fonts\\ariali.ttf',
+      bundledFontPath('LiberationSans-Italic.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf',
     ],
     bolditalic: [
       '/System/Library/Fonts/Supplemental/Arial Bold Italic.ttf',
       'C:\\Windows\\Fonts\\arialbi.ttf',
+      bundledFontPath('LiberationSans-BoldItalic.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf',
     ],
   },
@@ -184,21 +193,25 @@ const EDIT_FONT_PATHS: Record<string, Record<EditFontStyle, string[]>> = {
     regular: [
       '/System/Library/Fonts/Supplemental/Times New Roman.ttf',
       'C:\\Windows\\Fonts\\times.ttf',
+      bundledFontPath('LiberationSerif-Regular.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf',
     ],
     bold: [
       '/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf',
       'C:\\Windows\\Fonts\\timesbd.ttf',
+      bundledFontPath('LiberationSerif-Bold.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf',
     ],
     italic: [
       '/System/Library/Fonts/Supplemental/Times New Roman Italic.ttf',
       'C:\\Windows\\Fonts\\timesi.ttf',
+      bundledFontPath('LiberationSerif-Italic.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf',
     ],
     bolditalic: [
       '/System/Library/Fonts/Supplemental/Times New Roman Bold Italic.ttf',
       'C:\\Windows\\Fonts\\timesbi.ttf',
+      bundledFontPath('LiberationSerif-BoldItalic.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationSerif-BoldItalic.ttf',
     ],
   },
@@ -206,22 +219,69 @@ const EDIT_FONT_PATHS: Record<string, Record<EditFontStyle, string[]>> = {
     regular: [
       '/System/Library/Fonts/Supplemental/Courier New.ttf',
       'C:\\Windows\\Fonts\\cour.ttf',
+      bundledFontPath('LiberationMono-Regular.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf',
     ],
     bold: [
       '/System/Library/Fonts/Supplemental/Courier New Bold.ttf',
       'C:\\Windows\\Fonts\\courbd.ttf',
+      bundledFontPath('LiberationMono-Bold.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf',
     ],
     italic: [
       '/System/Library/Fonts/Supplemental/Courier New Italic.ttf',
       'C:\\Windows\\Fonts\\couri.ttf',
+      bundledFontPath('LiberationMono-Italic.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationMono-Italic.ttf',
     ],
     bolditalic: [
       '/System/Library/Fonts/Supplemental/Courier New Bold Italic.ttf',
       'C:\\Windows\\Fonts\\courbi.ttf',
+      bundledFontPath('LiberationMono-BoldItalic.ttf'),
       '/usr/share/fonts/truetype/liberation/LiberationMono-BoldItalic.ttf',
+    ],
+  },
+  'noto-sc': {
+    regular: [bundledFontPath('NotoSansSC-Regular.otf')],
+    bold: [bundledFontPath('NotoSansSC-Bold.otf'), bundledFontPath('NotoSansSC-Regular.otf')],
+    italic: [bundledFontPath('NotoSansSC-Regular.otf')],
+    bolditalic: [bundledFontPath('NotoSansSC-Bold.otf'), bundledFontPath('NotoSansSC-Regular.otf')],
+  },
+  'noto-tc': {
+    regular: [bundledFontPath('NotoSansTC-Regular.otf')],
+    bold: [bundledFontPath('NotoSansTC-Regular.otf')],
+    italic: [bundledFontPath('NotoSansTC-Regular.otf')],
+    bolditalic: [bundledFontPath('NotoSansTC-Regular.otf')],
+  },
+  'noto-jp': {
+    regular: [bundledFontPath('NotoSansJP-Regular.otf')],
+    bold: [bundledFontPath('NotoSansJP-Regular.otf')],
+    italic: [bundledFontPath('NotoSansJP-Regular.otf')],
+    bolditalic: [bundledFontPath('NotoSansJP-Regular.otf')],
+  },
+  'noto-kr': {
+    regular: [bundledFontPath('NotoSansKR-Regular.otf')],
+    bold: [bundledFontPath('NotoSansKR-Regular.otf')],
+    italic: [bundledFontPath('NotoSansKR-Regular.otf')],
+    bolditalic: [bundledFontPath('NotoSansKR-Regular.otf')],
+  },
+  'noto-serif-sc': {
+    regular: [bundledFontPath('NotoSerifSC-Regular.otf')],
+    bold: [bundledFontPath('NotoSerifSC-Bold.otf'), bundledFontPath('NotoSerifSC-Regular.otf')],
+    italic: [bundledFontPath('NotoSerifSC-Regular.otf')],
+    bolditalic: [
+      bundledFontPath('NotoSerifSC-Bold.otf'),
+      bundledFontPath('NotoSerifSC-Regular.otf'),
+    ],
+  },
+  'noto-serif': {
+    regular: [bundledFontPath('NotoSerif-Regular.ttf')],
+    bold: [bundledFontPath('NotoSerif-Bold.ttf'), bundledFontPath('NotoSerif-Regular.ttf')],
+    italic: [bundledFontPath('NotoSerif-Italic.ttf'), bundledFontPath('NotoSerif-Regular.ttf')],
+    bolditalic: [
+      bundledFontPath('NotoSerif-BoldItalic.ttf'),
+      bundledFontPath('NotoSerif-Bold.ttf'),
+      bundledFontPath('NotoSerif-Regular.ttf'),
     ],
   },
 }
@@ -234,6 +294,7 @@ function loadEditFont(id: string, style: EditFontStyle = 'regular'): Buffer | nu
   if (cached === undefined) {
     cached = null
     for (const p of EDIT_FONT_PATHS[id]?.[style] ?? []) {
+      if (!p) continue
       try {
         cached = readFileSync(p)
         break
@@ -244,6 +305,10 @@ function loadEditFont(id: string, style: EditFontStyle = 'regular'): Buffer | nu
     editFontCache.set(key, cached)
   }
   return cached
+}
+
+function findReplacementFont(psName: string, family: string): Buffer | null {
+  return findSystemFont(psName, family) ?? findAliasedBundledFont(psName, family)
 }
 
 /** Edit-font ids that resolve to a readable font file on this machine */
@@ -873,13 +938,14 @@ function previewFontCss(m: Pdfium, font: number): string | undefined {
   )
   const family = fontString(m, (b, l) => m._FPDFFont_GetFamilyName(font, b, l))
   const name = `${ps} ${family}`.toLowerCase()
-  if (/courier|mono|consol|typewriter|code/.test(name)) return "'Courier New', monospace"
+  if (/courier|mono|consol|typewriter|code/.test(name))
+    return "'Courier New', 'Liberation Mono', monospace"
   if (
     /times|serif|cambria|georgia|garamond|palatino|minion|baskerville|didot|song|ming|simsun|宋|明/.test(
       name,
     )
   )
-    return "'Times New Roman', Times, serif"
+    return "'Times New Roman', 'Liberation Serif', 'Noto Serif SC', serif"
   return "Arial, 'Helvetica Neue', sans-serif"
 }
 
@@ -908,7 +974,13 @@ async function rebuildFontBytes(
     // Style variant first, base face as the degrade (never fail the edit over style)
     for (const s of style === 'regular' ? (['regular'] as const) : ([style, 'regular'] as const)) {
       const chosen = loadEditFont(edit.newFont, s)
-      if (chosen && fontCoversText(chosen, drawn)) return subsetTtf(chosen, drawn)
+      if (chosen && fontCoversText(chosen, drawn)) {
+        try {
+          return identityCffCharset(await subsetTtf(chosen, drawn))
+        } catch {
+          /* charset not rewritable: try the next style */
+        }
+      }
     }
   } else if (font) {
     if (style !== 'regular') {
@@ -926,8 +998,8 @@ async function rebuildFontBytes(
         // a silent no-op for the toggle. Detect that (byte-equal to the plain-PS
         // lookup) and retry with the requested style alone, so the user's latest
         // toggle wins over the run's inherited style.
-        let sys = findSystemFont(`${ps}-${style}`, family)
-        const original = findSystemFont(ps, family)
+        let sys = findReplacementFont(`${ps}-${style}`, family)
+        const original = findReplacementFont(ps, family)
         // A run whose face already carries the requested style makes the combined
         // lookup legitimately return that face — that is a hit, not a no-op
         const psTokens = (ps.toLowerCase().match(/bolditalic|bold|italic|oblique/g) ?? []).flatMap(
@@ -937,7 +1009,7 @@ async function rebuildFontBytes(
         const alreadyStyled = wanted.every((t) => psTokens.includes(t))
         if (!alreadyStyled && sys && original && sys.equals(original)) {
           const stripped = ps.replace(/bolditalic|bold|italic|oblique/gi, '')
-          const alt = findSystemFont(`${stripped}-${style}`, family)
+          const alt = findReplacementFont(`${stripped}-${style}`, family)
           sys = alt && !alt.equals(original) ? alt : null
         }
         if (sys && fontCoversText(sys, drawn)) {
@@ -966,7 +1038,7 @@ async function rebuildFontBytes(
     )
     const family = fontString(m, (b, l) => m._FPDFFont_GetFamilyName(font, b, l))
     if (ps || family) {
-      const sys = findSystemFont(ps, family)
+      const sys = findReplacementFont(ps, family)
       if (sys && fontCoversText(sys, drawn)) {
         try {
           return identityCffCharset(await subsetTtf(sys, drawn))
@@ -1015,15 +1087,21 @@ async function rebuildFontBytes(
         break
       }
     }
+    if (!fallback) {
+      const kind =
+        fallbackFamily === 'times' ? 'serif' : fallbackFamily === 'courier' ? 'mono' : 'sans'
+      const bundled = pickBundledFallback(drawn, kind)
+      if (bundled && fontCoversText(bundled, drawn)) fallback = bundled
+    }
   }
-  fallback ??= loadFallbackFont()
+  fallback ??= loadFallbackFont(drawn)
   // Chars beyond even the fallback face (emoji, rare CJK extensions) would embed as
   // missing glyphs and then fail read-back verification, blocking the whole save —
   // reject this one edit instead (it is reported as skipped, everything else saves)
   if (!fontCoversText(fallback, drawn)) {
     throw new Error('the replacement contains characters no available font can draw')
   }
-  return subsetTtf(fallback, drawn)
+  return identityCffCharset(await subsetTtf(fallback, drawn))
 }
 
 /** Original object whose style should seed newly typed characters. The old code

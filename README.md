@@ -36,13 +36,13 @@ notarization on the current macOS release).
 > Intelligence, Fudan University; macOS, Windows, Ubuntu DEB, and Linux RPM installers rebuilt for this release.
 
 Apple Silicon Mac 用户可从
-[最新 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.61-arm64.dmg)。
+[最新 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.62-arm64.dmg)。
 Windows 10/11 x64 用户可下载
-[GenOfficeSetup-0.6.61-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.61-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
+[GenOfficeSetup-0.6.62-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.62-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
 Ubuntu 22.04/24.04 x86_64 用户可下载
-[genoffice_0.6.61_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice_0.6.61_amd64.deb)。
+[genoffice_0.6.62_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice_0.6.62_amd64.deb)。
 Fedora、RHEL、Rocky Linux、AlmaLinux 与 openSUSE x86_64 用户可下载
-[genoffice-0.6.61.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.61.x86_64.rpm)。
+[genoffice-0.6.62.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.62.x86_64.rpm)。
 AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。
 
 [![Meet GenOffice — the world's first full-featured open-source AI Office (video)](https://img.youtube.com/vi/B2pLdMX95v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=B2pLdMX95v4)
@@ -56,7 +56,7 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 - **Complete Word picture layout** — inserted pictures support inline, square, tight, through, top-and-bottom, behind-text and in-front-of-text layouts, plus free movement, proportional resizing and position presets; the selected layout is saved as native DOCX anchoring rather than flattened artwork.
 - **Persistent Word picture edits** — picture replacement and AI image cleanup now overwrite the original DOCX media relationship in place, remove stale image relationships, and preserve the original display size, so Word, WPS, and LibreOffice reopen the same edited picture shown in GenOffice.
 - **ZenMux high-fidelity scan restoration** — use the native ZenMux `images/edits` route with `openai/gpt-image-2`, high input fidelity, and before/after confirmation. Handwriting can be removed from blank areas or from directly over printed text, equations, tables, charts, and diagrams; visible printed pixels are preserved and occluded strokes are repaired conservatively without semantic invention. Black-and-white enhancement preserves both printed and handwritten source content.
-- **Focused PDF workspace** — open PDFs from the dedicated AI PDF home card, the PDF-only picker, Finder, or Explorer; scroll or page through, zoom, fit and hand-pan; extract, insert, rotate, reorder or delete pages; insert images, add annotations, signatures and stamps; open password-protected files and save an AES-128 password-protected copy without modifying the source. The PDF ribbon no longer exposes the text-edit, image-edit or equation-insertion entries.
+- **PDF editing with portable font fallback** — open PDFs from the dedicated AI PDF home card, Finder, or Explorer; edit selected text through the ribbon while preserving the original run whenever possible. When the source font is unavailable or subset-only, GenOffice resolves a local equivalent or embeds a bundled Noto/Liberation subset for Latin, Simplified/Traditional Chinese, Japanese, and Korean text. Page operations, images, annotations, signatures, stamps, password opening, and AES-128 protected copies remain available.
 - **Reliable PDF watermarks** — paste plain or multiline clipboard text into the watermark field, replace the current selection, preview color/angle/opacity/size, and embed the resulting watermark onto every PDF page when saving. Headers, footers and page numbering remain available in the same dialog.
 - **Preview-matched Word PDF export** — every PDF export now prints the same pagination-preview snapshot shown on screen instead of asking Chromium to paginate the live editor again, so resized, centered, full-width and floating pictures retain their visible page position and physical size. Editor zoom is reset only for export, and selection chrome is omitted.
 - **Stable in-page Word pictures** — side-wrapped picture containers now use the declared picture width, so right-aligned images stay inside the paper in Page View, Read Mode and pagination preview. Switching to in-front-of-text or behind-text clears stale hidden offsets while preserving the visible alignment, and the corrected anchor survives DOCX save/reopen. Width/height fields and proportional corner dragging remain fully responsive.
@@ -75,6 +75,9 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 - **Native drag-and-drop media** — drop video or audio directly onto a PowerPoint slide at the intended position, or drop local images into PowerPoint, Word, and Markdown; inserted content remains editable, movable, and resizable.
 - **Markdown to Word, fully local** — the same OOXML engine, no Pandoc, no cloud.
 - **Markdown review, translation, images and AI Mermaid** — the same strict multi-model review committee as Word, selection/full-document translation through ZenMux, local image assets, and standard fenced Mermaid with live rendering, source editing, and ZenMux-powered natural-language generation/modification.
+- **Pretty Mermaid and editorial diagram studio** — choose six common diagram starters, 15 visual themes, or restrained publication-style templates; generate or revise the still-editable Mermaid source with the configured AI gateway.
+- **Markdown → WeChat rich-text export** — preview multiple article themes and layout densities, then copy both inline-styled HTML and a plain-text fallback for direct pasting into the WeChat Official Account editor.
+- **Configurable OpenAI-compatible gateway** — ZenMux remains the default at `https://zenmux.ai/api/v1`, while advanced users may persist another compatible Base URL in Settings; API keys stay masked in the UI and stored locally.
 - **Scholarly search and citations in Word, PowerPoint, and Markdown** — query OpenAlex, Crossref, Semantic Scholar, Europe PMC/PubMed, and arXiv; import BibTeX, RIS, or CSL-JSON into a reusable local library; deduplicate by DOI/PMID/arXiv ID; distinguish preprints; insert editable citations and bibliography lists in GB/T 7714, APA 7, IEEE, Nature, or Vancouver style. Restricted services such as Google Scholar and Baidu Scholar open as official browser searches instead of being scraped.
 - **AI that edits documents** — block-level edits with snapshots and diffs, document-aware agents.
 - **Selection-aware AI editing** — select Word text, Excel cells, or PowerPoint objects and ask AI to modify only that content.
@@ -95,11 +98,11 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 
 | Platform                                                | Requirements                                  | Download                                                                                                                            |
 | ------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **macOS** — Apple Silicon (arm64)                       | macOS 11+                                     | [GenOffice-0.6.61-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.61-arm64.dmg)       |
+| **macOS** — Apple Silicon (arm64)                       | macOS 11+                                     | [GenOffice-0.6.62-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.62-arm64.dmg)       |
 | **macOS** — Intel (x64)                                 | macOS 11+                                     | [GenOffice-0.6.101.dmg](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.dmg)                  |
-| **Windows** (x64)                                       | Windows 10/11; unsigned, SmartScreen may warn | [GenOfficeSetup-0.6.61-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.61-x64.exe) |
-| **Ubuntu** — DEB (amd64)                                | Ubuntu 22.04/24.04 x86_64                     | [genoffice_0.6.61_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice_0.6.61_amd64.deb)       |
-| **Linux RPM** — Fedora / RHEL / Rocky / Alma / openSUSE | x86_64, glibc 2.34+ (RHEL-compatible 9+)      | [genoffice-0.6.61.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.61.x86_64.rpm)     |
+| **Windows** (x64)                                       | Windows 10/11; unsigned, SmartScreen may warn | [GenOfficeSetup-0.6.62-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.62-x64.exe) |
+| **Ubuntu** — DEB (amd64)                                | Ubuntu 22.04/24.04 x86_64                     | [genoffice_0.6.62_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice_0.6.62_amd64.deb)       |
+| **Linux RPM** — Fedora / RHEL / Rocky / Alma / openSUSE | x86_64, glibc 2.34+ (RHEL-compatible 9+)      | [genoffice-0.6.62.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.62.x86_64.rpm)     |
 | **Linux** — other distributions                         | x86_64, glibc 2.34+, FUSE 2                   | [GenOffice-0.6.101.AppImage](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.AppImage)        |
 
 All builds come from `main`. The current macOS DMG is Developer ID signed and Apple-notarized; the Windows installer is not Authenticode-signed.
@@ -111,14 +114,14 @@ The deb installs with apt — it pulls in the dependencies and adds GenOffice
 to the applications menu:
 
 ```bash
-sudo apt install ./genoffice_0.6.61_amd64.deb
+sudo apt install ./genoffice_0.6.62_amd64.deb
 ```
 
 On Fedora / RHEL-family / openSUSE, install the rpm instead:
 
 ```bash
-sudo dnf install ./genoffice-0.6.61.x86_64.rpm     # Fedora / RHEL / Rocky / Alma
-sudo zypper install ./genoffice-0.6.61.x86_64.rpm  # openSUSE
+sudo dnf install ./genoffice-0.6.62.x86_64.rpm     # Fedora / RHEL / Rocky / Alma
+sudo zypper install ./genoffice-0.6.62.x86_64.rpm  # openSUSE
 ```
 
 The AppImage instead runs in place: install the FUSE 2 runtime

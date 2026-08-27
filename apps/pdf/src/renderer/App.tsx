@@ -468,6 +468,13 @@ const IconExportImg = () => (
     <path d="M4.8 14.95 L9 11.75 L12.4 14.35 L15 12.35 L19.2 15.75" />
   </Icon>
 )
+const IconEditText = () => (
+  <Icon>
+    <path d="M5.5 6.2 H18.5" />
+    <path d="M12 6.2 V18.4" />
+    <path d="M8.2 18.4 H15.8" />
+  </Icon>
+)
 const IconInsertImage = () => (
   <Icon>
     <rect x="4.5" y="6" width="11.5" height="9.5" rx="1" />
@@ -892,6 +899,24 @@ interface TextDraft {
   }
 }
 
+/** Ribbon/overlay style picks applied when a new draft opens (undefined = keep original). */
+interface TextStylePref {
+  font?: string
+  size?: number
+  bold?: true
+  italic?: true
+}
+
+function applyTextStylePref(d: TextDraft, p: TextStylePref): TextDraft {
+  return {
+    ...d,
+    ...(p.font ? { font: p.font } : {}),
+    ...(p.size != null ? { size: p.size } : {}),
+    ...(p.bold ? { bold: true as const } : {}),
+    ...(p.italic ? { italic: true as const } : {}),
+  }
+}
+
 /** Seed a fresh draft's colors from the open probe's report of what the document
     already draws: the run's base ink (display-only) plus earlier saved selection
     colors. Selection colors only while the draft is pristine — the runs are offsets
@@ -1247,6 +1272,46 @@ export default function App() {
         /* dropdown simply stays at "original font" */
       })
   }, [])
+  /** Last-used font/size/style; applied to the next newly opened draft */
+  const [textStylePref, setTextStylePref] = useState<TextStylePref>({})
+  const textStyleRibbonRef = useRef<HTMLDivElement>(null)
+  const skipDraftBlurRef = useRef(false)
+  const applyDraftFont = (id: string) => {
+    const font = id || undefined
+    setTextStylePref((p) => ({ ...p, font }))
+    setTextDraft((d) => (d ? { ...d, font } : d))
+  }
+  const applyDraftSize = (v: number) => {
+    if (!(v >= 1)) return
+    setTextStylePref((p) => ({ ...p, size: v }))
+    setTextDraft((d) => (d ? { ...d, size: v } : d))
+  }
+  const toggleDraftBold = () => {
+    const on = textDraft ? !!textDraft.bold : !!textStylePref.bold
+    const bold = on ? undefined : true
+    setTextStylePref((p) => ({ ...p, bold }))
+    setTextDraft((d) => (d ? { ...d, bold } : d))
+  }
+  const toggleDraftItalic = () => {
+    const on = textDraft ? !!textDraft.italic : !!textStylePref.italic
+    const italic = on ? undefined : true
+    setTextStylePref((p) => ({ ...p, italic }))
+    setTextDraft((d) => (d ? { ...d, italic } : d))
+  }
+  /** Ribbon font controls sit outside the floating editor; arm so their focus steal does not commit */
+  const armSkipDraftBlur = () => {
+    skipDraftBlurRef.current = true
+    window.setTimeout(() => {
+      skipDraftBlurRef.current = false
+    }, 0)
+  }
+  const enterEditTextMode = () => {
+    setDrawTool(null)
+    setPendingSign(null)
+    setImagePick(null)
+    setEditImageMode(false)
+    setEditTextMode(true)
+  }
   /** Initial caret/selection placement runs once per opened draft; refocusing after a
       style-bar click must keep the caret */
   const draftSelectedRef = useRef(false)
@@ -2268,24 +2333,29 @@ export default function App() {
     draftSelectedRef.current = false
     // Preselect offsets are into oldText; folded pending edits shift them
     draftPreselectRef.current = preselect && (fold?.value ?? oldText) === oldText ? preselect : null
-    setTextDraft({
-      origIdx,
-      rect,
-      oldText,
-      fontSize: block.fontSize,
-      value: fold?.value ?? oldText,
-      editId: fold?.editId,
-      foldedIds: fold && fold.foldedIds.length > 0 ? fold.foldedIds : undefined,
-      foldBase: fold?.value,
-      backdrop: sampleTextBackdrop(fallbackSpan),
-      block: {
-        leftPt: block.rect[0],
-        firstBaseline: block.lines[0]!.y,
-        widthPt: block.rect[2] - block.rect[0],
-        lineHeight: block.lineHeight,
-        align: block.align,
-      },
-    })
+    setTextDraft(
+      applyTextStylePref(
+        {
+          origIdx,
+          rect,
+          oldText,
+          fontSize: block.fontSize,
+          value: fold?.value ?? oldText,
+          editId: fold?.editId,
+          foldedIds: fold && fold.foldedIds.length > 0 ? fold.foldedIds : undefined,
+          foldBase: fold?.value,
+          backdrop: sampleTextBackdrop(fallbackSpan),
+          block: {
+            leftPt: block.rect[0],
+            firstBaseline: block.lines[0]!.y,
+            widthPt: block.rect[2] - block.rect[0],
+            lineHeight: block.lineHeight,
+            align: block.align,
+          },
+        },
+        textStylePref,
+      ),
+    )
     if (filePath) {
       const probe: TextEditInput = {
         pageIndex: origIdx,
@@ -2483,14 +2553,19 @@ export default function App() {
     setSelected(null)
     draftSelectedRef.current = false
     draftPreselectRef.current = preselect ?? null
-    setTextDraft({
-      origIdx,
-      rect,
-      oldText,
-      fontSize,
-      value: oldText,
-      backdrop: sampleTextBackdrop(span),
-    })
+    setTextDraft(
+      applyTextStylePref(
+        {
+          origIdx,
+          rect,
+          oldText,
+          fontSize,
+          value: oldText,
+          backdrop: sampleTextBackdrop(span),
+        },
+        textStylePref,
+      ),
+    )
     // The span rect is a font-metric layout box; the run's glyph ink can poke out of it.
     // Fetch the engine's real ink bounds so the editor/preview cover hides the old run fully.
     if (filePath) {
@@ -4462,6 +4537,103 @@ export default function App() {
               <div className="ribbon-group">
                 <div className="ribbon-group-items">
                   <button
+                    className={`rb-big${editTextMode ? ' active' : ''}`}
+                    disabled={readOnly}
+                    data-tip={t('editTextHint')}
+                    onClick={() => {
+                      if (editTextMode) {
+                        setEditTextMode(false)
+                        setTextDraft(null)
+                        return
+                      }
+                      enterEditTextMode()
+                    }}
+                  >
+                    <span className="rb-big-icon">
+                      <IconEditText />
+                    </span>
+                    {t('editText')}
+                  </button>
+                </div>
+              </div>
+              <div className="ribbon-sep" />
+              <div className="ribbon-group">
+                <div
+                  ref={textStyleRibbonRef}
+                  className="ribbon-group-items rb-font-group"
+                  onMouseDown={(e) => {
+                    armSkipDraftBlur()
+                    const el = e.target as HTMLElement
+                    if (!el.closest('select, input')) e.preventDefault()
+                  }}
+                >
+                  <select
+                    className="rb-select rb-font-family"
+                    disabled={readOnly}
+                    data-tip={t('texteditFont')}
+                    value={textDraft ? (textDraft.font ?? '') : (textStylePref.font ?? '')}
+                    onChange={(e) => {
+                      enterEditTextMode()
+                      applyDraftFont(e.target.value)
+                    }}
+                  >
+                    <option value="">{t('texteditFontOriginal')}</option>
+                    {editFonts.map((id) => (
+                      <option key={id} value={id}>
+                        {EDIT_FONT_BY_ID.get(id)?.label ?? id}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="rb-row">
+                    <input
+                      className="rb-select rb-font-size"
+                      type="number"
+                      min={4}
+                      max={200}
+                      disabled={readOnly}
+                      data-tip={t('watermarkSize')}
+                      placeholder={t('watermarkSize')}
+                      value={
+                        textDraft
+                          ? (textDraft.size ?? Math.round(textDraft.fontSize * 10) / 10)
+                          : (textStylePref.size ?? '')
+                      }
+                      onChange={(e) => {
+                        enterEditTextMode()
+                        applyDraftSize(Number(e.target.value))
+                      }}
+                    />
+                    <button
+                      className={`rb-icon${(textDraft ? textDraft.bold : textStylePref.bold) ? ' active' : ''}`}
+                      disabled={readOnly}
+                      data-tip={t('texteditBold')}
+                      onClick={() => {
+                        enterEditTextMode()
+                        toggleDraftBold()
+                      }}
+                    >
+                      B
+                    </button>
+                    <button
+                      className={`rb-icon rb-icon-italic${
+                        (textDraft ? textDraft.italic : textStylePref.italic) ? ' active' : ''
+                      }`}
+                      disabled={readOnly}
+                      data-tip={t('texteditItalic')}
+                      onClick={() => {
+                        enterEditTextMode()
+                        toggleDraftItalic()
+                      }}
+                    >
+                      I
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="ribbon-sep" />
+              <div className="ribbon-group">
+                <div className="ribbon-group-items">
+                  <button
                     className={`rb-big${imagePick ? ' active' : ''}`}
                     disabled={readOnly}
                     data-tip={t('insertImageHint')}
@@ -4472,11 +4644,6 @@ export default function App() {
                     </span>
                     {t('insertImage')}
                   </button>
-                </div>
-              </div>
-              <div className="ribbon-sep" />
-              <div className="ribbon-group">
-                <div className="ribbon-group-items">
                   <button
                     className="rb-big"
                     disabled={readOnly}
@@ -5168,10 +5335,18 @@ export default function App() {
                                       onClick={(e) => e.stopPropagation()}
                                       onBlur={(e) => {
                                         // Commit only when focus leaves the editor entirely —
-                                        // clicking the style bar must not close the draft
-                                        if (!e.currentTarget.contains(e.relatedTarget)) {
-                                          commitTextDraft()
-                                        }
+                                        // clicking the style bar or ribbon font controls must
+                                        // not close the draft
+                                        const next = e.relatedTarget
+                                        if (next instanceof Node && e.currentTarget.contains(next))
+                                          return
+                                        if (
+                                          next instanceof Node &&
+                                          textStyleRibbonRef.current?.contains(next)
+                                        )
+                                          return
+                                        if (skipDraftBlurRef.current) return
+                                        commitTextDraft()
                                       }}
                                     >
                                       <div className="pdf-textedit-bar">
@@ -5180,11 +5355,7 @@ export default function App() {
                                             className="pdf-textedit-fontsel"
                                             data-tip={t('texteditFont')}
                                             value={textDraft.font ?? ''}
-                                            onChange={(e) =>
-                                              setTextDraft((d) =>
-                                                d ? { ...d, font: e.target.value || undefined } : d,
-                                              )
-                                            }
+                                            onChange={(e) => applyDraftFont(e.target.value)}
                                           >
                                             <option value="">{t('texteditFontOriginal')}</option>
                                             {editFonts.map((id) => (
@@ -5204,21 +5375,12 @@ export default function App() {
                                             textDraft.size ??
                                             Math.round(textDraft.fontSize * 10) / 10
                                           }
-                                          onChange={(e) => {
-                                            const v = Number(e.target.value)
-                                            if (v >= 1) {
-                                              setTextDraft((d) => (d ? { ...d, size: v } : d))
-                                            }
-                                          }}
+                                          onChange={(e) => applyDraftSize(Number(e.target.value))}
                                         />
                                         <button
                                           className={`pdf-textedit-toggle${textDraft.bold ? ' active' : ''}`}
                                           data-tip={t('texteditBold')}
-                                          onClick={() =>
-                                            setTextDraft((d) =>
-                                              d ? { ...d, bold: d.bold ? undefined : true } : d,
-                                            )
-                                          }
+                                          onClick={toggleDraftBold}
                                         >
                                           B
                                         </button>
@@ -5227,11 +5389,7 @@ export default function App() {
                                             textDraft.italic ? ' active' : ''
                                           }`}
                                           data-tip={t('texteditItalic')}
-                                          onClick={() =>
-                                            setTextDraft((d) =>
-                                              d ? { ...d, italic: d.italic ? undefined : true } : d,
-                                            )
-                                          }
+                                          onClick={toggleDraftItalic}
                                         >
                                           I
                                         </button>

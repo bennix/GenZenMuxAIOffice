@@ -3,6 +3,12 @@ import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
 import type { NodeViewProps } from '@tiptap/react'
 import { t } from '../i18n/locale'
 import { generateMermaidWithZenMux } from '../mermaid-ai'
+import {
+  PRETTY_MERMAID_THEMES,
+  readPrettyTheme,
+  sourceForMermaidRender,
+  writePrettyTheme,
+} from '../mermaid-themes'
 
 const LANGUAGES = [
   'plaintext',
@@ -61,7 +67,10 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
         suppressErrorRendering: true,
       })
       try {
-        const result = await mermaid.render(`md-mermaid-${renderId}`, node.textContent)
+        const result = await mermaid.render(
+          `md-mermaid-${renderId}`,
+          sourceForMermaidRender(node.textContent),
+        )
         if (!cancelled) {
           setDiagram(result.svg)
           setRenderError('')
@@ -129,6 +138,29 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
           {copied ? t('codeCopied') : t('codeCopy')}
         </button>
         {isMermaid && (
+          <select
+            className="md-codeblock-lang"
+            aria-label={navigator.language.startsWith('zh') ? 'Mermaid 主题' : 'Mermaid theme'}
+            value={readPrettyTheme(node.textContent)}
+            disabled={!editor.isEditable}
+            onChange={(event) => {
+              const pos = typeof getPos === 'function' ? getPos() : undefined
+              if (typeof pos !== 'number') return
+              const next = writePrettyTheme(node.textContent, event.target.value)
+              const replacement = node.type.create(node.attrs, editor.schema.text(next))
+              editor.view.dispatch(
+                editor.state.tr.replaceWith(pos, pos + node.nodeSize, replacement),
+              )
+            }}
+          >
+            {PRETTY_MERMAID_THEMES.map((theme) => (
+              <option key={theme.id} value={theme.id}>
+                {theme.label}
+              </option>
+            ))}
+          </select>
+        )}
+        {isMermaid && (
           <button
             type="button"
             className="md-codeblock-copy md-mermaid-ai-button"
@@ -181,7 +213,12 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
             <button type="button" onClick={() => setAiEditing(false)} disabled={aiBusy}>
               {navigator.language.startsWith('zh') ? '取消' : 'Cancel'}
             </button>
-            <button type="button" className="btn-primary" disabled={!aiPrompt.trim() || aiBusy} onClick={() => void modifyWithAi()}>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={!aiPrompt.trim() || aiBusy}
+              onClick={() => void modifyWithAi()}
+            >
               {aiBusy
                 ? navigator.language.startsWith('zh')
                   ? '修改中…'

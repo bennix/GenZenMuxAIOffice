@@ -59,6 +59,7 @@ function blockChain(editor: Editor, range: Range) {
 export function buildSlashItems(extra?: {
   insertImage?: () => void
   insertMermaid?: () => void
+  openWechat?: () => void
   openCitations?: () => void
 }): SlashItem[] {
   const items: SlashItem[] = [
@@ -145,10 +146,33 @@ export function buildSlashItems(extra?: {
     items.push({
       id: 'mermaid',
       labelKey: 'styleCodeBlock',
-      keywords: ['diagram', 'flowchart', 'graph'],
+      label: navigator.language.startsWith('zh') ? 'Pretty Mermaid 图表' : 'Pretty Mermaid',
+      keywords: ['diagram', 'flowchart', 'graph', 'mermaid', 'pretty'],
       run: (e, r) => {
         chain(e, r).run()
         extra.insertMermaid!()
+      },
+    })
+    items.push({
+      id: 'editorial-diagram',
+      labelKey: 'styleCodeBlock',
+      label: navigator.language.startsWith('zh') ? '编辑级图表' : 'Editorial diagram',
+      keywords: ['diagram-design', 'architecture', 'editorial', '图表'],
+      run: (e, r) => {
+        chain(e, r).run()
+        extra.insertMermaid!()
+      },
+    })
+  }
+  if (extra?.openWechat) {
+    items.push({
+      id: 'wechat',
+      labelKey: 'styleCodeBlock',
+      label: navigator.language.startsWith('zh') ? '公众号排版' : 'WeChat typesetting',
+      keywords: ['wechat', 'mp', 'mars', '公众号', '排版'],
+      run: (e, r) => {
+        chain(e, r).run()
+        extra.openWechat!()
       },
     })
   }

@@ -1,6 +1,6 @@
 import type { AgentMessage, AgentToolCall, AgentToolDef } from '@genoffice/agent-core'
 import { httpBodyDetail } from './http-error'
-import { GENSPARK_LLM_BASE_URLS, ZENMUX_BASE_URL } from './providers'
+import { GENSPARK_LLM_BASE_URLS, resolveZenmuxBaseUrl } from './providers'
 import type { AiProviderConfig, AiProviderId } from './types'
 import { createStreamWatchdog, type StreamWatchdog } from './watchdog'
 
@@ -848,7 +848,15 @@ export function streamZenMux(
   maxTokens: number,
   cb: StreamCallbacks,
 ): Promise<void> {
-  return streamOpenAiCompatible(ZENMUX_BASE_URL, config, system, messages, tools, maxTokens, cb)
+  return streamOpenAiCompatible(
+    resolveZenmuxBaseUrl(config),
+    config,
+    system,
+    messages,
+    tools,
+    maxTokens,
+    cb,
+  )
 }
 
 /** route a streaming, tool-calling-capable turn by provider id */
@@ -863,7 +871,15 @@ export async function streamForProvider(
 ): Promise<void> {
   switch (provider) {
     case 'zenmux':
-      return streamOpenAiCompatible(ZENMUX_BASE_URL, config, system, messages, tools, maxTokens, cb)
+      return streamOpenAiCompatible(
+        resolveZenmuxBaseUrl(config),
+        config,
+        system,
+        messages,
+        tools,
+        maxTokens,
+        cb,
+      )
     case 'genspark':
       // The proxy exposes three protocol-specific endpoints; route by model id prefix: claude uses
       // the Anthropic protocol (preserves image input fidelity), gemini uses Gemini, rest OpenAI-compatible

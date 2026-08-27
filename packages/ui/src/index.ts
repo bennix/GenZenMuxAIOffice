@@ -5,7 +5,7 @@ export { IconSend, IconStop, type IconProps } from './icons'
 export { Markdown } from './Markdown'
 export { renderLatexToHtml, stripNestedMathDelimiters } from './latex'
 export { FormulaImageRecognition, type FormulaImageData } from './FormulaImageRecognition'
-export { copyTextToClipboard } from './clipboard'
+export { copyHtmlToClipboard, copyTextToClipboard } from './clipboard'
 export { ConnectButton } from './ConnectButton'
 export {
   WORDART_PRESETS,

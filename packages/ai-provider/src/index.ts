@@ -16,6 +16,7 @@ export type {
 export {
   AI_PROVIDERS,
   ZENMUX_BASE_URL,
+  resolveZenmuxBaseUrl,
   ZENMUX_INVITE_URL,
   ZENMUX_DEFAULT_IMAGE_MODEL,
   ZENMUX_IMAGE_MODELS,

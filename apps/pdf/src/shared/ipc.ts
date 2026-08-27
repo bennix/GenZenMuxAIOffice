@@ -222,8 +222,18 @@ export interface TextEditValidation {
     Availability is machine-dependent: the main process reports the usable subset. */
 export const EDIT_FONTS = [
   { id: 'arial', label: 'Arial', css: "Arial, 'Helvetica Neue', sans-serif" },
-  { id: 'times', label: 'Times New Roman', css: "'Times New Roman', Times, serif" },
-  { id: 'courier', label: 'Courier New', css: "'Courier New', monospace" },
+  {
+    id: 'times',
+    label: 'Times New Roman',
+    css: "'Times New Roman', 'Liberation Serif', 'Noto Serif', serif",
+  },
+  { id: 'courier', label: 'Courier New', css: "'Courier New', 'Liberation Mono', monospace" },
+  { id: 'noto-sc', label: 'Noto 黑体', css: "'Noto Sans SC', 'PingFang SC', sans-serif" },
+  { id: 'noto-tc', label: 'Noto 黑體', css: "'Noto Sans TC', 'PingFang HK', sans-serif" },
+  { id: 'noto-serif-sc', label: 'Noto 宋体', css: "'Noto Serif SC', 'Songti SC', serif" },
+  { id: 'noto-serif', label: 'Noto Serif', css: "'Noto Serif', 'Liberation Serif', serif" },
+  { id: 'noto-jp', label: 'Noto JP', css: "'Noto Sans JP', 'Hiragino Sans', sans-serif" },
+  { id: 'noto-kr', label: 'Noto KR', css: "'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif" },
 ] as const
 
 /** Target z-band for a content-stream image: under every text run (above the page

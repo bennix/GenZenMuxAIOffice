@@ -486,6 +486,50 @@ button {
   background: var(--hover);
 }
 
+.rb-icon.active {
+  background: var(--active-bg);
+}
+
+.rb-icon:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rb-icon-italic {
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+}
+
+.rb-font-group {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  justify-content: center;
+}
+
+.rb-select {
+  height: 26px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  font-size: 12px;
+  padding: 0 4px;
+  color: var(--text);
+}
+
+.rb-select:disabled {
+  opacity: 0.55;
+}
+
+.rb-font-family {
+  width: 148px;
+}
+
+.rb-font-size {
+  width: 48px;
+}
+
 .tb-page-input {
   width: 40px;
   height: 24px;
