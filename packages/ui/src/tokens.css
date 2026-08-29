@@ -1,4 +1,4 @@
-/* GenOffice design tokens — the single source of truth for UI chrome colors.
+/* ZenOffice design tokens — the single source of truth for UI chrome colors.
  * Theme switching: light defaults in :root, [data-theme='dark'] overrides,
  * prefers-color-scheme fallback for system mode (no data-theme attribute).
  * Per-app accents (--accent / --accent-dark / --accent-soft) live in each
@@ -43,7 +43,7 @@
   --color-btn-primary: #232425;
   --color-btn-primary-hover: #393a3b;
   --color-btn-primary-text: #ffffff;
-  --color-brand-secondary: #0f7fff;
+  --color-brand-secondary: #0f806c;
   --color-text-primary: #232425;
   --color-text-secondary: #606366;
   --color-text-tertiary: #909499;
@@ -51,7 +51,7 @@
   --color-bg-subtle: #f5f5f5;
   --color-border-default: #eaeaea;
   --color-border-strong: #d0d3d8;
-  --color-border-brand: #0f7fff;
+  --color-border-brand: #0f806c;
   --color-error: #ef4444;
   --color-error-hover: #dc2626;
 
@@ -142,7 +142,7 @@
   --color-btn-primary: #e4e4e4;
   --color-btn-primary-hover: #d0d0d0;
   --color-btn-primary-text: #1e1e1e;
-  --color-brand-secondary: #4a9eff;
+  --color-brand-secondary: #4be0b7;
   --color-text-primary: #e4e4e4;
   --color-text-secondary: #a0a0a0;
   --color-text-tertiary: #8a8a8a;
@@ -150,7 +150,7 @@
   --color-bg-subtle: #2a2a2a;
   --color-border-default: #3a3a3a;
   --color-border-strong: #555;
-  --color-border-brand: #4a9eff;
+  --color-border-brand: #4be0b7;
 
   color-scheme: dark;
 }

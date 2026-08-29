@@ -3,7 +3,7 @@ import { randomBytes, randomInt } from 'node:crypto'
 export const ILINK_DEFAULT_BASE = 'https://ilinkai.weixin.qq.com'
 const CHANNEL_VERSION = '2.4.3'
 const CLIENT_VERSION = '132099'
-const BOT_AGENT = 'GenOffice-wechat-diary/1.0'
+const BOT_AGENT = 'ZenOffice-wechat-diary/1.0'
 const MAX_WECHAT_TEXT_LENGTH = 2_000
 
 const OFFICIAL_WECHAT_HOSTS = new Set(['weixin.qq.com', 'wechat.com'])

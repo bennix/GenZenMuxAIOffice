@@ -1,5 +1,5 @@
 % !TEX program = xelatex
-% GenOffice User Manual — shared Chinese / English content
+% ZenOffice User Manual — shared Chinese / English content
 % UI screenshots in this manual were captured from the current v0.6.55 source tree.
 \documentclass[11pt,a4paper]{article}
 
@@ -7,9 +7,9 @@
 % With neither switch defined, the original bilingual combined edition is produced.
 \newif\ifManualChineseOnly
 \newif\ifManualEnglishOnly
-\ifdefined\GenOfficeChineseEdition
+\ifdefined\ZenOfficeChineseEdition
   \ManualChineseOnlytrue
-\else\ifdefined\GenOfficeEnglishEdition
+\else\ifdefined\ZenOfficeEnglishEdition
   \ManualEnglishOnlytrue
 \fi\fi
 
@@ -17,23 +17,23 @@
   \newcommand{\CNText}[1]{#1}
   \newcommand{\ENText}[1]{}
   \newcommand{\ManualEditionLine}{中文版 · Chinese Edition}
-  \newcommand{\ManualFooter}{GenOffice 快速入门指南 · 中文版}
-  \newcommand{\ManualPdfTitle}{GenOffice 快速入门指南（中文版）}
-  \newcommand{\ManualPdfSubject}{GenOffice v0.6.55 中文用户指南}
+  \newcommand{\ManualFooter}{ZenOffice 快速入门指南 · 中文版}
+  \newcommand{\ManualPdfTitle}{ZenOffice 快速入门指南（中文版）}
+  \newcommand{\ManualPdfSubject}{ZenOffice v0.6.55 中文用户指南}
 \else\ifManualEnglishOnly
   \newcommand{\CNText}[1]{}
   \newcommand{\ENText}[1]{#1}
   \newcommand{\ManualEditionLine}{English Edition · 英文版}
-  \newcommand{\ManualFooter}{GenOffice User Manual · English Edition}
-  \newcommand{\ManualPdfTitle}{GenOffice User Manual (English Edition)}
-  \newcommand{\ManualPdfSubject}{GenOffice v0.6.55 English user manual}
+  \newcommand{\ManualFooter}{ZenOffice User Manual · English Edition}
+  \newcommand{\ManualPdfTitle}{ZenOffice User Manual (English Edition)}
+  \newcommand{\ManualPdfSubject}{ZenOffice v0.6.55 English user manual}
 \else
   \newcommand{\CNText}[1]{#1}
   \newcommand{\ENText}[1]{#1}
   \newcommand{\ManualEditionLine}{中英双语合订本 · Chinese--English Bilingual Edition}
   \newcommand{\ManualFooter}{中英双语入门手册 · Bilingual Getting-Started Manual}
-  \newcommand{\ManualPdfTitle}{GenOffice 用户入门手册 / User Manual}
-  \newcommand{\ManualPdfSubject}{GenOffice v0.6.55 bilingual getting-started manual}
+  \newcommand{\ManualPdfTitle}{ZenOffice 用户入门手册 / User Manual}
+  \newcommand{\ManualPdfSubject}{ZenOffice v0.6.55 bilingual getting-started manual}
 \fi\fi
 
 \usepackage[a4paper,top=19mm,bottom=18mm,left=18mm,right=18mm,headheight=22pt]{geometry}
@@ -90,14 +90,14 @@
   urlcolor=GOBlue,
   citecolor=GOBlue,
   pdftitle={\ManualPdfTitle},
-  pdfauthor={GenOffice contributors; AI adaptation by Zhiping Xu},
+  pdfauthor={ZenOffice contributors; AI adaptation by Zhiping Xu},
   pdfsubject={\ManualPdfSubject},
-  pdfkeywords={GenOffice, ZenMux, Word, Excel, PowerPoint, Markdown, PDF, AI}
+  pdfkeywords={ZenOffice, ZenMux, Word, Excel, PowerPoint, Markdown, PDF, AI}
 }
 
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\footnotesize\bfseries GenOffice \textcolor{GOBlue}{/} ZenMux}
+\fancyhead[L]{\footnotesize\bfseries ZenOffice \textcolor{GOBlue}{/} ZenMux}
 \fancyhead[R]{\footnotesize\color{GOMuted} v0.6.55 · 2026-08-17}
 \fancyfoot[L]{\scriptsize\color{GOMuted}\ManualFooter}
 \fancyfoot[R]{\colorbox{GOBlue}{\makebox[8mm][c]{\color{white}\bfseries\thepage}}}
@@ -193,7 +193,7 @@
     \addcontentsline{toc}{subsection}{#1\space #2 / #3}
   \fi
   \pdfbookmark[2]{#2 / #3}{topic-#1-cn}
-  \Kicker{#1 · 中文}{GENOFFICE FIELD GUIDE}
+  \Kicker{#1 · 中文}{ZENOFFICE FIELD GUIDE}
   \TopicTitle{#2}{#3}
   \Lead{#4}
   #5
@@ -209,7 +209,7 @@
     \addcontentsline{toc}{subsection}{#1\space #3}
   \fi
   \pdfbookmark[2]{#3 / #2}{topic-#1-en}
-  \Kicker{#1 · ENGLISH}{GENOFFICE FIELD GUIDE}
+  \Kicker{#1 · ENGLISH}{ZENOFFICE FIELD GUIDE}
   \TopicTitle{#3}{#2}
   \Lead{#4}
   #5
@@ -258,7 +258,7 @@
   \draw[white!18,line width=.6pt] ([xshift=24mm,yshift=48mm]current page.south west) -- ([xshift=-24mm,yshift=48mm]current page.south east);
 \end{tikzpicture}
 \vspace*{18mm}
-{\color{white}\bfseries\large G/O \hspace{3mm} GenOffice}\par
+{\color{white}\bfseries\large Z/O \hspace{3mm} ZenOffice}\par
 \vspace{38mm}
 \CNText{{\color{white}\cjkdisplay\fontsize{41}{48}\selectfont\bfseries 快速入门指南\par}}
 \ifManualChineseOnly\else\vspace{4mm}\fi
@@ -280,7 +280,7 @@
 \Kicker{版本与版权 · Edition \& Credits}{SOURCE-VERIFIED MANUAL}
 \TopicTitle{关于本手册}{About this manual}
 
-\CNText{本手册面向第一次使用 GenOffice 的用户，以当前仓库 \textbf{v0.6.55} 源码与真实运行态为依据，说明安装、ZenMux 设置、Word、Excel、PowerPoint、Markdown、PDF、工作簿 SQL 数据库以及跨编辑器 AI 工作流。界面截图于 2026-08-16 至 17 日在隔离的临时用户目录中从当前应用运行态取得；截图没有包含用户文件、真实 API Key 或个人数据。演示科研稿与工作簿均为专门制作的合成素材，不代表真实科研或企业结论。}
+\CNText{本手册面向第一次使用 ZenOffice 的用户，以当前仓库 \textbf{v0.6.55} 源码与真实运行态为依据，说明安装、ZenMux 设置、Word、Excel、PowerPoint、Markdown、PDF、工作簿 SQL 数据库以及跨编辑器 AI 工作流。界面截图于 2026-08-16 至 17 日在隔离的临时用户目录中从当前应用运行态取得；截图没有包含用户文件、真实 API Key 或个人数据。演示科研稿与工作簿均为专门制作的合成素材，不代表真实科研或企业结论。}
 
 \ENText{This manual is based on the current \textbf{v0.6.55} source tree and real runtime UI. It covers installation, ZenMux configuration, Word, Excel, PowerPoint, Markdown, PDF, workbook SQL databases, and cross-editor AI workflows. Screenshots were captured on 16--17 August 2026 in an isolated temporary profile and contain no user documents, real API Key, or personal data. The research draft and workbooks are purpose-built synthetic demonstrations, not real scientific or business findings.}
 
@@ -294,9 +294,9 @@
 \end{tikzpicture}
 
 \vspace{5mm}
-\CNText{GenOffice 是 \href{https://github.com/genspark-ai/genoffice}{genspark-ai/genoffice} 的衍生版本，保留 Apache-2.0 开源基础，并完成 ZenMux AI 通道、本地凭据、学术工作流、跨编辑器连接及多平台发行等适配。项目源码与发行包见 \href{https://github.com/bennix/GenZenMuxAIOffice}{bennix/GenZenMuxAIOffice}。}
+\CNText{ZenOffice 是 \href{https://github.com/genspark-ai/genoffice}{genspark-ai/genoffice} 的衍生版本，保留 Apache-2.0 开源基础，并完成 ZenMux AI 通道、本地凭据、学术工作流、跨编辑器连接及多平台发行等适配。项目源码与发行包见 \href{https://github.com/bennix/GenZenMuxAIOffice}{bennix/GenZenMuxAIOffice}。}
 
-\ENText{GenOffice is derived from \href{https://github.com/genspark-ai/genoffice}{genspark-ai/genoffice}. It retains the Apache-2.0 foundation and adds ZenMux routing, local credential storage, academic workflows, cross-editor connections, and multi-platform distribution. Source and releases are available at \href{https://github.com/bennix/GenZenMuxAIOffice}{bennix/GenZenMuxAIOffice}.}
+\ENText{ZenOffice is derived from \href{https://github.com/genspark-ai/genoffice}{genspark-ai/genoffice}. It retains the Apache-2.0 foundation and adds ZenMux routing, local credential storage, academic workflows, cross-editor connections, and multi-platform distribution. Source and releases are available at \href{https://github.com/bennix/GenZenMuxAIOffice}{bennix/GenZenMuxAIOffice}.}
 
 \Warn{AI 功能依赖网络、代理状态和模型服务可用性。AI 输出、联网结果、公式识别、审稿意见与图像生成均应由用户核对。AI features depend on network, proxy, and provider availability; always verify generated content, sources, formulas, reviews, and images.}
 
@@ -378,10 +378,10 @@
 % =============================================================================
 \PartPage{I}{安装与设置}{Install \& configure}{从可信发行包开始，完成首次启动，并把 ZenMux API Key 安全地保存在本机。}{Start from a trusted build, complete first launch, and store the ZenMux API Key securely on this device.}
 
-\CNPage{01}{安装并验证应用}{Install and verify}{GenOffice 提供 macOS DMG、Windows x64 安装程序、Ubuntu DEB 与通用 RPM。请只从项目 Landing Page 或 GitHub Releases 下载。}{
+\CNPage{01}{安装并验证应用}{Install and verify}{ZenOffice 提供 macOS DMG、Windows x64 安装程序、Ubuntu DEB 与通用 RPM。请只从项目 Landing Page 或 GitHub Releases 下载。}{
 \begin{enumerate}
   \item 在 \href{https://bennix.github.io/GenZenMuxAIOffice/}{官方 Landing Page} 选择操作系统；检查页面显示的当前版本与文件名一致。
-  \item macOS：打开 DMG，将 GenOffice 拖入“应用程序”。Apple Silicon 版本使用 Developer ID 签名；是否包含 Apple 公证票据以对应 Release 的验证说明为准。
+  \item macOS：打开 DMG，将 ZenOffice 拖入“应用程序”。Apple Silicon 版本使用 Developer ID 签名；是否包含 Apple 公证票据以对应 Release 的验证说明为准。
   \item Windows：运行 x64 安装程序。当前安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”；请核对下载域名与 Release 文件。
   \item Ubuntu：执行 \texttt{sudo apt install ./genoffice\_0.6.55\_amd64.deb}。Fedora/RHEL 系使用 \texttt{sudo dnf install ./genoffice-0.6.55.x86\_64.rpm}。
 \end{enumerate}
@@ -399,10 +399,10 @@ RPM & .rpm & Fedora/RHEL/Rocky/Alma/openSUSE x86\_64\\
 \Tip{安装包版本、Landing Page 版本与下载链接应一致。若浏览器下载失败，进入 GitHub Releases 后手动选择同名资源。}
 }
 
-\ENPage{01}{安装并验证应用}{Install and verify}{GenOffice ships as a macOS DMG, Windows x64 installer, Ubuntu DEB, and RPM. Download only from the project Landing Page or GitHub Releases.}{
+\ENPage{01}{安装并验证应用}{Install and verify}{ZenOffice ships as a macOS DMG, Windows x64 installer, Ubuntu DEB, and RPM. Download only from the project Landing Page or GitHub Releases.}{
 \begin{enumerate}
   \item Open the \href{https://bennix.github.io/GenZenMuxAIOffice/}{official Landing Page}, choose your platform, and confirm that the displayed version matches the filename.
-  \item macOS: open the DMG and drag GenOffice to Applications. The Apple Silicon build is Developer ID signed; consult the matching Release verification notes for notarization-ticket status.
+  \item macOS: open the DMG and drag ZenOffice to Applications. The Apple Silicon build is Developer ID signed; consult the matching Release verification notes for notarization-ticket status.
   \item Windows: run the x64 installer. The current build is not Authenticode-signed, so SmartScreen may report an unknown publisher; verify the domain and Release asset first.
   \item Ubuntu: run \texttt{sudo apt install ./genoffice\_0.6.55\_amd64.deb}. Fedora/RHEL-family users can run \texttt{sudo dnf install ./genoffice-0.6.55.x86\_64.rpm}.
 \end{enumerate}
@@ -723,7 +723,7 @@ Source remains copyable, rendering remains readable, and inserted equations rema
 \CNPage{10}{跨编辑器联动：用 @Connect 一键流转 AI 结果}{Cross-editor routing: send AI results with @Connect}{在 AI 输入中键入 @Connect，可把最近一条 AI 回复送到另一个已经打开的 Word、Excel、PPT 或 Markdown 标签页。源可以来自五类编辑器，包括 PDF。}{
 \AppStrip
 \begin{enumerate}
-  \item 先打开目标文件，确保目标标签页已经出现在 GenOffice 窗口中。
+  \item 先打开目标文件，确保目标标签页已经出现在 ZenOffice 窗口中。
   \item 在当前 AI 输入框键入 \texttt{@Connect}，从正确的开放标签列表中选择目标；不要仅凭相似文件名判断。
   \item 发送后检查目标：Word/Markdown 接收可编辑文本，Excel 接收适合单元格的内容，PPT 接收可编辑文本框，而不是扁平截图。
   \item 连接只在本机应用内部传递回复；目标文件仍需用户保存。若目标关闭或改名，重新打开后再选择。
@@ -734,7 +734,7 @@ Source remains copyable, rendering remains readable, and inserted equations rema
 \ENPage{10}{跨编辑器联动：用 @Connect 一键流转 AI 结果}{Cross-editor routing: send AI results with @Connect}{Type @Connect in an AI input to send the latest reply to another open Word, Excel, PowerPoint, or Markdown tab. The source can be any of the five editors, including PDF.}{
 \AppStrip
 \begin{enumerate}
-  \item Open the destination first and confirm that its tab is visible in GenOffice.
+  \item Open the destination first and confirm that its tab is visible in ZenOffice.
   \item Type \texttt{@Connect}, then choose the correct item from the list of open targets. Do not rely only on similar filenames.
   \item Verify the destination: Word/Markdown receives editable text, Excel receives cell-suitable content, and PowerPoint receives an editable text box rather than a flattened screenshot.
   \item Transfer is local to the app, but the destination file still needs to be saved. If a target is closed or renamed, reopen it before selecting again.
@@ -763,7 +763,7 @@ Source remains copyable, rendering remains readable, and inserted equations rema
 \Shot{05-word-editor.png}{Real runtime UI: Word editor, paginated canvas, ribbon, and the ZenMux AI panel on the left.}
 \begin{itemize}
   \item Choose AI Docs to create a file or Open local file to select a .docx/.doc. The title area shows filename and save state.
-  \item For legacy .doc, GenOffice first asks local LibreOffice for a high-fidelity conversion to a separate DOCX. If unavailable, a pure-JavaScript text-recovery path is used. The original .doc is never overwritten.
+  \item For legacy .doc, ZenOffice first asks local LibreOffice for a high-fidelity conversion to a separate DOCX. If unavailable, a pure-JavaScript text-recovery path is used. The original .doc is never overwritten.
   \item Use Cmd/Ctrl+S to save and Cmd/Ctrl+Shift+S for Save As. A new document asks for location and name on first save.
   \item Auto-save reduces accidental loss, but create a new version before major edits and respond to unsaved-close prompts.
   \item Review deliverables in Microsoft Word or another compatible app, especially custom fonts, fields, contents, floating objects, and multipage tables.
@@ -1219,17 +1219,17 @@ ORDER BY [销售额] DESC;
 \begin{enumerate}
   \item 首次录制前在系统设置授权麦克风；macOS 还可能需要屏幕录制权限。授权后完全退出并重新打开应用。
   \item 选择麦克风并观察音量活动；做 10 秒测试，播放确认人声清晰、没有静音或削波。
-  \item macOS 会混合麦克风与 GenOffice 演示中播放的媒体声音；Windows 可使用系统回环采集系统声音。系统级音频能力受平台和权限限制。
+  \item macOS 会混合麦克风与 ZenOffice 演示中播放的媒体声音；Windows 可使用系统回环采集系统声音。系统级音频能力受平台和权限限制。
   \item 开始全屏放映，按需要暂停/继续；结束后等待编码完成，选择本地 MP4 路径，再检查画面、音画同步、比例和总时长。
 \end{enumerate}
 \Warn{若麦克风已采集但系统音频缺失，先区分“幻灯片内媒体音频”和“其他应用的系统音频”，再检查平台支持、屏幕录制/音频权限及输出设备。}
 }
 
-\ENPage{25}{录制旁白并合成 MP4}{Record narration and export MP4}{Recording is available from Slide Show and Insert. GenOffice captures microphone narration and composes the presentation into a local H.264/AAC MP4 with pause and resume.}{
+\ENPage{25}{录制旁白并合成 MP4}{Record narration and export MP4}{Recording is available from Slide Show and Insert. ZenOffice captures microphone narration and composes the presentation into a local H.264/AAC MP4 with pause and resume.}{
 \begin{enumerate}
   \item Before the first recording, grant microphone access. macOS may also require Screen Recording permission; quit and relaunch the app after changing permissions.
   \item Choose the microphone and watch input activity. Record a ten-second test and check for silence, clipping, and intelligibility.
-  \item macOS mixes the microphone with media played inside the GenOffice presentation. Windows can use system loopback. System-wide audio availability depends on platform and permission support.
+  \item macOS mixes the microphone with media played inside the ZenOffice presentation. Windows can use system loopback. System-wide audio availability depends on platform and permission support.
   \item Start the full-screen show, pause/resume as needed, wait for encoding, choose a local MP4 destination, then verify image, sync, aspect ratio, and duration.
 \end{enumerate}
 \Warn{If narration works but system audio is missing, distinguish slide-embedded media from audio in other apps, then check platform capability, screen/audio permissions, and output device.}
@@ -1561,8 +1561,8 @@ Chinese discovery & Baidu Scholar, PubScholar, NSSD, NSTL under official access 
 
 \CNPage{38}{麦克风、屏幕录制与文件权限}{Microphone, screen recording, and file permissions}{桌面系统会分别控制麦克风、屏幕录制、文件夹访问和通知。权限未授权时，应用可能没有收到系统弹窗或采集到静音。}{
 \begin{itemize}
-  \item macOS：打开“系统设置 > 隐私与安全性”，检查麦克风与屏幕录制中的 GenOffice；更改后退出应用并重新打开。
-  \item 若列表没有 GenOffice，先从应用执行一次录制动作触发请求；仍没有时确认应用位于“应用程序”且不是从临时挂载卷运行。
+  \item macOS：打开“系统设置 > 隐私与安全性”，检查麦克风与屏幕录制中的 ZenOffice；更改后退出应用并重新打开。
+  \item 若列表没有 ZenOffice，先从应用执行一次录制动作触发请求；仍没有时确认应用位于“应用程序”且不是从临时挂载卷运行。
   \item Windows：在“设置 > 隐私和安全性 > 麦克风”允许桌面应用访问；系统音频回环还取决于音频设备和驱动。
   \item 文件无法打开或保存时，检查目标文件夹权限、磁盘空间、只读属性、云盘同步锁和文件是否被另一应用占用。
 \end{itemize}
@@ -1571,8 +1571,8 @@ Chinese discovery & Baidu Scholar, PubScholar, NSSD, NSTL under official access 
 
 \ENPage{38}{麦克风、屏幕录制与文件权限}{Microphone, screen recording, and file permissions}{Desktop systems govern microphone, screen recording, folders, and notifications separately. Without permission, no prompt may appear or recording may be silent.}{
 \begin{itemize}
-  \item macOS: open System Settings > Privacy \& Security and inspect Microphone and Screen Recording for GenOffice. Quit and relaunch after a change.
-  \item If GenOffice is absent, start one recording action to trigger the request. If still absent, place the app in Applications and do not run it from a temporary mounted volume.
+  \item macOS: open System Settings > Privacy \& Security and inspect Microphone and Screen Recording for ZenOffice. Quit and relaunch after a change.
+  \item If ZenOffice is absent, start one recording action to trigger the request. If still absent, place the app in Applications and do not run it from a temporary mounted volume.
   \item Windows: allow desktop apps under Settings > Privacy \& security > Microphone. System loopback also depends on the audio device and driver.
   \item If open/save fails, check folder permission, free space, read-only state, cloud-sync locks, and whether another application holds the file.
 \end{itemize}
@@ -1647,7 +1647,7 @@ Cmd/Ctrl+W & Close current tab/window\\
 \Tip{A minimum acceptance sample includes the first page, an image page, an equation/table page, and the final page. Inspect every page for complex documents.}
 }
 
-\CNPage{41}{隐私、安全与更新}{Privacy, security, and updates}{GenOffice 本地打开、编辑和保存文件；使用 ZenMux、网络搜索或外部链接时会发生网络访问。用户负责判断哪些内容可以发送。}{
+\CNPage{41}{隐私、安全与更新}{Privacy, security, and updates}{ZenOffice 本地打开、编辑和保存文件；使用 ZenMux、网络搜索或外部链接时会发生网络访问。用户负责判断哪些内容可以发送。}{
 \begin{itemize}
   \item API Key 使用系统安全存储并在 UI 遮罩；不要写入环境截图、日志、文档或仓库。定期轮换并使用最小额度/权限策略。
   \item AI 附件、选区、PDF 截图和提示词可能包含敏感信息。发送前脱敏，并遵守学校、公司、伦理、合同与数据跨境规则。
@@ -1657,7 +1657,7 @@ Cmd/Ctrl+W & Close current tab/window\\
 \Warn{本地优先不等于所有 AI 数据都留在本机。只要调用云端模型或联网工具，相关请求内容就会离开设备。}
 }
 
-\ENPage{41}{隐私、安全与更新}{Privacy, security, and updates}{GenOffice opens, edits, and saves files locally. ZenMux, web search, and external links create network access. The user decides what content is permitted to leave the device.}{
+\ENPage{41}{隐私、安全与更新}{Privacy, security, and updates}{ZenOffice opens, edits, and saves files locally. ZenMux, web search, and external links create network access. The user decides what content is permitted to leave the device.}{
 \begin{itemize}
   \item The API Key uses operating-system secure storage and is masked in the UI. Keep it out of screenshots, logs, documents, and repositories; rotate it and limit quota/permissions.
   \item AI attachments, selections, PDF captures, and prompts may contain sensitive data. Redact first and follow institutional, ethics, contract, and data-transfer rules.
@@ -1771,7 +1771,7 @@ Recording lacks microphone/system audio & Permission, relaunch, or platform-sour
 \CNText{{\color{white!78}\Large 选择内容，提出明确问题，审阅结果，再写回可编辑对象。\par}}
 \ENText{{\color{white!78}\Large Select context, ask precisely, review the result, then write back to editable objects.\par}}
 \vfill
-{\color{white}\bfseries GenOffice v0.6.55 · ZenMux AI\par}
+{\color{white}\bfseries ZenOffice v0.6.55 · ZenMux AI\par}
 {\color{white!65}\small\ManualEditionLine · 2026-08-17\par}
 
 \end{document}

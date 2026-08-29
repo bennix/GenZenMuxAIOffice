@@ -5,18 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="GenOffice — 由 ZenMux 驱动的本地 AI 文档、表格与演示文稿工作台。"
+      content="ZenOffice — 由 ZenMux 驱动的本地 AI 文档、表格与演示文稿工作台。"
     />
-    <meta name="theme-color" content="#f1efe7" />
-    <title>GenOffice — ZenMux AI Office for macOS, Windows & Linux</title>
+    <meta name="theme-color" content="#071417" />
+    <link rel="icon" type="image/svg+xml" href="zenoffice-mark.svg" />
+    <title>ZenOffice — ZenMux AI Office for macOS, Windows & Linux</title>
     <style>
       :root {
-        --paper: #f1efe7;
-        --ink: #161714;
-        --muted: #66685f;
-        --line: #c9c7bc;
-        --blue: #2357ff;
-        --acid: #d8ff42;
+        --paper: #eef2ed;
+        --ink: #071417;
+        --muted: #5d6b68;
+        --line: #b9c8c3;
+        --blue: #0f806c;
+        --acid: #f3b65b;
         --panel: rgba(255, 255, 255, 0.5);
       }
 
@@ -33,7 +34,7 @@
         color: var(--ink);
         background:
           linear-gradient(90deg, transparent 49.8%, rgba(22, 23, 20, 0.06) 50%, transparent 50.2%),
-          radial-gradient(circle at 75% 18%, rgba(35, 87, 255, 0.12), transparent 29rem),
+          radial-gradient(circle at 75% 18%, rgba(34, 185, 155, 0.16), transparent 29rem),
           var(--paper);
         font-family: 'Avenir Next', Avenir, 'PingFang SC', sans-serif;
       }
@@ -66,12 +67,9 @@
       .mark {
         width: 31px;
         height: 31px;
-        display: grid;
-        place-items: center;
-        color: white;
-        background: var(--blue);
-        border-radius: 8px 8px 8px 2px;
-        font-size: 13px;
+        display: block;
+        border-radius: 8px;
+        box-shadow: 0 5px 16px rgba(7, 20, 23, 0.18);
       }
 
       .nav-link {
@@ -292,7 +290,7 @@
         --app-color: #b42318;
       }
       .app-card.shell-app {
-        --app-color: #2357ff;
+        --app-color: #0f806c;
       }
 
       .app-head {
@@ -511,7 +509,7 @@
         color: #7da2ff;
       }
       .md-code em {
-        color: #d8ff42;
+        color: #f3b65b;
       }
       .mermaid-arrow {
         margin-top: 13px;
@@ -1086,10 +1084,70 @@
 
       .manual-cover {
         width: min(300px, 78%);
-        height: auto;
+        aspect-ratio: 910 / 1287;
+        padding: 28px 24px 24px;
+        display: flex;
+        flex-direction: column;
+        color: #f6f2e8;
+        background: #071417;
         border: 1px solid rgba(255, 255, 255, 0.5);
         box-shadow: 22px 24px 0 rgba(22, 23, 20, 0.38);
         transform: rotate(-2.3deg);
+      }
+
+      .manual-cover-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        font-weight: 750;
+      }
+
+      .manual-cover-brand img {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+      }
+
+      .manual-cover-rule {
+        height: 1px;
+        margin: 22px 0 0;
+        background: rgba(246, 242, 232, 0.7);
+      }
+
+      .manual-cover-title {
+        margin-top: 32%;
+        font-family: 'Iowan Old Style', 'Songti SC', Georgia, serif;
+        font-size: 34px;
+        line-height: 1.12;
+        letter-spacing: -0.05em;
+      }
+
+      .manual-cover-subtitle {
+        margin-top: 14px;
+        color: rgba(246, 242, 232, 0.72);
+        font-size: 11px;
+        letter-spacing: 0.04em;
+      }
+
+      .manual-cover-route {
+        margin-top: auto;
+        padding: 10px 12px;
+        color: #071417;
+        background: #81f5d0;
+        font:
+          800 10px/1.35 ui-monospace,
+          'SFMono-Regular',
+          Menlo,
+          monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .manual-cover-edition {
+        margin-top: 14px;
+        color: rgba(246, 242, 232, 0.62);
+        font-size: 9px;
       }
 
       .manual-folio {
@@ -1506,7 +1564,7 @@
   <body>
     <div class="shell">
       <nav>
-        <div class="wordmark"><span class="mark">G/O</span> GenOffice</div>
+        <div class="wordmark"><img class="mark" src="zenoffice-mark.svg" alt="" /> ZenOffice</div>
         <div class="nav-actions">
           <a class="nav-link" href="#manual">用户手册 · Manual</a>
           <a class="nav-link" href="https://github.com/bennix/GenZenMuxAIOffice"
@@ -1514,7 +1572,7 @@
           >
           <a
             class="nav-link nav-download"
-            href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.66-x64.exe"
+            href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.67-x64.exe"
             >Windows 下载 ↓</a
           >
         </div>
@@ -1524,7 +1582,7 @@
         <section class="hero">
           <div>
             <div class="eyebrow">ZenMux native office suite</div>
-            <h1>Gen<span>Office</span></h1>
+            <h1>Zen<span>Office</span></h1>
           </div>
           <div class="hero-copy">
             <h2>让文档、表格与演示文稿，拥有同一个 AI 工作台。</h2>
@@ -1535,25 +1593,25 @@
             <div class="downloads">
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.66-arm64.dmg"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.67-arm64.dmg"
               >
                 下载 macOS DMG <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.66-x64.exe"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.67-x64.exe"
               >
                 下载 Windows x64 <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.66.x86_64.rpm"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice-0.6.67.x86_64.rpm"
               >
                 下载 Linux RPM <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice_0.6.66_amd64.deb"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice_0.6.67_amd64.deb"
               >
                 下载 Ubuntu DEB <b>↓</b>
               </a>
@@ -1569,7 +1627,7 @@
         <section class="platforms" id="downloads" aria-label="平台下载">
           <div class="platforms-head">
             <h2>选择你的平台。</h2>
-            <div class="release-version">CURRENT RELEASE · v0.6.66</div>
+            <div class="release-version">CURRENT RELEASE · v0.6.67</div>
           </div>
           <div class="platform-grid">
             <article class="platform-card">
@@ -1581,8 +1639,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.66-arm64.dmg"
-                >下载 macOS v0.6.66 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.67-arm64.dmg"
+                >下载 macOS v0.6.67 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1593,8 +1651,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.66-x64.exe"
-                >下载 Windows v0.6.66 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.67-x64.exe"
+                >下载 Windows v0.6.67 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1606,8 +1664,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.66.x86_64.rpm"
-                >下载 Linux RPM v0.6.66 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice-0.6.67.x86_64.rpm"
+                >下载 Linux RPM v0.6.67 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1619,31 +1677,36 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice_0.6.66_amd64.deb"
-                >下载 Ubuntu v0.6.66 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice_0.6.67_amd64.deb"
+                >下载 Ubuntu v0.6.67 <b>↓</b></a
               >
             </article>
           </div>
         </section>
 
-        <section class="manual" id="manual" aria-label="GenOffice 中文、英文与中英合订用户手册">
+        <section class="manual" id="manual" aria-label="ZenOffice 中文、英文与中英合订用户手册">
           <div class="manual-visual">
-            <img
-              class="manual-cover"
-              src="manual/assets/manual-cover.png"
-              alt="GenOffice 快速入门指南中文版封面"
-              width="910"
-              height="1287"
-              loading="lazy"
-            />
+            <div class="manual-cover" aria-label="ZenOffice 快速入门指南中文版封面">
+              <div class="manual-cover-brand">
+                <img src="zenoffice-mark.svg" alt="" />
+                <span>ZenOffice</span>
+              </div>
+              <div class="manual-cover-rule"></div>
+              <div class="manual-cover-title">快速入门指南</div>
+              <div class="manual-cover-subtitle">ZenMux 驱动的本地 AI 办公工作台</div>
+              <div class="manual-cover-route">Word · Excel · PPT · Markdown · PDF → ZenMux</div>
+              <div class="manual-cover-edition">
+                中文版 · Chinese Edition · macOS / Windows / Linux
+              </div>
+            </div>
             <div class="manual-folio" aria-hidden="true">3×</div>
           </div>
           <div class="manual-copy">
             <div class="manual-kicker">Three reading paths · 中文 / English / 中英合订</div>
             <h2>先选语言，<br />3 分钟完成第一个真实任务。</h2>
             <p>
-              基于 v0.6.66 当前源码和真实运行态重制。用可编辑公式识别、真实 DOI 与 GB/T 7714 引用、3
-              委员 + 1 主席审稿、中文图表和 EDA 完整展示核心工作流；v0.6.66
+              基于 v0.6.67 当前源码和真实运行态重制。用可编辑公式识别、真实 DOI 与 GB/T 7714 引用、3
+              委员 + 1 主席审稿、中文图表和 EDA 完整展示核心工作流；v0.6.67
               新增微信公众号富文本排版、 Pretty Mermaid / 编辑级图表工作室，以及可配置的
               OpenAI-compatible Base URL。已有 Markdown、AI 回复、粘贴与
               <code>@Connect</code> 回填共用同一套 Markdown 规范化，并让编辑器与 AI 回复统一使用
@@ -1676,7 +1739,7 @@
             <div class="manual-editions" aria-label="选择手册版本">
               <article class="manual-edition">
                 <span>中文 · 65 pages</span>
-                <strong>GenOffice 快速入门指南</strong>
+                <strong>ZenOffice 快速入门指南</strong>
                 <div class="manual-edition-links">
                   <a href="manual/GenOffice-User-Manual-ZH.pdf" download>下载 PDF ↓</a>
                   <a href="manual/GenOffice-User-Manual-ZH.pdf" target="_blank" rel="noopener"
@@ -1686,7 +1749,7 @@
               </article>
               <article class="manual-edition">
                 <span>English · 67 pages</span>
-                <strong>GenOffice User Manual</strong>
+                <strong>ZenOffice User Manual</strong>
                 <div class="manual-edition-links">
                   <a href="manual/GenOffice-User-Manual-EN.pdf" download>Download PDF ↓</a>
                   <a href="manual/GenOffice-User-Manual-EN.pdf" target="_blank" rel="noopener"
@@ -1789,7 +1852,7 @@
             <span class="feature-num">09</span>
             <h3>PPT 录制与 MP4</h3>
             <p>
-              “幻灯片放映”和“插入”选项卡均可直接开始录制；macOS 将麦克风与 GenOffice
+              “幻灯片放映”和“插入”选项卡均可直接开始录制；macOS 将麦克风与 ZenOffice
               演示文稿内播放的媒体声音混合，Windows 还支持系统声音；支持暂停、继续和本地 MP4
               导出。视频在编辑预览和放映中按插入位置与尺寸播放，并保持原始宽高比。
             </p>
@@ -1938,11 +2001,11 @@
           </article>
         </section>
 
-        <section class="native-contrast" aria-label="GenOffice 与普通 AI 办公套壳的核心差异">
+        <section class="native-contrast" aria-label="ZenOffice 与普通 AI 办公套壳的核心差异">
           <div class="section-kicker">Native document intelligence · 不只是侧边栏聊天</div>
           <h2 class="section-title">AI 不是贴在文件旁边，<br />而是进入文件结构工作。</h2>
           <p class="section-lead">
-            普通 AI 办公产品往往止步于生成一段可复制的文本。GenOffice
+            普通 AI 办公产品往往止步于生成一段可复制的文本。ZenOffice
             把模型接入本地文档引擎、学术工具链与跨编辑器通路，让结果能够落回真实对象，同时保留用户对文件、模型和成本的控制。
           </p>
           <div class="object-address" aria-label="原生文档对象地址示意">
@@ -1953,7 +2016,7 @@
           </div>
           <div class="surgery-board">
             <div class="comparison-head" aria-hidden="true">
-              <span>普通 AI 套壳</span><span>→</span><span>GenOffice 原生工作流</span>
+              <span>普通 AI 套壳</span><span>→</span><span>ZenOffice 原生工作流</span>
             </div>
             <article class="comparison-row">
               <div class="contrast-old">
@@ -2043,14 +2106,14 @@
             </article>
           </div>
           <p class="native-thesis">
-            普通产品像是<em>给旧马车绑上喷气发动机</em>；GenOffice 从文档对象、Agent
+            普通产品像是<em>给旧马车绑上喷气发动机</em>；ZenOffice 从文档对象、Agent
             协作到本地数据主权，重新设计整条生产力链路。
           </p>
         </section>
 
         <section class="atlas" aria-label="项目来源与改造说明">
           <div class="section-kicker">Upstream &amp; adaptation · 项目来源与改造</div>
-          <h2 class="section-title">源自 GenOffice，<br />面向 ZenMux 深度改造。</h2>
+          <h2 class="section-title">源自 genspark-ai/genoffice，<br />以 ZenOffice 重新出发。</h2>
           <p class="section-lead">
             本项目是
             <a href="https://github.com/genspark-ai/genoffice">genspark-ai/genoffice ↗</a>
@@ -2182,7 +2245,7 @@
           <div class="section-kicker">Complete capability atlas · 完整功能图鉴</div>
           <h2 class="section-title">六个工作台，<br />一套完整办公系统。</h2>
           <p class="section-lead">
-            GenOffice 不是聊天框套壳。它直接打开并编辑真实的 DOCX、XLSX、PPTX、PDF 与 Markdown
+            ZenOffice 不是聊天框套壳。它直接打开并编辑真实的 DOCX、XLSX、PPTX、PDF 与 Markdown
             文件，并可将旧版 DOC 安全转换为独立 DOCX 副本；AI 能读取当前文件、选区和附件，通过
             @Connect 还可把回复发送到另一个 已打开的编辑器，形成跨文件信息通路。
           </p>

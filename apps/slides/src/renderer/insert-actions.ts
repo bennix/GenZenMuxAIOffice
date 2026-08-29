@@ -469,7 +469,7 @@ export async function startPresentationRecording(
   if (!ctx.slide || ctx.recorderRef.current) return false
   const mimeType = presentationMp4Mime()
   if (!mimeType) {
-    ctx.setStatus('当前系统的视频编码器不支持 MP4，无法开始录制。请更新 GenOffice 或系统后重试。')
+    ctx.setStatus('当前系统的视频编码器不支持 MP4，无法开始录制。请更新 ZenOffice 或系统后重试。')
     return false
   }
   let displayStream: MediaStream | null = null
@@ -481,7 +481,7 @@ export async function startPresentationRecording(
       const permission = await window.slidesApi.requestPresentationMicrophonePermission()
       if (permission.status !== 'granted') {
         throw new Error(
-          '麦克风权限未授予。请打开“系统设置 → 隐私与安全性 → 麦克风”，允许 GenOffice 使用麦克风后重新启动应用。',
+          '麦克风权限未授予。请打开“系统设置 → 隐私与安全性 → 麦克风”，允许 ZenOffice 使用麦克风后重新启动应用。',
         )
       }
       microphoneStream = await navigator.mediaDevices.getUserMedia({
@@ -503,7 +503,7 @@ export async function startPresentationRecording(
     })
     if (options.systemAudio && displayStream.getAudioTracks().length === 0) {
       throw new Error(
-        '未取得演示文稿音轨。macOS 可录制 GenOffice 幻灯片中播放的视频和音频；请确认媒体正在播放后重试。',
+        '未取得演示文稿音轨。macOS 可录制 ZenOffice 幻灯片中播放的视频和音频；请确认媒体正在播放后重试。',
       )
     }
     const audioStreams = [displayStream, microphoneStream].filter(

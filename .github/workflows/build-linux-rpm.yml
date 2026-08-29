@@ -6,7 +6,7 @@ on:
       release_tag:
         description: Existing GitHub Release tag that will receive the verified RPM
         required: true
-        default: v0.6.65
+        default: v0.6.67
 
 concurrency:
   group: linux-rpm-${{ inputs.release_tag }}
@@ -61,7 +61,7 @@ jobs:
       - name: Verify RPM and bundled Linux sidecar
         shell: bash
         run: |
-          rpm_file=$(find apps/shell/release -maxdepth 1 -name 'genoffice-*.x86_64.rpm' -print -quit)
+          rpm_file=$(find apps/shell/release -maxdepth 1 -name 'zenoffice-*.x86_64.rpm' -print -quit)
           test -n "$rpm_file"
           rpm -qpi "$rpm_file"
           rpm -qlp "$rpm_file" | grep '/resources/native/xlsx-sidecar$'
@@ -76,7 +76,7 @@ jobs:
       - name: Upload verified RPM artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: genoffice-linux-rpm-${{ inputs.release_tag }}
-          path: apps/shell/release/genoffice-*.x86_64.rpm
+          name: zenoffice-linux-rpm-${{ inputs.release_tag }}
+          path: apps/shell/release/zenoffice-*.x86_64.rpm
           if-no-files-found: error
           retention-days: 7

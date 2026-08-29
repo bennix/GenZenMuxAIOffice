@@ -241,7 +241,7 @@ Core,Keep,15`,
   },
 ]
 
-export const EDITORIAL_SYSTEM = `You are an editorial diagram author inside GenOffice Markdown, following diagram-design (cathrynlavery/diagram-design).
+export const EDITORIAL_SYSTEM = `You are an editorial diagram author inside ZenOffice Markdown, following diagram-design (cathrynlavery/diagram-design).
 Return only valid Mermaid source. No Markdown fences, no HTML, no JavaScript, no init directives except a leading "%% pretty-theme: editorial" comment.
 Philosophy: the highest-quality move is deletion. Every node is a distinct idea. Target density 4/10. Accent color is for 1–2 focal nodes only.
 Prefer short concrete labels in the user's language. Use LR for wide flows and TB for narrow documents.

@@ -1,45 +1,40 @@
 /* Shared chrome/AI-panel tokens come from @genoffice/ui/tokens.css (imported
  * before this file in main.tsx); only shell-specific tokens live here. */
 :root {
-  /* ZenMux DS v4.1: guide/onboarding accent is the brand blue */
-  --accent: #0f7fff;
-  --accent-hover: #0e72e5;
+  /* ZenOffice brand accent, shared with the mark and Landing Page. */
+  --accent: #0f806c;
+  --accent-hover: #0b6d5c;
   --modal-width-sm: 480px;
   --avatar-bg: #e8ebef;
   --badge-bg: #eaf0fd;
   --checkbox-bg: #ececec;
   --timeline-user-bg: #eef1f5;
   --timeline-user-text: #5a6170;
-
-  /* genoffice-logo.svg is pure black-and-white; dark themes flip it to 1 */
-  --logo-invert: 0;
 }
 
 /* ── Dark mode overrides ─────────────────────────────────── */
 
 /* Explicit dark: [data-theme="dark"] on <html> */
 [data-theme='dark'] {
-  --accent: #3f99ff;
-  --accent-hover: #5ba5ff;
+  --accent: #4be0b7;
+  --accent-hover: #81f5d0;
   --avatar-bg: #333;
   --badge-bg: #2a3a4a;
   --checkbox-bg: #333;
   --timeline-user-bg: #2a2a3a;
   --timeline-user-text: #b0b0c0;
-  --logo-invert: 1;
 }
 
 /* System dark: no data-theme or data-theme="system" — follow OS preference */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']):not([data-theme='dark']) {
-    --accent: #3f99ff;
-    --accent-hover: #5ba5ff;
+    --accent: #4be0b7;
+    --accent-hover: #81f5d0;
     --avatar-bg: #333;
     --badge-bg: #2a3a4a;
     --checkbox-bg: #333;
     --timeline-user-bg: #2a2a3a;
     --timeline-user-text: #b0b0c0;
-    --logo-invert: 1;
   }
 }
 
@@ -108,11 +103,18 @@ body.vib .home {
   margin-bottom: 20px;
 }
 
-.logo-lockup {
+.logo-mark {
   display: block;
+  width: 28px;
   height: 28px;
-  width: auto;
-  filter: invert(var(--logo-invert));
+  border-radius: 7px;
+}
+
+.logo-wordmark {
+  color: var(--text-primary);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
 }
 
 .sidebar-nav {

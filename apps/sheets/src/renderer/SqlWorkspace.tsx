@@ -297,7 +297,7 @@ export function SqlWorkspace({
       <section className="sql-workspace" role="dialog" aria-modal="true" aria-label="SQL database">
         <header className="sql-workspace-header">
           <div>
-            <span className="sql-kicker">GENOFFICE DATA LAB</span>
+            <span className="sql-kicker">ZENOFFICE DATA LAB</span>
             <h2>{chinese ? '工作簿数据库' : 'Workbook Database'}</h2>
             <p>{file?.name ?? (chinese ? '未打开工作簿' : 'No workbook open')}</p>
           </div>

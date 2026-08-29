@@ -362,7 +362,7 @@ export function fontAttrsFromFamilyChain(chain: string | undefined): Record<stri
       (x) =>
         x &&
         !/^(serif|sans-serif|monospace|cursive|fantasy|system-ui)$/i.test(x) &&
-        // internal fonts.css aliases (GenOffice Songti SC etc.) are not user picks
+        // internal fonts.css aliases (ZenOffice Songti SC etc.) are not user picks
         !/^genoffice /i.test(x),
     )
   const ea = families.find(

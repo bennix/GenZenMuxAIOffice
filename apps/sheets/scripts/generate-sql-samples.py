@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the two GenOffice SQL workbook samples and their shared test manifest."""
+"""Generate the two ZenOffice SQL workbook samples and their shared test manifest."""
 
 from __future__ import annotations
 

@@ -6,7 +6,7 @@ on:
       release_tag:
         description: Existing GitHub Release tag that will receive the verified DEB
         required: true
-        default: v0.6.65
+        default: v0.6.67
 
 concurrency:
   group: ubuntu-deb-${{ inputs.release_tag }}
@@ -63,7 +63,7 @@ jobs:
       - name: Verify DEB and bundled Linux sidecar
         shell: bash
         run: |
-          deb_file=$(find apps/shell/release -maxdepth 1 -name 'genoffice_*_amd64.deb' -print -quit)
+          deb_file=$(find apps/shell/release -maxdepth 1 -name 'zenoffice_*_amd64.deb' -print -quit)
           test -n "$deb_file"
           test "$(dpkg-deb -f "$deb_file" Package)" = "genoffice"
           test "$(dpkg-deb -f "$deb_file" Architecture)" = "amd64"
@@ -83,7 +83,7 @@ jobs:
       - name: Upload verified Ubuntu DEB artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: genoffice-ubuntu-deb-${{ inputs.release_tag }}
-          path: apps/shell/release/genoffice_*_amd64.deb
+          name: zenoffice-ubuntu-deb-${{ inputs.release_tag }}
+          path: apps/shell/release/zenoffice_*_amd64.deb
           if-no-files-found: error
           retention-days: 7

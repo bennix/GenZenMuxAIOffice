@@ -1,5 +1,5 @@
 Built-in PDF edit fonts (SIL Open Font License 1.1). These files are bundled
-with GenOffice so text rebuilds do not depend on which fonts the OS has installed.
+with ZenOffice so text rebuilds do not depend on which fonts the OS has installed.
 
 Liberation Fonts 2.1.5
   Copyright (c) 2012 Red Hat, Inc., with Reserved Font Name Liberation.

@@ -6,7 +6,7 @@ on:
       release_tag:
         description: Existing GitHub Release tag that will receive the verified installer
         required: true
-        default: v0.6.65
+        default: v0.6.67
 
 concurrency:
   group: windows-${{ inputs.release_tag }}
@@ -56,7 +56,7 @@ jobs:
       - name: Verify installer, metadata, and bundled sidecar
         shell: pwsh
         run: |
-          $installer = Get-ChildItem apps/shell/release/GenOfficeSetup-*-x64.exe | Select-Object -First 1
+          $installer = Get-ChildItem apps/shell/release/ZenOfficeSetup-*-x64.exe | Select-Object -First 1
           if (-not $installer) { throw 'Windows installer missing' }
           if (-not (Test-Path apps/shell/release/latest.yml)) { throw 'latest.yml missing' }
           if (-not (Test-Path apps/shell/release/win-unpacked/resources/native/xlsx-sidecar.exe)) { throw 'Windows xlsx sidecar missing' }
@@ -65,10 +65,10 @@ jobs:
       - name: Upload verified Windows artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: genoffice-windows-${{ inputs.release_tag }}
+          name: zenoffice-windows-${{ inputs.release_tag }}
           path: |
-            apps/shell/release/GenOfficeSetup-*-x64.exe
-            apps/shell/release/GenOfficeSetup-*-x64.exe.blockmap
+            apps/shell/release/ZenOfficeSetup-*-x64.exe
+            apps/shell/release/ZenOfficeSetup-*-x64.exe.blockmap
             apps/shell/release/latest.yml
           if-no-files-found: error
           retention-days: 7

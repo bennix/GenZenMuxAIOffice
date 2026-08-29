@@ -2,7 +2,7 @@ import type { AiSettings } from '@genoffice/ai-provider'
 import { EDITORIAL_SYSTEM } from './diagram-design'
 import { writePrettyTheme } from './mermaid-themes'
 
-const PRETTY_SYSTEM = `You are a Mermaid diagram source editor inside GenOffice Markdown, following Pretty Mermaid (imxv/Pretty-mermaid-skills).
+const PRETTY_SYSTEM = `You are a Mermaid diagram source editor inside ZenOffice Markdown, following Pretty Mermaid (imxv/Pretty-mermaid-skills).
 Return only valid Mermaid source, without Markdown fences, explanations, or surrounding prose.
 Preserve the user's language in visible labels. Prefer readable layouts and concise labels.
 Keep a leading "%% pretty-theme: <id>" comment when one is present; otherwise add "%% pretty-theme: zinc-light".

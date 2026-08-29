@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 240" role="img" aria-labelledby="title">
+  <title id="title">ZenOffice</title>
+  <defs>
+    <linearGradient id="surface" x1="18" y1="12" x2="224" y2="232" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10262A"/>
+      <stop offset="1" stop-color="#05090B"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="48" y1="42" x2="198" y2="202" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#81F5D0"/>
+      <stop offset="1" stop-color="#22B99B"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="56" fill="url(#surface)"/>
+  <circle cx="120" cy="120" r="68" fill="none" stroke="url(#ring)" stroke-width="14"/>
+  <path d="M69 73H174L66 169H172" fill="none" stroke="#F6F2E8" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="181" cy="176" r="9" fill="#F3B65B"/>
+  <text x="292" y="157" fill="currentColor" font-family="Avenir Next, Avenir, Segoe UI, sans-serif" font-size="112" font-weight="650" letter-spacing="-5">ZenOffice</text>
+</svg>
