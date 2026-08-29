@@ -9,6 +9,7 @@ import type {
   KnowledgeSettingsItem,
   UiTheme,
 } from '../../shared/home-api'
+import type { WechatDiaryStatus } from '../../shared/wechat-diary-api'
 import { removeActiveModel, resolveModelOptions } from './model-options'
 import {
   ZENMUX_BASE_URL,
@@ -33,10 +34,11 @@ const CHANNEL_OPTIONS = [
   { value: 'beta', labelKey: 'channelBeta' },
 ] as const satisfies readonly { value: 'stable' | 'beta'; labelKey: StringKey }[]
 
-type SectionId = 'account' | 'ai' | 'knowledge' | 'general' | 'about'
+type SectionId = 'account' | 'ai' | 'wechat' | 'knowledge' | 'general' | 'about'
 
 const SECTIONS: readonly { id: SectionId; labelKey?: StringKey }[] = [
   { id: 'ai' },
+  { id: 'wechat', labelKey: 'setSecWechat' },
   { id: 'knowledge' },
   { id: 'general', labelKey: 'setSecGeneral' },
   { id: 'about', labelKey: 'setSecAbout' },
@@ -77,6 +79,18 @@ function SectionIcon({ id }: { id: SectionId }) {
           d="M8 1.8l1.1 3.1L12.2 6l-3.1 1.1L8 10.2 6.9 7.1 3.8 6l3.1-1.1L8 1.8zM12.4 10l.6 1.7 1.7.6-1.7.6-.6 1.7-.6-1.7-1.7-.6 1.7-.6.6-1.7z"
           stroke="currentColor"
           strokeWidth="1.1"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
+  if (id === 'wechat') {
+    return (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M3.2 4.2h9.6c.8 0 1.4.6 1.4 1.3v5c0 .7-.6 1.3-1.4 1.3H8.6L5.8 13.6V11.8H3.2c-.8 0-1.4-.6-1.4-1.3v-5c0-.7.6-1.3 1.4-1.3z"
+          stroke="currentColor"
+          strokeWidth="1.2"
           strokeLinejoin="round"
         />
       </svg>
@@ -181,6 +195,8 @@ export function SettingsModal({
   const [knowledgeSettings, setKnowledgeSettings] = useState<KnowledgeSettingsItem | null>(null)
   const [memories, setMemories] = useState<KnowledgeMemoryItem[]>([])
   const [knowledgeQuery, setKnowledgeQuery] = useState('')
+  const [wechat, setWechat] = useState<WechatDiaryStatus | null>(null)
+  const [wechatPair, setWechatPair] = useState('')
 
   useEffect(() => {
     let alive = true
@@ -225,6 +241,9 @@ export function SettingsModal({
     void window.aiOfficeProject?.getKnowledgeSettings().then((settings) => {
       if (alive) setKnowledgeSettings(settings)
     })
+    void window.aiOffice.wechatDiary?.status().then((st) => {
+      if (alive) setWechat(st)
+    })
     void window.aiOfficeProject?.listKnowledge('', 100).then((items) => {
       if (alive) setMemories(items)
     })
@@ -232,6 +251,8 @@ export function SettingsModal({
       alive = false
     }
   }, [])
+
+  useEffect(() => window.aiOffice.wechatDiary?.onChanged(setWechat) ?? (() => {}), [])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -415,6 +436,174 @@ export function SettingsModal({
                       </button>
                     </>
                   )}
+                </div>
+              </>
+            )}
+            {section === 'wechat' && (
+              <>
+                <h3 className="set-pane-title">{t('setSecWechat')}</h3>
+                <div className="set-ai-help">
+                  {isChinese
+                    ? '用手机微信扫描绑定二维码（需微信 8.0.70+ 的官方 ClawBot 插件）。发来的文字会写入「三天窗口」Markdown；走设置里当前指定的 AI，回复也会追加进同一篇。'
+                    : 'Scan the QR with WeChat (8.0.70+ official ClawBot). Incoming text is appended to a 3-day Markdown window. Replies from the AI configured in Settings are written into the same file.'}
+                </div>
+                <div className="set-check-row">
+                  <input
+                    id="wechat-enabled"
+                    type="checkbox"
+                    checked={wechat?.enabled !== false}
+                    onChange={(e) =>
+                      void window.aiOffice.wechatDiary
+                        .setPrefs({ enabled: e.target.checked })
+                        .then(setWechat)
+                    }
+                  />
+                  <label htmlFor="wechat-enabled">
+                    {isChinese
+                      ? '启用接收（应用运行时监听）'
+                      : 'Enable inbox while the app is running'}
+                  </label>
+                </div>
+                <div className="set-check-row">
+                  <input
+                    id="wechat-ai"
+                    type="checkbox"
+                    checked={wechat?.aiEnabled !== false}
+                    onChange={(e) =>
+                      void window.aiOffice.wechatDiary
+                        .setPrefs({ aiEnabled: e.target.checked })
+                        .then(setWechat)
+                    }
+                  />
+                  <label htmlFor="wechat-ai">
+                    {isChinese
+                      ? '微信对话走当前系统 AI（ZenMux / 自定义网关）'
+                      : 'Talk to the current system AI (ZenMux / custom gateway)'}
+                  </label>
+                </div>
+                <Field
+                  label={isChinese ? '绑定状态' : 'Binding'}
+                  value={
+                    wechat?.bound
+                      ? isChinese
+                        ? `已绑定${wechat.userLabel ? ` · ${wechat.userLabel}` : ''}${
+                            wechat.listening ? ' · 监听中' : ''
+                          }`
+                        : `Bound${wechat.userLabel ? ` · ${wechat.userLabel}` : ''}${
+                            wechat.listening ? ' · listening' : ''
+                          }`
+                      : wechat?.bindPhase === 'wait'
+                        ? isChinese
+                          ? '等待扫码'
+                          : 'Waiting for scan'
+                        : wechat?.bindPhase === 'scaned'
+                          ? isChinese
+                            ? '已扫码，请在手机上确认'
+                            : 'Scanned — confirm on the phone'
+                          : wechat?.bindPhase === 'need_pair'
+                            ? isChinese
+                              ? '需要配对码'
+                              : 'Pairing code required'
+                            : wechat?.bindPhase === 'expired'
+                              ? isChinese
+                                ? '二维码已过期'
+                                : 'QR expired'
+                              : isChinese
+                                ? '未绑定'
+                                : 'Not bound'
+                  }
+                />
+                {wechat?.qrDataUrl && (
+                  <div className="set-wechat-qr">
+                    <img
+                      src={wechat.qrDataUrl}
+                      alt={isChinese ? '微信绑定二维码' : 'WeChat bind QR'}
+                    />
+                    <div className="set-ai-help">
+                      {isChinese
+                        ? '微信扫一扫此码。插件页若显示「暂无可用插件」，仍可直接扫码。'
+                        : 'Scan with WeChat. You can scan even if the plugin list is empty.'}
+                    </div>
+                    {wechat.qrOpenUrl && (
+                      <button
+                        className="set-btn"
+                        type="button"
+                        onClick={() => void window.aiOffice.wechatDiary.openQrUrl()}
+                      >
+                        {isChinese ? '在浏览器打开绑定链接' : 'Open bind link in browser'}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {wechat?.bindPhase === 'need_pair' && (
+                  <label className="set-ai-field" htmlFor="wechat-pair">
+                    <span>{wechat.pairHint || (isChinese ? '配对数字' : 'Pairing code')}</span>
+                    <div className="set-ai-add-row">
+                      <input
+                        id="wechat-pair"
+                        className="set-input"
+                        value={wechatPair}
+                        onChange={(e) => setWechatPair(e.target.value)}
+                      />
+                      <button
+                        className="set-btn"
+                        type="button"
+                        onClick={() =>
+                          void window.aiOffice.wechatDiary.submitPair(wechatPair).then(setWechat)
+                        }
+                      >
+                        {isChinese ? '提交' : 'Submit'}
+                      </button>
+                    </div>
+                  </label>
+                )}
+                {wechat?.lastError && <div className="set-ai-help">{wechat.lastError}</div>}
+                <div className="set-pane-footer">
+                  <button
+                    className="set-btn"
+                    type="button"
+                    onClick={() => void window.aiOffice.wechatDiary.startBind().then(setWechat)}
+                  >
+                    {isChinese ? '生成绑定二维码' : 'Generate bind QR'}
+                  </button>
+                  {wechat?.bound && (
+                    <button
+                      className="set-btn danger"
+                      type="button"
+                      onClick={() => void window.aiOffice.wechatDiary.unbind().then(setWechat)}
+                    >
+                      {isChinese ? '解除绑定' : 'Unbind'}
+                    </button>
+                  )}
+                </div>
+                <Field
+                  label={isChinese ? '日记目录' : 'Diary folder'}
+                  value={wechat?.diaryDir || '—'}
+                  valueTitle={wechat?.diaryDir}
+                  action={
+                    <button
+                      className="set-btn"
+                      type="button"
+                      onClick={() => void window.aiOffice.wechatDiary.pickDir().then(setWechat)}
+                    >
+                      {t('setChange')}
+                    </button>
+                  }
+                />
+                <div className="set-ai-help">
+                  {isChinese
+                    ? '文件名形如 2026-08-27~08-29.md（每三天一篇，凌晨 4 点前算前一天）。发「记：…」只入库；直接对话会调用当前 AI；「撤回」「结束」「帮助」为命令。'
+                    : 'Files look like 2026-08-27~08-29.md (one file per 3 days; before 4:00 a.m. counts as the previous day). “记：…” saves only; free text talks to the current AI; 撤回 / 结束 / 帮助 are commands.'}
+                </div>
+                <div className="set-pane-footer">
+                  <button
+                    className="set-btn"
+                    type="button"
+                    disabled={!wechat?.lastFile}
+                    onClick={() => void window.aiOffice.wechatDiary.openLatest()}
+                  >
+                    {isChinese ? '打开当前日记' : 'Open current diary'}
+                  </button>
                 </div>
               </>
             )}
