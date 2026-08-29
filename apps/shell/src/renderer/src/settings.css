@@ -303,43 +303,392 @@
   justify-content: flex-end;
   gap: 8px;
 }
-.set-knowledge-options {
-  display: grid;
-  gap: 10px;
-  margin: 16px 0;
+.set-knowledge-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 4px;
 }
 
-.set-check-row {
+.set-knowledge-hero {
+  position: relative;
+  display: flex;
+  gap: 13px;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(in srgb, var(--color-btn-primary) 10%, transparent),
+      transparent 46%
+    ),
+    var(--surface);
+}
+
+.set-knowledge-hero::after {
+  position: absolute;
+  right: -18px;
+  bottom: -32px;
+  width: 100px;
+  height: 100px;
+  border: 1px solid color-mix(in srgb, var(--color-btn-primary) 12%, transparent);
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+}
+
+.set-knowledge-hero-icon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--text-primary);
+  color: var(--surface);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--text-primary) 16%, transparent);
+}
+
+.set-knowledge-hero-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.set-knowledge-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
+.set-knowledge-title-row .set-pane-title {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.set-local-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.set-local-badge > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-btn-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-btn-primary) 14%, transparent);
+}
+
+.set-knowledge-hero-copy p {
+  max-width: 560px;
+  margin: 7px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.set-knowledge-options {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.set-check-row,
+.set-memory-limit-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 48px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.set-check-row + .set-check-row,
+.set-memory-limit-row {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.set-check-row:hover {
+  background: var(--bg-hover);
+}
+
+.set-check-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.set-check-copy strong {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.set-check-copy small {
+  color: var(--text-tertiary);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.set-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 20px;
+}
+
+.set-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.set-switch > span {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-hover);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.set-switch > span::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--text-primary) 22%, transparent);
+  content: '';
+  transition: transform 160ms ease;
+}
+
+.set-switch input:checked + span {
+  border-color: var(--color-btn-primary);
+  background: var(--color-btn-primary);
+}
+
+.set-switch input:checked + span::after {
+  transform: translateX(14px);
+}
+
+.set-switch input:focus-visible + span {
+  outline: 2px solid color-mix(in srgb, var(--color-btn-primary) 32%, transparent);
+  outline-offset: 2px;
+}
+
+.set-number-stepper {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: 27px 32px 27px;
+  align-items: center;
+  height: 28px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.set-number-stepper button,
+.set-number-stepper input {
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: center;
+}
+
+.set-number-stepper button {
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.set-number-stepper button:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.set-number-stepper button:disabled {
+  color: var(--text-muted);
+}
+
+.set-number-stepper input {
+  width: 32px;
+  padding: 0;
+  border-right: 1px solid var(--border-subtle);
+  border-left: 1px solid var(--border-subtle);
+  font-size: 12px;
+  font-weight: 700;
+  appearance: textfield;
+}
+
+.set-number-stepper input::-webkit-inner-spin-button,
+.set-number-stepper input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.set-number-stepper input:focus {
+  outline: none;
+  background: var(--bg-hover);
+}
+
+.set-knowledge-library-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 2px;
+}
+
+.set-knowledge-library-head > div:first-child {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.set-knowledge-library-head strong {
   font-size: 13px;
 }
 
+.set-knowledge-library-head small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
 .set-knowledge-search {
-  margin: 14px 0;
+  display: flex;
+  flex: 1 1 330px;
+  align-items: center;
+  max-width: 390px;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-tertiary);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.set-knowledge-search:focus-within {
+  border-color: var(--color-btn-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-btn-primary) 10%, transparent);
+}
+
+.set-knowledge-search svg {
+  flex: 0 0 auto;
+  margin-left: 10px;
+}
+
+.set-knowledge-search input {
+  min-width: 0;
+  height: 100%;
+  flex: 1;
+  padding: 0 9px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 11.5px;
+}
+
+.set-knowledge-search button {
+  align-self: stretch;
+  padding: 0 13px;
+  border: 0;
+  border-left: 1px solid var(--border-subtle);
+  background: var(--text-primary);
+  color: var(--surface);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.set-knowledge-search button:hover {
+  background: color-mix(in srgb, var(--text-primary) 88%, var(--surface));
 }
 
 .set-knowledge-list {
   display: grid;
-  gap: 10px;
-  max-height: 310px;
-  overflow: auto;
+  gap: 8px;
 }
 
-/* The shared help style uses a negative top margin beneath form fields.
-   Reset it inside the clipped results viewport so the empty state stays visible. */
-.set-knowledge-list > .set-ai-help {
-  margin: 0;
-  padding: 2px 0;
-  line-height: 1.5;
+.set-knowledge-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 104px;
+  flex-direction: column;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 12px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.set-knowledge-empty > span {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.set-knowledge-empty strong {
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.set-knowledge-empty p {
+  margin: 4px 0 0;
+  font-size: 10.5px;
 }
 
 .set-knowledge-card {
-  padding: 12px;
+  padding: 12px 13px;
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--surface);
+  transition:
+    border-color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.set-knowledge-card:hover {
+  border-color: color-mix(in srgb, var(--text-primary) 22%, var(--border-subtle));
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--text-primary) 6%, transparent);
+  transform: translateY(-1px);
 }
 
 .set-knowledge-card-head {
@@ -349,19 +698,75 @@
   gap: 12px;
 }
 
-.set-knowledge-card p {
-  margin: 8px 0;
-  color: var(--text-secondary);
+.set-knowledge-card-head > strong {
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.45;
+}
+
+.set-knowledge-delete {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.set-knowledge-delete:hover {
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+  color: var(--danger);
+}
+
+.set-knowledge-card p {
+  margin: 7px 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.55;
   white-space: pre-wrap;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .set-knowledge-card small {
   color: var(--text-tertiary);
+  font-size: 9.5px;
   word-break: break-all;
+}
+
+.set-knowledge-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 2px;
+}
+
+.set-knowledge-footer > span {
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+@media (max-width: 680px) {
+  .set-knowledge-library-head,
+  .set-knowledge-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .set-knowledge-search {
+    flex-basis: auto;
+    max-width: none;
+  }
+
+  .set-knowledge-footer .set-btn {
+    align-self: flex-end;
+  }
 }

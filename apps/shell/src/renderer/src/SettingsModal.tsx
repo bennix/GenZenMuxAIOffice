@@ -671,95 +671,206 @@ export function SettingsModal({
               </>
             )}
             {section === 'knowledge' && (
-              <>
-                <h3 className="set-pane-title">{knowledgeLabel}</h3>
-                <div className="set-ai-help">
-                  {isChinese
-                    ? 'AI 成功回答会保存在本机并形成可搜索记忆。只有与当前问题相关的少量片段会随本次请求发送给 ZenMux；完整知识库不会上传。历史回答可能过时或有误，您可以随时关闭、删除或清空。'
-                    : 'Successful AI answers are saved locally as searchable memories. Only a few relevant excerpts are sent to ZenMux with the current request; the complete library is never uploaded. Memories may be outdated or wrong and can be disabled or deleted at any time.'}
+              <div className="set-knowledge-pane">
+                <div className="set-knowledge-hero">
+                  <div className="set-knowledge-hero-icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M5 6.5C5 5.1 8.1 4 12 4s7 1.1 7 2.5v11c0 1.4-3.1 2.5-7 2.5s-7-1.1-7-2.5v-11Z"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                      />
+                      <path
+                        d="M5 7c0 1.4 3.1 2.5 7 2.5S19 8.4 19 7M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                      />
+                    </svg>
+                  </div>
+                  <div className="set-knowledge-hero-copy">
+                    <div className="set-knowledge-title-row">
+                      <h3 className="set-pane-title">{knowledgeLabel}</h3>
+                      <span className="set-local-badge">
+                        <span aria-hidden="true" />
+                        {isChinese ? '仅存本机' : 'Local only'}
+                      </span>
+                    </div>
+                    <p>
+                      {isChinese
+                        ? '让 ZenOffice 记住有价值的问答，并在需要时找回相关上下文。只有命中的少量片段会随当前请求发送给 ZenMux，完整知识库始终留在本机。'
+                        : 'Let ZenOffice remember useful conversations and recall relevant context when needed. Only a few matched excerpts are sent with the current ZenMux request; your full library stays on this device.'}
+                    </p>
+                  </div>
                 </div>
                 {knowledgeSettings && (
                   <div className="set-knowledge-options">
                     <label className="set-check-row">
-                      <input
-                        type="checkbox"
-                        checked={knowledgeSettings.autoCapture}
-                        onChange={(event) =>
-                          updateKnowledgeSettings({ autoCapture: event.target.checked })
-                        }
-                      />
-                      <span>
-                        {isChinese
-                          ? '自动保存成功的 AI 问答'
-                          : 'Automatically save completed AI conversations'}
+                      <span className="set-check-copy">
+                        <strong>
+                          {isChinese ? '自动沉淀 AI 问答' : 'Remember completed AI conversations'}
+                        </strong>
+                        <small>
+                          {isChinese
+                            ? '将成功的问答保存为可搜索的本地记忆'
+                            : 'Save successful conversations as searchable local memories'}
+                        </small>
+                      </span>
+                      <span className="set-switch">
+                        <input
+                          type="checkbox"
+                          checked={knowledgeSettings.autoCapture}
+                          onChange={(event) =>
+                            updateKnowledgeSettings({ autoCapture: event.target.checked })
+                          }
+                        />
+                        <span aria-hidden="true" />
                       </span>
                     </label>
                     <label className="set-check-row">
-                      <input
-                        type="checkbox"
-                        checked={knowledgeSettings.useForReplies}
-                        onChange={(event) =>
-                          updateKnowledgeSettings({ useForReplies: event.target.checked })
-                        }
-                      />
-                      <span>
-                        {isChinese
-                          ? '回答前检索本地记忆（本地 RAG）'
-                          : 'Retrieve local memories before replying (local RAG)'}
+                      <span className="set-check-copy">
+                        <strong>
+                          {isChinese ? '回答前检索本地记忆' : 'Recall memories before replying'}
+                        </strong>
+                        <small>
+                          {isChinese
+                            ? '使用本地 RAG 补充与问题相关的历史上下文'
+                            : 'Use local RAG to add relevant context from earlier work'}
+                        </small>
+                      </span>
+                      <span className="set-switch">
+                        <input
+                          type="checkbox"
+                          checked={knowledgeSettings.useForReplies}
+                          onChange={(event) =>
+                            updateKnowledgeSettings({ useForReplies: event.target.checked })
+                          }
+                        />
+                        <span aria-hidden="true" />
                       </span>
                     </label>
                     <label className="set-check-row">
-                      <input
-                        type="checkbox"
-                        checked={knowledgeSettings.sameProjectBoost}
-                        onChange={(event) =>
-                          updateKnowledgeSettings({ sameProjectBoost: event.target.checked })
-                        }
-                      />
-                      <span>
-                        {isChinese
-                          ? '优先当前文件与项目的记忆'
-                          : 'Prefer memories from the current file and project'}
+                      <span className="set-check-copy">
+                        <strong>
+                          {isChinese ? '优先当前文件与项目' : 'Prefer the current file and project'}
+                        </strong>
+                        <small>
+                          {isChinese
+                            ? '相关度相近时，优先引用同一工作空间的记忆'
+                            : 'Prefer memories from this workspace when relevance is similar'}
+                        </small>
+                      </span>
+                      <span className="set-switch">
+                        <input
+                          type="checkbox"
+                          checked={knowledgeSettings.sameProjectBoost}
+                          onChange={(event) =>
+                            updateKnowledgeSettings({ sameProjectBoost: event.target.checked })
+                          }
+                        />
+                        <span aria-hidden="true" />
                       </span>
                     </label>
-                    <label className="set-ai-field" htmlFor="set-memory-limit">
-                      <span>
-                        {isChinese ? '每次最多引用的记忆条数' : 'Maximum memories per request'}
+                    <div className="set-memory-limit-row">
+                      <span className="set-check-copy">
+                        <strong>{isChinese ? '单次引用数量' : 'Memories per request'}</strong>
+                        <small>
+                          {isChinese
+                            ? '建议保持精简，避免无关历史干扰回答'
+                            : 'Keep this focused to avoid unrelated history in replies'}
+                        </small>
                       </span>
-                      <input
-                        id="set-memory-limit"
-                        className="set-input"
-                        type="number"
-                        min={1}
-                        max={10}
-                        value={knowledgeSettings.maxResults}
-                        onChange={(event) =>
-                          updateKnowledgeSettings({ maxResults: Number(event.target.value) || 1 })
-                        }
-                      />
-                    </label>
+                      <div className="set-number-stepper">
+                        <button
+                          type="button"
+                          aria-label={isChinese ? '减少引用数量' : 'Decrease memory count'}
+                          disabled={knowledgeSettings.maxResults <= 1}
+                          onClick={() =>
+                            updateKnowledgeSettings({
+                              maxResults: Math.max(1, knowledgeSettings.maxResults - 1),
+                            })
+                          }
+                        >
+                          −
+                        </button>
+                        <input
+                          id="set-memory-limit"
+                          aria-label={
+                            isChinese ? '每次最多引用的记忆条数' : 'Maximum memories per request'
+                          }
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={knowledgeSettings.maxResults}
+                          onChange={(event) =>
+                            updateKnowledgeSettings({
+                              maxResults: Math.min(
+                                10,
+                                Math.max(1, Number(event.target.value) || 1),
+                              ),
+                            })
+                          }
+                        />
+                        <button
+                          type="button"
+                          aria-label={isChinese ? '增加引用数量' : 'Increase memory count'}
+                          disabled={knowledgeSettings.maxResults >= 10}
+                          onClick={() =>
+                            updateKnowledgeSettings({
+                              maxResults: Math.min(10, knowledgeSettings.maxResults + 1),
+                            })
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
-                <div className="set-ai-add-row set-knowledge-search">
-                  <input
-                    className="set-input"
-                    value={knowledgeQuery}
-                    placeholder={
-                      isChinese ? '搜索问题、回答或主题' : 'Search questions, answers, or topics'
-                    }
-                    onChange={(event) => setKnowledgeQuery(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') refreshMemories()
-                    }}
-                  />
-                  <button className="set-btn" onClick={() => refreshMemories()}>
-                    {isChinese ? '搜索' : 'Search'}
-                  </button>
+                <div className="set-knowledge-library-head">
+                  <div>
+                    <strong>{isChinese ? '记忆库' : 'Memory library'}</strong>
+                    <small>
+                      {isChinese
+                        ? `${memories.length} 条当前结果`
+                        : `${memories.length} current result${memories.length === 1 ? '' : 's'}`}
+                    </small>
+                  </div>
+                  <div className="set-knowledge-search">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.4" />
+                      <path
+                        d="m10.4 10.4 3 3"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <input
+                      value={knowledgeQuery}
+                      aria-label={isChinese ? '搜索个人知识库' : 'Search personal knowledge'}
+                      placeholder={
+                        isChinese ? '搜索问题、回答或主题' : 'Search questions, answers, or topics'
+                      }
+                      onChange={(event) => setKnowledgeQuery(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') refreshMemories()
+                      }}
+                    />
+                    <button type="button" onClick={() => refreshMemories()}>
+                      {isChinese ? '搜索' : 'Search'}
+                    </button>
+                  </div>
                 </div>
                 <div className="set-knowledge-list">
                   {memories.length === 0 && (
-                    <div className="set-ai-help">
-                      {isChinese ? '暂无匹配的本地记忆。' : 'No matching local memories.'}
+                    <div className="set-knowledge-empty">
+                      <span aria-hidden="true">⌕</span>
+                      <strong>{isChinese ? '没有找到相关记忆' : 'No matching memories'}</strong>
+                      <p>
+                        {isChinese
+                          ? '换一个关键词，或在 AI 对话后回来查看。'
+                          : 'Try another keyword or return after an AI conversation.'}
+                      </p>
                     </div>
                   )}
                   {memories.map((memory) => (
@@ -767,14 +878,30 @@ export function SettingsModal({
                       <div className="set-knowledge-card-head">
                         <strong>{memory.question}</strong>
                         <button
-                          className="set-btn danger"
+                          className="set-knowledge-delete"
+                          aria-label={isChinese ? '删除这条记忆' : 'Delete this memory'}
+                          title={isChinese ? '删除' : 'Delete'}
                           onClick={() =>
                             void window.aiOfficeProject
                               ?.deleteKnowledge(memory.id)
                               .then(() => refreshMemories())
                           }
                         >
-                          {isChinese ? '删除' : 'Delete'}
+                          <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M3.5 4.5h9M6 4.5V3.2h4v1.3M5 6.5v6M8 6.5v6M11 6.5v6M4 4.5l.6 9h6.8l.6-9"
+                              stroke="currentColor"
+                              strokeWidth="1.2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
                         </button>
                       </div>
                       <p>{memory.answer}</p>
@@ -785,7 +912,12 @@ export function SettingsModal({
                     </article>
                   ))}
                 </div>
-                <div className="set-pane-footer">
+                <div className="set-knowledge-footer">
+                  <span>
+                    {isChinese
+                      ? '记忆可能过时或有误，您可以随时删除。'
+                      : 'Memories may be outdated or incorrect. You can remove them at any time.'}
+                  </span>
                   <button
                     className="set-btn danger"
                     disabled={memories.length === 0}
@@ -802,7 +934,7 @@ export function SettingsModal({
                     {isChinese ? '清空知识库' : 'Clear knowledge base'}
                   </button>
                 </div>
-              </>
+              </div>
             )}
             {section === 'about' && (
               <>
