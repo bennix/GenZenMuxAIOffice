@@ -581,9 +581,10 @@ function fallbackMessageId(inbound: IlinkInbound): string {
 }
 
 function safeAttachmentName(name: string): string {
-  const cleaned = basename(name)
-    .replace(/[\u0000-\u001f<>:"/\\|?*]/gu, '_')
-    .trim()
+  const withoutControls = Array.from(basename(name), (character) =>
+    character.charCodeAt(0) < 0x20 ? '_' : character,
+  ).join('')
+  const cleaned = withoutControls.replace(/[<>:"/\\|?*]/gu, '_').trim()
   return cleaned || '微信附件.pdf'
 }
 
