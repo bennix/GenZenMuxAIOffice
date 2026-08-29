@@ -36,11 +36,18 @@ export interface IlinkBindResult {
 }
 
 export interface IlinkInbound {
+  messageId: string
   fromUserId: string
   contextToken: string
   groupId?: string
   text: string
+  images: IlinkImageRef[]
   rawType: number
+}
+
+export interface IlinkImageRef {
+  encryptQueryParam: string
+  aesKey: string
 }
 
 export interface IlinkSession {
@@ -166,13 +173,41 @@ export async function getUpdates(
     if (!fromUserId || !contextToken) continue
     if (str(msg.group_id)) continue
     msgs.push({
+      messageId: scalarString(msg.message_id) || str(msg.client_id),
       fromUserId,
       contextToken,
       text: extractText(msg),
+      images: extractImages(msg),
       rawType: Number(msg.message_type) || 1,
     })
   }
   return { msgs, cursor: str(data.get_updates_buf) || cursor }
+}
+
+function scalarString(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  return ''
+}
+
+/** Extract every image in an inbound item list; callers download them only from WeChat's CDN. */
+export function extractImages(msg: Record<string, unknown>): IlinkImageRef[] {
+  const items = Array.isArray(msg.item_list) ? msg.item_list : []
+  const images: IlinkImageRef[] = []
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue
+    const image = (item as Record<string, unknown>).image_item
+    if (!image || typeof image !== 'object') continue
+    const imageRec = image as Record<string, unknown>
+    const media = imageRec.media
+    if (!media || typeof media !== 'object') continue
+    const mediaRec = media as Record<string, unknown>
+    const encryptQueryParam = str(mediaRec.encrypt_query_param)
+    // Newer clients put a raw hex key on image_item; older ones use base64 in media.aes_key.
+    const aesKey = str(imageRec.aeskey) || str(mediaRec.aes_key)
+    if (encryptQueryParam && aesKey) images.push({ encryptQueryParam, aesKey })
+  }
+  return images
 }
 
 function extractText(msg: Record<string, unknown>): string {
@@ -232,8 +267,9 @@ export async function sendText(
   toUserId: string,
   contextToken: string,
   text: string,
+  stableClientId?: string,
 ): Promise<void> {
-  const clientId = `genoffice-${randomBytes(4).toString('hex')}`
+  const clientId = stableClientId || `genoffice-${randomBytes(4).toString('hex')}`
   await ilinkRequest(
     'POST',
     `${normalizeIlinkBaseUrl(session.baseUrl)}/ilink/bot/sendmessage`,

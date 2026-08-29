@@ -1,9 +1,10 @@
-import { mkdir, readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { createHash } from 'node:crypto'
+import { mkdir, readFile, writeFile as writeBinaryFile } from 'node:fs/promises'
+import { dirname, join, relative, resolve } from 'node:path'
 import { dialog, safeStorage, shell } from 'electron'
 import { restoreAiSettingsFromDisk, type SafeStorageLike } from '@genoffice/electron-utils'
 import { chatZenMux, defaultAiSettings, resolveAiSettings } from '@genoffice/ai-provider'
-import type { AiSettings } from '@genoffice/ai-provider'
+import type { AiImageReference, AiSettings } from '@genoffice/ai-provider'
 import { readFileSync } from 'node:fs'
 import type { WechatDiaryPrefs, WechatDiaryStatus } from '../../shared/wechat-diary-api'
 import {
@@ -24,6 +25,7 @@ import {
 } from './format'
 import {
   type IlinkSession,
+  type IlinkInbound,
   ILINK_DEFAULT_BASE,
   ensureTypingTicket,
   getUpdates,
@@ -33,11 +35,14 @@ import {
   sendTyping,
   startQrLogin,
 } from './ilink'
+import { downloadWechatImage } from './media'
 import { qrDataUrlFromPayload } from './qr'
+import { selectWechatImageBatch } from './image-batch'
 import {
   loadWechatDiaryStore,
   maskUserId,
   saveWechatDiaryStore,
+  type PendingWechatImage,
   type WechatDiaryStore,
 } from './store'
 import { formatHm, threeDayWindow } from './window'
@@ -130,7 +135,12 @@ export function setWechatDiaryPrefs(prefs: WechatDiaryPrefs): WechatDiaryStatus 
   if (!store) return publicStatus()
   if (prefs.enabled !== undefined) store.enabled = prefs.enabled
   if (prefs.aiEnabled !== undefined) store.aiEnabled = prefs.aiEnabled
-  if (prefs.diaryDir) store.diaryDir = prefs.diaryDir
+  if (prefs.diaryDir && prefs.diaryDir !== store.diaryDir) {
+    store.diaryDir = prefs.diaryDir
+    // Do not send images saved under a previous root after the user deliberately switches
+    // diary folders. The files and Markdown entries themselves remain untouched there.
+    store.pendingImages = []
+  }
   persist()
   if (store.enabled && store.botToken) startListening()
   else stopListening()
@@ -182,6 +192,9 @@ export function unbindWechat(): WechatDiaryStatus {
     store.botId = ''
     store.userId = ''
     store.getUpdatesBuf = ''
+    store.pendingImages = []
+    store.pendingReply = null
+    store.processedMessageIds = []
     persist()
   }
   bindQr = ''
@@ -310,9 +323,7 @@ function loopOnce(): void {
     }
     try {
       const { msgs, cursor } = await getUpdates(sess, store.getUpdatesBuf)
-      for (const msg of msgs) {
-        await handleInbound(sess, msg.fromUserId, msg.contextToken, msg.text)
-      }
+      for (const msg of msgs) await handleInbound(sess, msg)
       // Advance only after every message has been written/replied to. Persisting first can
       // silently lose the batch if the app exits while a message is still being handled.
       if (cursor !== store.getUpdatesBuf) {
@@ -333,28 +344,99 @@ function loopOnce(): void {
   })()
 }
 
-async function handleInbound(
-  sess: IlinkSession,
-  userId: string,
-  contextToken: string,
-  text: string,
-): Promise<void> {
+async function handleInbound(sess: IlinkSession, inbound: IlinkInbound): Promise<void> {
   if (!store || !deps) return
+  const messageId = inbound.messageId || fallbackMessageId(inbound)
+  if (store.processedMessageIds.includes(messageId)) return
+
   store.lastInboundAt = Date.now()
   persist()
   emit()
 
-  let ticket = typingTickets.get(userId) ?? ''
-  if (!ticket) {
-    ticket = await ensureTypingTicket(sess, userId, contextToken)
-    if (ticket) typingTickets.set(userId, ticket)
+  // A failed send leaves an outbox record. On replay, deliver the exact same answer without
+  // writing another Markdown block or invoking the model again.
+  if (store.pendingReply) {
+    if (store.pendingReply.messageId !== messageId) {
+      throw new Error('上一条微信回复仍在等待发送')
+    }
+    await deliverPendingReply(sess, inbound, '')
+    markProcessed(messageId)
+    return
   }
-  await sendTyping(sess, userId, ticket, 1)
 
-  const cmd = classifyWechatText(text)
-  let reply = ''
+  const diaryPath = await currentDiaryPath()
+  let savedImages: PendingWechatImage[] = []
   try {
-    if (cmd.kind === 'help') reply = HELP_TEXT
+    savedImages = await saveInboundImages(inbound, messageId, diaryPath)
+  } catch (err) {
+    const reply = `图片处理失败：${err instanceof Error ? err.message : String(err)}`
+    store.pendingReply = {
+      messageId,
+      userId: inbound.fromUserId,
+      reply,
+      clientId: stableClientId(messageId),
+      diaryPath,
+      appendToDiary: false,
+      consumeImageIds: [],
+    }
+    persist()
+    await deliverPendingReply(sess, inbound, '')
+    markProcessed(messageId)
+    return
+  }
+  const userImages = store.pendingImages
+    .filter((image) => image.userId === inbound.fromUserId)
+    .sort((a, b) => a.createdAt - b.createdAt)
+  const hasImageContext = userImages.length > 0
+  const trimmedText = inbound.text.trim()
+  const imageBatch = selectWechatImageBatch(
+    store.pendingImages,
+    inbound.fromUserId,
+    Boolean(trimmedText),
+  )
+
+  // A bare image is durable immediately, but deliberately silent until a five-image batch is
+  // complete. Any following text consumes the current (up to five) image batch right away.
+  if (savedImages.length > 0 && !trimmedText && imageBatch.length === 0) {
+    markProcessed(messageId)
+    return
+  }
+
+  let ticket = typingTickets.get(inbound.fromUserId) ?? ''
+  try {
+    if (!ticket) {
+      ticket = await ensureTypingTicket(sess, inbound.fromUserId, inbound.contextToken)
+      if (ticket) typingTickets.set(inbound.fromUserId, ticket)
+    }
+    await sendTyping(sess, inbound.fromUserId, ticket, 1)
+  } catch {
+    ticket = ''
+  }
+
+  const cmd = classifyWechatText(trimmedText)
+  let reply = ''
+  let appendAi = false
+  let consumeImageIds: string[] = []
+  try {
+    if (hasImageContext && (trimmedText || userImages.length >= 5)) {
+      const batch = imageBatch
+      consumeImageIds = batch.map((image) => image.id)
+      if (trimmedText && savedImages.length === 0) {
+        await appendRoleOnce(diaryPath, 'wechat', trimmedText, `wechat:${messageId}`)
+      }
+      if (store.aiEnabled) {
+        const prompt = trimmedText || '请综合查看并分析这组图片，说明图片中的主要内容。'
+        const ai = await askAi(prompt, await loadAiImages(batch))
+        if (ai) {
+          reply = ai
+          appendAi = true
+        } else {
+          reply = '图片已保存到日记，但当前 AI 未配置或暂时不可用，请检查 ZenMux 设置与网络。'
+        }
+      } else {
+        reply = `已将 ${batch.length} 张图片保存到日记；当前已关闭微信 AI 回复。`
+      }
+    } else if (cmd.kind === 'help') reply = HELP_TEXT
     else if (cmd.kind === 'ping') reply = PING_TEXT
     else if (cmd.kind === 'withdraw') {
       const file = await currentDiaryPath()
@@ -370,18 +452,18 @@ async function handleInbound(
       await writeUtf8(file, appendSeal(current || newDoc(), formatHm(Date.now())))
       reply = SEALED_TEXT
     } else if (cmd.kind === 'note') {
-      await appendRole('wechat', cmd.text)
+      await appendRoleOnce(diaryPath, 'wechat', cmd.text, `wechat:${messageId}`)
       reply = SAVED_TEXT
     } else if (cmd.kind === 'chat') {
       if (!cmd.text) {
         reply = '发文字即可记入当前三天窗口。'
       } else {
-        await appendRole('wechat', cmd.text)
+        await appendRoleOnce(diaryPath, 'wechat', cmd.text, `wechat:${messageId}`)
         if (store.aiEnabled) {
           const ai = await askAi(cmd.text)
           if (ai) {
-            await appendRole('ai', ai)
             reply = ai
+            appendAi = true
           } else {
             reply = '已记下。当前未配置可用的 AI（设置 → ZenMux），因此没有自动回复。'
           }
@@ -391,16 +473,155 @@ async function handleInbound(
       }
     }
   } catch (err) {
-    reply = `写入日记失败：${err instanceof Error ? err.message : String(err)}`
+    reply = `处理微信内容失败：${err instanceof Error ? err.message : String(err)}`
     lastError = reply
   }
 
   try {
-    await sendText(sess, userId, contextToken, reply.slice(0, 4000))
+    store.pendingReply = {
+      messageId,
+      userId: inbound.fromUserId,
+      reply: reply.slice(0, 4000),
+      clientId: stableClientId(messageId),
+      diaryPath,
+      appendToDiary: appendAi,
+      consumeImageIds,
+    }
+    persist()
+    await deliverPendingReply(sess, inbound, ticket)
+    markProcessed(messageId)
   } finally {
-    await sendTyping(sess, userId, ticket, 2)
+    try {
+      await sendTyping(sess, inbound.fromUserId, ticket, 2)
+    } catch {
+      /* A typing-indicator failure must never turn a delivered reply into a replay. */
+    }
     emit()
   }
+}
+
+function fallbackMessageId(inbound: IlinkInbound): string {
+  return createHash('sha256')
+    .update(inbound.fromUserId)
+    .update('\0')
+    .update(inbound.contextToken)
+    .update('\0')
+    .update(inbound.text)
+    .update('\0')
+    .update(inbound.images.map((image) => image.encryptQueryParam).join('\0'))
+    .digest('hex')
+}
+
+function stableClientId(messageId: string): string {
+  const digest = createHash('sha256').update(messageId).digest('hex').slice(0, 24)
+  return `genoffice-${digest}`
+}
+
+function marker(name: string): string {
+  return `<!-- genoffice-${createHash('sha256').update(name).digest('hex').slice(0, 24)} -->`
+}
+
+function markProcessed(messageId: string): void {
+  if (!store) return
+  store.processedMessageIds = [
+    ...store.processedMessageIds.filter((id) => id !== messageId),
+    messageId,
+  ].slice(-200)
+  persist()
+}
+
+async function deliverPendingReply(
+  sess: IlinkSession,
+  inbound: IlinkInbound,
+  ticket: string,
+): Promise<void> {
+  if (!store?.pendingReply) return
+  const pending = store.pendingReply
+  if (
+    pending.userId !== inbound.fromUserId ||
+    pending.messageId !== (inbound.messageId || fallbackMessageId(inbound))
+  ) {
+    throw new Error('微信待发送回复与当前消息不匹配')
+  }
+  if (pending.appendToDiary) {
+    await appendRoleOnce(pending.diaryPath, 'ai', pending.reply, `ai:${pending.messageId}`)
+  }
+  await sendText(sess, inbound.fromUserId, inbound.contextToken, pending.reply, pending.clientId)
+  const consumed = new Set(pending.consumeImageIds)
+  store.pendingImages = store.pendingImages.filter((image) => !consumed.has(image.id))
+  store.pendingReply = null
+  persist()
+  if (ticket) typingTickets.set(inbound.fromUserId, ticket)
+}
+
+function isWithinDiaryRoot(path: string): boolean {
+  if (!store) return false
+  const root = resolve(store.diaryDir || defaultDiaryDir())
+  const candidate = resolve(path)
+  const rel = relative(root, candidate)
+  return rel !== '..' && !rel.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`)
+}
+
+async function saveInboundImages(
+  inbound: IlinkInbound,
+  messageId: string,
+  diaryPath: string,
+): Promise<PendingWechatImage[]> {
+  if (!store || inbound.images.length === 0) return []
+  const saved: PendingWechatImage[] = []
+  const assetDir = join(
+    dirname(diaryPath),
+    `${diaryPath.slice(dirname(diaryPath).length + 1, -3)}.assets`,
+  )
+  await mkdir(assetDir, { recursive: true })
+  for (const [index, image] of inbound.images.entries()) {
+    const id = `${messageId}:${index}`
+    const existing = store.pendingImages.find((item) => item.id === id)
+    if (existing) {
+      saved.push(existing)
+      continue
+    }
+    const downloaded = await downloadWechatImage(image.encryptQueryParam, image.aesKey)
+    const digest = createHash('sha256').update(id).digest('hex').slice(0, 20)
+    const path = join(assetDir, `wechat-${digest}.${downloaded.extension}`)
+    await writeBinaryFile(path, downloaded.data)
+    saved.push({
+      id,
+      messageId,
+      userId: inbound.fromUserId,
+      path,
+      mime: downloaded.mime,
+      createdAt: Date.now() + index,
+    })
+  }
+  const imageMarkdown = saved
+    .map((image, index) => {
+      const href = relative(dirname(diaryPath), image.path)
+        .split(/[\\/]/u)
+        .map((part) => encodeURIComponent(part))
+        .join('/')
+      return `![微信图片 ${index + 1}](./${href})`
+    })
+    .join('\n\n')
+  const body = [inbound.text.trim(), imageMarkdown].filter(Boolean).join('\n\n')
+  await appendRoleOnce(diaryPath, 'wechat', body, `wechat:${messageId}`)
+  for (const image of saved) {
+    if (!store.pendingImages.some((item) => item.id === image.id)) store.pendingImages.push(image)
+  }
+  store.pendingImages = store.pendingImages.slice(-20)
+  persist()
+  return saved
+}
+
+async function loadAiImages(images: PendingWechatImage[]): Promise<AiImageReference[]> {
+  if (!store) return []
+  const result: AiImageReference[] = []
+  for (const image of images.slice(0, 5)) {
+    const path = resolve(image.path)
+    if (!isWithinDiaryRoot(path)) continue
+    result.push({ mime: image.mime, base64: (await readFile(path)).toString('base64') })
+  }
+  return result
 }
 
 function newDoc(): string {
@@ -420,11 +641,20 @@ async function currentDiaryPath(): Promise<string> {
   return file
 }
 
-async function appendRole(role: 'wechat' | 'ai', body: string): Promise<void> {
-  const file = await currentDiaryPath()
+async function appendRoleOnce(
+  file: string,
+  role: 'wechat' | 'ai',
+  body: string,
+  uniqueName: string,
+): Promise<void> {
   let current = await readUtf8(file)
   if (!current.trim()) current = newDoc()
-  await writeUtf8(file, appendDiaryEntry(current, formatHm(Date.now()), role, body))
+  const uniqueMarker = marker(uniqueName)
+  if (current.includes(uniqueMarker)) return
+  await writeUtf8(
+    file,
+    appendDiaryEntry(current, formatHm(Date.now()), role, `${uniqueMarker}\n${body}`),
+  )
 }
 
 async function readUtf8(path: string): Promise<string> {
@@ -453,7 +683,7 @@ async function writeUtf8(path: string, text: string): Promise<void> {
   }
 }
 
-async function askAi(userText: string): Promise<string> {
+async function askAi(userText: string, images: AiImageReference[] = []): Promise<string> {
   if (!deps || !store) return ''
   const settings = deps.readAiSettings()
   const zenmux = settings.providers.zenmux
@@ -472,7 +702,7 @@ async function askAi(userText: string): Promise<string> {
   ]
     .filter(Boolean)
     .join('\n\n')
-  const result = await chatZenMux(zenmux, system, userText)
+  const result = await chatZenMux(zenmux, system, userText, images)
   return result.ok ? (result.content ?? '').trim() : ''
 }
 

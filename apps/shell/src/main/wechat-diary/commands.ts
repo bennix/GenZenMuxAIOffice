@@ -26,6 +26,8 @@ export function classifyWechatText(raw: string): DiaryCommand {
 
 export const HELP_TEXT = `微信日记用法：
 · 直接发文字：记入当前三天窗口，并由系统 AI 回复（回复也写入同一篇）
+· 单独发图片：图片立即保存到日记；不逐张打断，累计 5 张后统一分析
+· 图片后发问题：不足 5 张也会把当前图片与问题一起交给 AI
 · 记：内容 — 只入库，不调用 AI
 · 撤回 — 删掉上一条微信记录及紧随其后的 AI 回复
 · 结束 / 晚安 — 给本窗口写一条封存注脚

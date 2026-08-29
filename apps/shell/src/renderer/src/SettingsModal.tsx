@@ -444,8 +444,8 @@ export function SettingsModal({
                 <h3 className="set-pane-title">{t('setSecWechat')}</h3>
                 <div className="set-ai-help">
                   {isChinese
-                    ? '用手机微信扫描绑定二维码（需微信 8.0.70+ 的官方 ClawBot 插件）。发来的文字会写入「三天窗口」Markdown；走设置里当前指定的 AI，回复也会追加进同一篇。'
-                    : 'Scan the QR with WeChat (8.0.70+ official ClawBot). Incoming text is appended to a 3-day Markdown window. Replies from the AI configured in Settings are written into the same file.'}
+                    ? '用手机微信扫描绑定二维码（需微信 8.0.70+ 的官方 ClawBot 插件）。文字和图片会写入「三天窗口」Markdown；纯图片累计 5 张后统一分析，或在图片后发送问题立即提问。AI 回复也会追加进同一篇。'
+                    : 'Scan with WeChat (8.0.70+ official ClawBot). Text and images are saved in a 3-day Markdown window. Five image-only messages are analyzed together, or send a question after images to flush the batch. AI replies are appended to the same file.'}
                 </div>
                 <div className="set-check-row">
                   <input

@@ -13,6 +13,28 @@ export interface WechatDiaryStore {
   getUpdatesBuf: string
   lastFile: string
   lastInboundAt: number | null
+  pendingImages: PendingWechatImage[]
+  pendingReply: PendingWechatReply | null
+  processedMessageIds: string[]
+}
+
+export interface PendingWechatImage {
+  id: string
+  messageId: string
+  userId: string
+  path: string
+  mime: string
+  createdAt: number
+}
+
+export interface PendingWechatReply {
+  messageId: string
+  userId: string
+  reply: string
+  clientId: string
+  diaryPath: string
+  appendToDiary: boolean
+  consumeImageIds: string[]
 }
 
 interface StoredFile {
@@ -27,6 +49,9 @@ interface StoredFile {
   getUpdatesBuf?: string
   lastFile?: string
   lastInboundAt?: number | null
+  pendingImages?: PendingWechatImage[]
+  pendingReply?: PendingWechatReply | null
+  processedMessageIds?: string[]
 }
 
 const EMPTY: WechatDiaryStore = {
@@ -40,6 +65,41 @@ const EMPTY: WechatDiaryStore = {
   getUpdatesBuf: '',
   lastFile: '',
   lastInboundAt: null,
+  pendingImages: [],
+  pendingReply: null,
+  processedMessageIds: [],
+}
+
+function emptyStore(): WechatDiaryStore {
+  return { ...EMPTY, pendingImages: [], pendingReply: null, processedMessageIds: [] }
+}
+
+function validPendingImage(value: unknown): value is PendingWechatImage {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const item = value as Record<string, unknown>
+  return (
+    typeof item.id === 'string' &&
+    typeof item.messageId === 'string' &&
+    typeof item.userId === 'string' &&
+    typeof item.path === 'string' &&
+    typeof item.mime === 'string' &&
+    typeof item.createdAt === 'number'
+  )
+}
+
+function validPendingReply(value: unknown): value is PendingWechatReply {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const item = value as Record<string, unknown>
+  return (
+    typeof item.messageId === 'string' &&
+    typeof item.userId === 'string' &&
+    typeof item.reply === 'string' &&
+    typeof item.clientId === 'string' &&
+    typeof item.diaryPath === 'string' &&
+    typeof item.appendToDiary === 'boolean' &&
+    Array.isArray(item.consumeImageIds) &&
+    item.consumeImageIds.every((id) => typeof id === 'string')
+  )
 }
 
 export function wechatDiaryStorePath(userData: string): string {
@@ -68,7 +128,7 @@ export function loadWechatDiaryStore(userData: string, safe: SafeStorageLike): W
   const path = wechatDiaryStorePath(userData)
   try {
     const raw: unknown = JSON.parse(readFileSync(path, 'utf8'))
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...EMPTY }
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return emptyStore()
     const rec = raw as StoredFile
     const token = rec.botTokenEncrypted
       ? decrypt(rec.botTokenEncrypted, safe)
@@ -86,9 +146,16 @@ export function loadWechatDiaryStore(userData: string, safe: SafeStorageLike): W
       getUpdatesBuf: typeof rec.getUpdatesBuf === 'string' ? rec.getUpdatesBuf : '',
       lastFile: typeof rec.lastFile === 'string' ? rec.lastFile : '',
       lastInboundAt: typeof rec.lastInboundAt === 'number' ? rec.lastInboundAt : null,
+      pendingImages: Array.isArray(rec.pendingImages)
+        ? rec.pendingImages.filter(validPendingImage).slice(-20)
+        : [],
+      pendingReply: validPendingReply(rec.pendingReply) ? rec.pendingReply : null,
+      processedMessageIds: Array.isArray(rec.processedMessageIds)
+        ? rec.processedMessageIds.filter((id): id is string => typeof id === 'string').slice(-200)
+        : [],
     }
   } catch {
-    return { ...EMPTY }
+    return emptyStore()
   }
 }
 
@@ -110,6 +177,9 @@ export function saveWechatDiaryStore(
     getUpdatesBuf: store.getUpdatesBuf,
     lastFile: store.lastFile,
     lastInboundAt: store.lastInboundAt,
+    pendingImages: store.pendingImages.slice(-20),
+    pendingReply: store.pendingReply,
+    processedMessageIds: store.processedMessageIds.slice(-200),
   }
   writeFileSync(path, JSON.stringify(out, null, 2), { mode: 0o600 })
   chmodSync(path, 0o600)
