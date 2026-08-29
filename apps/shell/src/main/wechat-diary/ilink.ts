@@ -4,6 +4,7 @@ export const ILINK_DEFAULT_BASE = 'https://ilinkai.weixin.qq.com'
 const CHANNEL_VERSION = '2.4.3'
 const CLIENT_VERSION = '132099'
 const BOT_AGENT = 'GenOffice-wechat-diary/1.0'
+const MAX_WECHAT_TEXT_LENGTH = 2_000
 
 const OFFICIAL_WECHAT_HOSTS = new Set(['weixin.qq.com', 'wechat.com'])
 
@@ -94,6 +95,38 @@ async function readJson(res: Response): Promise<Record<string, unknown>> {
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v : ''
+}
+
+function responseCode(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && /^-?\d+$/u.test(value.trim())) return Number(value)
+  return 0
+}
+
+/** iLink can report a business failure in an otherwise successful HTTP 200 response. */
+export function assertIlinkSuccess(data: Record<string, unknown>, operation: string): void {
+  const ret = responseCode(data.ret)
+  const errcode = responseCode(data.errcode)
+  if (ret === 0 && errcode === 0) return
+  const code = errcode || ret
+  if (code === -14) throw new Error('微信登录已过期，请在设置中重新绑定微信')
+  throw new Error(`${operation}失败（微信错误码 ${code}）`)
+}
+
+export function chunkWechatText(text: string, maxLength = MAX_WECHAT_TEXT_LENGTH): string[] {
+  if (maxLength < 1) throw new Error('微信消息分段长度必须大于 0')
+  if (!text) return []
+  const chunks: string[] = []
+  let remaining = text
+  while (remaining.length > maxLength) {
+    let splitAt = remaining.lastIndexOf('\n', maxLength)
+    if (splitAt < Math.floor(maxLength * 0.5)) splitAt = maxLength
+    chunks.push(remaining.slice(0, splitAt))
+    remaining = remaining.slice(splitAt)
+    if (remaining.startsWith('\n')) remaining = remaining.slice(1)
+  }
+  if (remaining) chunks.push(remaining)
+  return chunks
 }
 
 export async function ilinkRequest(
@@ -269,23 +302,28 @@ export async function sendText(
   text: string,
   stableClientId?: string,
 ): Promise<void> {
-  const clientId = stableClientId || `genoffice-${randomBytes(4).toString('hex')}`
-  await ilinkRequest(
-    'POST',
-    `${normalizeIlinkBaseUrl(session.baseUrl)}/ilink/bot/sendmessage`,
-    {
-      msg: {
-        from_user_id: '',
-        to_user_id: toUserId,
-        client_id: clientId,
-        message_type: 2,
-        message_state: 2,
-        context_token: contextToken,
-        item_list: [{ type: 1, text_item: { text } }],
+  const chunks = chunkWechatText(text)
+  const baseClientId = stableClientId || `genoffice-${randomBytes(4).toString('hex')}`
+  for (const [index, chunk] of chunks.entries()) {
+    const clientId = chunks.length === 1 ? baseClientId : `${baseClientId}-${index + 1}`
+    const data = await ilinkRequest(
+      'POST',
+      `${normalizeIlinkBaseUrl(session.baseUrl)}/ilink/bot/sendmessage`,
+      {
+        msg: {
+          from_user_id: '',
+          to_user_id: toUserId,
+          client_id: clientId,
+          message_type: 2,
+          message_state: 2,
+          context_token: contextToken,
+          item_list: [{ type: 1, text_item: { text: chunk } }],
+        },
+        base_info: baseInfo(),
       },
-      base_info: baseInfo(),
-    },
-    session.botToken,
-    20_000,
-  )
+      session.botToken,
+      20_000,
+    )
+    assertIlinkSuccess(data, '微信回复发送')
+  }
 }

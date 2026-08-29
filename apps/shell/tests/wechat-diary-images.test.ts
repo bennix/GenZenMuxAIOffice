@@ -1,9 +1,11 @@
 import { createCipheriv, randomBytes } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { selectWechatImageBatch } from '../src/main/wechat-diary/image-batch'
-import { extractImages } from '../src/main/wechat-diary/ilink'
+import { chunkWechatText, extractImages, sendText } from '../src/main/wechat-diary/ilink'
 import { detectImageMime, parseWechatAesKey } from '../src/main/wechat-diary/media'
 import type { PendingWechatImage } from '../src/main/wechat-diary/store'
+
+afterEach(() => vi.unstubAllGlobals())
 
 function pending(count: number): PendingWechatImage[] {
   return Array.from({ length: count }, (_, index) => ({
@@ -70,5 +72,48 @@ describe('wechat inbound image protocol', () => {
       mime: 'image/jpeg',
       extension: 'jpg',
     })
+  })
+})
+
+describe('wechat outbound reply delivery', () => {
+  it('treats an iLink business error inside HTTP 200 as a failed send', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ ret: -14, errcode: -14, errmsg: 'expired' }), {
+          status: 200,
+        }),
+      ),
+    )
+
+    await expect(
+      sendText(
+        { botToken: 'test-token', baseUrl: 'https://ilinkai.weixin.qq.com' },
+        'reader@im.wechat',
+        'context-token',
+        'reply',
+        'stable-id',
+      ),
+    ).rejects.toThrow('重新绑定微信')
+  })
+
+  it('splits long AI answers into accepted-size messages with stable chunk IDs', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const reply = `${'甲'.repeat(1_500)}\n${'乙'.repeat(1_500)}`
+
+    expect(chunkWechatText(reply)).toHaveLength(2)
+    await sendText(
+      { botToken: 'test-token', baseUrl: 'https://ilinkai.weixin.qq.com' },
+      'reader@im.wechat',
+      'context-token',
+      reply,
+      'stable-id',
+    )
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const bodies = fetchMock.mock.calls.map((call) => JSON.parse(String(call[1]?.body)))
+    expect(bodies.map((body) => body.msg.client_id)).toEqual(['stable-id-1', 'stable-id-2'])
+    expect(bodies.every((body) => body.msg.item_list[0].text_item.text.length <= 2_000)).toBe(true)
   })
 })

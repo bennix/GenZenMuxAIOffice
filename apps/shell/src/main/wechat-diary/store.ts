@@ -35,6 +35,8 @@ export interface PendingWechatReply {
   diaryPath: string
   appendToDiary: boolean
   consumeImageIds: string[]
+  /** Set only after iLink has confirmed every outbound text chunk. */
+  sentToWechat?: boolean
 }
 
 interface StoredFile {
@@ -97,6 +99,7 @@ function validPendingReply(value: unknown): value is PendingWechatReply {
     typeof item.clientId === 'string' &&
     typeof item.diaryPath === 'string' &&
     typeof item.appendToDiary === 'boolean' &&
+    (item.sentToWechat === undefined || typeof item.sentToWechat === 'boolean') &&
     Array.isArray(item.consumeImageIds) &&
     item.consumeImageIds.every((id) => typeof id === 'string')
   )

@@ -378,6 +378,7 @@ async function handleInbound(sess: IlinkSession, inbound: IlinkInbound): Promise
       diaryPath,
       appendToDiary: false,
       consumeImageIds: [],
+      sentToWechat: false,
     }
     persist()
     await deliverPendingReply(sess, inbound, '')
@@ -486,6 +487,7 @@ async function handleInbound(sess: IlinkSession, inbound: IlinkInbound): Promise
       diaryPath,
       appendToDiary: appendAi,
       consumeImageIds,
+      sentToWechat: false,
     }
     persist()
     await deliverPendingReply(sess, inbound, ticket)
@@ -543,10 +545,16 @@ async function deliverPendingReply(
   ) {
     throw new Error('微信待发送回复与当前消息不匹配')
   }
+  // Confirm delivery before updating the Markdown. This prevents a HTTP-200/business-error
+  // response from producing an AI diary block that the user never received in WeChat.
+  if (!pending.sentToWechat) {
+    await sendText(sess, inbound.fromUserId, inbound.contextToken, pending.reply, pending.clientId)
+    pending.sentToWechat = true
+    persist()
+  }
   if (pending.appendToDiary) {
     await appendRoleOnce(pending.diaryPath, 'ai', pending.reply, `ai:${pending.messageId}`)
   }
-  await sendText(sess, inbound.fromUserId, inbound.contextToken, pending.reply, pending.clientId)
   const consumed = new Set(pending.consumeImageIds)
   store.pendingImages = store.pendingImages.filter((image) => !consumed.has(image.id))
   store.pendingReply = null
