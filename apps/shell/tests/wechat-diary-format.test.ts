@@ -37,6 +37,9 @@ describe('wechat commands', () => {
   it('classifies help / ping / withdraw / seal / note / chat', () => {
     expect(classifyWechatText('帮助').kind).toBe('help')
     expect(classifyWechatText('在吗').kind).toBe('ping')
+    expect(classifyWechatText('hi')).toEqual({ kind: 'chat', text: 'hi' })
+    expect(classifyWechatText('hello')).toEqual({ kind: 'chat', text: 'hello' })
+    expect(classifyWechatText('你好吗')).toEqual({ kind: 'chat', text: '你好吗' })
     expect(classifyWechatText('撤回').kind).toBe('withdraw')
     expect(classifyWechatText('如何撤回提交').kind).toBe('chat')
     expect(classifyWechatText('好，结束').kind).toBe('seal')

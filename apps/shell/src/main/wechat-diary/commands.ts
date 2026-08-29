@@ -7,7 +7,10 @@ export type DiaryCommand =
   | { kind: 'chat'; text: string }
 
 const HELP_EXACT = /^(帮助|幫忙|help)$/iu
-const PING = /^(在吗|在嗎|你好吗|你好嗎|hello|hi)$/iu
+// Keep the health-check command deliberately narrow. Common greetings such as
+// "hi", "hello" and "你好吗" are real conversation turns: users expect them
+// to be written to the diary and answered by AI just like any other message.
+const PING = /^(在吗|在嗎)$/iu
 const NOTE = /^记[:：]\s*([\s\S]+)$/u
 
 export function classifyWechatText(raw: string): DiaryCommand {

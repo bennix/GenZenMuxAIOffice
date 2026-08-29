@@ -3,7 +3,11 @@ import { randomBytes, randomInt } from 'node:crypto'
 export const ILINK_DEFAULT_BASE = 'https://ilinkai.weixin.qq.com'
 const CHANNEL_VERSION = '2.4.3'
 const CLIENT_VERSION = '132099'
-const BOT_AGENT = 'ZenOffice-wechat-diary/1.0'
+// This is a wire-protocol compatibility identifier, not a user-facing brand.
+// Existing WeChat bindings were issued against this stable agent name; changing
+// it during the ZenOffice rename can make an otherwise successful send request
+// fail to surface in the bound conversation.
+export const ILINK_PROTOCOL_AGENT = 'GenOffice-wechat-diary/1.0'
 const MAX_WECHAT_TEXT_LENGTH = 2_000
 
 const OFFICIAL_WECHAT_HOSTS = new Set(['weixin.qq.com', 'wechat.com'])
@@ -81,7 +85,7 @@ function headers(token?: string): Record<string, string> {
 }
 
 function baseInfo(): { channel_version: string; bot_agent: string } {
-  return { channel_version: CHANNEL_VERSION, bot_agent: BOT_AGENT }
+  return { channel_version: CHANNEL_VERSION, bot_agent: ILINK_PROTOCOL_AGENT }
 }
 
 async function readJson(res: Response): Promise<Record<string, unknown>> {
