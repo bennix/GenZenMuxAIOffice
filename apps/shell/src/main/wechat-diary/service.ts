@@ -365,7 +365,7 @@ async function handleInbound(sess: IlinkSession, inbound: IlinkInbound): Promise
   }
 
   const diaryPath = await currentDiaryPath()
-  let savedImages: PendingWechatImage[] = []
+  let savedImages: PendingWechatImage[]
   try {
     savedImages = await saveInboundImages(inbound, messageId, diaryPath)
   } catch (err) {
