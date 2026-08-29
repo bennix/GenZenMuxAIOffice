@@ -365,19 +365,3 @@
   color: var(--text-tertiary);
   word-break: break-all;
 }
-
-.set-wechat-qr {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 12px 0;
-}
-
-.set-wechat-qr img {
-  width: 200px;
-  height: 200px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: var(--surface);
-}

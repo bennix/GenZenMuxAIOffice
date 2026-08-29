@@ -18,8 +18,6 @@ import type {
   UiLanguage,
 } from '../shared/home-api'
 import { HOME_CHANNELS, PROJECT_CHANNELS } from '../shared/home-api'
-import type { WechatDiaryStatus } from '../shared/wechat-diary-api'
-import { WECHAT_DIARY_CHANNELS } from '../shared/wechat-diary-api'
 import type { AiSettings } from '@genoffice/ai-provider'
 import type { TabsApi, TabSummary } from '../shared/tabs-api'
 import { TABS_CHANNELS } from '../shared/tabs-api'
@@ -223,25 +221,6 @@ const homeApi: HomeApi = {
   async openCloudProject(projectUrl) {
     if (typeof projectUrl !== 'string' || !projectUrl) throw new Error('Invalid project URL.')
     await ipcRenderer.invoke(HOME_CHANNELS.openCloudProject, projectUrl)
-  },
-  wechatDiary: {
-    status: () => ipcRenderer.invoke(WECHAT_DIARY_CHANNELS.status) as Promise<WechatDiaryStatus>,
-    setPrefs: (prefs) =>
-      ipcRenderer.invoke(WECHAT_DIARY_CHANNELS.setPrefs, prefs) as Promise<WechatDiaryStatus>,
-    startBind: () =>
-      ipcRenderer.invoke(WECHAT_DIARY_CHANNELS.startBind) as Promise<WechatDiaryStatus>,
-    submitPair: (code) =>
-      ipcRenderer.invoke(WECHAT_DIARY_CHANNELS.submitPair, code) as Promise<WechatDiaryStatus>,
-    unbind: () => ipcRenderer.invoke(WECHAT_DIARY_CHANNELS.unbind) as Promise<WechatDiaryStatus>,
-    pickDir: () => ipcRenderer.invoke(WECHAT_DIARY_CHANNELS.pickDir) as Promise<WechatDiaryStatus>,
-    openLatest: () =>
-      ipcRenderer.invoke(WECHAT_DIARY_CHANNELS.openLatest) as Promise<string | null>,
-    openQrUrl: () => ipcRenderer.invoke(WECHAT_DIARY_CHANNELS.openQr) as Promise<void>,
-    onChanged: (handler) => {
-      const listener = (_event: IpcRendererEvent, status: WechatDiaryStatus) => handler(status)
-      ipcRenderer.on(WECHAT_DIARY_CHANNELS.changed, listener)
-      return () => ipcRenderer.removeListener(WECHAT_DIARY_CHANNELS.changed, listener)
-    },
   },
 }
 

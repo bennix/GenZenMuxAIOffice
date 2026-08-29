@@ -136,8 +136,6 @@ import { HOME_CHANNELS } from '../shared/home-api'
 import type { TabKind } from '../shared/tabs-api'
 import { TABS_CHANNELS } from '../shared/tabs-api'
 import { showErrorDialog } from './error-dialog'
-import { registerWechatDiaryIpc, stopWechatDiary } from './wechat-diary/ipc'
-import { WECHAT_DIARY_CHANNELS } from '../shared/wechat-diary-api'
 import { normalizeRecentQuery, pageRecentPaths, statExistingPaths } from './recent-files'
 import { TabManager } from './tab-manager'
 import { applyUpdateChannel, initAutoUpdater } from './updater'
@@ -2633,18 +2631,6 @@ app.whenReady().then(async () => {
   nativeTheme.themeSource = currentTheme()
   startSheetsCaptureServer()
   createShellWindow()
-  registerWechatDiaryIpc({
-    userDataPath: () => app.getPath('userData'),
-    defaultSaveDir,
-    openMarkdown: (filePath) => {
-      openDocumentPath(filePath)
-    },
-    broadcast: (status) => {
-      if (shellWindow && !shellWindow.isDestroyed()) {
-        shellWindow.webContents.send(WECHAT_DIARY_CHANNELS.changed, status)
-      }
-    },
-  })
   // deferred to ready: labels need currentLang(), which reads app.getLocale()
   installBackToHomeItems()
   installDockMenu()
@@ -2666,5 +2652,4 @@ app.on('before-quit', () => {
   // No close prompt may fall through to "Save" during shutdown
   markSheetsShuttingDown()
   stopSheetsSidecar()
-  stopWechatDiary()
 })
