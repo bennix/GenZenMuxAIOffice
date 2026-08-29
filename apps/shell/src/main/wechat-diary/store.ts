@@ -15,7 +15,26 @@ export interface WechatDiaryStore {
   lastInboundAt: number | null
   pendingImages: PendingWechatImage[]
   pendingReply: PendingWechatReply | null
+  pendingPdfReview: PendingWechatPdfReview | null
   processedMessageIds: string[]
+}
+
+export interface PendingWechatPdfReview {
+  messageId: string
+  userId: string
+  contextToken: string
+  diaryPath: string
+  pdfPath: string
+  fileName: string
+  request: string
+  profileId: string
+  language: 'zh' | 'en'
+  models: string[]
+  evidence: string[]
+  reviewerReports: string[]
+  chairReport: string
+  ackSent: boolean
+  finalSent: boolean
 }
 
 export interface PendingWechatImage {
@@ -53,6 +72,7 @@ interface StoredFile {
   lastInboundAt?: number | null
   pendingImages?: PendingWechatImage[]
   pendingReply?: PendingWechatReply | null
+  pendingPdfReview?: PendingWechatPdfReview | null
   processedMessageIds?: string[]
 }
 
@@ -69,11 +89,43 @@ const EMPTY: WechatDiaryStore = {
   lastInboundAt: null,
   pendingImages: [],
   pendingReply: null,
+  pendingPdfReview: null,
   processedMessageIds: [],
 }
 
 function emptyStore(): WechatDiaryStore {
-  return { ...EMPTY, pendingImages: [], pendingReply: null, processedMessageIds: [] }
+  return {
+    ...EMPTY,
+    pendingImages: [],
+    pendingReply: null,
+    pendingPdfReview: null,
+    processedMessageIds: [],
+  }
+}
+
+function validPendingPdfReview(value: unknown): value is PendingWechatPdfReview {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const item = value as Record<string, unknown>
+  return (
+    typeof item.messageId === 'string' &&
+    typeof item.userId === 'string' &&
+    typeof item.contextToken === 'string' &&
+    typeof item.diaryPath === 'string' &&
+    typeof item.pdfPath === 'string' &&
+    typeof item.fileName === 'string' &&
+    typeof item.request === 'string' &&
+    typeof item.profileId === 'string' &&
+    (item.language === 'zh' || item.language === 'en') &&
+    Array.isArray(item.models) &&
+    item.models.every((model) => typeof model === 'string') &&
+    Array.isArray(item.evidence) &&
+    item.evidence.every((report) => typeof report === 'string') &&
+    Array.isArray(item.reviewerReports) &&
+    item.reviewerReports.every((report) => typeof report === 'string') &&
+    typeof item.chairReport === 'string' &&
+    typeof item.ackSent === 'boolean' &&
+    typeof item.finalSent === 'boolean'
+  )
 }
 
 function validPendingImage(value: unknown): value is PendingWechatImage {
@@ -153,6 +205,7 @@ export function loadWechatDiaryStore(userData: string, safe: SafeStorageLike): W
         ? rec.pendingImages.filter(validPendingImage).slice(-20)
         : [],
       pendingReply: validPendingReply(rec.pendingReply) ? rec.pendingReply : null,
+      pendingPdfReview: validPendingPdfReview(rec.pendingPdfReview) ? rec.pendingPdfReview : null,
       processedMessageIds: Array.isArray(rec.processedMessageIds)
         ? rec.processedMessageIds.filter((id): id is string => typeof id === 'string').slice(-200)
         : [],
@@ -182,6 +235,7 @@ export function saveWechatDiaryStore(
     lastInboundAt: store.lastInboundAt,
     pendingImages: store.pendingImages.slice(-20),
     pendingReply: store.pendingReply,
+    pendingPdfReview: store.pendingPdfReview,
     processedMessageIds: store.processedMessageIds.slice(-200),
   }
   writeFileSync(path, JSON.stringify(out, null, 2), { mode: 0o600 })

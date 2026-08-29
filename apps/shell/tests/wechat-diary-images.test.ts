@@ -1,8 +1,17 @@
 import { createCipheriv, randomBytes } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { selectWechatImageBatch } from '../src/main/wechat-diary/image-batch'
-import { chunkWechatText, extractImages, sendText } from '../src/main/wechat-diary/ilink'
-import { detectImageMime, parseWechatAesKey } from '../src/main/wechat-diary/media'
+import {
+  chunkWechatText,
+  extractFiles,
+  extractImages,
+  sendText,
+} from '../src/main/wechat-diary/ilink'
+import {
+  detectImageMime,
+  downloadWechatPdf,
+  parseWechatAesKey,
+} from '../src/main/wechat-diary/media'
 import type { PendingWechatImage } from '../src/main/wechat-diary/store'
 
 afterEach(() => vi.unstubAllGlobals())
@@ -72,6 +81,64 @@ describe('wechat inbound image protocol', () => {
       mime: 'image/jpeg',
       extension: 'jpg',
     })
+  })
+})
+
+describe('wechat inbound PDF protocol', () => {
+  it('extracts filename, size, media query and both supported AES key locations', () => {
+    expect(
+      extractFiles({
+        item_list: [
+          {
+            type: 4,
+            file_item: {
+              file_name: 'paper.pdf',
+              file_size: 12345,
+              aeskey: '00112233445566778899aabbccddeeff',
+              media: { encrypt_query_param: 'pdf-one' },
+            },
+          },
+          {
+            type: 4,
+            file_item: {
+              filename: 'appendix.pdf',
+              media: { encrypt_query_param: 'pdf-two', aes_key: 'ABEiM0RVZneImaq7zN3u/w==' },
+            },
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        fileName: 'paper.pdf',
+        encryptQueryParam: 'pdf-one',
+        aesKey: '00112233445566778899aabbccddeeff',
+        size: 12345,
+      },
+      {
+        fileName: 'appendix.pdf',
+        encryptQueryParam: 'pdf-two',
+        aesKey: 'ABEiM0RVZneImaq7zN3u/w==',
+      },
+    ])
+  })
+
+  it('decrypts a valid PDF and rejects decrypted non-PDF bytes', async () => {
+    const key = randomBytes(16)
+    const encrypt = (plain: Buffer): Buffer => {
+      const cipher = createCipheriv('aes-128-ecb', key, null)
+      return Buffer.concat([cipher.update(plain), cipher.final()])
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(encrypt(Buffer.from('%PDF-1.7\nbody'))))
+        .mockResolvedValueOnce(new Response(encrypt(Buffer.from('not a pdf')))),
+    )
+    await expect(downloadWechatPdf('query', key.toString('base64'))).resolves.toEqual(
+      Buffer.from('%PDF-1.7\nbody'),
+    )
+    await expect(downloadWechatPdf('query', key.toString('base64'))).rejects.toThrow('有效的 PDF')
   })
 })
 

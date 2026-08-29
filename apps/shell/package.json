@@ -1,7 +1,7 @@
 {
   "name": "@genoffice/shell",
   "productName": "GenOffice",
-  "version": "0.6.65",
+  "version": "0.6.66",
   "license": "Apache-2.0",
   "homepage": "https://github.com/bennix/GenZenMuxAIOffice",
   "private": true,
@@ -25,6 +25,7 @@
     "@genoffice/docs": "*",
     "@genoffice/docx-engine": "*",
     "@genoffice/electron-utils": "*",
+    "@genoffice/file-parse": "*",
     "@genoffice/i18n": "*",
     "@genoffice/pptx-engine": "*",
     "@genoffice/pptx-render": "*",

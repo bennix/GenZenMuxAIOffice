@@ -1,9 +1,14 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile as writeBinaryFile } from 'node:fs/promises'
-import { dirname, join, relative, resolve } from 'node:path'
+import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { dialog, safeStorage, shell } from 'electron'
 import { restoreAiSettingsFromDisk, type SafeStorageLike } from '@genoffice/electron-utils'
-import { chatZenMux, defaultAiSettings, resolveAiSettings } from '@genoffice/ai-provider'
+import {
+  REVIEW_PROFILES,
+  chatZenMux,
+  defaultAiSettings,
+  resolveAiSettings,
+} from '@genoffice/ai-provider'
 import type { AiImageReference, AiSettings } from '@genoffice/ai-provider'
 import { readFileSync } from 'node:fs'
 import type { WechatDiaryPrefs, WechatDiaryStatus } from '../../shared/wechat-diary-api'
@@ -35,7 +40,8 @@ import {
   sendTyping,
   startQrLogin,
 } from './ilink'
-import { downloadWechatImage } from './media'
+import { downloadWechatImage, downloadWechatPdf } from './media'
+import { parsePdfReviewSelection, runPdfReviewTask } from './pdf-review'
 import { qrDataUrlFromPayload } from './qr'
 import { selectWechatImageBatch } from './image-batch'
 import {
@@ -194,6 +200,7 @@ export function unbindWechat(): WechatDiaryStatus {
     store.getUpdatesBuf = ''
     store.pendingImages = []
     store.pendingReply = null
+    store.pendingPdfReview = null
     store.processedMessageIds = []
     persist()
   }
@@ -322,6 +329,18 @@ function loopOnce(): void {
       return
     }
     try {
+      let reviewError = ''
+      if (store.pendingPdfReview?.profileId) {
+        try {
+          await processPendingPdfReview(sess)
+        } catch (err) {
+          reviewError = err instanceof Error ? err.message : String(err)
+          if (/尚未配置可用的 ZenMux|没有可供审稿的可提取正文/u.test(reviewError)) {
+            await failPendingPdfReview(sess, reviewError)
+            reviewError = ''
+          }
+        }
+      }
       const { msgs, cursor } = await getUpdates(sess, store.getUpdatesBuf)
       for (const msg of msgs) await handleInbound(sess, msg)
       // Advance only after every message has been written/replied to. Persisting first can
@@ -330,13 +349,13 @@ function loopOnce(): void {
         store.getUpdatesBuf = cursor
         persist()
       }
-      lastError = null
+      lastError = reviewError || null
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       if (!/aborted/i.test(message)) lastError = message
     }
     if (!stopping && running) {
-      pollTimer = setTimeout(() => loopOnce(), 400)
+      pollTimer = setTimeout(() => loopOnce(), store?.pendingPdfReview?.profileId ? 10_000 : 400)
     } else {
       running = false
       emit()
@@ -348,6 +367,30 @@ async function handleInbound(sess: IlinkSession, inbound: IlinkInbound): Promise
   if (!store || !deps) return
   const messageId = inbound.messageId || fallbackMessageId(inbound)
   if (store.processedMessageIds.includes(messageId)) return
+
+  if (
+    store.pendingPdfReview &&
+    !store.pendingPdfReview.profileId &&
+    store.pendingPdfReview.userId === inbound.fromUserId
+  ) {
+    await acceptPdfReviewSelection(sess, inbound, messageId)
+    return
+  }
+  if (store.pendingPdfReview?.profileId && store.pendingPdfReview.userId === inbound.fromUserId) {
+    await handleActivePdfReviewMessage(sess, inbound, messageId)
+    return
+  }
+  if (store.pendingPdfReview) {
+    await sendText(
+      sess,
+      inbound.fromUserId,
+      inbound.contextToken,
+      '当前已有一份 PDF 正在等待选择或执行多轮审稿，请稍后再发送附件。',
+      `${stableClientId(messageId)}-pdf-busy`,
+    )
+    markProcessed(messageId)
+    return
+  }
 
   store.lastInboundAt = Date.now()
   persist()
@@ -365,6 +408,27 @@ async function handleInbound(sess: IlinkSession, inbound: IlinkInbound): Promise
   }
 
   const diaryPath = await currentDiaryPath()
+  if (inbound.files.length > 0) {
+    try {
+      await acceptInboundPdf(sess, inbound, messageId, diaryPath)
+    } catch (err) {
+      const reply = `PDF 附件处理失败：${err instanceof Error ? err.message : String(err)}`
+      store.pendingReply = {
+        messageId,
+        userId: inbound.fromUserId,
+        reply,
+        clientId: stableClientId(messageId),
+        diaryPath,
+        appendToDiary: false,
+        consumeImageIds: [],
+        sentToWechat: false,
+      }
+      persist()
+      await deliverPendingReply(sess, inbound, '')
+      markProcessed(messageId)
+    }
+    return
+  }
   let savedImages: PendingWechatImage[]
   try {
     savedImages = await saveInboundImages(inbound, messageId, diaryPath)
@@ -511,7 +575,249 @@ function fallbackMessageId(inbound: IlinkInbound): string {
     .update(inbound.text)
     .update('\0')
     .update(inbound.images.map((image) => image.encryptQueryParam).join('\0'))
+    .update('\0')
+    .update(inbound.files.map((file) => file.encryptQueryParam).join('\0'))
     .digest('hex')
+}
+
+function safeAttachmentName(name: string): string {
+  const cleaned = basename(name)
+    .replace(/[\u0000-\u001f<>:"/\\|?*]/gu, '_')
+    .trim()
+  return cleaned || '微信附件.pdf'
+}
+
+async function acceptInboundPdf(
+  sess: IlinkSession,
+  inbound: IlinkInbound,
+  messageId: string,
+  diaryPath: string,
+): Promise<void> {
+  if (!store) return
+  if (inbound.files.length !== 1) {
+    await sendText(
+      sess,
+      inbound.fromUserId,
+      inbound.contextToken,
+      '请每次只发送 1 个 PDF 附件，以便审稿委员会建立独立任务。',
+      `${stableClientId(messageId)}-pdf-reject`,
+    )
+    markProcessed(messageId)
+    return
+  }
+  const file = inbound.files[0]!
+  if (extname(file.fileName).toLowerCase() !== '.pdf') {
+    await sendText(
+      sess,
+      inbound.fromUserId,
+      inbound.contextToken,
+      '当前微信附件自动审稿仅接受 PDF 文件。',
+      `${stableClientId(messageId)}-pdf-reject`,
+    )
+    markProcessed(messageId)
+    return
+  }
+  const assetDir = join(
+    dirname(diaryPath),
+    `${diaryPath.slice(dirname(diaryPath).length + 1, -3)}.assets`,
+  )
+  await mkdir(assetDir, { recursive: true })
+  const data = await downloadWechatPdf(file.encryptQueryParam, file.aesKey, file.size)
+  const digest = createHash('sha256').update(messageId).digest('hex').slice(0, 20)
+  const originalName = safeAttachmentName(file.fileName)
+  const pdfPath = join(assetDir, `wechat-${digest}-${originalName}`)
+  await writeBinaryFile(pdfPath, data)
+  const href = relative(dirname(diaryPath), pdfPath)
+    .split(/[\\/]/u)
+    .map((part) => encodeURIComponent(part))
+    .join('/')
+  const body = [
+    inbound.text.trim(),
+    `[PDF 附件：${originalName}](./${href})`,
+    '> PDF 已保存，正在等待用户选择稿件类型、审稿级别和报告语言。',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+  await appendRoleOnce(diaryPath, 'wechat', body, `wechat:${messageId}`)
+  store.pendingPdfReview = {
+    messageId,
+    userId: inbound.fromUserId,
+    contextToken: inbound.contextToken,
+    diaryPath,
+    pdfPath,
+    fileName: originalName,
+    request: inbound.text.trim(),
+    profileId: '',
+    language: 'zh',
+    models: [],
+    evidence: [],
+    reviewerReports: [],
+    chairReport: '',
+    ackSent: false,
+    finalSent: false,
+  }
+  persist()
+  await sendText(
+    sess,
+    inbound.fromUserId,
+    inbound.contextToken,
+    pdfReviewSelectionPrompt(originalName),
+    `${stableClientId(messageId)}-pdf-ack`,
+  )
+  store.pendingPdfReview.ackSent = true
+  persist()
+  markProcessed(messageId)
+}
+
+function pdfReviewSelectionPrompt(fileName: string): string {
+  const choices = REVIEW_PROFILES.map(
+    (profile, index) => `${index + 1}. ${profile.labelZh} / ${profile.labelEn}`,
+  ).join('\n')
+  return `已收到并在本地保存 PDF《${fileName}》。请选择稿件类型/审稿级别：\n${choices}\n\n请回复“序号 + 中文或英文”，例如：4 中文、6 英文。只回复序号时默认生成中文审稿意见。选择后才会启动多次 ZenMux 询问；回复“取消审稿”可退出。`
+}
+
+async function acceptPdfReviewSelection(
+  sess: IlinkSession,
+  inbound: IlinkInbound,
+  messageId: string,
+): Promise<void> {
+  if (!store?.pendingPdfReview) return
+  if (/^(?:取消|取消审稿|停止审稿|cancel)$/iu.test(inbound.text.trim())) {
+    const fileName = store.pendingPdfReview.fileName
+    store.pendingPdfReview = null
+    persist()
+    await sendText(
+      sess,
+      inbound.fromUserId,
+      inbound.contextToken,
+      `已取消《${fileName}》的 AI 审稿；本地 PDF 和日记记录仍然保留。`,
+      `${stableClientId(messageId)}-pdf-cancel`,
+    )
+    markProcessed(messageId)
+    return
+  }
+  if (inbound.files.length || inbound.images.length || !inbound.text.trim()) {
+    await sendText(
+      sess,
+      inbound.fromUserId,
+      inbound.contextToken,
+      pdfReviewSelectionPrompt(store.pendingPdfReview.fileName),
+      `${stableClientId(messageId)}-pdf-choice-reminder`,
+    )
+    markProcessed(messageId)
+    return
+  }
+  const selection = parsePdfReviewSelection(inbound.text)
+  if (!selection) {
+    await sendText(
+      sess,
+      inbound.fromUserId,
+      inbound.contextToken,
+      `没有识别到审稿类型。\n\n${pdfReviewSelectionPrompt(store.pendingPdfReview.fileName)}`,
+      `${stableClientId(messageId)}-pdf-choice-invalid`,
+    )
+    markProcessed(messageId)
+    return
+  }
+  const profile = REVIEW_PROFILES.find((item) => item.id === selection.profileId)!
+  store.pendingPdfReview.profileId = selection.profileId
+  store.pendingPdfReview.language = selection.language
+  store.pendingPdfReview.contextToken = inbound.contextToken
+  persist()
+  await appendRoleOnce(
+    store.pendingPdfReview.diaryPath,
+    'wechat',
+    `PDF 审稿选择：${profile.labelZh}；报告语言：${selection.language === 'en' ? '英文' : '中文'}`,
+    `wechat-pdf-choice:${messageId}`,
+  )
+  await sendText(
+    sess,
+    inbound.fromUserId,
+    inbound.contextToken,
+    `已选择“${profile.labelZh}”，审稿意见使用${selection.language === 'en' ? '英文' : '中文'}。现在开始分段证据提取、3 位委员独立评审和主席综合；完成后会分段发送完整报告。`,
+    `${stableClientId(messageId)}-pdf-choice-ok`,
+  )
+  markProcessed(messageId)
+}
+
+async function handleActivePdfReviewMessage(
+  sess: IlinkSession,
+  inbound: IlinkInbound,
+  messageId: string,
+): Promise<void> {
+  if (!store?.pendingPdfReview) return
+  const cancel = /^(?:取消|取消审稿|停止审稿|cancel)$/iu.test(inbound.text.trim())
+  const fileName = store.pendingPdfReview.fileName
+  if (cancel) {
+    store.pendingPdfReview = null
+    persist()
+    await sendText(
+      sess,
+      inbound.fromUserId,
+      inbound.contextToken,
+      `已停止《${fileName}》的后续 AI 审稿询问；已完成的阶段和本地 PDF 不会删除。`,
+      `${stableClientId(messageId)}-pdf-cancel`,
+    )
+  } else {
+    await sendText(
+      sess,
+      inbound.fromUserId,
+      inbound.contextToken,
+      `《${fileName}》仍在进行多轮 AI 审稿。已完成的阶段会保存，网络恢复后自动续跑。回复“取消审稿”可停止。`,
+      `${stableClientId(messageId)}-pdf-running`,
+    )
+  }
+  markProcessed(messageId)
+}
+
+async function processPendingPdfReview(sess: IlinkSession): Promise<void> {
+  if (!store?.pendingPdfReview || !deps) return
+  const task = store.pendingPdfReview
+  if (!task.ackSent) {
+    await sendText(
+      sess,
+      task.userId,
+      task.contextToken,
+      `已收到 PDF《${task.fileName}》，正在继续多轮严格审稿。`,
+      `${stableClientId(task.messageId)}-pdf-ack`,
+    )
+    task.ackSent = true
+    persist()
+  }
+  const report = await runPdfReviewTask(task, {
+    readAiSettings: deps.readAiSettings,
+    persist,
+  })
+  if (!task.finalSent) {
+    await sendText(
+      sess,
+      task.userId,
+      task.contextToken,
+      report,
+      `${stableClientId(task.messageId)}-pdf-report`,
+    )
+    task.finalSent = true
+    persist()
+  }
+  await appendRoleOnce(task.diaryPath, 'ai', report, `ai-pdf-review:${task.messageId}`)
+  store.pendingPdfReview = null
+  persist()
+}
+
+async function failPendingPdfReview(sess: IlinkSession, reason: string): Promise<void> {
+  if (!store?.pendingPdfReview) return
+  const task = store.pendingPdfReview
+  const reply = `《${task.fileName}》未能启动 PDF AI 审稿：${reason}。PDF 已保存在本地；请处理上述问题后重新发送附件。`
+  await sendText(
+    sess,
+    task.userId,
+    task.contextToken,
+    reply,
+    `${stableClientId(task.messageId)}-pdf-failed`,
+  )
+  await appendRoleOnce(task.diaryPath, 'ai', reply, `ai-pdf-review-failed:${task.messageId}`)
+  store.pendingPdfReview = null
+  persist()
 }
 
 function stableClientId(messageId: string): string {

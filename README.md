@@ -36,13 +36,13 @@ notarization on the current macOS release).
 > Intelligence, Fudan University; macOS, Windows, Ubuntu DEB, and Linux RPM installers rebuilt for this release.
 
 Apple Silicon Mac 用户可从
-[最新 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.65-arm64.dmg)。
+[最新 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.66-arm64.dmg)。
 Windows 10/11 x64 用户可下载
-[GenOfficeSetup-0.6.65-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.65-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
+[GenOfficeSetup-0.6.66-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.66-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
 Ubuntu 22.04/24.04 x86_64 用户可下载
-[genoffice_0.6.65_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice_0.6.65_amd64.deb)。
+[genoffice_0.6.66_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice_0.6.66_amd64.deb)。
 Fedora、RHEL、Rocky Linux、AlmaLinux 与 openSUSE x86_64 用户可下载
-[genoffice-0.6.65.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.65.x86_64.rpm)。
+[genoffice-0.6.66.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.66.x86_64.rpm)。
 AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。
 
 [![Meet GenOffice — the world's first full-featured open-source AI Office (video)](https://img.youtube.com/vi/B2pLdMX95v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=B2pLdMX95v4)
@@ -85,6 +85,7 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 - **Copyable, file-specific AI conversations** — copy prompts and AI replies from current or restored conversations in Word, Excel, PowerPoint, Markdown, and PDF while preserving Markdown, LaTeX, Mermaid, and code source. Conversation history is saved locally under the document's absolute path; reopening the same file restores up to the latest 200 messages without uploading history to GitHub.
 - **Local personal knowledge base and RAG memory** — successful AI question-and-answer pairs from Word, Excel, PowerPoint, Markdown, and PDF are automatically stored on the current device with file, project, chat, time, and topic provenance. Later prompts retrieve a bounded set of related Chinese or English memories, prioritizing the current file and project, and clearly label them as potentially outdated reference material rather than instructions. Settings provide independent capture/retrieval switches, result limits, search, per-entry deletion, and full clearing; only matched excerpts—not the complete library—are sent with the current ZenMux request.
 - **Recoverable WeChat text-and-image diary** — bind WeChat 8.0.70+ through its official ClawBot flow, then send text or images while GenOffice is running. Images are decrypted from WeChat's official CDN into a local companion asset folder and embedded by relative path in the three-day Markdown diary. Image-only messages stay silent until five images are collected; a fifth image, or a question sent after any smaller batch, invokes the current ZenMux multimodal model. A durable outbox verifies iLink business success and writes the AI block only after WeChat confirms delivery; stable client IDs retry interrupted or chunked long replies without duplicating diary blocks or repeating the AI call. `记：…`, `撤回`, `结束`, and `帮助` remain available; credentials are OS-encrypted and token-bearing requests stay on official WeChat HTTPS hosts.
+- **WeChat PDF multi-round review** — send one encrypted PDF attachment from WeChat and GenOffice saves it beside the three-day Markdown diary, asks for the same Science/Nature/Cell/Elsevier/IEEE/grant/bid profile exposed by the desktop review UI, and asks whether the report should be Chinese or English. After selection, ZenMux performs chunked evidence extraction, three independent reviewer calls, and a separate chair synthesis. Every completed stage is persisted for network-resumable review; the long final report is delivered to WeChat in stable chunks and written back to Markdown. Downloads are restricted to the official WeChat CDN, limited to 50 MB, decrypted locally, and validated by the PDF signature.
 - **GitHub Release automatic updates** — packaged macOS and Windows apps check this repository's latest stable GitHub Release shortly after launch and every four hours, then offer an in-app download and restart/install flow. Signed macOS updates use the notarized ZIP feed; Windows uses the matching NSIS installer. DEB/RPM users continue updating through apt/dnf or the GitHub download page.
 - **`@Connect` cross-editor flow** — send the latest AI reply—including replies produced while reviewing a PDF—to any open Word, Excel, PowerPoint, or Markdown tab through a local-only channel; the destination receives editable rich text, cells, text boxes, or Markdown rather than a flattened image.
 - **Editable equations everywhere** — Word, PowerPoint, Excel, and Markdown accept LaTeX, multi-line environments, and ZenMux formula OCR from clipboard screenshots or image files. Markdown normalizes both `$...$` / `$$...$$` and standard `\(...\)` / `\[...\]` delimiters into rendered, editable equation nodes while preserving literal delimiters inside code.
@@ -99,11 +100,11 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 
 | Platform                                                | Requirements                                  | Download                                                                                                                            |
 | ------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **macOS** — Apple Silicon (arm64)                       | macOS 11+                                     | [GenOffice-0.6.65-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.65-arm64.dmg)       |
+| **macOS** — Apple Silicon (arm64)                       | macOS 11+                                     | [GenOffice-0.6.66-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOffice-0.6.66-arm64.dmg)       |
 | **macOS** — Intel (x64)                                 | macOS 11+                                     | [GenOffice-0.6.101.dmg](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.dmg)                  |
-| **Windows** (x64)                                       | Windows 10/11; unsigned, SmartScreen may warn | [GenOfficeSetup-0.6.65-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.65-x64.exe) |
-| **Ubuntu** — DEB (amd64)                                | Ubuntu 22.04/24.04 x86_64                     | [genoffice_0.6.65_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice_0.6.65_amd64.deb)       |
-| **Linux RPM** — Fedora / RHEL / Rocky / Alma / openSUSE | x86_64, glibc 2.34+ (RHEL-compatible 9+)      | [genoffice-0.6.65.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.65.x86_64.rpm)     |
+| **Windows** (x64)                                       | Windows 10/11; unsigned, SmartScreen may warn | [GenOfficeSetup-0.6.66-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/GenOfficeSetup-0.6.66-x64.exe) |
+| **Ubuntu** — DEB (amd64)                                | Ubuntu 22.04/24.04 x86_64                     | [genoffice_0.6.66_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice_0.6.66_amd64.deb)       |
+| **Linux RPM** — Fedora / RHEL / Rocky / Alma / openSUSE | x86_64, glibc 2.34+ (RHEL-compatible 9+)      | [genoffice-0.6.66.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/genoffice-0.6.66.x86_64.rpm)     |
 | **Linux** — other distributions                         | x86_64, glibc 2.34+, FUSE 2                   | [GenOffice-0.6.101.AppImage](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.AppImage)        |
 
 All builds come from `main`. The current macOS DMG is Developer ID signed and Apple-notarized; the Windows installer is not Authenticode-signed.
@@ -115,14 +116,14 @@ The deb installs with apt — it pulls in the dependencies and adds GenOffice
 to the applications menu:
 
 ```bash
-sudo apt install ./genoffice_0.6.65_amd64.deb
+sudo apt install ./genoffice_0.6.66_amd64.deb
 ```
 
 On Fedora / RHEL-family / openSUSE, install the rpm instead:
 
 ```bash
-sudo dnf install ./genoffice-0.6.65.x86_64.rpm     # Fedora / RHEL / Rocky / Alma
-sudo zypper install ./genoffice-0.6.65.x86_64.rpm  # openSUSE
+sudo dnf install ./genoffice-0.6.66.x86_64.rpm     # Fedora / RHEL / Rocky / Alma
+sudo zypper install ./genoffice-0.6.66.x86_64.rpm  # openSUSE
 ```
 
 The AppImage instead runs in place: install the FUSE 2 runtime

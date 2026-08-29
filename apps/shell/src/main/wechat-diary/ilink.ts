@@ -43,12 +43,20 @@ export interface IlinkInbound {
   groupId?: string
   text: string
   images: IlinkImageRef[]
+  files: IlinkFileRef[]
   rawType: number
 }
 
 export interface IlinkImageRef {
   encryptQueryParam: string
   aesKey: string
+}
+
+export interface IlinkFileRef {
+  fileName: string
+  encryptQueryParam: string
+  aesKey: string
+  size?: number
 }
 
 export interface IlinkSession {
@@ -211,10 +219,41 @@ export async function getUpdates(
       contextToken,
       text: extractText(msg),
       images: extractImages(msg),
+      files: extractFiles(msg),
       rawType: Number(msg.message_type) || 1,
     })
   }
   return { msgs, cursor: str(data.get_updates_buf) || cursor }
+}
+
+/** Extract encrypted iLink file attachments. The bytes are validated after download. */
+export function extractFiles(msg: Record<string, unknown>): IlinkFileRef[] {
+  const items = Array.isArray(msg.item_list) ? msg.item_list : []
+  const files: IlinkFileRef[] = []
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue
+    const file = (item as Record<string, unknown>).file_item
+    if (!file || typeof file !== 'object') continue
+    const fileRec = file as Record<string, unknown>
+    const media = fileRec.media
+    if (!media || typeof media !== 'object') continue
+    const mediaRec = media as Record<string, unknown>
+    const fileName =
+      str(fileRec.file_name) || str(fileRec.filename) || str(fileRec.name) || '微信附件.pdf'
+    const encryptQueryParam = str(mediaRec.encrypt_query_param) || str(fileRec.encrypt_query_param)
+    const aesKey =
+      str(fileRec.aeskey) || str(fileRec.aes_key) || str(mediaRec.aes_key) || str(mediaRec.aeskey)
+    const rawSize = Number(fileRec.file_size ?? fileRec.size ?? mediaRec.size ?? mediaRec.file_size)
+    if (encryptQueryParam && aesKey) {
+      files.push({
+        fileName,
+        encryptQueryParam,
+        aesKey,
+        ...(Number.isFinite(rawSize) && rawSize >= 0 ? { size: rawSize } : {}),
+      })
+    }
+  }
+  return files
 }
 
 function scalarString(value: unknown): string {

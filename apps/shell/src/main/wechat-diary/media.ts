@@ -2,6 +2,7 @@ import { createDecipheriv } from 'node:crypto'
 
 const WECHAT_CDN_DOWNLOAD = 'https://novac2c.cdn.weixin.qq.com/c2c/download'
 const MAX_ENCRYPTED_IMAGE_BYTES = 25 * 1024 * 1024
+const MAX_ENCRYPTED_PDF_BYTES = 50 * 1024 * 1024
 
 /** iLink uses either raw hex or base64(raw bytes / a hex string) for the AES-128 key. */
 export function parseWechatAesKey(value: string): Buffer {
@@ -55,6 +56,36 @@ export async function downloadWechatImage(
     const decipher = createDecipheriv('aes-128-ecb', parseWechatAesKey(aesKey), null)
     const data = Buffer.concat([decipher.update(encrypted), decipher.final()])
     return { data, ...detectImageMime(data) }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+export async function downloadWechatPdf(
+  encryptQueryParam: string,
+  aesKey: string,
+  declaredSize?: number,
+): Promise<Buffer> {
+  if (declaredSize !== undefined && declaredSize > MAX_ENCRYPTED_PDF_BYTES) {
+    throw new Error('微信 PDF 超过 50 MB 限制')
+  }
+  const url = new URL(WECHAT_CDN_DOWNLOAD)
+  url.searchParams.set('encrypted_query_param', encryptQueryParam)
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60_000)
+  try {
+    const response = await fetch(url, { signal: controller.signal, redirect: 'error' })
+    if (!response.ok) throw new Error(`微信 PDF 下载失败（HTTP ${response.status}）`)
+    const length = Number(response.headers.get('content-length') || 0)
+    if (length > MAX_ENCRYPTED_PDF_BYTES) throw new Error('微信 PDF 超过 50 MB 限制')
+    const encrypted = Buffer.from(await response.arrayBuffer())
+    if (encrypted.length > MAX_ENCRYPTED_PDF_BYTES) throw new Error('微信 PDF 超过 50 MB 限制')
+    const decipher = createDecipheriv('aes-128-ecb', parseWechatAesKey(aesKey), null)
+    const data = Buffer.concat([decipher.update(encrypted), decipher.final()])
+    if (data.subarray(0, 5).toString('ascii') !== '%PDF-') {
+      throw new Error('微信附件不是有效的 PDF 文件')
+    }
+    return data
   } finally {
     clearTimeout(timer)
   }
