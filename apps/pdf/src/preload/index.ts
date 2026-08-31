@@ -52,6 +52,11 @@ const api: PdfApi = {
     ipcRenderer.on(PDF_CHANNELS.saveAsFlow, listener)
     return () => ipcRenderer.removeListener(PDF_CHANNELS.saveAsFlow, listener)
   },
+  onPrintRequest: (handler) => {
+    const listener = () => handler()
+    ipcRenderer.on(PDF_CHANNELS.printRequest, listener)
+    return () => ipcRenderer.removeListener(PDF_CHANNELS.printRequest, listener)
+  },
   getLanguage: () => ipcRenderer.invoke(PDF_CHANNELS.getLanguage),
   onLanguageChanged: (handler) => {
     const listener = (_e: Electron.IpcRendererEvent, lang: Lang) => handler(lang)

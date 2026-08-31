@@ -2289,6 +2289,8 @@ function buildHomeMenu(): void {
 
 function buildPdfMenu(): void {
   const isMac = process.platform === 'darwin'
+  const printLabel = currentLang() === 'zh' ? '打印…' : 'Print…'
+  const previewLabel = currentLang() === 'zh' ? '打印预览…' : 'Print Preview…'
   const template: MenuItemConstructorOptions[] = [
     ...(isMac ? [{ role: 'appMenu' as const }] : []),
     {
@@ -2321,6 +2323,16 @@ function buildPdfMenu(): void {
         },
         { type: 'separator' },
         {
+          label: previewLabel,
+          click: () => tabManager?.activePdfTab()?.webContents.send('pdf:print-request'),
+        },
+        {
+          label: printLabel,
+          accelerator: 'CmdOrCtrl+P',
+          click: () => tabManager?.activePdfTab()?.webContents.send('pdf:print-request'),
+        },
+        { type: 'separator' },
+        {
           label: tm('menuClose'),
           accelerator: 'CmdOrCtrl+W',
           click: () => tabManager?.closeActiveTab(),
@@ -2342,6 +2354,8 @@ function buildPdfMenu(): void {
 
 function buildMarkdownMenu(): void {
   const isMac = process.platform === 'darwin'
+  const printLabel = currentLang() === 'zh' ? '打印…' : 'Print…'
+  const previewLabel = currentLang() === 'zh' ? '打印预览…' : 'Print Preview…'
   const template: MenuItemConstructorOptions[] = [
     ...(isMac ? [{ role: 'appMenu' as const }] : []),
     {
@@ -2395,6 +2409,22 @@ function buildMarkdownMenu(): void {
           click: () => {
             const tab = tabManager?.activeMarkdownTab()
             if (tab) sendMarkdownExportRequest(tab.webContents, 'docs')
+          },
+        },
+        { type: 'separator' },
+        {
+          label: previewLabel,
+          click: () => {
+            const tab = tabManager?.activeMarkdownTab()
+            if (tab) sendMarkdownExportRequest(tab.webContents, 'print-preview')
+          },
+        },
+        {
+          label: printLabel,
+          accelerator: 'CmdOrCtrl+P',
+          click: () => {
+            const tab = tabManager?.activeMarkdownTab()
+            if (tab) sendMarkdownExportRequest(tab.webContents, 'print')
           },
         },
         { type: 'separator' },

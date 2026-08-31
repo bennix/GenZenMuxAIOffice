@@ -1367,6 +1367,7 @@ export default function App() {
   const [searchMatches, setSearchMatches] = useState<SearchMatch[]>([])
   const [searchCur, setSearchCur] = useState(0)
   const [printing, setPrinting] = useState(false)
+  const printDocRef = useRef<() => void>(() => undefined)
   const [undoStack, setUndoStack] = useState<EditSnapshot[]>([])
   const [redoStack, setRedoStack] = useState<EditSnapshot[]>([])
   const [pwInput, setPwInput] = useState('')
@@ -3743,6 +3744,9 @@ export default function App() {
         setPrinting(false)
       }
     })
+
+  printDocRef.current = printDoc
+  useEffect(() => window.pdfApi.onPrintRequest(() => printDocRef.current()), [])
 
   /** Capability surface for AI tools; rebuilt each render (AiPanel mirrors it via refs to get the latest) */
   const aiApi: PdfAiDeps = {

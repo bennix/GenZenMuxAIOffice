@@ -3477,9 +3477,13 @@ export function buildDocsMenu(): void {
         { label: tm('menuExportPdf'), click: () => sendCommand('export-pdf') },
         { label: 'Export Markdown…', click: () => sendCommand('export-markdown') },
         {
+          label: getUiLang() === 'zh' ? '打印预览…' : 'Print Preview…',
+          click: () => activeDocsWebContents()?.print({ printBackground: true }),
+        },
+        {
           label: tm('menuPrint'),
           accelerator: 'CmdOrCtrl+P',
-          click: () => activeDocsWebContents()?.print({}),
+          click: () => activeDocsWebContents()?.print({ printBackground: true }),
         },
       ],
     },

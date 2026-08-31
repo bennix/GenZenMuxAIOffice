@@ -31,6 +31,7 @@ import type {
   ExportFormat,
   ExportPdfRequest,
   ExportResult,
+  PrintMarkdownRequest,
   ImageData,
   SaveMarkdownRequest,
   SaveMarkdownResult,
@@ -702,6 +703,67 @@ function registerMarkdownIpc(): void {
       } finally {
         printWin.destroy()
         await rm(workDir, { recursive: true, force: true })
+      }
+    },
+  )
+
+  ipcMain.handle(
+    MARKDOWN_CHANNELS.print,
+    async (e, request: PrintMarkdownRequest): Promise<{ ok: boolean; error?: string }> => {
+      if (
+        typeof request?.html !== 'string' ||
+        !request.html ||
+        request.html.length > 20_000_000 ||
+        !['print', 'preview'].includes(request.mode)
+      ) {
+        return { ok: false, error: 'markdown: bad print request' }
+      }
+      const parent = BrowserWindow.fromWebContents(e.sender) ?? undefined
+      const workDir = await mkdtemp(join(tmpdir(), 'zenoffice-md-print-'))
+      const htmlPath = join(workDir, 'print.html')
+      const preview = new BrowserWindow({
+        parent,
+        width: 980,
+        height: 820,
+        show: false,
+        title: `${request.suggestedName} — ${request.mode === 'preview' ? 'Print Preview (⌘/Ctrl+P to print)' : 'Print'}`,
+        webPreferences: { sandbox: true, javascript: false },
+      })
+      const cleanup = async () => {
+        if (!preview.isDestroyed()) preview.destroy()
+        await rm(workDir, { recursive: true, force: true })
+      }
+      const showSystemPrint = () => {
+        if (preview.isDestroyed()) return
+        preview.show()
+        preview.focus()
+        preview.webContents.print(
+          { silent: false, printBackground: true, margins: { marginType: 'default' } },
+          (_success, failureReason) => {
+            if (request.mode === 'print') void cleanup()
+            else if (failureReason && failureReason !== 'Print job canceled') {
+              console.error('[markdown] print failed:', failureReason)
+            }
+          },
+        )
+      }
+      try {
+        await writeFile(htmlPath, request.html, 'utf8')
+        await preview.loadFile(htmlPath)
+        preview.webContents.on('before-input-event', (event, input) => {
+          if ((input.meta || input.control) && input.key.toLowerCase() === 'p') {
+            event.preventDefault()
+            showSystemPrint()
+          }
+        })
+        preview.on('closed', () => void rm(workDir, { recursive: true, force: true }))
+        preview.show()
+        preview.focus()
+        if (request.mode === 'print') showSystemPrint()
+        return { ok: true }
+      } catch (err) {
+        await cleanup()
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
       }
     },
   )

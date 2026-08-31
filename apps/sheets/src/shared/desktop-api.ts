@@ -1870,6 +1870,7 @@ export const workbookExportPdfResultSchema = z.union([
 
 export type WorkbookExportPdfRequest = z.infer<typeof workbookExportPdfRequestSchema>
 export type WorkbookExportPdfResult = z.infer<typeof workbookExportPdfResultSchema>
+export type WorkbookPrintRequest = WorkbookExportPdfRequest & { mode: 'print' | 'preview' }
 
 // ---- Chat attachments (local files fed to the agent via tools; same structure
 // as apps/docs and apps/slides) ----
@@ -1951,6 +1952,7 @@ export interface DesktopApi extends ConnectApi {
     baseName: string,
   ): Promise<{ renamed: boolean; name?: string }>
   exportPdf(request: WorkbookExportPdfRequest): Promise<WorkbookExportPdfResult>
+  print(request: WorkbookPrintRequest): Promise<{ ok: boolean; error?: string }>
   /** Execute SQL outside the renderer so AlaSQL never requires unsafe-eval in the page CSP. */
   loadSqlDatabase(
     schema: WorkbookDatabaseSchema,
@@ -2003,7 +2005,8 @@ export interface DesktopApi extends ConnectApi {
   getPathForFile(file: File): string
 }
 
-export type MenuAction = 'open' | 'save' | 'save-as' | 'export-pdf' | 'undo' | 'redo'
+export type MenuAction =
+  'open' | 'save' | 'save-as' | 'export-pdf' | 'print' | 'print-preview' | 'undo' | 'redo'
 
 export interface WebSearchResult {
   results: Array<{ title: string; url: string; snippet: string; publishedAt?: string }>

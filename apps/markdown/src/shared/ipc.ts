@@ -25,6 +25,7 @@ export const MARKDOWN_CHANNELS = {
   exportRequest: 'markdown:export-request',
   exportDocx: 'markdown:export-docx',
   exportPdf: 'markdown:export-pdf',
+  print: 'markdown:print',
   getLanguage: 'app:get-language',
   languageChanged: 'app:language-changed',
   getTheme: 'app:get-theme',
@@ -66,7 +67,7 @@ export interface WebSearchResult {
   results: Array<{ title: string; url: string; snippet: string; publishedAt?: string }>
 }
 
-export type ExportFormat = 'pdf' | 'docx' | 'docs'
+export type ExportFormat = 'pdf' | 'docx' | 'docs' | 'print' | 'print-preview'
 
 export interface ExportDocxRequest {
   /** .docx bytes, base64 */
@@ -81,6 +82,10 @@ export interface ExportPdfRequest {
   /** self-contained print HTML */
   html: string
   suggestedName: string
+}
+
+export interface PrintMarkdownRequest extends ExportPdfRequest {
+  mode: 'print' | 'preview'
 }
 
 export type ExportResult =
@@ -155,6 +160,7 @@ export interface MarkdownApi extends ConnectApi {
   onExportRequest(handler: (format: ExportFormat) => void): () => void
   exportDocx(request: ExportDocxRequest): Promise<ExportResult>
   exportPdf(request: ExportPdfRequest): Promise<ExportResult>
+  print(request: PrintMarkdownRequest): Promise<{ ok: boolean; error?: string }>
   getLanguage(): Promise<Lang>
   onLanguageChanged(handler: (lang: Lang) => void): () => void
   getTheme(): Promise<UiTheme>

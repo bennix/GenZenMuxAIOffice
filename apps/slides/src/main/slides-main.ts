@@ -4187,6 +4187,10 @@ export function buildSlidesMenu(): Menu {
         // to export or print at all
         { label: tm('menuExportPdf'), click: () => send('export-pdf') },
         { label: tm('menuExportImages'), click: () => send('export-images') },
+        {
+          label: getUiLang() === 'zh' ? '打印预览…' : 'Print Preview…',
+          click: () => send('print'),
+        },
         { label: tm('menuPrint'), accelerator: 'CmdOrCtrl+P', click: () => send('print') },
         { type: 'separator' },
         closeActiveTabHook

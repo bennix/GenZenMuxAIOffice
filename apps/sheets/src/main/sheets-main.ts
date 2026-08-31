@@ -104,7 +104,7 @@ import {
 } from '../shared/desktop-api'
 import { IPC_CHANNELS } from '../shared/ipc-channels'
 import { closeGuardDecision } from './close-guard'
-import { exportPdf } from './pdf-export'
+import { exportPdf, printWorkbook } from './pdf-export'
 import { XlsxSidecarClient } from './xlsx-sidecar-client'
 import { WorkbookSqlEngine } from '../renderer/sql/sql-engine'
 import type { SqlMaterializedTable, WorkbookDatabaseSchema } from '../renderer/sql/sql-types'
@@ -1168,7 +1168,7 @@ export function setSheetsWorkbookOpenedHook(
 
 /** forward an application-menu File command into the sheets renderer */
 export function sendSheetsMenuAction(
-  action: 'open' | 'save' | 'save-as' | 'export-pdf' | 'undo' | 'redo',
+  action: 'open' | 'save' | 'save-as' | 'export-pdf' | 'print' | 'print-preview' | 'undo' | 'redo',
 ): void {
   activeSheetsWebContents?.send(IPC_CHANNELS.menuAction, action)
 }
@@ -1911,6 +1911,17 @@ export function registerSheetsIpc(): void {
     sessionFor(event)
     const request = workbookExportPdfRequestSchema.parse(input)
     return exportPdf(event, request)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.print, async (event, input: unknown) => {
+    sessionFor(event)
+    if (!input || typeof input !== 'object') throw new Error('Invalid print request.')
+    const value = input as Record<string, unknown>
+    const mode = value.mode
+    if (mode !== 'print' && mode !== 'preview') throw new Error('Invalid print mode.')
+    const { mode: _mode, ...printPayload } = value
+    const request = workbookExportPdfRequestSchema.parse(printPayload)
+    return printWorkbook(event, { ...request, mode })
   })
 
   ipcMain.handle(IPC_CHANNELS.sqlLoad, (event, input: unknown) => {
@@ -2807,6 +2818,15 @@ function installApplicationMenu(): void {
           {
             label: tm('menuExportPdf'),
             click: () => sendMenuAction('export-pdf'),
+          },
+          {
+            label: getUiLang() === 'zh' ? '打印预览…' : 'Print Preview…',
+            click: () => sendMenuAction('print-preview'),
+          },
+          {
+            label: getUiLang() === 'zh' ? '打印…' : 'Print…',
+            accelerator: 'CmdOrCtrl+P',
+            click: () => sendMenuAction('print'),
           },
           { type: 'separator' },
           closeActiveTabHook

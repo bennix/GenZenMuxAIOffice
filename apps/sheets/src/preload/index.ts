@@ -216,6 +216,22 @@ const desktopApi: DesktopApi = {
     }
     return result as { canceled: true } | { canceled: false; path: string }
   },
+  async print(request) {
+    if (
+      !isRecord(request) ||
+      !['print', 'preview'].includes(String(request.mode)) ||
+      typeof request.html !== 'string' ||
+      request.html.length === 0 ||
+      request.html.length > 20_000_000
+    ) {
+      throw new Error('Invalid print request.')
+    }
+    const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.print, request)
+    if (!isRecord(result) || typeof result.ok !== 'boolean') {
+      throw new Error('Invalid print response.')
+    }
+    return result as { ok: boolean; error?: string }
+  },
   async loadSqlDatabase(schema, tables) {
     await ipcRenderer.invoke(IPC_CHANNELS.sqlLoad, { schema, tables })
   },

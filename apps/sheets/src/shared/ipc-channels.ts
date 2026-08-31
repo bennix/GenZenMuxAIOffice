@@ -16,6 +16,7 @@ export const IPC_CHANNELS = {
   closeSaveRequest: 'workbook:close-save-request',
   closeSaveResult: 'workbook:close-save-result',
   exportPdf: 'workbook:export-pdf',
+  print: 'workbook:print',
   sqlLoad: 'workbook:sql-load',
   sqlExecute: 'workbook:sql-execute',
   sqlReset: 'workbook:sql-reset',

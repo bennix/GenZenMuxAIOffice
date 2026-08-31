@@ -252,6 +252,7 @@ import {
 import {
   handleApplyHeaderFooter as handleApplyHeaderFooterImpl,
   handleExportPdf as handleExportPdfImpl,
+  handlePrint as handlePrintImpl,
   handlePageLayoutCommand as handlePageLayoutCommandImpl,
   type PageLayoutContext,
 } from './page-layout-actions'
@@ -3138,6 +3139,8 @@ export function App(): React.JSX.Element {
       void handleInspectWorkbook()
     } else if (action === 'export-pdf') {
       void handleExportPdfImpl(pageLayoutContext())
+    } else if (action === 'print' || action === 'print-preview') {
+      void handlePrintImpl(pageLayoutContext(), action === 'print' ? 'print' : 'preview')
     } else if (action === 'undo' || action === 'redo') {
       // The shell's own text fields (AI prompt, dialog inputs) keep native
       // text undo; everywhere else ⌘Z means workbook history.

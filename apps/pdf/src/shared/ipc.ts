@@ -28,6 +28,7 @@ export const PDF_CHANNELS = {
   saveAsRequest: 'pdf:save-as-request',
   saveAsResult: 'pdf:save-as-result',
   saveAsFlow: 'pdf:save-as-flow',
+  printRequest: 'pdf:print-request',
   getLanguage: 'app:get-language',
   languageChanged: 'app:language-changed',
   getTheme: 'app:get-theme',
@@ -486,6 +487,8 @@ export interface PdfApi extends ConnectApi {
   sendSaveAsResult(ok: boolean): void
   /** True while the shell's Save As flow (dialog included) is open — the renderer pauses autosave, since the dialog's window blur would otherwise trigger a save into the original */
   onSaveAsFlow(handler: (inFlight: boolean) => void): () => void
+  /** File menu Print / Print Preview request. The native print panel contains the platform preview. */
+  onPrintRequest(handler: () => void): () => void
   getLanguage(): Promise<Lang>
   onLanguageChanged(handler: (lang: Lang) => void): () => void
   getTheme(): Promise<UiTheme>

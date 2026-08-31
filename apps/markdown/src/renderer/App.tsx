@@ -338,8 +338,17 @@ export default function App() {
         ? filePathRef.current.replace(/^.*[/\\]/, '').replace(/\.(md|markdown)$/i, '')
         : deriveAutoFileName(current)) || 'Untitled'
     try {
-      if (format === 'pdf') {
+      if (format === 'pdf' || format === 'print' || format === 'print-preview') {
         const html = buildPrintHtml(current.view.dom, suggestedName)
+        if (format !== 'pdf') {
+          const result = await window.markdownApi.print({
+            html,
+            suggestedName,
+            mode: format === 'print' ? 'print' : 'preview',
+          })
+          if (!result.ok) console.error('[markdown] print failed:', result.error)
+          return
+        }
         const result = await window.markdownApi.exportPdf({ html, suggestedName })
         if (!result.ok) console.error('[markdown] pdf export failed:', result.error)
         return
