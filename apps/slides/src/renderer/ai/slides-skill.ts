@@ -231,7 +231,7 @@ Rules:
 - Page numbers are shown to the user starting at 1; the slideIndex tool argument is 0-based.
 - **The user's "page N" always means the current order in this turn's latest <deck outline> (row N is page N)**. The user may add/remove/move/swap pages at any time; page order from history or earlier turns may be stale — locate pages only by this turn's latest outline, never by generation order, content semantics, or old conversation.
 - Canvas coordinate system: pixels, origin top-left, width 1280, height in the outline's first line (720 for 16:9). All element positions/sizes use it.
-- Font size unit is pt: large titles 36–44, subtitles 20–26, body 14–18. Colors are #RRGGBB.
+- Font size unit is pt. Use a projection-readable scale for newly generated content: cover title 44–54, page title 34–42, subtitle 24–30, body 21–28, chart/table labels and captions 15–18. Footers and page numbers may be 11–14. Colors are #RRGGBB. Do not shrink ordinary body copy below 20pt to make an overcrowded page fit.
 - Element colors are readable: the outline shows each page's main fills; read_slide and script els expose per-element fill/textColor/strokeColor (hex, read-only — change them with setFill/setStyle/setStroke or set_element_fill/stroke). Picture/chart colors are not readable; don't guess them.
 - For editing existing elements (position/size/text/style/fill/stroke) prefer execute_slide_script; set_element_text/style/transform/fill/stroke are only shortcuts for "one element, one property". Multi-property/multi-element/relative nudges/align-distribute always use a script.
 
@@ -256,6 +256,7 @@ Step 0 Questionnaire (mandatory when creating a whole new deck): first call ask_
 Step A Research: when the topic involves facts/attractions/data, run web_search 1–2 times first for real content. **Use real data and facts in the design; no "XX%" or placeholder names**.
 Step B Image strategy: with generate_deck you **don't need image_search in advance** — the system auto-searches internally per page from the planned image_queries keywords and fills real URLs back (each keyword searched once, deduped across pages). **Travel/product/people/brand decks get images by default without the user asking; never fake images with CSS placeholders — slots needing images must be filled with real ones**. Only when redoing a page via regenerate_slide or adding images to existing pages via insert_web_image do you image_search yourself first (English keywords describing a concrete scene like "summer palace kunming lake", not generic words like "park").
 Step C Unified style: first define one design system for the whole deck — primary/secondary colors, title and body font-size scale, content margins, card/corner style (e.g. "teal primary + cream background + sans-serif fresh look"). **Every page's HTML strictly follows the same system; style must be consistent across pages**.
+Typography and density are part of that system: use the projection-readable scale above, normally keep a content page to 3–5 concise points, and give text generous line spacing. During planning, split dense material across more pages instead of reducing the font size. Never use tiny type to force all source material onto one page.
 Step D Generate (call generate_deck): with many pages pass topic + approx_pages + context (feed in the real material from Step A) and let the system plan internally; with few pages you may pass core_hook+style+pages directly (image_queries takes English image-search keywords; **the system auto-searches internally and fills real URLs back**, no image_search needed in advance). The system writes HTML page by page and lands pages as they generate; you don't hand-write HTML.
 Step E Vary layouts per page (avoid sameness): 3 parallel points→three-column cards; a key number→big-number hero; comparison→two columns; sequence→timeline; image+text→left-text-right-image / full-image with text overlay. **Content pages of one deck must not all use the same layout**.
 
@@ -1642,6 +1643,22 @@ export function auditPageHtml(html: string): string | null {
     if (m) return `contains template placeholder text "${m[0]}"`
   }
   if (text.length < 10) return 'has almost no text content'
+  // The HTML renderer converts CSS px to PowerPoint points at 0.75pt/px. A deck whose
+  // median declared size is below 27px therefore lands at under ~20pt and is difficult
+  // to read on a projector. Use the median (rather than rejecting every small label) so
+  // captions, footers and page numbers remain legitimate.
+  const declaredFontSizes = Array.from(
+    html.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px\b/gi),
+    (match) => Number(match[1]),
+  )
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b)
+  if (declaredFontSizes.length >= 3) {
+    const median = declaredFontSizes[Math.floor(declaredFontSizes.length / 2)]!
+    if (median < 27) {
+      return `uses generally undersized text (median ${median}px / ${Math.round(median * 0.75 * 10) / 10}pt); ordinary body copy should be at least 28px`
+    }
+  }
   return null
 }
 

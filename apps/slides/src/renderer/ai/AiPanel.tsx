@@ -937,7 +937,8 @@ export function AiPanel({
           'Use data-pptx-kind="text" for each title, paragraph, label, number, and table cell; "shape" for cards, lines, bars, and decorative blocks; and "image" only on actual <img> elements. ' +
           'Use absolute pixel positioning. Do not use CSS transforms, gradients, filters, pseudo-elements, canvas, JavaScript, SVG, iframes, forms, external CSS, icon libraries, CSS background images, or CSS-generated placeholder illustrations. ' +
           'Use only system fonts. Keep text separate from its background card so both remain independently editable. ' +
-          'Keep every visible element inside the canvas. Make text concise and readable: title 42-64px, body at least 18px, strong contrast, generous spacing. ' +
+          'Keep every visible element inside the canvas. Use a projection-readable type scale: cover title 56-72px, page title 46-58px, subtitle 32-40px, ordinary body 28-36px, and chart/table labels or captions 20-24px. Only footers and page numbers may be 15-18px. ' +
+          'Never make ordinary body text smaller than 28px to make content fit. Prefer 3-5 concise points per content slide with generous line spacing; if the brief is dense, preserve its facts with tighter wording and a clearer hierarchy instead of tiny type. Use strong contrast. ' +
           'Use the supplied image URLs exactly when useful; use object-fit:cover and a graceful CSS color block when an image cannot load. ' +
           'Preserve all supplied facts, names, and figures; never invent precise data.'
         const user = [

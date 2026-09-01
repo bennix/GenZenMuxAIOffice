@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { RenderSlide, RenderNode, ShapeRenderNode, PlacedBox } from '@genoffice/pptx-render'
 import { runLayoutScript, type LayoutScriptElement } from '../src/renderer/ai/layout-script'
-import { createSlidesSkill, type DeckAccess } from '../src/renderer/ai/slides-skill'
+import { auditPageHtml, createSlidesSkill, type DeckAccess } from '../src/renderer/ai/slides-skill'
 
 const box = (x: number, y: number, w: number, h: number, rot = 0): PlacedBox => ({
   x,
@@ -66,6 +66,42 @@ const slideOf = (nodes: RenderNode[], w = 1280, h = 720): RenderSlide => ({
   scale: 1,
   background: { kind: 'solid', color: '#FFFFFF' },
   nodes,
+})
+
+describe('AI-generated slide typography', () => {
+  it('instructs the agent to use projection-readable body text', () => {
+    const skill = createSlidesSkill({
+      getSlides: () => [],
+      getCurrent: () => 0,
+      getSelectedIds: () => [],
+      applySlide: () => {},
+      applyDeck: () => {},
+      fitWidthPx: 1280,
+    })
+    expect(skill.systemPrompt).toContain('body 21–28')
+    expect(skill.systemPrompt).toContain('3–5 concise points')
+    expect(skill.systemPrompt).toContain('Do not shrink ordinary body copy below 20pt')
+  })
+
+  it('flags pages whose declared typography is generally too small', () => {
+    const html = `<html><body>
+      <h1 style="font-size:36px">Readable title</h1>
+      <p style="font-size:18px">First detailed point</p>
+      <p style="font-size:18px">Second detailed point</p>
+      <p style="font-size:20px">Third detailed point</p>
+    </body></html>`
+    expect(auditPageHtml(html)).toContain('generally undersized text')
+  })
+
+  it('allows small captions when the ordinary text scale is readable', () => {
+    const html = `<html><body>
+      <h1 style="font-size:52px">Readable title</h1>
+      <p style="font-size:30px">First concise point</p>
+      <p style="font-size:28px">Second concise point</p>
+      <small style="font-size:18px">Source note</small>
+    </body></html>`
+    expect(auditPageHtml(html)).toBeNull()
+  })
 })
 
 // ── New sandbox primitives ─────────────────────────────────────
