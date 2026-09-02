@@ -124,7 +124,10 @@ export function installWorkbookVisuals(
     if (!worksheet) continue
     const componentKey = `xlsx-${file.sessionId}-${visual.id}`
     const editable =
-      isEditableShape(visual) || isEditableFileVisual(visual) || isEditableChart(visual)
+      isEditableShape(visual) ||
+      isEditableFileVisual(visual) ||
+      isEditableChart(visual) ||
+      (visual.kind === 'image' && visual.description?.startsWith('zenoffice-infographic:'))
     const component =
       shapeEditing && editable
         ? () => (
@@ -847,14 +850,19 @@ function EditableShapeVisual({
         setDragActive(false)
       }}
       onDoubleClick={
-        allowText
-          ? () => setTextEditing(true)
-          : isChart
-            ? (event) => {
-                if ((event.target as HTMLElement).closest('button, .chart-editor')) return
-                setChartEditRequest((count) => count + 1)
-              }
-            : undefined
+        visual.kind === 'image' && visual.description?.startsWith('zenoffice-infographic:')
+          ? () =>
+              document.dispatchEvent(
+                new CustomEvent('zenoffice:edit-sheet-infographic', { detail: { visual } }),
+              )
+          : allowText
+            ? () => setTextEditing(true)
+            : isChart
+              ? (event) => {
+                  if ((event.target as HTMLElement).closest('button, .chart-editor')) return
+                  setChartEditRequest((count) => count + 1)
+                }
+              : undefined
       }
       data-tip={
         textEditing

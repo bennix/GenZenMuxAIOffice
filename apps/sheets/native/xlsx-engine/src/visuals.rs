@@ -218,6 +218,8 @@ pub struct VisualObject {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shape_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fill_color: Option<String>,
@@ -591,6 +593,7 @@ fn read_drawing(
                 media_path: None,
                 media_type: None,
                 name: drawing_name(anchor_node),
+                description: drawing_description(anchor_node),
                 shape_type: None,
                 fill_color: None,
                 text: None,
@@ -618,6 +621,7 @@ fn read_drawing(
                 media_type: media_type_for_path(&media_path).map(ToOwned::to_owned),
                 media_path: Some(media_path),
                 name: drawing_name(anchor_node),
+                description: drawing_description(anchor_node),
                 shape_type: None,
                 fill_color: None,
                 text: None,
@@ -663,6 +667,7 @@ fn read_drawing(
                 media_path: None,
                 media_type: None,
                 name: drawing_name(anchor_node),
+                description: drawing_description(anchor_node),
                 shape_type,
                 fill_color,
                 text,
@@ -1539,6 +1544,14 @@ fn drawing_name(anchor: Node<'_, '_>) -> Option<String> {
         .descendants()
         .find(|node| node.has_tag_name("cNvPr"))
         .and_then(|node| node.attribute("name"))
+        .map(ToOwned::to_owned)
+}
+
+fn drawing_description(anchor: Node<'_, '_>) -> Option<String> {
+    anchor
+        .descendants()
+        .find(|node| node.has_tag_name("cNvPr"))
+        .and_then(|node| node.attribute("descr"))
         .map(ToOwned::to_owned)
 }
 

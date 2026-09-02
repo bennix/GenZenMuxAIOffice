@@ -769,8 +769,19 @@ export function handleInsertInfographic(
   dataUrl: string,
   width: number,
   height: number,
+  syntax: string,
+  editTarget?: WorkbookVisualObject | null,
 ): void {
-  insertPictureVisual(ctx, dataUrl, 'image/png', 'ZenOffice-Infographic.png', width, height)
+  insertPictureVisual(
+    ctx,
+    dataUrl,
+    'image/png',
+    'ZenOffice-Infographic.png',
+    width,
+    height,
+    editTarget,
+    `zenoffice-infographic:${encodeURIComponent(syntax)}`,
+  )
 }
 
 export function handleInsertIcon(
@@ -789,14 +800,18 @@ function insertPictureVisual(
   fileName: string,
   naturalWidth: number,
   naturalHeight: number,
+  editTarget?: WorkbookVisualObject | null,
+  description?: string,
 ): void {
   const runtime = ctx.univerRef.current
   const state = ctx.lazyWorkbookRef.current
   if (!runtime || !state) return
   const workbook = runtime.univerAPI.getActiveWorkbook()
-  const worksheet = workbook?.getActiveSheet()
-  const range = workbook?.getActiveRange()
-  if (!workbook || !worksheet || !range) {
+  const worksheet = editTarget
+    ? workbook?.getSheetBySheetId(editTarget.sheetId)
+    : workbook?.getActiveSheet()
+  const range = editTarget ? null : workbook?.getActiveRange()
+  if (!workbook || !worksheet || (!editTarget && !range)) {
     ctx.setMessage(t('appSelectCellFirst'))
     return
   }
@@ -806,13 +821,13 @@ function insertPictureVisual(
   const scale = Math.min(1, 480 / Math.max(1, naturalWidth))
   const columns = Math.min(16, Math.max(2, Math.round((naturalWidth * scale) / 80)))
   const rows = Math.min(40, Math.max(2, Math.round((naturalHeight * scale) / 22)))
-  const row = range.getRow()
-  const column = range.getColumn()
+  const row = editTarget?.anchor.fromRow ?? range!.getRow()
+  const column = editTarget?.anchor.fromColumn ?? range!.getColumn()
   const visual: WorkbookVisualObject = {
     id: `added-image-${Date.now().toString(36)}-${state.editJournal.visualAdds.length + 1}`,
     sheetId,
     kind: 'image',
-    anchor: {
+    anchor: editTarget?.anchor ?? {
       fromRow: row,
       fromColumn: column,
       fromRowOffset: 0,
@@ -825,7 +840,9 @@ function insertPictureVisual(
     mediaType,
     mediaDataUrl: dataUrl,
     name: fileName,
+    ...(description ? { description } : {}),
   }
+  if (editTarget) ctx.shapeEditRef.current(editTarget.id, { remove: true })
   pushVisualAddUndo(ctx, runtime, state, visual)
   ctx.setPendingEdits(journalSize(state.editJournal))
   queueCtxVisualInstall(ctx, runtime, sheetId)

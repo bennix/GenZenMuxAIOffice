@@ -303,6 +303,7 @@ const visualObjectSchema = z
     /// the package); the sidecar never emits this.
     mediaDataUrl: z.string().optional(),
     name: z.string().optional(),
+    description: z.string().max(200_000).optional(),
     shapeType: z.string().optional(),
     fillColor: z.string().optional(),
     text: z.string().optional(),
@@ -1130,6 +1131,7 @@ export const workbookVisualAddSchema = z
         mediaType: z.enum(['image/png', 'image/jpeg', 'image/gif']),
         /// ~20MB decoded
         base64: z.string().min(1).max(28_000_000),
+        description: z.string().max(200_000).optional(),
       })
       .strict()
       .optional(),

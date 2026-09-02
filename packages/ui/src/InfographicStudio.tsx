@@ -37,6 +37,23 @@ export function cleanInfographicSyntax(value: string): string {
   return (fenced?.[1] ?? trimmed).replace(/^\s*(?:syntax|源码)\s*:\s*/i, '').trim()
 }
 
+/** Persist editable AntV source alongside a rendered image in OOXML descriptions. */
+export const INFOGRAPHIC_METADATA_PREFIX = 'zenoffice-infographic:'
+
+export function encodeInfographicMetadata(syntax: string): string {
+  return `${INFOGRAPHIC_METADATA_PREFIX}${encodeURIComponent(cleanInfographicSyntax(syntax))}`
+}
+
+export function decodeInfographicMetadata(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.startsWith(INFOGRAPHIC_METADATA_PREFIX)) return null
+  try {
+    const syntax = decodeURIComponent(value.slice(INFOGRAPHIC_METADATA_PREFIX.length))
+    return syntax.trim() ? syntax : null
+  } catch {
+    return null
+  }
+}
+
 export function InfographicPreview({ syntax, className }: { syntax: string; className?: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const [error, setError] = useState('')

@@ -1440,6 +1440,8 @@ export const DocProtected = Node.create({
       label: { default: '' },
       previewText: { default: '' },
       imageDataUrl: { default: null as string | null },
+      /** AntV source retained alongside an infographic's rendered PNG. */
+      infographicSyntax: { default: null as string | null },
       oleProgId: { default: null as string | null },
       /** display size in CSS px (blockType === 'image'), editable via drag handles */
       imageWidthPx: { default: null as number | null },
@@ -1503,6 +1505,24 @@ export const DocProtected = Node.create({
     return ({ node, editor, getPos }) => {
       let currentNode = node
       const dom = buildProtectedDom(currentNode)
+      const infographicDblClick = (event: MouseEvent) => {
+        const syntax = currentNode.attrs.infographicSyntax as string | null
+        const at = pos()
+        if (!syntax || typeof at !== 'number') return
+        event.preventDefault()
+        ;(
+          document as Document & {
+            __zenOfficeInfographicEdit?: { pos: number; syntax: string }
+          }
+        ).__zenOfficeInfographicEdit = { pos: at, syntax }
+        dom.dispatchEvent(
+          new CustomEvent('zenoffice:edit-infographic', {
+            bubbles: true,
+            detail: { pos: at, syntax },
+          }),
+        )
+      }
+      if (currentNode.attrs.infographicSyntax) dom.addEventListener('dblclick', infographicDblClick)
       const getNode = () => currentNode
       const pos = getPos as () => number | undefined
       const textboxes = mountTextboxEditors(dom, getNode, pos, editor.view)
@@ -1568,7 +1588,10 @@ export const DocProtected = Node.create({
             (event.type === 'mousedown' || dom.classList.contains('doc-content-editing'))
           )
         },
-        destroy: () => cleanups.forEach((c) => c?.()),
+        destroy: () => {
+          dom.removeEventListener('dblclick', infographicDblClick)
+          cleanups.forEach((c) => c?.())
+        },
       }
     }
   },

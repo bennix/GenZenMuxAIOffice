@@ -1,4 +1,9 @@
-import { INFOGRAPHIC_AI_SYSTEM, InfographicStudio, infographicSyntaxFromRows } from '@genoffice/ui'
+import {
+  decodeInfographicMetadata,
+  INFOGRAPHIC_AI_SYSTEM,
+  InfographicStudio,
+  infographicSyntaxFromRows,
+} from '@genoffice/ui'
 import {
   absRangeRef,
   activateFormulaClosure,
@@ -471,6 +476,21 @@ export function App(): React.JSX.Element {
   const [equationDialogOpen, setEquationDialogOpen] = useState(false)
   const [infographicOpen, setInfographicOpen] = useState(false)
   const [infographicSyntax, setInfographicSyntax] = useState<string | undefined>()
+  const [infographicEditTarget, setInfographicEditTarget] = useState<WorkbookVisualObject | null>(
+    null,
+  )
+  useEffect(() => {
+    const openEditor = (event: Event) => {
+      const visual = (event as CustomEvent<{ visual?: WorkbookVisualObject }>).detail?.visual
+      const syntax = decodeInfographicMetadata(visual?.description)
+      if (!visual || !syntax) return
+      setInfographicEditTarget(visual)
+      setInfographicSyntax(syntax)
+      setInfographicOpen(true)
+    }
+    document.addEventListener('zenoffice:edit-sheet-infographic', openEditor)
+    return () => document.removeEventListener('zenoffice:edit-sheet-infographic', openEditor)
+  }, [])
   const [sqlWorkspaceOpen, setSqlWorkspaceOpen] = useState(false)
   const sqlEngineRef = useRef(new WorkbookSqlBridge())
   const sqlSchemaRef = useRef<WorkbookDatabaseSchema | null>(null)
@@ -2764,6 +2784,7 @@ export function App(): React.JSX.Element {
       setIconsDialogOpen,
       setEquationDialogOpen,
       openInfographic: () => {
+        setInfographicEditTarget(null)
         const workbook = univerRef.current?.univerAPI.getActiveWorkbook()
         const worksheet = workbook?.getActiveSheet()
         const range = workbook?.getActiveRange()
@@ -3403,9 +3424,19 @@ export function App(): React.JSX.Element {
       <InfographicStudio
         open={infographicOpen}
         initialSyntax={infographicSyntax}
-        onClose={() => setInfographicOpen(false)}
+        onClose={() => {
+          setInfographicOpen(false)
+          setInfographicEditTarget(null)
+        }}
         onInsert={(asset) =>
-          handleInsertInfographicImpl(visualContext(), asset.dataUrl, asset.width, asset.height)
+          handleInsertInfographicImpl(
+            visualContext(),
+            asset.dataUrl,
+            asset.width,
+            asset.height,
+            asset.syntax,
+            infographicEditTarget,
+          )
         }
         onAiGenerate={async (prompt, currentSyntax) => {
           const settings = await window.desktopApi.getAiSettings()

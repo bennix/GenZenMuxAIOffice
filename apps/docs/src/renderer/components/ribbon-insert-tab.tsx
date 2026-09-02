@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { Editor } from '@tiptap/core'
 import {
   INFOGRAPHIC_AI_SYSTEM,
   InfographicStudio,
+  encodeInfographicMetadata,
   ShapePreview,
   WORDART_PRESETS,
   wordArtStrokePx,
@@ -586,6 +587,30 @@ export function InsertTab({
   const [crossRefOpen, setCrossRefOpen] = useState(false)
   const [chartOpen, setChartOpen] = useState(false)
   const [infographicOpen, setInfographicOpen] = useState(false)
+  const [infographicEditTarget, setInfographicEditTarget] = useState<{
+    pos: number
+    syntax: string
+  } | null>(null)
+  useEffect(() => {
+    const documentWithPending = document as Document & {
+      __zenOfficeInfographicEdit?: { pos: number; syntax: string }
+    }
+    const openEditor = (event: Event) => {
+      const detail = (event as CustomEvent<{ pos?: unknown; syntax?: unknown }>).detail
+      if (typeof detail?.pos !== 'number' || typeof detail.syntax !== 'string') return
+      delete documentWithPending.__zenOfficeInfographicEdit
+      setInfographicEditTarget({ pos: detail.pos, syntax: detail.syntax })
+      setInfographicOpen(true)
+    }
+    const pending = documentWithPending.__zenOfficeInfographicEdit
+    if (pending) {
+      delete documentWithPending.__zenOfficeInfographicEdit
+      setInfographicEditTarget(pending)
+      setInfographicOpen(true)
+    }
+    document.addEventListener('zenoffice:edit-infographic', openEditor)
+    return () => document.removeEventListener('zenoffice:edit-infographic', openEditor)
+  }, [])
 
   const insertTable = (rows: number, cols: number) => {
     insertTableAt(editor, rows, cols)
@@ -728,7 +753,10 @@ export function InsertTab({
             className="rb-big"
             disabled={!hasDoc}
             title="AntV 可编辑信息图 / Editable infographic"
-            onClick={() => setInfographicOpen(true)}
+            onClick={() => {
+              setInfographicEditTarget(null)
+              setInfographicOpen(true)
+            }}
           >
             <span className="rb-big-icon">
               <IconChart size={BIG} />
@@ -1187,8 +1215,41 @@ export function InsertTab({
       {chartOpen && <ChartInsertModal editor={editor} onClose={() => setChartOpen(false)} />}
       <InfographicStudio
         open={infographicOpen}
-        onClose={() => setInfographicOpen(false)}
-        onInsert={(asset) => insertImageFromDataUrl(editor, asset.dataUrl, 'ZenOffice Infographic')}
+        initialSyntax={infographicEditTarget?.syntax}
+        onClose={() => {
+          setInfographicOpen(false)
+          setInfographicEditTarget(null)
+        }}
+        onInsert={async (asset) => {
+          if (!infographicEditTarget) {
+            const inserted = await insertImageFromDataUrl(
+              editor,
+              asset.dataUrl,
+              'ZenOffice Infographic',
+              asset.syntax,
+            )
+            if (!inserted) return
+            return
+          }
+          const current = editor.state.doc.nodeAt(infographicEditTarget.pos)
+          const match = /^data:([^;]+);base64,(.*)$/s.exec(asset.dataUrl)
+          if (!current || current.type.name !== 'docProtected' || !match) return
+          editor.view.dispatch(
+            editor.state.tr.setNodeMarkup(infographicEditTarget.pos, undefined, {
+              ...current.attrs,
+              imageDataUrl: asset.dataUrl,
+              infographicSyntax: asset.syntax,
+              genImage: {
+                ...(current.attrs.genImage ?? {}),
+                base64: match[2],
+                mime: match[1],
+                widthPx: current.attrs.imageWidthPx ?? asset.width,
+                heightPx: current.attrs.imageHeightPx ?? asset.height,
+                description: encodeInfographicMetadata(asset.syntax),
+              },
+            }),
+          )
+        }}
         onAiGenerate={async (prompt, currentSyntax) => {
           const settings = await window.desktop.getAiSettings()
           const selection = editor.state.selection

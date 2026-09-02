@@ -81,7 +81,13 @@ describe('inserting new images', () => {
       ...originals(visible),
       {
         kind: 'image',
-        image: { base64: TINY_PNG_BASE64, mime: 'image/png', widthPx: 100, heightPx: 60 },
+        image: {
+          base64: TINY_PNG_BASE64,
+          mime: 'image/png',
+          widthPx: 100,
+          heightPx: 60,
+          description: 'zenoffice-infographic:infographic%20chart-column-simple%0Atheme%20light',
+        },
       },
     ])
     const zip = await JSZip.loadAsync(saved)
@@ -91,10 +97,12 @@ describe('inserting new images', () => {
     expect(rels).toContain(`Target="${media[0].replace('word/', '')}"`)
     const xml = await docXmlOf(saved)
     expect(xml).toContain(`<wp:extent cx="${100 * 9525}" cy="${60 * 9525}"/>`)
+    expect(xml).toContain('descr="zenoffice-infographic:infographic%20chart-column-simple')
     const reparsed = await parseDocx(saved)
     const last = reparsed.blocks.filter((b) => !b.hidden).at(-1)!
     expect(last.type).toBe('image')
     expect(last.imageDataUrl).toMatch(/^data:image\/png;base64,/)
+    expect(last.infographicSyntax).toBe('infographic chart-column-simple\ntheme light')
   })
 
   it('records rotation bounding-box overflow in effectExtent for new images', async () => {

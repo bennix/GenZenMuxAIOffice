@@ -144,6 +144,7 @@ export async function insertImageFromDataUrl(
   editor: Editor,
   dataUrl: string,
   label = t('ribbonPicture'),
+  infographicSyntax?: string,
 ): Promise<boolean> {
   const m = /^data:([^;]+);base64,(.*)$/s.exec(dataUrl)
   if (!m) return false
@@ -162,6 +163,7 @@ export async function insertImageFromDataUrl(
           blockType: 'image',
           label,
           imageDataUrl: dataUrl,
+          infographicSyntax: infographicSyntax ?? null,
           imageWidthPx: Math.round(natural.width * scale),
           imageHeightPx: Math.round(natural.height * scale),
           genImage: {
@@ -169,6 +171,9 @@ export async function insertImageFromDataUrl(
             mime,
             widthPx: Math.round(natural.width * scale),
             heightPx: Math.round(natural.height * scale),
+            ...(infographicSyntax
+              ? { description: `zenoffice-infographic:${encodeURIComponent(infographicSyntax)}` }
+              : {}),
           },
         },
       })

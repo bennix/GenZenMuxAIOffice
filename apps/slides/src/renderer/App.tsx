@@ -9,7 +9,12 @@ import type {
   PictureRenderNode,
   TableRenderNode,
 } from '@genoffice/pptx-render'
-import { INFOGRAPHIC_AI_SYSTEM, InfographicStudio } from '@genoffice/ui'
+import {
+  decodeInfographicMetadata,
+  encodeInfographicMetadata,
+  INFOGRAPHIC_AI_SYSTEM,
+  InfographicStudio,
+} from '@genoffice/ui'
 import type {
   AiSettings,
   AnimEffectKind,
@@ -282,6 +287,10 @@ function collectAligns(node: RenderNode, out: Set<ParaAlign>) {
 export function App() {
   const [citationsOpen, setCitationsOpen] = useState(false)
   const [infographicOpen, setInfographicOpen] = useState(false)
+  const [infographicEditTarget, setInfographicEditTarget] = useState<{
+    sourceId: string
+    syntax: string
+  } | null>(null)
   const { lang } = useI18n()
   const [slides, setSlides] = useState<RenderSlide[]>([])
   const [path, setPath] = useState<string | null>(null)
@@ -2478,7 +2487,10 @@ export function App() {
         onInsert={(kind) => void insertElement(kind)}
         onPickShape={pickShape}
         onInsertImage={() => void insertImage()}
-        onInsertInfographic={() => setInfographicOpen(true)}
+        onInsertInfographic={() => {
+          setInfographicEditTarget(null)
+          setInfographicOpen(true)
+        }}
         onBackground={(color, all) => void onBackground(color, all)}
         onApplyTheme={(preset) => void applyThemePreset(preset)}
         onAddSlide={() => void addSlide()}
@@ -2665,10 +2677,36 @@ export function App() {
       />
       <InfographicStudio
         open={infographicOpen}
-        onClose={() => setInfographicOpen(false)}
-        onInsert={(asset) =>
-          insertActions.insertInfographic(ctxRef.current, asset.dataUrl, asset.width, asset.height)
-        }
+        initialSyntax={infographicEditTarget?.syntax}
+        onClose={() => {
+          setInfographicOpen(false)
+          setInfographicEditTarget(null)
+        }}
+        onInsert={async (asset) => {
+          if (!infographicEditTarget) {
+            await insertActions.insertInfographic(
+              ctxRef.current,
+              asset.dataUrl,
+              asset.width,
+              asset.height,
+              asset.syntax,
+            )
+            return
+          }
+          const base64 = asset.dataUrl.replace(/^data:image\/png;base64,/, '')
+          const updated = await window.slidesApi.replacePictureBytes({
+            slideIndex: current,
+            sourceId: infographicEditTarget.sourceId,
+            base64,
+            ext: 'png',
+            descr: encodeInfographicMetadata(asset.syntax),
+          })
+          if (updated && !('error' in updated)) {
+            applySlide(current, updated)
+            setSelectedIds([infographicEditTarget.sourceId])
+            setDirty(true)
+          }
+        }}
         onAiGenerate={async (prompt, currentSyntax) => {
           const settings = await window.slidesApi.getAiSettings()
           const context = JSON.stringify(slides[current] ?? {}).slice(0, 12_000)
@@ -3116,6 +3154,18 @@ export function App() {
                                 if (!latex) return
                                 setEqEditTarget({ sourceId: id, latex })
                                 setEqDialogOpen(true)
+                              }}
+                              onEditInfographic={(id) => {
+                                const node = slide.nodes.find(
+                                  (candidate) => candidate.sourceId === id,
+                                )
+                                const syntax =
+                                  node?.type === 'picture'
+                                    ? decodeInfographicMetadata((node as PictureRenderNode).descr)
+                                    : null
+                                if (!syntax) return
+                                setInfographicEditTarget({ sourceId: id, syntax })
+                                setInfographicOpen(true)
                               }}
                               onContextMenu={onCanvasContextMenu}
                               onMarqueeSelect={setSelectedIds}

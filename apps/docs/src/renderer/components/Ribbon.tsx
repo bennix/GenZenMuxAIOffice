@@ -732,6 +732,15 @@ function RibbonInner({
   // The one-click AI actions need text to work on; grey them out on an empty document
   const docEmpty = !hasDoc || fs.docEmpty
   const [tab, setTab] = useState<RibbonTab>('home')
+  const ribbonBodyRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    ribbonBodyRef.current?.scrollTo({ left: 0 })
+  }, [tab])
+  useEffect(() => {
+    const showInfographicEditor = () => setTab('insert')
+    document.addEventListener('zenoffice:edit-infographic', showInfographicEditor)
+    return () => document.removeEventListener('zenoffice:edit-infographic', showInfographicEditor)
+  }, [])
   const [dropdown, setDropdown] = useState<string | null>(null)
   const [penColor, setPenColor] = useState('C00000')
   const [penHighlight, setPenHighlight] = useState('yellow')
@@ -1586,7 +1595,7 @@ function RibbonInner({
         {trailingActions}
       </div>
 
-      <div className="ribbon-body">
+      <div className="ribbon-body" ref={ribbonBodyRef}>
         {tab === 'shapeFormat' && inShape ? (
           <div className="table-ribbon-body">
             <div className="ribbon-group">

@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { renderToString } from '@antv/infographic/ssr'
 
-import { cleanInfographicSyntax, infographicSyntaxFromRows } from './InfographicStudio'
+import {
+  cleanInfographicSyntax,
+  decodeInfographicMetadata,
+  encodeInfographicMetadata,
+  infographicSyntaxFromRows,
+} from './InfographicStudio'
 
 describe('infographic studio data bridge', () => {
   it('turns a spreadsheet selection into valid, compact AntV syntax', () => {
@@ -23,6 +28,16 @@ describe('infographic studio data bridge', () => {
     expect(cleanInfographicSyntax('源码: infographic chart-column-simple')).toBe(
       'infographic chart-column-simple',
     )
+  })
+
+  it('round-trips Unicode editable source through OOXML-safe metadata', () => {
+    const syntax = `infographic sequence-timeline-simple\ntheme light\ndata\n  title 科研路线 α→β\n  desc 保留中文、公式与 100% 数据`
+    const metadata = encodeInfographicMetadata(syntax)
+    expect(metadata).toMatch(/^zenoffice-infographic:/)
+    expect(metadata).not.toContain('科研路线')
+    expect(decodeInfographicMetadata(metadata)).toBe(syntax)
+    expect(decodeInfographicMetadata('ordinary picture')).toBeNull()
+    expect(decodeInfographicMetadata('zenoffice-infographic:%E0%A4%A')).toBeNull()
   })
 
   it('renders locally without a remote font stylesheet', async () => {

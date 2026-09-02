@@ -14,6 +14,9 @@ export {
   InfographicStudio,
   infographicSyntaxFromRows,
   cleanInfographicSyntax,
+  encodeInfographicMetadata,
+  decodeInfographicMetadata,
+  INFOGRAPHIC_METADATA_PREFIX,
   type InfographicAsset,
   type InfographicStudioProps,
 } from './InfographicStudio'

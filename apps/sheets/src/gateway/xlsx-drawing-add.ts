@@ -72,6 +72,7 @@ export interface ShapeAdd {
 export interface ImageAdd {
   readonly mediaType: 'image/png' | 'image/jpeg' | 'image/gif'
   readonly base64: string
+  readonly description?: string | undefined
 }
 
 export interface VisualAddition {
@@ -146,7 +147,7 @@ export async function applyVisualAdditions(
       )
       touchedEntries.add(relsPathFor(drawing.path))
       await appendAnchor(pkg, drawing.path, addition.anchor, (shapeId) =>
-        pictureXml(shapeId, imageRelId),
+        pictureXml(shapeId, imageRelId, image.description),
       )
     } else {
       throw new VisualAddError('A visual addition carries exactly one of chart, shape, or image.')
@@ -270,11 +271,11 @@ function chartFrameXml(shapeId: number, chartRelId: string): string {
   )
 }
 
-function pictureXml(shapeId: number, imageRelId: string): string {
+function pictureXml(shapeId: number, imageRelId: string, description?: string): string {
   return (
     '<xdr:pic>' +
     '<xdr:nvPicPr>' +
-    `<xdr:cNvPr id="${shapeId}" name="Picture ${shapeId}"/>` +
+    `<xdr:cNvPr id="${shapeId}" name="Picture ${shapeId}"${description ? ` descr="${escapeXmlAttribute(description)}"` : ''}/>` +
     '<xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr>' +
     '</xdr:nvPicPr>' +
     '<xdr:blipFill>' +

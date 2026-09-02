@@ -3,7 +3,7 @@ import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
 import type { NodeViewProps } from '@tiptap/react'
 import { t } from '../i18n/locale'
 import { generateMermaidWithZenMux } from '../mermaid-ai'
-import { InfographicPreview } from '@genoffice/ui'
+import { cleanInfographicSyntax, INFOGRAPHIC_AI_SYSTEM, InfographicPreview } from '@genoffice/ui'
 import {
   PRETTY_MERMAID_THEMES,
   readPrettyTheme,
@@ -103,12 +103,23 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
     setAiBusy(true)
     setAiError('')
     try {
-      const source = await generateMermaidWithZenMux({
-        instruction: aiPrompt.trim(),
-        currentSource: node.textContent,
-      })
+      const source = isInfographic
+        ? await (async () => {
+            const settings = await window.markdownApi.getAiSettings()
+            const response = await window.markdownApi.aiChat({
+              settings,
+              system: INFOGRAPHIC_AI_SYSTEM,
+              user: `Instruction:\n${aiPrompt.trim()}\n\nCurrent infographic syntax:\n${node.textContent}`,
+            })
+            if (!response.ok) throw new Error(response.error || 'ZenMux infographic request failed')
+            return cleanInfographicSyntax(response.content ?? '')
+          })()
+        : await generateMermaidWithZenMux({
+            instruction: aiPrompt.trim(),
+            currentSource: node.textContent,
+          })
       const pos = typeof getPos === 'function' ? getPos() : undefined
-      if (typeof pos !== 'number') throw new Error('Mermaid 图形位置已变化，请重试')
+      if (typeof pos !== 'number') throw new Error('图形位置已变化，请重试')
       const replacement = node.type.create(node.attrs, editor.schema.text(source))
       editor.view.dispatch(editor.state.tr.replaceWith(pos, pos + node.nodeSize, replacement))
       setAiPrompt('')
@@ -177,12 +188,8 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
             {navigator.language.startsWith('zh') ? 'AI 修改' : 'AI Modify'}
           </button>
         )}
-        {isMermaid && (
-          <button
-            type="button"
-            className="md-codeblock-copy"
-            onClick={() => setEditing((value) => !value)}
-          >
+        {isVisual && (
+          <button type="button" className="md-codeblock-copy" onClick={() => setEditing(!editing)}>
             {editing
               ? navigator.language.startsWith('zh')
                 ? '预览'
@@ -193,7 +200,7 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
           </button>
         )}
       </div>
-      {isMermaid && aiEditing && (
+      {isVisual && aiEditing && (
         <div className="md-mermaid-inline-ai" contentEditable={false}>
           <textarea
             autoFocus
@@ -201,8 +208,8 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
             onChange={(event) => setAiPrompt(event.target.value)}
             placeholder={
               navigator.language.startsWith('zh')
-                ? '描述需要修改的节点、关系、样式或布局…'
-                : 'Describe changes to nodes, relationships, style, or layout…'
+                ? `描述需要修改的${isInfographic ? '内容、模板、主题或布局' : '节点、关系、样式或布局'}…`
+                : `Describe changes to ${isInfographic ? 'content, template, theme, or layout' : 'nodes, relationships, style, or layout'}…`
             }
             onKeyDown={(event) => {
               if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') void modifyWithAi()
@@ -211,8 +218,8 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
           <div className="md-mermaid-ai-row">
             <span>
               {navigator.language.startsWith('zh')
-                ? '通过 ZenMux 处理；结果仍是可编辑 Mermaid 源码。'
-                : 'Processed through ZenMux; the result remains editable Mermaid source.'}
+                ? `通过 ZenMux 处理；结果仍是可编辑${isInfographic ? '信息图' : ' Mermaid'}源码。`
+                : `Processed through ZenMux; the result remains editable ${isInfographic ? 'infographic' : 'Mermaid'} source.`}
             </span>
             <button type="button" onClick={() => setAiEditing(false)} disabled={aiBusy}>
               {navigator.language.startsWith('zh') ? '取消' : 'Cancel'}
@@ -255,7 +262,14 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
           {!renderError && !diagram ? <div className="md-mermaid-empty">Mermaid</div> : null}
         </div>
       )}
-      <pre style={isVisual && !editing ? { display: 'none' } : undefined}>
+      <pre
+        style={isVisual && !editing ? { display: 'none' } : undefined}
+        onBlur={(event) => {
+          if (!isVisual || !editing) return
+          const next = event.relatedTarget as globalThis.Node | null
+          if (!next || !event.currentTarget.contains(next)) setEditing(false)
+        }}
+      >
         <NodeViewContent<'code'> as="code" />
       </pre>
     </NodeViewWrapper>

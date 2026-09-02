@@ -9,7 +9,7 @@ import type { ActionCtx } from './action-context'
 import { latexEquationDescr, renderLatexEquationPng } from './latex-equation'
 import { applySelectionLink, saveEditSelection, selectionLink } from './TextEditOverlay'
 import { FIT_WIDTH } from './app-constants'
-import type { WordArtPreset } from '@genoffice/ui'
+import { encodeInfographicMetadata, type WordArtPreset } from '@genoffice/ui'
 import {
   chartSampleData,
   iconSvg,
@@ -108,6 +108,7 @@ export async function insertInfographic(
   dataUrl: string,
   naturalWidth: number,
   naturalHeight: number,
+  syntax: string,
 ): Promise<void> {
   const { slide, current } = ctx
   if (!slide) return
@@ -128,6 +129,7 @@ export async function insertInfographic(
     hPx: h,
     fitWidthPx: FIT_WIDTH,
     name: 'ZenOffice Infographic',
+    descr: encodeInfographicMetadata(syntax),
   })
   if (r && !('error' in r)) {
     ctx.applySlide(current, r.slide)

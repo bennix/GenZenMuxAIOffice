@@ -20,6 +20,17 @@ const anchor = {
 }
 
 describe('visual object schema', () => {
+  it('accepts editable infographic descriptions from the sidecar', () => {
+    const parsed = visualSchema.parse({
+      id: 'visual-infographic',
+      sheetId: 'sheet-1',
+      kind: 'image',
+      anchor,
+      description: 'zenoffice-infographic:infographic%20list-grid-badge-card',
+    })
+    expect(parsed.description).toContain('zenoffice-infographic:')
+  })
+
   it('accepts the sidecar drawing locator fields', () => {
     const parsed = visualSchema.parse({
       id: 'visual-1',

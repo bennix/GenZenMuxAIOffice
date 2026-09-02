@@ -691,6 +691,8 @@ export interface NewImage {
   /** mirror flips (a:xfrm flipH/flipV) */
   flipH?: boolean
   flipV?: boolean
+  /** OOXML wp:docPr description; used to retain editable object source. */
+  description?: string
 }
 
 export type BlockType = 'paragraph' | 'heading' | 'listItem' | 'table' | 'image' | 'passthrough'
@@ -737,6 +739,8 @@ export interface Block {
   previewText?: string
   /** data URL for inline display (type === 'image', or the packaged OLE preview on passthrough) */
   imageDataUrl?: string
+  /** Editable AntV source decoded from a ZenOffice image description. */
+  infographicSyntax?: string
   /** OLE embed ProgID (o:OLEObject), e.g. "Excel.Sheet.12"; drives the friendly type caption */
   oleProgId?: string
   /** display size from wp:extent in CSS px (type === 'image') */
