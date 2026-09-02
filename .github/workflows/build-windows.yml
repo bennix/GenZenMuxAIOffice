@@ -6,7 +6,7 @@ on:
       release_tag:
         description: Existing GitHub Release tag that will receive the verified installer
         required: true
-        default: v0.6.73
+        default: v0.6.74
 
 concurrency:
   group: windows-${{ inputs.release_tag }}
