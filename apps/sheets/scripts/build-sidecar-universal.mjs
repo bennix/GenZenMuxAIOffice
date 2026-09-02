@@ -16,6 +16,8 @@ import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { resolveCargoExecutable } from './cargo-executable.mjs'
+
 function fatal(msg) {
   console.error(`[sidecar-universal] ERROR: ${msg}`)
   process.exit(1)
@@ -28,11 +30,13 @@ if (process.platform !== 'darwin') fatal('macOS only (needs lipo)')
 // exactly like the native:build script does.
 const sheetsDir = join(dirname(fileURLToPath(import.meta.url)), '..')
 const TARGETS = ['x86_64-apple-darwin', 'aarch64-apple-darwin']
+const cargo = resolveCargoExecutable()
+if (!cargo) fatal('Cargo was not found. Install Rust from https://rustup.rs/ and retry.')
 
 for (const target of TARGETS) {
   console.log(`[sidecar-universal] cargo build --target ${target}`)
   execFileSync(
-    'cargo',
+    cargo,
     [
       'build',
       '--release',

@@ -2013,6 +2013,13 @@ body {
   overflow: auto;
   text-align: center;
 }
+
+.md-infographic-preview {
+  width: 100%;
+  min-height: 360px;
+  overflow: auto;
+  background: #fff;
+}
 .md-mermaid-preview svg {
   max-width: 100%;
   height: auto;
@@ -2223,6 +2230,38 @@ body {
 .md-review-options select {
   min-width: 180px;
   padding: 7px;
+}
+.md-review-options .md-review-literature-toggle {
+  min-height: 34px;
+  padding: 6px 10px;
+  display: inline-flex;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-weight: 650;
+}
+.md-review-literature-toggle input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+.md-review-literature-status {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.essay-review-icon {
+  color: #9a580d;
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 21px;
+  font-weight: 800;
 }
 .md-review-results {
   display: grid;

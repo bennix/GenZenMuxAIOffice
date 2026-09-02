@@ -31,10 +31,12 @@ interface Props {
   onInsertImage: () => void
   onInsertEquation: () => void
   onInsertMermaid: () => void
+  onInsertInfographic: () => void
   onOpenWechat: () => void
   onOpenCitations: () => void
   onTranslate: (language: 'zh' | 'en') => void
   onReview: () => void
+  onEssayReview: () => void
   aiOpen: boolean
   onToggleAi: () => void
   onAiPreset: (instruction: string) => void
@@ -154,10 +156,12 @@ export function Ribbon({
   onInsertImage,
   onInsertEquation,
   onInsertMermaid,
+  onInsertInfographic,
   onOpenWechat,
   onOpenCitations,
   onTranslate,
   onReview,
+  onEssayReview,
   aiOpen,
   onToggleAi,
   onAiPreset,
@@ -321,6 +325,18 @@ export function Ribbon({
             </button>
             <button
               type="button"
+              className="rb-big ai-entry essay-review-entry"
+              disabled={off || state?.empty}
+              data-tip="中考、高考、作文竞赛、CET4/6、TOEFL、IELTS、GRE"
+              onClick={onEssayReview}
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon essay-review-icon">文</span>
+              </span>
+              <span>{navigator.language.startsWith('zh') ? '作文评阅' : 'Essay Coach'}</span>
+            </button>
+            <button
+              type="button"
               className="rb-big ai-entry"
               data-tip={
                 navigator.language.startsWith('zh')
@@ -383,6 +399,19 @@ export function Ribbon({
                 <span className="ai-feature-icon">◇</span>
               </span>
               <span>{navigator.language.startsWith('zh') ? '图表' : 'Diagrams'}</span>
+            </button>
+            <button
+              type="button"
+              className="rb-big ai-entry"
+              data-tip="AntV Infographic · editable syntax"
+              disabled={off}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onInsertInfographic}
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon">▦</span>
+              </span>
+              <span>{navigator.language.startsWith('zh') ? 'AI 信息图' : 'AI Infographic'}</span>
             </button>
             <button
               type="button"

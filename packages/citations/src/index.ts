@@ -1,4 +1,5 @@
 export * from './types'
 export * from './core'
 export * from './search'
+export * from './novelty'
 export * from './CitationManager'

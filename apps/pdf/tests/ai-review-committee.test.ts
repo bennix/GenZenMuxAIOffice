@@ -14,7 +14,8 @@ describe('PDF AI review committee', () => {
     expect(modal).toContain('assignReviewModels')
     expect(modal).toContain('availableReviewModels')
     expect(modal).toContain('profile.members.length + 1')
-    expect(modal.match(/window\.pdfApi\.aiChat/g)).toHaveLength(2)
+    expect(modal.match(/window\.pdfApi\.aiChat/g)).toHaveLength(3)
+    expect(modal).toContain('searchNoveltyEvidence')
     expect(modal).toContain('settings.providers.zenmux.apiKey')
   })
 

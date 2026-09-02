@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { defaultAiSettings } from '@genoffice/ai-provider'
-import type { Editor } from '@tiptap/core'
 import {
   REVIEW_PROFILES,
   assignReviewModels,
   availableReviewModels,
-  collectReviewDocumentMaterial,
   reviewerSystemPrompt,
   settingsForReviewModel,
-} from '../src/renderer/ai-review-committee'
+} from '@genoffice/ai-provider'
+import type { Editor } from '@tiptap/core'
+import { collectReviewDocumentMaterial } from '../src/renderer/ai-review-committee'
 
 describe('AI review committee', () => {
   it('provides a distinct committee with at least three members for every requested venue', () => {
@@ -57,6 +57,38 @@ describe('AI review committee', () => {
   it('supports every General language in review reports', () => {
     const prompt = reviewerSystemPrompt(REVIEW_PROFILES[0]!, REVIEW_PROFILES[0]!.members[0]!, 'ja')
     expect(prompt).toContain('Write entirely in Japanese')
+  })
+
+  it('provides level-specific Chinese and English composition assessment panels', () => {
+    const composition = REVIEW_PROFILES.filter((profile) => profile.category === 'composition')
+    expect(composition.map((profile) => profile.id)).toEqual(
+      expect.arrayContaining([
+        'zhongkao-composition',
+        'gaokao-composition',
+        'chinese-competition-composition',
+        'university-chinese-composition',
+        'middle-school-english-composition',
+        'high-school-english-composition',
+        'cet4-writing',
+        'cet6-writing',
+        'toefl-writing',
+        'ielts-writing',
+        'gre-writing',
+      ]),
+    )
+    expect(composition.every((profile) => profile.members.length === 3)).toBe(true)
+    expect(reviewerSystemPrompt(composition[0]!, composition[0]!.members[0]!, 'zh')).toContain(
+      'writing assessment panel',
+    )
+  })
+
+  it('assigns live literature verification only to the academic novelty reviewer', () => {
+    const science = REVIEW_PROFILES.find((profile) => profile.id === 'science')!
+    expect(science.category).toBe('academic')
+    expect(science.members.filter((member) => member.literatureReviewer)).toHaveLength(1)
+    expect(reviewerSystemPrompt(science, science.members[0]!, 'en')).toContain(
+      'LIVE SCHOLARLY METADATA EVIDENCE',
+    )
   })
 
   it('collects equations and deduplicated visual evidence for multimodal review', () => {

@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { Editor } from '@tiptap/core'
-import { ShapePreview, WORDART_PRESETS, wordArtStrokePx } from '@genoffice/ui'
+import {
+  INFOGRAPHIC_AI_SYSTEM,
+  InfographicStudio,
+  ShapePreview,
+  WORDART_PRESETS,
+  wordArtStrokePx,
+} from '@genoffice/ui'
 import type { ChartDisplay, HeaderFooter, NewChart } from '@genoffice/docx-engine'
 import { hfHasPageField, hfWithoutPageMarks } from '../editor/hf-dom'
 import { EquationGallery, EquationModal } from './EquationModal'
@@ -40,6 +46,7 @@ import {
   DOC_SHAPE_GROUPS,
   insertBlankPageAt,
   insertImageViaDialog,
+  insertImageFromDataUrl,
   insertPageBreakAt,
   insertShapeAt,
   insertTableAt,
@@ -578,6 +585,7 @@ export function InsertTab({
   const [bookmarkOpen, setBookmarkOpen] = useState(false)
   const [crossRefOpen, setCrossRefOpen] = useState(false)
   const [chartOpen, setChartOpen] = useState(false)
+  const [infographicOpen, setInfographicOpen] = useState(false)
 
   const insertTable = (rows: number, cols: number) => {
     insertTableAt(editor, rows, cols)
@@ -715,6 +723,17 @@ export function InsertTab({
               <IconChart size={BIG} />
             </span>
             <span>{t('ribbonChart')}</span>
+          </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="AntV 可编辑信息图 / Editable infographic"
+            onClick={() => setInfographicOpen(true)}
+          >
+            <span className="rb-big-icon">
+              <IconChart size={BIG} />
+            </span>
+            <span>{navigator.language.startsWith('zh') ? 'AI 信息图' : 'AI Infographic'}</span>
           </button>
           <div className="rb-split-wrap">
             <button
@@ -1166,6 +1185,29 @@ export function InsertTab({
       {bookmarkOpen && <BookmarkModal editor={editor} onClose={() => setBookmarkOpen(false)} />}
       {crossRefOpen && <CrossRefModal editor={editor} onClose={() => setCrossRefOpen(false)} />}
       {chartOpen && <ChartInsertModal editor={editor} onClose={() => setChartOpen(false)} />}
+      <InfographicStudio
+        open={infographicOpen}
+        onClose={() => setInfographicOpen(false)}
+        onInsert={(asset) => insertImageFromDataUrl(editor, asset.dataUrl, 'ZenOffice Infographic')}
+        onAiGenerate={async (prompt, currentSyntax) => {
+          const settings = await window.desktop.getAiSettings()
+          const selection = editor.state.selection
+          const context = editor.state.doc
+            .textBetween(
+              selection.empty ? 0 : selection.from,
+              selection.empty ? editor.state.doc.content.size : selection.to,
+              '\n',
+            )
+            .slice(0, 12_000)
+          const response = await window.desktop.aiChat({
+            settings,
+            system: INFOGRAPHIC_AI_SYSTEM,
+            user: `Instruction:\n${prompt}\n\nDocument context:\n${context}\n\nCurrent infographic syntax:\n${currentSyntax}`,
+          })
+          if (!response.ok) throw new Error(response.error || 'ZenMux infographic request failed')
+          return response.content ?? ''
+        }}
+      />
     </>
   )
 }

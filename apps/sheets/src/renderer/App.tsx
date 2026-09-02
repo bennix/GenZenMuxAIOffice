@@ -1,3 +1,4 @@
+import { INFOGRAPHIC_AI_SYSTEM, InfographicStudio, infographicSyntaxFromRows } from '@genoffice/ui'
 import {
   absRangeRef,
   activateFormulaClosure,
@@ -207,6 +208,7 @@ import {
   buildAiChartEdit as buildAiChartEditImpl,
   handleInsertChart as handleInsertChartImpl,
   handleInsertEquation as handleInsertEquationImpl,
+  handleInsertInfographic as handleInsertInfographicImpl,
   handleInsertIcon as handleInsertIconImpl,
   handleInsertScreenshot,
   handleRecommendedCharts as handleRecommendedChartsImpl,
@@ -467,6 +469,8 @@ export function App(): React.JSX.Element {
   const [screenshotDialogOpen, setScreenshotDialogOpen] = useState(false)
   const [iconsDialogOpen, setIconsDialogOpen] = useState(false)
   const [equationDialogOpen, setEquationDialogOpen] = useState(false)
+  const [infographicOpen, setInfographicOpen] = useState(false)
+  const [infographicSyntax, setInfographicSyntax] = useState<string | undefined>()
   const [sqlWorkspaceOpen, setSqlWorkspaceOpen] = useState(false)
   const sqlEngineRef = useRef(new WorkbookSqlBridge())
   const sqlSchemaRef = useRef<WorkbookDatabaseSchema | null>(null)
@@ -2759,6 +2763,18 @@ export function App(): React.JSX.Element {
       setScreenshotDialogOpen,
       setIconsDialogOpen,
       setEquationDialogOpen,
+      openInfographic: () => {
+        const workbook = univerRef.current?.univerAPI.getActiveWorkbook()
+        const worksheet = workbook?.getActiveSheet()
+        const range = workbook?.getActiveRange()
+        const values = range?.getValues() as unknown[][] | undefined
+        setInfographicSyntax(
+          values?.length
+            ? infographicSyntaxFromRows(values, worksheet?.getSheetName() ?? '选中数据概览')
+            : undefined,
+        )
+        setInfographicOpen(true)
+      },
       openRecommendedCharts: () => {
         void handleRecommendedChartsImpl(visualContext()).then((result) => {
           if (result) setRecommendedCharts(result)
@@ -3384,6 +3400,24 @@ export function App(): React.JSX.Element {
           onClose={() => setEquationDialogOpen(false)}
         />
       )}
+      <InfographicStudio
+        open={infographicOpen}
+        initialSyntax={infographicSyntax}
+        onClose={() => setInfographicOpen(false)}
+        onInsert={(asset) =>
+          handleInsertInfographicImpl(visualContext(), asset.dataUrl, asset.width, asset.height)
+        }
+        onAiGenerate={async (prompt, currentSyntax) => {
+          const settings = await window.desktopApi.getAiSettings()
+          const response = await window.desktopApi.aiChat({
+            settings,
+            system: INFOGRAPHIC_AI_SYSTEM,
+            user: `Instruction:\n${prompt}\n\nThe current syntax already contains the selected Excel data. Preserve its real labels and values.\n\nCurrent infographic syntax:\n${currentSyntax}`,
+          })
+          if (!response.ok) throw new Error(response.error || 'ZenMux infographic request failed')
+          return response.content ?? ''
+        }}
+      />
       {sqlWorkspaceOpen && (
         <SqlWorkspace
           file={workbookFile}

@@ -308,6 +308,7 @@ export function App() {
   const [settings, setSettings] = useState<AiSettings>(DEFAULT_SETTINGS)
   const [showAi, setShowAi] = useState(() => localStorage.getItem('aidocs.showAi') !== '0')
   const [showAiReview, setShowAiReview] = useState(false)
+  const [showEssayReview, setShowEssayReview] = useState(false)
   /** Increments on every open/new document: AiPanel remounts by key to reset the conversation and history (save path changes don't bump it, so the session continues) */
   const [aiPanelKey, setAiPanelKey] = useState(0)
   const [ribbonTabRequest, setRibbonTabRequest] = useState<{ tab: string; nonce: number } | null>(
@@ -2663,6 +2664,7 @@ export function App() {
       setAiPreset({ text, nonce: Date.now(), autoRun: true })
     },
     onAiReview: () => setShowAiReview(true),
+    onEssayReview: () => setShowEssayReview(true),
     onHeader: (next: HeaderFooter) => {
       setHeader(next)
       setHeaderDirty(true)
@@ -3163,6 +3165,14 @@ export function App() {
           editor={editor}
           settings={settings}
           onClose={() => setShowAiReview(false)}
+        />
+      )}
+      {showEssayReview && editor && (
+        <AiReviewCommitteeModal
+          editor={editor}
+          settings={settings}
+          mode="composition"
+          onClose={() => setShowEssayReview(false)}
         />
       )}
       {eqEditTarget && editor && (

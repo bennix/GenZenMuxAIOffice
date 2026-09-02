@@ -3,6 +3,7 @@ import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
 import type { NodeViewProps } from '@tiptap/react'
 import { t } from '../i18n/locale'
 import { generateMermaidWithZenMux } from '../mermaid-ai'
+import { InfographicPreview } from '@genoffice/ui'
 import {
   PRETTY_MERMAID_THEMES,
   readPrettyTheme,
@@ -22,6 +23,7 @@ const LANGUAGES = [
   'go',
   'graphql',
   'html',
+  'infographic',
   'java',
   'javascript',
   'json',
@@ -56,6 +58,8 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
   const renderId = useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const language = String(node.attrs.language ?? '') || 'plaintext'
   const isMermaid = language === 'mermaid'
+  const isInfographic = language === 'infographic'
+  const isVisual = isMermaid || isInfographic
 
   useEffect(() => {
     if (!isMermaid || editing || !node.textContent.trim()) return
@@ -118,7 +122,7 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
   }
 
   return (
-    <NodeViewWrapper className={`md-codeblock${isMermaid ? ' md-mermaid-block' : ''}`}>
+    <NodeViewWrapper className={`md-codeblock${isVisual ? ' md-mermaid-block' : ''}`}>
       <div className="md-codeblock-bar" contentEditable={false}>
         <select
           className="md-codeblock-lang"
@@ -160,7 +164,7 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
             ))}
           </select>
         )}
-        {isMermaid && (
+        {isVisual && (
           <button
             type="button"
             className="md-codeblock-copy md-mermaid-ai-button"
@@ -231,6 +235,15 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
           {aiError ? <div className="md-mermaid-error">{aiError}</div> : null}
         </div>
       )}
+      {isInfographic && !editing && (
+        <div
+          className="md-mermaid-preview"
+          contentEditable={false}
+          onDoubleClick={() => editor.isEditable && setEditing(true)}
+        >
+          <InfographicPreview syntax={node.textContent} className="md-infographic-preview" />
+        </div>
+      )}
       {isMermaid && !editing && (
         <div
           className="md-mermaid-preview"
@@ -242,7 +255,7 @@ export function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeVi
           {!renderError && !diagram ? <div className="md-mermaid-empty">Mermaid</div> : null}
         </div>
       )}
-      <pre style={isMermaid && !editing ? { display: 'none' } : undefined}>
+      <pre style={isVisual && !editing ? { display: 'none' } : undefined}>
         <NodeViewContent<'code'> as="code" />
       </pre>
     </NodeViewWrapper>

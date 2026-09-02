@@ -8,6 +8,16 @@ export { FormulaImageRecognition, type FormulaImageData } from './FormulaImageRe
 export { copyHtmlToClipboard, copyTextToClipboard } from './clipboard'
 export { ConnectButton } from './ConnectButton'
 export {
+  DEFAULT_INFOGRAPHIC_SYNTAX,
+  INFOGRAPHIC_AI_SYSTEM,
+  InfographicPreview,
+  InfographicStudio,
+  infographicSyntaxFromRows,
+  cleanInfographicSyntax,
+  type InfographicAsset,
+  type InfographicStudioProps,
+} from './InfographicStudio'
+export {
   WORDART_PRESETS,
   wordArtSolidColor,
   wordArtStrokePx,

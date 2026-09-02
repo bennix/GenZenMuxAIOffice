@@ -764,6 +764,15 @@ export function handleInsertEquation(
   insertPictureVisual(ctx, dataUrl, 'image/png', 'Equation.png', width, height)
 }
 
+export function handleInsertInfographic(
+  ctx: VisualActionContext,
+  dataUrl: string,
+  width: number,
+  height: number,
+): void {
+  insertPictureVisual(ctx, dataUrl, 'image/png', 'ZenOffice-Infographic.png', width, height)
+}
+
 export function handleInsertIcon(
   ctx: VisualActionContext,
   dataUrl: string,

@@ -1401,6 +1401,13 @@ function Ribbon({
         <RibbonGroup label={t('appGroupCharts')}>
           <RibbonButton
             large
+            label={navigator.language.startsWith('zh') ? 'AI 信息图' : 'AI Infographic'}
+            detail={navigator.language.startsWith('zh') ? '根据选中数据' : 'From selection'}
+            symbol="▦"
+            onClick={() => onCommand('insert-infographic')}
+          />
+          <RibbonButton
+            large
             label={t('appRecommendedCharts')}
             detail={t('appFromSelection')}
             symbol="📊"

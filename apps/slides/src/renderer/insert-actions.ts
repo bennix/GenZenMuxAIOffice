@@ -102,6 +102,41 @@ export async function insertImage(ctx: ActionCtx): Promise<void> {
   ctx.setSelectedIds([r.sourceId])
 }
 
+/** Insert the studio export as an ordinary PPT picture so it remains movable and resizable. */
+export async function insertInfographic(
+  ctx: ActionCtx,
+  dataUrl: string,
+  naturalWidth: number,
+  naturalHeight: number,
+): Promise<void> {
+  const { slide, current } = ctx
+  if (!slide) return
+  const base64 = dataUrl.replace(/^data:image\/png;base64,/, '')
+  if (!base64 || base64 === dataUrl) return
+  const maxW = slide.widthPx * 0.76
+  const maxH = slide.heightPx * 0.68
+  const scale = Math.min(maxW / naturalWidth, maxH / naturalHeight)
+  const w = Math.round(naturalWidth * scale)
+  const h = Math.round(naturalHeight * scale)
+  const r = await window.slidesApi.addImageBytes({
+    slideIndex: current,
+    base64,
+    ext: 'png',
+    xPx: Math.round((slide.widthPx - w) / 2),
+    yPx: Math.round((slide.heightPx - h) / 2),
+    wPx: w,
+    hPx: h,
+    fitWidthPx: FIT_WIDTH,
+    name: 'ZenOffice Infographic',
+  })
+  if (r && !('error' in r)) {
+    ctx.applySlide(current, r.slide)
+    ctx.setSelectedIds([r.sourceId])
+    ctx.setDirty(true)
+    ctx.setStatus('Infographic inserted')
+  }
+}
+
 export async function insertTable(ctx: ActionCtx, rows: number, cols: number): Promise<void> {
   const { slide, current } = ctx
   if (!slide) return

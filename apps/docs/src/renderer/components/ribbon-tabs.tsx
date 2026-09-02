@@ -499,6 +499,7 @@ export type RevisionDisplayMode = 'all' | 'none' | 'original'
 interface ReviewTabProps extends TabProps {
   onAiPreset: (instruction: string) => void
   onAiReview: () => void
+  onEssayReview?: () => void
   commentCount: number
   onShowComments: () => void
   /** create a comment on the current selection (disabled when selection is empty) */
@@ -524,6 +525,7 @@ export function ReviewTab({
   setDropdown,
   onAiPreset,
   onAiReview,
+  onEssayReview,
   commentCount,
   onShowComments,
   canComment,
@@ -580,6 +582,17 @@ export function ReviewTab({
               AI
             </span>
             <span>AI {t('ribbonTabReview')}</span>
+          </button>
+          <button
+            className="rb-big essay-review-entry"
+            disabled={!hasDoc}
+            title="中考、高考、作文竞赛、CET4/6、TOEFL、IELTS、GRE"
+            onClick={onEssayReview}
+          >
+            <span className="rb-big-icon essay-review-ribbon-icon" aria-hidden="true">
+              文
+            </span>
+            <span>{navigator.language.startsWith('zh') ? '作文评阅' : 'Essay Coach'}</span>
           </button>
         </div>
         <div className="ribbon-group-label">{t('ribbonGroupProofing')}</div>

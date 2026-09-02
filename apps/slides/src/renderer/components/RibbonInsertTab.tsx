@@ -60,6 +60,7 @@ export function RibbonInsertTab({ rb }: { rb: RibbonTabCtx }) {
     onInsertField,
     onInsertIcon,
     onInsertImage,
+    onInsertInfographic,
     onInsertMedia,
     onInsertModel3d,
     onInsertSmartArt,
@@ -223,6 +224,17 @@ export function RibbonInsertTab({ rb }: { rb: RibbonTabCtx }) {
             <IconPicture size={BIG} />
           </span>
           <span>{t('ribbonPicture')}</span>
+        </button>
+        <button
+          className="rb-big"
+          disabled={!hasDoc}
+          onClick={onInsertInfographic}
+          data-tip="AntV Infographic · editable studio"
+        >
+          <span className="rb-big-icon">
+            <IconChart size={BIG} />
+          </span>
+          <span>{navigator.language.startsWith('zh') ? 'AI 信息图' : 'AI Infographic'}</span>
         </button>
         {dropBig(
           'icons',

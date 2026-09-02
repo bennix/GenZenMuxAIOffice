@@ -4821,6 +4821,17 @@ body.docs-crop-active
   letter-spacing: -1px;
 }
 
+.essay-review-ribbon-icon {
+  color: #8a4b08;
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.essay-review-entry:hover:not(:disabled) .essay-review-ribbon-icon {
+  transform: rotate(-4deg) scale(1.05);
+}
+
 .ai-review-backdrop {
   z-index: 1200;
 }
@@ -4883,6 +4894,35 @@ body.docs-crop-active
 .ai-review-options label {
   min-width: 190px;
   margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.ai-review-options .ai-review-literature-toggle {
+  min-width: 170px;
+  min-height: 34px;
+  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 7px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.ai-review-literature-toggle input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--word-blue);
+}
+
+.ai-review-literature-status {
+  padding: 8px 22px;
+  border-bottom: 1px solid var(--color-border-default);
+  background: color-mix(in srgb, var(--word-blue) 7%, var(--color-bg-default));
   color: var(--color-text-secondary);
   font-size: 12px;
 }

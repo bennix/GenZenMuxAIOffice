@@ -74,6 +74,13 @@ import { findDocxPath } from '../shared/open-file'
 import { atomicWriteFile, looksLikeZip } from './atomic-write'
 import { isExternallyModified, type DiskFileState } from './external-change'
 import { initDocsAutoUpdater } from './updater'
+import { installLibreOfficeWithProgress } from '../../../shell/src/main/libreoffice-install-progress'
+import {
+  LegacyDocFidelityError,
+  docxToLegacyDoc,
+  importLegacyDoc,
+  sniffWordContainer,
+} from '../../../shell/src/main/legacy-doc-import'
 
 /**
  * Docs main-process logic as an embeddable module: no top-level side effects.
@@ -1960,6 +1967,89 @@ export function defaultSaveDir(): string {
   return configuredDefaultSaveDir(app)
 }
 
+const activeLegacyDocImports = new Map<string, Promise<string>>()
+
+/**
+ * Normalize every Word open entry point to OOXML. The suffix is not trusted:
+ * real-world WPS/Word files may contain OLE or HTML despite being named .docx.
+ * Legacy sources remain read-only and open as a separate converted DOCX copy.
+ */
+class LegacyDocImportCancelledError extends Error {
+  constructor() {
+    super('Legacy Word import was cancelled.')
+    this.name = 'LegacyDocImportCancelledError'
+  }
+}
+
+type LegacyImportChoice = 'recover-text' | 'install' | 'cancel'
+
+async function confirmLegacyImport(parent?: BrowserWindow): Promise<LegacyImportChoice> {
+  const chinese = getUiLang() === 'zh' || getUiLang() === 'zh-TW'
+  const options = {
+    type: 'warning' as const,
+    title: chinese ? '保真转换不可用' : 'Layout-preserving conversion unavailable',
+    message: chinese
+      ? '无法在不改变格式的情况下打开这个旧版 Word 文档。'
+      : 'This legacy Word document cannot be opened without changing its formatting.',
+    detail: chinese
+      ? '仅恢复文字会丢失原字体、字号、粗细、颜色、段落间距、表格和分页。建议安装 LibreOffice 后重新打开；只有在您明确接受格式丢失时，才继续恢复文字。'
+      : 'Text-only recovery loses fonts, sizes, weights, colors, paragraph spacing, tables, and pagination. Install LibreOffice and reopen for best fidelity, or explicitly continue with text-only recovery.',
+    buttons: chinese
+      ? ['仅恢复文字', '安装或获取 LibreOffice', '取消']
+      : ['Recover text only', 'Install or get LibreOffice', 'Cancel'],
+    defaultId: 1,
+    cancelId: 2,
+    noLink: true,
+  }
+  const result = parent
+    ? await dialog.showMessageBox(parent, options)
+    : await dialog.showMessageBox(options)
+  if (result.response === 0) return 'recover-text'
+  if (result.response === 1) return 'install'
+  return 'cancel'
+}
+
+async function editableWordPath(filePath: string, parent?: BrowserWindow): Promise<string> {
+  if (!/\.docx?$/i.test(filePath)) throw new Error(tm('errUnsupportedExt', { ext: 'doc' }))
+  if (/\.docx$/i.test(filePath) && sniffWordContainer(filePath) === 'ooxml') return filePath
+  let pending = activeLegacyDocImports.get(filePath)
+  if (!pending) {
+    pending = importLegacyDoc(filePath, defaultSaveDir()).then((result) => result.path)
+    activeLegacyDocImports.set(filePath, pending)
+  }
+  try {
+    return await pending
+  } catch (error) {
+    if (!(error instanceof LegacyDocFidelityError)) throw error
+    const choice = await confirmLegacyImport(parent)
+    if (choice === 'cancel') throw new LegacyDocImportCancelledError()
+    if (choice === 'install') {
+      if (!(await installLibreOfficeWithProgress(parent, getUiLang().startsWith('zh')))) {
+        throw new LegacyDocImportCancelledError()
+      }
+      return (await importLegacyDoc(filePath, defaultSaveDir())).path
+    }
+    return (await importLegacyDoc(filePath, defaultSaveDir(), { allowTextRecovery: true })).path
+  } finally {
+    activeLegacyDocImports.delete(filePath)
+  }
+}
+
+function legacyImportError(error: unknown): Error {
+  const detail = error instanceof Error ? error.message : String(error)
+  const message =
+    getUiLang() === 'zh' || getUiLang() === 'zh-TW'
+      ? '旧版 Word 文档转换失败'
+      : 'Could not convert the legacy Word document'
+  return new Error(`${message}: ${detail}`)
+}
+
+async function wordBytesForPath(filePath: string, docxBytes: Uint8Array): Promise<Buffer> {
+  if (/\.doc$/i.test(filePath)) return Buffer.from(await docxToLegacyDoc(docxBytes))
+  if (/\.docx$/i.test(filePath)) return Buffer.from(docxBytes)
+  throw new Error('Word documents must be saved as .docx or .doc.')
+}
+
 /** first free path for fileName inside dir: name.ext, name-2.ext, name-3.ext… */
 export function uniquePathIn(dir: string, fileName: string): string {
   const dot = fileName.lastIndexOf('.')
@@ -1971,13 +2061,14 @@ export function uniquePathIn(dir: string, fileName: string): string {
 }
 
 export function openExternalDocx(filePath: string | null): void {
-  if (!filePath || !/\.docx$/i.test(filePath)) return
+  if (!filePath || !/\.docx?$/i.test(filePath)) return
   const win = BrowserWindow.getFocusedWindow() ?? mainWindow
   if (!rendererReady || !win) {
     pendingOpenPath = filePath
     return
   }
-  void loadDocx(filePath, win.webContents.id)
+  void editableWordPath(filePath, win)
+    .then((editablePath) => loadDocx(editablePath, win.webContents.id))
     .then((result) => {
       if (!result || win.isDestroyed()) return
       if (win.isMinimized()) win.restore()
@@ -1985,7 +2076,10 @@ export function openExternalDocx(filePath: string | null): void {
       win.focus()
       win.webContents.send('docs:opened', result)
     })
-    .catch((err) => dialog.showErrorBox(tm('dlgOpenDoc'), String(err)))
+    .catch((err) => {
+      if (err instanceof LegacyDocImportCancelledError) return
+      dialog.showErrorBox(tm('dlgOpenDoc'), legacyImportError(err).message)
+    })
 }
 
 function userDataPath(...parts: string[]): string {
@@ -2925,26 +3019,48 @@ export function registerDocsIpc(): void {
   ipcMain.handle('docs:open', async (event) => {
     const result = await openDialog(event, {
       title: tm('dlgOpenDoc'),
-      filters: [{ name: tm('filterWord'), extensions: ['docx'] }],
+      filters: [{ name: tm('filterWord'), extensions: ['docx', 'doc'] }],
       properties: ['openFile'],
     })
     if (result.canceled || result.filePaths.length === 0) return null
-    return loadDocx(result.filePaths[0], event.sender.id)
+    try {
+      return loadDocx(
+        await editableWordPath(result.filePaths[0], dialogParent(event)),
+        event.sender.id,
+      )
+    } catch (error) {
+      if (error instanceof LegacyDocImportCancelledError) return null
+      throw legacyImportError(error)
+    }
   })
 
-  ipcMain.handle('docs:open-path', (event, filePath: string) => loadDocx(filePath, event.sender.id))
+  ipcMain.handle('docs:open-path', async (event, filePath: string) => {
+    try {
+      return loadDocx(await editableWordPath(filePath, dialogParent(event)), event.sender.id)
+    } catch (error) {
+      if (error instanceof LegacyDocImportCancelledError) return null
+      throw legacyImportError(error)
+    }
+  })
 
-  ipcMain.handle('docs:consume-pending-open', (event) => {
+  ipcMain.handle('docs:consume-pending-open', async (event) => {
     rendererReady = true
     // a tab spawned via New Tab loads the document queued for it specifically
     const queued = pendingWindowOpens.get(event.sender.id)
-    if (queued) {
-      pendingWindowOpens.delete(event.sender.id)
-      return loadDocx(queued, event.sender.id)
+    try {
+      if (queued) {
+        pendingWindowOpens.delete(event.sender.id)
+        return loadDocx(await editableWordPath(queued, dialogParent(event)), event.sender.id)
+      }
+      const filePath = pendingOpenPath
+      pendingOpenPath = null
+      return filePath
+        ? loadDocx(await editableWordPath(filePath, dialogParent(event)), event.sender.id)
+        : null
+    } catch (error) {
+      if (error instanceof LegacyDocImportCancelledError) return null
+      throw legacyImportError(error)
     }
-    const filePath = pendingOpenPath
-    pendingOpenPath = null
-    return filePath ? loadDocx(filePath, event.sender.id) : null
   })
 
   /** returns true when this tab was opened via "New Document" and should start blank */
@@ -2991,7 +3107,7 @@ export function registerDocsIpc(): void {
         if (tornDownWcIds.has(event.sender.id) || !canDocWrite(event.sender.id, filePath)) {
           return { ok: false, error: 'save target is not an opened document' }
         }
-        const bytes = Buffer.from(data)
+        const bytes = await wordBytesForPath(filePath, Buffer.from(data))
         await atomicWriteFile(filePath, bytes)
         await rememberDiskState(event.sender.id, filePath, bytes)
         clearRecoveryCopy(filePath)
@@ -3038,14 +3154,17 @@ export function registerDocsIpc(): void {
     const result = await saveDialog(event, {
       title: tm('dlgSaveAs'),
       defaultPath: defaultName,
-      filters: [{ name: tm('filterWord'), extensions: ['docx'] }],
+      filters: [
+        { name: `${tm('filterWord')} (.docx)`, extensions: ['docx'] },
+        { name: `${tm('filterWord')} 97-2003 (.doc)`, extensions: ['doc'] },
+      ],
     })
     if (result.canceled || !result.filePath) return { ok: false }
     // the tab may have been closed while the dialog was open; checked before the
     // write because Save As may overwrite an existing file (no safe rollback)
     if (tornDownWcIds.has(event.sender.id)) return { ok: false }
     try {
-      const bytes = Buffer.from(data)
+      const bytes = await wordBytesForPath(result.filePath, Buffer.from(data))
       await atomicWriteFile(result.filePath, bytes)
       allowDocWrite(event.sender.id, result.filePath)
       await rememberDiskState(event.sender.id, result.filePath, bytes)
@@ -3090,7 +3209,7 @@ export function registerDocsIpc(): void {
       return { ok: false, error: 'bibliography target is not an opened document' }
     }
     try {
-      const bibPath = filePath.replace(/\.docx$/i, '') + '.bib'
+      const bibPath = filePath.replace(/\.docx?$/i, '') + '.bib'
       await atomicWriteFile(bibPath, Buffer.from(bibText, 'utf8'))
       return { ok: true }
     } catch (error) {
@@ -3100,7 +3219,7 @@ export function registerDocsIpc(): void {
 
   ipcMain.handle('docs:export-markdown', async (event, defaultName: string, text: string) => {
     if (tornDownWcIds.has(event.sender.id) || typeof text !== 'string') return { ok: false }
-    const baseName = String(defaultName || 'document').replace(/\.docx$/i, '')
+    const baseName = String(defaultName || 'document').replace(/\.docx?$/i, '')
     const result = await saveDialog(event, {
       title: 'Export Markdown',
       defaultPath: `${baseName}.md`,
@@ -3234,7 +3353,7 @@ export function registerDocsIpc(): void {
       if (!filePath) {
         const result = await saveDialog(event, {
           title: tm('dlgExportPdf'),
-          defaultPath: defaultName.replace(/\.docx$/i, '') + '.pdf',
+          defaultPath: defaultName.replace(/\.docx?$/i, '') + '.pdf',
           filters: [{ name: 'PDF', extensions: ['pdf'] }],
         })
         if (result.canceled || !result.filePath) return { ok: false }
@@ -3292,7 +3411,7 @@ export function registerDocsIpc(): void {
       if (!filePath) {
         const result = await saveDialog(event, {
           title: tm('dlgExportPdf'),
-          defaultPath: defaultName.replace(/\.docx$/i, '') + '.pdf',
+          defaultPath: defaultName.replace(/\.docx?$/i, '') + '.pdf',
           filters: [{ name: 'PDF', extensions: ['pdf'] }],
         })
         if (result.canceled || !result.filePath) return { ok: false }

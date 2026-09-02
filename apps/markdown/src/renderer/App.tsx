@@ -32,6 +32,7 @@ import { buildPrintHtml } from './export/printHtml'
 import { resolveImageSrc } from './editor/localImage'
 import { citationToken, syncBibliography } from './markdown/citations'
 import type { ExportFormat, SaveMode } from '../shared/ipc'
+import { INFOGRAPHIC_AI_SYSTEM, InfographicStudio } from '@genoffice/ui'
 
 type LoadStatus = 'loading' | 'ready' | 'error'
 type SaveState = 'idle' | 'saving' | 'saved' | 'failed'
@@ -96,9 +97,11 @@ export default function App() {
   const [equationOpen, setEquationOpen] = useState(false)
   const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
   const [mermaidOpen, setMermaidOpen] = useState(false)
+  const [infographicOpen, setInfographicOpen] = useState(false)
   const [mermaidTab, setMermaidTab] = useState<'pretty' | 'editorial' | 'wechat'>('pretty')
   const [wechatOpen, setWechatOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [essayReviewOpen, setEssayReviewOpen] = useState(false)
   const citationRecordsRef = useRef(new Map<string, CitationRecord>())
   const citationStyleRef = useRef<CitationStyle>('gb7714')
 
@@ -485,12 +488,14 @@ export default function App() {
           setMermaidTab('pretty')
           setMermaidOpen(true)
         }}
+        onInsertInfographic={() => setInfographicOpen(true)}
         onOpenWechat={() => setWechatOpen(true)}
         onOpenCitations={() => {
           setCitationInitialTab('search')
           setCitationsOpen(true)
         }}
         onReview={() => setReviewOpen(true)}
+        onEssayReview={() => setEssayReviewOpen(true)}
         onTranslate={(language) => {
           const selection = editor && editor.state.selection.from !== editor.state.selection.to
           const target = language === 'zh' ? '简体中文' : 'English'
@@ -506,6 +511,44 @@ export default function App() {
         onAiPreset={(text) => {
           setAiOpen(true)
           setAiPreset((prev) => ({ text, nonce: (prev?.nonce ?? 0) + 1 }))
+        }}
+      />
+      <InfographicStudio
+        open={infographicOpen}
+        onClose={() => setInfographicOpen(false)}
+        onInsert={(asset) => {
+          const current = editorRef.current
+          if (!current) return
+          current
+            .chain()
+            .focus()
+            .insertContent({
+              type: 'codeBlock',
+              attrs: { language: 'infographic' },
+              content: [{ type: 'text', text: asset.syntax }],
+            })
+            .run()
+        }}
+        onAiGenerate={async (prompt, currentSyntax) => {
+          const settings = await window.markdownApi.getAiSettings()
+          const current = editorRef.current
+          const selection = current?.state.selection
+          const context = current
+            ? current.state.doc
+                .textBetween(
+                  selection?.empty ? 0 : (selection?.from ?? 0),
+                  selection?.empty ? current.state.doc.content.size : (selection?.to ?? 0),
+                  '\n',
+                )
+                .slice(0, 12_000)
+            : ''
+          const response = await window.markdownApi.aiChat({
+            settings,
+            system: INFOGRAPHIC_AI_SYSTEM,
+            user: `Instruction:\n${prompt}\n\nMarkdown context:\n${context}\n\nCurrent infographic syntax:\n${currentSyntax}`,
+          })
+          if (!response.ok) throw new Error(response.error || 'ZenMux infographic request failed')
+          return response.content ?? ''
         }}
       />
       {status === 'loading' && <div className="center-note">{t('loading')}</div>}
@@ -573,6 +616,13 @@ export default function App() {
       )}
       {reviewOpen && editor && (
         <AiReviewCommitteeModal editor={editor} onClose={() => setReviewOpen(false)} />
+      )}
+      {essayReviewOpen && editor && (
+        <AiReviewCommitteeModal
+          editor={editor}
+          mode="composition"
+          onClose={() => setEssayReviewOpen(false)}
+        />
       )}
       {citationsOpen && editor && (
         <CitationManager

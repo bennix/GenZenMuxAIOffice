@@ -51,5 +51,8 @@ export {
   settingsForReviewModel,
   reviewerSystemPrompt,
   chairSystemPrompt,
+  isCompositionProfile,
+  supportsLiteratureReview,
+  noveltyQuerySystemPrompt,
 } from './review-committee'
 export type { ReviewLanguage, ReviewProfile } from './review-committee'

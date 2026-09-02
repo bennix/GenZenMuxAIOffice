@@ -2,13 +2,16 @@ import { useMemo, useRef, useState } from 'react'
 import type { Editor, JSONContent } from '@tiptap/core'
 import { Markdown } from '@genoffice/ui'
 import { LANGUAGE_OPTIONS } from '@genoffice/i18n'
+import { parseNoveltyQueries, searchNoveltyEvidence } from '@genoffice/citations'
 import {
   REVIEW_PROFILES,
   assignReviewModels,
   availableReviewModels,
   chairSystemPrompt,
+  noveltyQuerySystemPrompt,
   reviewerSystemPrompt,
   settingsForReviewModel,
+  supportsLiteratureReview,
   type AiSettings,
   type ReviewLanguage,
 } from '@genoffice/ai-provider'
@@ -50,23 +53,36 @@ async function documentImages(editor: Editor): Promise<{ mime: string; base64: s
 
 export function AiReviewCommitteeModal({
   editor,
+  mode = 'review',
   onClose,
 }: {
   editor: Editor
+  mode?: 'review' | 'composition'
   onClose: () => void
 }) {
   const { lang: uiLanguage } = useI18n()
   const chinese = uiLanguage === 'zh' || uiLanguage === 'zh-TW'
-  const [profileId, setProfileId] = useState('science')
+  const profileOptions = useMemo(
+    () =>
+      REVIEW_PROFILES.filter(
+        (item) => (mode === 'composition') === (item.category === 'composition'),
+      ),
+    [mode],
+  )
+  const [profileId, setProfileId] = useState(
+    mode === 'composition' ? 'zhongkao-composition' : 'science',
+  )
   const [language, setLanguage] = useState<ReviewLanguage>(uiLanguage)
   const [members, setMembers] = useState<Result[]>([])
   const [chair, setChair] = useState<Result | null>(null)
   const [running, setRunning] = useState(false)
   const [keyMissing, setKeyMissing] = useState(false)
+  const [literatureEnabled, setLiteratureEnabled] = useState(true)
+  const [literatureStatus, setLiteratureStatus] = useState('')
   const runRef = useRef(0)
   const profile = useMemo(
-    () => REVIEW_PROFILES.find((p) => p.id === profileId) ?? REVIEW_PROFILES[0]!,
-    [profileId],
+    () => profileOptions.find((p) => p.id === profileId) ?? profileOptions[0]!,
+    [profileId, profileOptions],
   )
 
   const start = async () => {
@@ -79,6 +95,7 @@ export function AiReviewCommitteeModal({
     setKeyMissing(false)
     setRunning(true)
     setChair(null)
+    setLiteratureStatus('')
     const runId = ++runRef.current
     const assignments = assignReviewModels(
       availableReviewModels(settings),
@@ -99,6 +116,47 @@ export function AiReviewCommitteeModal({
       document.length > 120_000
         ? '\n[Content was truncated at 120,000 characters; disclose this limitation.]'
         : ''
+    let noveltyEvidence = ''
+    if (literatureEnabled && supportsLiteratureReview(profile)) {
+      try {
+        setLiteratureStatus(
+          chinese ? '创新性委员正在提取检索式…' : 'Novelty reviewer is preparing search queries…',
+        )
+        const queryResponse = await window.markdownApi.aiChat({
+          settings: settingsForReviewModel(settings, assignments[0]!),
+          system: noveltyQuerySystemPrompt(language),
+          user: material.slice(0, 30_000),
+        })
+        if (queryResponse.ok) {
+          const queries = parseNoveltyQueries(queryResponse.content ?? '', material.slice(0, 240))
+          setLiteratureStatus(
+            chinese
+              ? `正在检索 OpenAlex、Crossref、Semantic Scholar、PubMed 与 arXiv（${queries.length} 组）…`
+              : `Searching scholarly sources (${queries.length} queries)…`,
+          )
+          noveltyEvidence = (await searchNoveltyEvidence(queries)).evidence
+          setLiteratureStatus(
+            chinese
+              ? '文献证据已交给创新性委员'
+              : 'Literature evidence supplied to the novelty reviewer',
+          )
+        } else {
+          noveltyEvidence = `LIVE SCHOLARLY SEARCH FAILED: ${queryResponse.error ?? 'query generation failed'}. External novelty was not verified.`
+          setLiteratureStatus(
+            chinese
+              ? '文献检索未完成，将披露限制'
+              : 'Literature search incomplete; limitation will be disclosed',
+          )
+        }
+      } catch (error) {
+        noveltyEvidence = `LIVE SCHOLARLY SEARCH FAILED: ${error instanceof Error ? error.message : String(error)}. External novelty was not verified.`
+        setLiteratureStatus(
+          chinese
+            ? '文献检索未完成，将披露限制'
+            : 'Literature search incomplete; limitation will be disclosed',
+        )
+      }
+    }
     try {
       const reviews = await Promise.all(
         profile.members.map(async (member, index): Promise<Result> => {
@@ -110,7 +168,7 @@ export function AiReviewCommitteeModal({
             const response = await window.markdownApi.aiChat({
               settings: settingsForReviewModel(settings, assignments[index]!),
               system: reviewerSystemPrompt(profile, member, language),
-              user: `${selected ? 'SELECTED MARKDOWN' : 'MARKDOWN DOCUMENT'}:\n\n${material}${limit}`,
+              user: `${selected ? 'SELECTED MARKDOWN' : 'MARKDOWN DOCUMENT'}:\n\n${material}${limit}${member.literatureReviewer && noveltyEvidence ? `\n\n${noveltyEvidence}` : ''}`,
               images,
             })
             result = response.ok
@@ -136,8 +194,11 @@ export function AiReviewCommitteeModal({
       const response = await window.markdownApi.aiChat({
         settings: settingsForReviewModel(settings, model),
         system: chairSystemPrompt(profile, language),
-        user: successful
-          .map((r, i) => `## Reviewer ${i + 1}: ${r.role}\n${r.content}`)
+        user: [
+          mode === 'composition' ? `ORIGINAL ESSAY:\n${material}` : '',
+          ...successful.map((r, i) => `## Reviewer ${i + 1}: ${r.role}\n${r.content}`),
+        ]
+          .filter(Boolean)
           .join('\n\n'),
       })
       if (runRef.current === runId)
@@ -163,10 +224,20 @@ export function AiReviewCommitteeModal({
       <div className="md-review-dialog">
         <header>
           <div>
-            <h2>{chinese ? 'AI 审稿委员会' : 'AI Review Committee'}</h2>
+            <h2>
+              {mode === 'composition'
+                ? chinese
+                  ? '作文评价与润色'
+                  : 'Essay Assessment & Polishing'
+                : chinese
+                  ? 'AI 审稿委员会'
+                  : 'AI Review Committee'}
+            </h2>
             <p>
               {chinese
-                ? '3 名独立委员 + 1 名主席；模型随机分配，全部通过 ZenMux。AI 功能可能受网络或代理状态影响。'
+                ? mode === 'composition'
+                  ? '3 名分项评委 + 1 名主席，按指定考试或竞赛标准评分，并给出保留原意的完整润色稿。'
+                  : '3 名独立委员 + 1 名主席；学术类可检索真实文献核验创新性。全部通过 ZenMux，网络可能影响结果。'
                 : '3 independent reviewers + 1 chair; models are randomly assigned, all through ZenMux. Network or proxy conditions may affect AI.'}
             </p>
           </div>
@@ -176,19 +247,36 @@ export function AiReviewCommitteeModal({
         </header>
         <div className="md-review-options">
           <label>
-            {chinese ? '审稿类型' : 'Review type'}
+            {chinese
+              ? mode === 'composition'
+                ? '作文标准'
+                : '审稿类型'
+              : mode === 'composition'
+                ? 'Writing standard'
+                : 'Review type'}
             <select
               value={profileId}
               disabled={running}
               onChange={(e) => setProfileId(e.target.value)}
             >
-              {REVIEW_PROFILES.map((p) => (
+              {profileOptions.map((p) => (
                 <option key={p.id} value={p.id}>
                   {chinese ? p.labelZh : p.labelEn}
                 </option>
               ))}
             </select>
           </label>
+          {mode === 'review' && supportsLiteratureReview(profile) && (
+            <label className="md-review-literature-toggle">
+              <input
+                type="checkbox"
+                checked={literatureEnabled}
+                disabled={running}
+                onChange={(event) => setLiteratureEnabled(event.target.checked)}
+              />
+              <span>{chinese ? '文献核验创新性' : 'Verify novelty with literature'}</span>
+            </label>
+          )}
           <label>
             {chinese ? '意见语言' : 'Language'}
             <select
@@ -209,7 +297,9 @@ export function AiReviewCommitteeModal({
                 ? '审阅中…'
                 : 'Reviewing…'
               : chinese
-                ? '开始严格审稿'
+                ? mode === 'composition'
+                  ? '开始评价与润色'
+                  : '开始严格审稿'
                 : 'Start strict review'}
           </button>
           {report && (
@@ -218,6 +308,7 @@ export function AiReviewCommitteeModal({
             </button>
           )}
         </div>
+        {literatureStatus && <div className="md-review-literature-status">{literatureStatus}</div>}
         {keyMissing && (
           <div className="md-mermaid-error">
             {chinese

@@ -51,13 +51,14 @@ import {
   windowMenuTemplate,
 } from '@genoffice/electron-utils'
 import { readAppSettings, writeAppSetting } from './app-settings'
+import { installLibreOfficeWithProgress } from './libreoffice-install-progress'
 import {
   cloudProjectExternalUrl,
   readCloudProjectsStore,
   syncCloudProjects,
 } from './cloud-projects'
 import { ProjectStore } from '@genoffice/project-store'
-import { importLegacyDoc } from './legacy-doc-import'
+import { LegacyDocFidelityError, importLegacyDoc, sniffWordContainer } from './legacy-doc-import'
 
 import {
   buildDocsMenu,
@@ -1635,8 +1636,40 @@ function openLegacyDoc(filePath: string): void {
     activeLegacyDocImports.set(filePath, pending)
   }
   void pending
+    .catch(async (error: unknown) => {
+      if (!(error instanceof LegacyDocFidelityError)) throw error
+      activeLegacyDocImports.delete(filePath)
+      const chinese = currentLang() === 'zh' || currentLang() === 'zh-TW'
+      const options = {
+        type: 'warning' as const,
+        title: chinese ? '保真转换不可用' : 'Layout-preserving conversion unavailable',
+        message: chinese
+          ? '无法在不改变格式的情况下打开这个旧版 Word 文档。'
+          : 'This legacy Word document cannot be opened without changing its formatting.',
+        detail: chinese
+          ? '仅恢复文字会丢失原字体、字号、粗细、颜色、段落间距、表格和分页。建议安装 LibreOffice 后重新打开；只有在您明确接受格式丢失时，才继续恢复文字。'
+          : 'Text-only recovery loses fonts, sizes, weights, colors, paragraph spacing, tables, and pagination. Install LibreOffice and reopen for best fidelity, or explicitly continue with text-only recovery.',
+        buttons: chinese
+          ? ['仅恢复文字', '安装或获取 LibreOffice', '取消']
+          : ['Recover text only', 'Install or get LibreOffice', 'Cancel'],
+        defaultId: 1,
+        cancelId: 2,
+        noLink: true,
+      }
+      const result = shellWindow
+        ? await dialog.showMessageBox(shellWindow, options)
+        : await dialog.showMessageBox(options)
+      if (result.response === 1) {
+        if (!(await installLibreOfficeWithProgress(shellWindow ?? undefined, chinese))) return null
+        return importLegacyDoc(filePath, defaultSaveDir()).then((converted) => converted.path)
+      }
+      if (result.response !== 0) return null
+      return importLegacyDoc(filePath, defaultSaveDir(), { allowTextRecovery: true }).then(
+        (recovered) => recovered.path,
+      )
+    })
     .then((convertedPath) => {
-      if (!existsSync(convertedPath)) {
+      if (!convertedPath || !existsSync(convertedPath)) {
         activeLegacyDocImports.delete(filePath)
         return
       }
@@ -1647,7 +1680,10 @@ function openLegacyDoc(filePath: string): void {
       const detail = error instanceof Error ? error.message : String(error)
       const options = {
         type: 'error' as const,
-        message: tm('errUnsupportedExt', { ext: 'doc' }),
+        message:
+          currentLang() === 'zh' || currentLang() === 'zh-TW'
+            ? '旧版 Word 文档转换失败'
+            : 'Could not convert the legacy Word document',
         detail,
       }
       if (shellWindow) void dialog.showMessageBox(shellWindow, options)
@@ -1658,7 +1694,10 @@ function openLegacyDoc(filePath: string): void {
 /** the single router: extension decides which module owns the file; false = nothing opened */
 function openDocumentPath(filePath: string): boolean {
   if (!existsSync(filePath) || !tabManager) return false
-  if (DOC_RE.test(filePath)) {
+  if (
+    DOC_RE.test(filePath) ||
+    (DOCX_RE.test(filePath) && sniffWordContainer(filePath) !== 'ooxml')
+  ) {
     openLegacyDoc(filePath)
     return true
   }

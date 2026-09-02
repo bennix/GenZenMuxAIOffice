@@ -45,6 +45,7 @@
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.8.0",
+    "nanoid": "3.3.18",
     "pixelmatch": "^7.2.0",
     "playwright-core": "^1.61.1",
     "pngjs": "^7.0.0",
@@ -54,9 +55,6 @@
   "overrides": {
     "@univerjs/core": {
       "nanoid": "5.1.16"
-    },
-    "postcss": {
-      "nanoid": "3.3.17"
     }
   }
 }

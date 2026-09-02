@@ -9,6 +9,7 @@ import type {
   PictureRenderNode,
   TableRenderNode,
 } from '@genoffice/pptx-render'
+import { INFOGRAPHIC_AI_SYSTEM, InfographicStudio } from '@genoffice/ui'
 import type {
   AiSettings,
   AnimEffectKind,
@@ -280,6 +281,7 @@ function collectAligns(node: RenderNode, out: Set<ParaAlign>) {
 
 export function App() {
   const [citationsOpen, setCitationsOpen] = useState(false)
+  const [infographicOpen, setInfographicOpen] = useState(false)
   const { lang } = useI18n()
   const [slides, setSlides] = useState<RenderSlide[]>([])
   const [path, setPath] = useState<string | null>(null)
@@ -2476,6 +2478,7 @@ export function App() {
         onInsert={(kind) => void insertElement(kind)}
         onPickShape={pickShape}
         onInsertImage={() => void insertImage()}
+        onInsertInfographic={() => setInfographicOpen(true)}
         onBackground={(color, all) => void onBackground(color, all)}
         onApplyTheme={(preset) => void applyThemePreset(preset)}
         onAddSlide={() => void addSlide()}
@@ -2659,6 +2662,24 @@ export function App() {
         onArrange={(op) => void alignSelected(op)}
         onFlip={(axis) => void flipSelected(axis)}
         canDistribute={selectedIds.length >= 3}
+      />
+      <InfographicStudio
+        open={infographicOpen}
+        onClose={() => setInfographicOpen(false)}
+        onInsert={(asset) =>
+          insertActions.insertInfographic(ctxRef.current, asset.dataUrl, asset.width, asset.height)
+        }
+        onAiGenerate={async (prompt, currentSyntax) => {
+          const settings = await window.slidesApi.getAiSettings()
+          const context = JSON.stringify(slides[current] ?? {}).slice(0, 12_000)
+          const response = await window.slidesApi.aiChat({
+            settings,
+            system: INFOGRAPHIC_AI_SYSTEM,
+            user: `Instruction:\n${prompt}\n\nCurrent slide object context:\n${context}\n\nCurrent infographic syntax:\n${currentSyntax}`,
+          })
+          if (!response.ok) throw new Error(response.error || 'ZenMux infographic request failed')
+          return response.content ?? ''
+        }}
       />
 
       <div className="app-main">

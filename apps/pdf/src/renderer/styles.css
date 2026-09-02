@@ -3419,6 +3419,35 @@ button {
   color: var(--text-secondary);
 }
 
+.pdf-review-options .pdf-review-literature-toggle {
+  min-height: 34px;
+  padding: 6px 10px;
+  display: inline-flex;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.pdf-review-literature-toggle input {
+  margin: 0;
+  accent-color: var(--color-btn-primary);
+}
+
+.pdf-review-literature-status {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-left: 3px solid var(--color-btn-primary);
+  border-radius: 5px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .pdf-review-options select,
 .pdf-review-options button {
   min-height: 34px;
