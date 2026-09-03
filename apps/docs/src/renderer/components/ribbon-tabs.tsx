@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import type { Editor, JSONContent } from '@tiptap/core'
-import { ShapePreview, SHAPE_GALLERY_GROUPS, type WordArtPreset } from '@genoffice/ui'
+import {
+  ShapePreview,
+  SHAPE_GALLERY_GROUPS,
+  officeFeatureLocale,
+  type WordArtPreset,
+} from '@genoffice/ui'
 import {
   buildLineParagraphXml,
   buildShapeParagraphXml,
@@ -547,7 +552,7 @@ export function ReviewTab({
   onToggleProtection,
   onCompare,
 }: ReviewTabProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   // One-time acknowledgement before whole-document AI rewrites:
   // Editor / Translate send the full document to the agent, consume credits and
   // may rewrite everything — say so once before the first run.
@@ -597,7 +602,7 @@ export function ReviewTab({
             <span className="rb-big-icon essay-review-ribbon-icon" aria-hidden="true">
               文
             </span>
-            <span>{navigator.language.startsWith('zh') ? '作文评阅' : 'Essay Coach'}</span>
+            <span>{officeFeatureLocale(lang).essayCoach}</span>
           </button>
         </div>
         <div className="ribbon-group-label">{t('ribbonGroupProofing')}</div>

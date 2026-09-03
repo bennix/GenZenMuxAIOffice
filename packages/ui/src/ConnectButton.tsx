@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { ConnectApi, ConnectTarget } from '@genoffice/electron-utils/connect'
+import { connectLocale, type UiFeatureLanguage } from './feature-i18n'
 
 const KIND_LABEL: Record<ConnectTarget['kind'], string> = {
   docs: 'Word',
@@ -45,6 +46,7 @@ export function ConnectButton({
   api,
   text,
   triggerNonce = 0,
+  language = 'en',
   label,
   className,
   onSendResult,
@@ -52,11 +54,13 @@ export function ConnectButton({
   api: ConnectApi
   text: string
   triggerNonce?: number
+  language?: UiFeatureLanguage | undefined
   /** Optional visible label; it remains inside the same clickable button as the arrow. */
   label?: ReactNode
   className?: string
   onSendResult?: (ok: boolean) => void
 }) {
+  const textLocale = connectLocale(language)
   const [targets, setTargets] = useState<ConnectTarget[] | null>(null)
   const [notice, setNotice] = useState('')
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null)
@@ -74,17 +78,17 @@ export function ConnectButton({
 
   const open = async () => {
     if (!text.trim()) {
-      setNotice('暂无可发送的 AI 回复 / No AI reply yet')
+      setNotice(textLocale.noReply)
       setTargets([])
       return
     }
     try {
       const next = await api.listConnectTargets()
       setTargets(next)
-      setNotice(next.length ? '' : '请先打开另一个可编辑文件 / Open another editable file')
+      setNotice(next.length ? '' : textLocale.noTarget)
     } catch {
       setTargets([])
-      setNotice('无法读取可连接文档，请重试 / Unable to list documents')
+      setNotice(textLocale.listFailed)
     }
   }
 
@@ -123,11 +127,11 @@ export function ConnectButton({
     try {
       const result = await api.sendConnect(target.id, text)
       setTargets(null)
-      if (!result.ok) setNotice('发送失败，请重试 / Send failed')
+      if (!result.ok) setNotice(textLocale.sendFailed)
       onSendResult?.(result.ok)
     } catch {
       setTargets(null)
-      setNotice('发送失败，请重试 / Send failed')
+      setNotice(textLocale.sendFailed)
       onSendResult?.(false)
     }
   }
@@ -138,8 +142,8 @@ export function ConnectButton({
         type="button"
         className={`ai-msg-tool-btn${className ? ` ${className}` : ''}`}
         onClick={() => void open()}
-        aria-label="发送到其他编辑器 / Connect to another editor"
-        data-tip="@Connect · 发送到 Word / PPT / MD / Excel"
+        aria-label={textLocale.label}
+        data-tip={textLocale.tip}
       >
         ↗{label}
       </button>

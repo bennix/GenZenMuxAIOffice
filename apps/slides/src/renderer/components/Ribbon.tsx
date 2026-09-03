@@ -13,6 +13,7 @@ import React, {
 } from 'react'
 import type { AnimEffectKind, AnimTrigger, TransitionKind } from '../../shared/ipc'
 import type { ChartStyleInfo } from '@genoffice/pptx-render'
+import { officeFeatureLocale } from '@genoffice/ui'
 import { ICON_COLORS, SHAPE_GALLERY } from '../insert-presets'
 import { THEME_PRESETS, type SlideThemePreset } from '../themes'
 import { restoreEditSelection } from '../TextEditOverlay'
@@ -872,7 +873,7 @@ export function Ribbon({
   onFlip,
   canDistribute,
 }: Props) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   // Contextual tabs: table → table design; chart → chart design (imported charts auto-convert
   // on first edit); picture/shape → picture tools (shapes share the tab: outline applies,
   // picture-only tools disable)
@@ -2213,17 +2214,13 @@ export function Ribbon({
               <button
                 className="rb-big"
                 disabled={!hasDoc}
-                data-tip={
-                  navigator.language.startsWith('zh')
-                    ? '科研文献查询、导入与引用'
-                    : 'Scholarly search, import, and citations'
-                }
+                data-tip={officeFeatureLocale(lang).researchTip}
                 onClick={onOpenCitations}
               >
                 <span className="rb-big-icon">
                   <IconCitation size={BIG} />
                 </span>
-                <span>{navigator.language.startsWith('zh') ? '科研文献' : 'Research'}</span>
+                <span>{officeFeatureLocale(lang).research}</span>
               </button>
               <button
                 className="rb-big"

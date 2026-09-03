@@ -11,6 +11,7 @@ import {
   writePrettyTheme,
 } from '../mermaid-themes'
 import { WechatExportPanel } from './WechatExportDialog'
+import { useI18n } from '../i18n/locale'
 
 type StudioTab = MermaidStudioMode | 'wechat'
 
@@ -23,6 +24,7 @@ export function MermaidDialog({
   onClose: () => void
   initialTab?: StudioTab
 }) {
+  const { lang } = useI18n()
   const [tab, setTab] = useState<StudioTab>(initialTab)
   const [themeId, setThemeId] = useState(DEFAULT_PRETTY_THEME)
   const [source, setSource] = useState(() =>
@@ -66,7 +68,7 @@ export function MermaidDialog({
     }
   }, [source])
 
-  const chinese = navigator.language.startsWith('zh')
+  const chinese = lang === 'zh' || lang === 'zh-TW'
   const applyTheme = (next: string) => {
     setThemeId(next)
     setSource((current) => writePrettyTheme(current, next))

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { platformShortcuts } from '@genoffice/i18n'
-import { SHAPE_GALLERY_GROUPS, ShapePreview } from '@genoffice/ui'
+import {
+  SHAPE_GALLERY_GROUPS,
+  ShapePreview,
+  infographicLocale,
+  officeFeatureLocale,
+} from '@genoffice/ui'
 
 import {
   CaretIcon,
@@ -273,7 +278,7 @@ export function ExcelShell({
   selectedChart,
   pageLayout,
 }: ExcelShellProps): React.JSX.Element {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [activeTab, setActiveTab] = useState<RibbonTab>('Home')
   const [isCopilotOpen, setIsCopilotOpen] = useState(true)
   const [showFormatCells, setShowFormatCells] = useState(false)
@@ -410,7 +415,7 @@ export function ExcelShell({
             else if (command === 'goto-open') setShowGoTo(true)
             else if (command === 'header-footer-open') setShowHeaderFooter(true)
             else if (command.startsWith('ai-analysis:')) {
-              const chinese = navigator.language.toLowerCase().startsWith('zh')
+              const chinese = lang === 'zh' || lang === 'zh-TW'
               const methods: Record<string, string> = chinese
                 ? {
                     descriptive: '描述统计与数据质量分析',
@@ -1042,7 +1047,8 @@ function Ribbon({
   readonly onRefreshPivot: () => string | null
   readonly onIsSelectionInPivot: () => boolean
 }): React.JSX.Element {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
+  const chineseUi = lang === 'zh' || lang === 'zh-TW'
   const [fontColor, setFontColor] = useState('#C00000')
   const [fillColor, setFillColor] = useState('#FFF2CC')
   const [borderColor, setBorderColor] = useState('#000000')
@@ -1401,8 +1407,8 @@ function Ribbon({
         <RibbonGroup label={t('appGroupCharts')}>
           <RibbonButton
             large
-            label={navigator.language.startsWith('zh') ? 'AI 信息图' : 'AI Infographic'}
-            detail={navigator.language.startsWith('zh') ? '根据选中数据' : 'From selection'}
+            label={infographicLocale(lang).title}
+            detail={infographicLocale(lang).selectionDescription}
             symbol="▦"
             onClick={() => onCommand('insert-infographic')}
           />
@@ -1880,7 +1886,7 @@ function Ribbon({
   }
 
   if (activeTab === 'Data') {
-    const chinese = navigator.language.toLowerCase().startsWith('zh')
+    const chinese = chineseUi
     const analysisPrompt = (method: string): string =>
       `${chinese ? '请对当前选区（若只有一个单元格则分析当前连续数据区域）执行' : 'Analyze the current selection (or the surrounding data region when one cell is selected) using'}${method}。` +
       (chinese
@@ -1888,10 +1894,10 @@ function Ribbon({
         : ' First identify field types and check missing values, duplicates, and outliers. Explain assumptions and reproducible findings. Put outputs in a new sheet when needed; when visualization helps, insert an editable native Excel chart based on existing fields with clear titles, axes, legends, and number formats. Never invent data.')
     return (
       <div className="ribbon">
-        <RibbonGroup label={chinese ? '数据分析' : 'Data Analysis'}>
+        <RibbonGroup label={officeFeatureLocale(lang).dataAnalysis}>
           <RibbonButton
             large
-            label={chinese ? 'SQL 数据库' : 'SQL Database'}
+            label={officeFeatureLocale(lang).sqlDatabase}
             detail={chinese ? '工作簿即数据库；查询并回填结果' : 'Query the workbook as a database'}
             symbol="▦"
             onClick={() => onCommand('sql-database-open')}

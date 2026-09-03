@@ -1,5 +1,6 @@
 import { Infographic, registerFont, setDefaultFont } from '@antv/infographic'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { infographicLocale, type UiFeatureLanguage } from './feature-i18n'
 
 // Keep the local-first promise: AntV defaults to remote Alibaba/font CSS URLs.
 // Use installed platform fonts instead; the hand-drawn theme falls back locally too.
@@ -20,6 +21,7 @@ export interface InfographicAsset {
 
 export interface InfographicStudioProps {
   open: boolean
+  language?: UiFeatureLanguage | undefined
   initialSyntax?: string | undefined
   onClose: () => void
   onInsert: (asset: InfographicAsset) => unknown | Promise<unknown>
@@ -71,13 +73,13 @@ export function InfographicPreview({ syntax, className }: { syntax: string; clas
   return error ? <div className={className}>{error}</div> : <div ref={ref} className={className} />
 }
 
-const PRESETS = [
-  ['list-row-simple-horizontal-arrow', '横向步骤 / Steps'],
-  ['sequence-timeline-simple', '时间线 / Timeline'],
-  ['chart-column-simple', '数据柱图 / Columns'],
-  ['compare-swot', 'SWOT 分析'],
-  ['sequence-funnel-simple', '漏斗 / Funnel'],
-  ['list-grid-badge-card', '指标卡 / Metrics'],
+const PRESET_IDS = [
+  'list-row-simple-horizontal-arrow',
+  'sequence-timeline-simple',
+  'chart-column-simple',
+  'compare-swot',
+  'sequence-funnel-simple',
+  'list-grid-badge-card',
 ] as const
 
 export const DEFAULT_INFOGRAPHIC_SYNTAX = `infographic list-row-simple-horizontal-arrow
@@ -93,15 +95,35 @@ data
     - label 03 行动
       desc 把结论转化为下一步`
 
+export function defaultInfographicSyntax(language: UiFeatureLanguage | string = 'zh'): string {
+  const text = infographicLocale(language)
+  return `infographic list-row-simple-horizontal-arrow
+theme light
+data
+  title ${text.defaultTitle}
+  desc ${text.defaultDescription}
+  lists
+    - label 01 ${text.defaultSteps[0]}
+      desc ${text.defaultStepDescriptions[0]}
+    - label 02 ${text.defaultSteps[1]}
+      desc ${text.defaultStepDescriptions[1]}
+    - label 03 ${text.defaultSteps[2]}
+      desc ${text.defaultStepDescriptions[2]}`
+}
+
 export function infographicSyntaxFromRows(
   rows: ReadonlyArray<ReadonlyArray<unknown>>,
-  title = '选中数据概览',
+  title?: string,
+  language: UiFeatureLanguage | string = 'zh',
 ): string {
-  if (rows.length < 2) return DEFAULT_INFOGRAPHIC_SYNTAX
-  const headers = rows[0]!.map((value, index) => String(value ?? '').trim() || `字段 ${index + 1}`)
+  const text = infographicLocale(language)
+  if (rows.length < 2) return defaultInfographicSyntax(language)
+  const headers = rows[0]!.map(
+    (value, index) => String(value ?? '').trim() || `${text.field} ${index + 1}`,
+  )
   const body = rows.slice(1, 7)
   const items = body.map((row, index) => {
-    const label = String(row[0] ?? '').trim() || `项目 ${index + 1}`
+    const label = String(row[0] ?? '').trim() || `${text.item} ${index + 1}`
     const desc = headers
       .slice(1, 4)
       .map((header, column) => `${header}: ${String(row[column + 1] ?? '—')}`)
@@ -111,8 +133,8 @@ export function infographicSyntaxFromRows(
   return `infographic list-grid-badge-card
 theme light
 data
-  title ${title}
-  desc 基于当前选区生成，可继续编辑
+  title ${title ?? text.selectionTitle}
+  desc ${text.selectionDescription}
   lists
 ${items.join('\n')}`
 }
@@ -136,12 +158,16 @@ const CSS = `
 
 export function InfographicStudio({
   open,
-  initialSyntax = DEFAULT_INFOGRAPHIC_SYNTAX,
+  language = 'zh',
+  initialSyntax,
   onClose,
   onInsert,
   onAiGenerate,
 }: InfographicStudioProps) {
-  const [syntax, setSyntax] = useState(initialSyntax)
+  const localizedDefault = useMemo(() => defaultInfographicSyntax(language), [language])
+  const resolvedInitialSyntax = initialSyntax ?? localizedDefault
+  const text = infographicLocale(language)
+  const [syntax, setSyntax] = useState(resolvedInitialSyntax)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
@@ -149,12 +175,12 @@ export function InfographicStudio({
   const canvasRef = useRef<HTMLDivElement>(null)
   const infographicRef = useRef<Infographic | null>(null)
   const template = useMemo(
-    () => /^infographic\s+([^\s]+)/m.exec(syntax)?.[1] ?? PRESETS[0][0],
+    () => /^infographic\s+([^\s]+)/m.exec(syntax)?.[1] ?? PRESET_IDS[0],
     [syntax],
   )
   const theme = useMemo(() => /^theme\s+([^\s]+)/m.exec(syntax)?.[1] ?? 'light', [syntax])
 
-  useEffect(() => setSyntax(initialSyntax), [initialSyntax, open])
+  useEffect(() => setSyntax(resolvedInitialSyntax), [resolvedInitialSyntax, open])
   useEffect(() => {
     if (!open || !canvasRef.current) return
     infographicRef.current?.destroy()
@@ -218,17 +244,12 @@ export function InfographicStudio({
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <style>{CSS}</style>
-      <section
-        className="zo-info-studio"
-        role="dialog"
-        aria-modal="true"
-        aria-label="ZenOffice Infographic Studio"
-      >
+      <section className="zo-info-studio" role="dialog" aria-modal="true" aria-label={text.title}>
         <header className="zo-info-head">
           <span className="zo-info-kicker">ZEN / INFOGRAPHIC</span>
-          <h2>信息图工作室 · Infographic Studio</h2>
-          <p>双击预览中的文字可编辑 · SVG 引擎 / 高清插入</p>
-          <button className="zo-info-x" aria-label="Close" onClick={onClose}>
+          <h2>{text.title}</h2>
+          <p>{text.subtitle}</p>
+          <button className="zo-info-x" aria-label={text.close} onClick={onClose}>
             ×
           </button>
         </header>
@@ -236,36 +257,36 @@ export function InfographicStudio({
           <aside className="zo-info-code">
             <div className="zo-info-tools">
               <label>
-                结构
+                {text.structure}
                 <select
                   value={template}
                   onChange={(event) =>
                     setSyntax((value) => replaceHeader(value, 'infographic', event.target.value))
                   }
                 >
-                  {PRESETS.map(([value, label]) => (
+                  {PRESET_IDS.map((value, index) => (
                     <option key={value} value={value}>
-                      {label}
+                      {text.presets[index]}
                     </option>
                   ))}
                 </select>
               </label>
               <label>
-                风格
+                {text.style}
                 <select
                   value={theme}
                   onChange={(event) =>
                     setSyntax((value) => replaceHeader(value, 'theme', event.target.value))
                   }
                 >
-                  <option value="light">清晰白</option>
-                  <option value="dark">深色</option>
-                  <option value="hand-drawn">手绘</option>
+                  <option value="light">{text.themes[0]}</option>
+                  <option value="dark">{text.themes[1]}</option>
+                  <option value="hand-drawn">{text.themes[2]}</option>
                 </select>
               </label>
             </div>
             <textarea
-              aria-label="Infographic syntax"
+              aria-label={text.syntax}
               value={syntax}
               spellCheck={false}
               onChange={(event) => setSyntax(event.target.value)}
@@ -287,18 +308,18 @@ export function InfographicStudio({
                   void generateWithAi()
                 }
               }}
-              placeholder="告诉 ZenMux：用当前数据做一张突出趋势与异常的信息图…"
+              placeholder={text.aiPlaceholder}
             />
             <button disabled={!aiPrompt.trim() || aiBusy} onClick={() => void generateWithAi()}>
-              {aiBusy ? 'AI 生成中…' : 'ZenMux AI 生成 / 修改'}
+              {aiBusy ? text.aiBusy : text.aiAction}
             </button>
           </div>
         ) : null}
         <footer className="zo-info-foot">
-          <small>AntV Infographic · MIT · 数据在本机渲染</small>
-          <button onClick={onClose}>取消</button>
+          <small>{text.localRendering}</small>
+          <button onClick={onClose}>{text.cancel}</button>
           <button className="primary" disabled={busy || !!error} onClick={() => void insert()}>
-            {busy ? '正在生成…' : '插入高清信息图'}
+            {busy ? text.generating : text.insert}
           </button>
         </footer>
       </section>

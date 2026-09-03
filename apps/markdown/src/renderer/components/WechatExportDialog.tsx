@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { copyHtmlToClipboard } from '@genoffice/ui'
 import { buildWechatHtml } from '../wechat/export'
 import { WECHAT_DENSITIES, WECHAT_THEMES, type WechatDensityId } from '../wechat/themes'
+import { useI18n } from '../i18n/locale'
 
 export function WechatExportPanel({
   editorRoot,
@@ -13,7 +14,8 @@ export function WechatExportPanel({
   /** hide the dialog title when shown as a tab inside the chart studio */
   embedded?: boolean
 }) {
-  const chinese = navigator.language.startsWith('zh')
+  const { lang } = useI18n()
+  const chinese = lang === 'zh' || lang === 'zh-TW'
   const [themeId, setThemeId] = useState(WECHAT_THEMES[0]!.id)
   const [density, setDensity] = useState<WechatDensityId>('standard')
   const [copied, setCopied] = useState(false)

@@ -86,7 +86,7 @@ export function EquationModal({
   /** When provided, "re-edit equation" mode: update that node instead of inserting */
   editTarget?: MathEditTarget
 }) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const modalKeys = useModalKeys(onClose)
   const [latex, setLatex] = useState(editTarget?.latex ?? '')
   const [inline, setInline] = useState(editTarget?.kind === 'inline')
@@ -155,7 +155,7 @@ export function EquationModal({
             <span dangerouslySetInnerHTML={{ __html: preview.mathml }} />
           )}
         </div>
-        <FormulaImageRecognition onRecognize={recognizeImage} />
+        <FormulaImageRecognition language={lang} onRecognize={recognizeImage} />
         {!editTarget && (
           <label className="equation-inline-toggle">
             <input type="checkbox" checked={inline} onChange={(e) => setInline(e.target.checked)} />

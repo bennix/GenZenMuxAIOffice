@@ -7,6 +7,7 @@ import {
   stripNestedMathDelimiters,
   type FormulaImageData,
 } from '@genoffice/ui'
+import { useI18n } from '../i18n/locale'
 
 export interface MarkdownEquationTarget {
   pos: number
@@ -23,7 +24,8 @@ export function EquationDialog({
   target?: MarkdownEquationTarget
   onClose: () => void
 }) {
-  const zh = navigator.language.toLowerCase().startsWith('zh')
+  const { lang } = useI18n()
+  const zh = lang === 'zh' || lang === 'zh-TW'
   const [latex, setLatex] = useState(target?.latex ?? '')
   const [inline, setInline] = useState(target?.kind === 'inline')
   const preview = useMemo(() => {
@@ -93,7 +95,7 @@ export function EquationDialog({
             <span dangerouslySetInnerHTML={{ __html: preview.html }} />
           )}
         </div>
-        <FormulaImageRecognition onRecognize={recognize} />
+        <FormulaImageRecognition language={lang} onRecognize={recognize} />
         {!target && (
           <label className="md-equation-inline-toggle">
             <input

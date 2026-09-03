@@ -1,6 +1,6 @@
 /** Insert tab of the slides ribbon. Extracted from Ribbon.tsx. */
 import type { InsertKind } from '../../shared/ipc'
-import { WORDART_PRESETS, wordArtStrokePx } from '@genoffice/ui'
+import { WORDART_PRESETS, infographicLocale, wordArtStrokePx } from '@genoffice/ui'
 import {
   CHART_GALLERY,
   ICON_COLORS,
@@ -8,7 +8,7 @@ import {
   SHAPE_GALLERY,
   SMARTART_GALLERY,
 } from '../insert-presets'
-import type { StringKey } from '../i18n/locale'
+import { getLang, type StringKey } from '../i18n/locale'
 import { ChartKindThumb } from './ChartTypeDialog'
 import { ShapePreview, SmartArtPreview } from './gallery-previews'
 import {
@@ -44,6 +44,7 @@ import {
 } from './ribbon-shared'
 
 export function RibbonInsertTab({ rb }: { rb: RibbonTabCtx }) {
+  const lang = getLang()
   const {
     closePanels,
     currentSlide,
@@ -234,7 +235,7 @@ export function RibbonInsertTab({ rb }: { rb: RibbonTabCtx }) {
           <span className="rb-big-icon">
             <IconChart size={BIG} />
           </span>
-          <span>{navigator.language.startsWith('zh') ? 'AI 信息图' : 'AI Infographic'}</span>
+          <span>{infographicLocale(lang).title}</span>
         </button>
         {dropBig(
           'icons',

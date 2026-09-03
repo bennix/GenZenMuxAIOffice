@@ -4,6 +4,7 @@ import type { Editor } from '@tiptap/core'
 import {
   INFOGRAPHIC_AI_SYSTEM,
   InfographicStudio,
+  infographicLocale,
   encodeInfographicMetadata,
   ShapePreview,
   WORDART_PRESETS,
@@ -579,7 +580,7 @@ export function InsertTab({
   commentCount,
   onShowComments,
 }: InsertTabProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [grid, setGrid] = useState<{ r: number; c: number }>({ r: 0, c: 0 })
   const [linkOpen, setLinkOpen] = useState(false)
   const [equationOpen, setEquationOpen] = useState(false)
@@ -761,7 +762,7 @@ export function InsertTab({
             <span className="rb-big-icon">
               <IconChart size={BIG} />
             </span>
-            <span>{navigator.language.startsWith('zh') ? 'AI 信息图' : 'AI Infographic'}</span>
+            <span>{infographicLocale(lang).title}</span>
           </button>
           <div className="rb-split-wrap">
             <button
@@ -1215,6 +1216,7 @@ export function InsertTab({
       {chartOpen && <ChartInsertModal editor={editor} onClose={() => setChartOpen(false)} />}
       <InfographicStudio
         open={infographicOpen}
+        language={lang}
         initialSyntax={infographicEditTarget?.syntax}
         onClose={() => {
           setInfographicOpen(false)

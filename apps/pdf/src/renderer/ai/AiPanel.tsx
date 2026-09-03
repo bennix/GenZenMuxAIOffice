@@ -610,7 +610,7 @@ export function AiPanel({
                 {entry.text && (
                   <div className="ai-msg-toolbar">
                     {entry.role === 'assistant' && (
-                      <ConnectButton api={window.pdfApi} text={entry.text} />
+                      <ConnectButton api={window.pdfApi} text={entry.text} language={lang} />
                     )}
                     <button
                       className="ai-msg-tool-btn"
@@ -701,7 +701,7 @@ export function AiPanel({
               {entry.text && <Markdown text={entry.text} />}
               {showConnect && (
                 <div className="ai-msg-toolbar">
-                  <ConnectButton api={window.pdfApi} text={entry.text} />
+                  <ConnectButton api={window.pdfApi} text={entry.text} language={lang} />
                   <button
                     className="ai-msg-tool-btn"
                     onClick={() => void copyMessage(entry.text, `current-${i}`)}
@@ -801,6 +801,7 @@ export function AiPanel({
             <>
               <ConnectButton
                 api={window.pdfApi}
+                language={lang}
                 text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
                 triggerNonce={connectNonce}
               />

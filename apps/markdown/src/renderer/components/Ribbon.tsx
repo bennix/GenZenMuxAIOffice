@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { Editor } from '@tiptap/core'
 import { useEditorState } from '@tiptap/react'
+import { infographicLocale, officeFeatureLocale } from '@genoffice/ui'
 import { useI18n } from '../i18n/locale'
 import type { StringKey } from '../i18n/locale'
 import { ZenMuxMark } from '../ai/AiPanel'
@@ -166,7 +167,9 @@ export function Ribbon({
   onToggleAi,
   onAiPreset,
 }: Props) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
+  const chinese = lang === 'zh' || lang === 'zh-TW'
+  const featureText = officeFeatureLocale(lang)
   const [linkOpen, setLinkOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const linkInputRef = useRef<HTMLInputElement>(null)
@@ -321,7 +324,7 @@ export function Ribbon({
               <span className="rb-big-icon">
                 <span className="ai-feature-icon">✓</span>
               </span>
-              <span>{navigator.language.startsWith('zh') ? 'AI 审稿' : 'AI Review'}</span>
+              <span>{featureText.aiReview}</span>
             </button>
             <button
               type="button"
@@ -333,13 +336,13 @@ export function Ribbon({
               <span className="rb-big-icon">
                 <span className="ai-feature-icon essay-review-icon">文</span>
               </span>
-              <span>{navigator.language.startsWith('zh') ? '作文评阅' : 'Essay Coach'}</span>
+              <span>{featureText.essayCoach}</span>
             </button>
             <button
               type="button"
               className="rb-big ai-entry"
               data-tip={
-                navigator.language.startsWith('zh')
+                chinese
                   ? '科研文献查询、导入与引用（受网络与代理环境影响）'
                   : 'Scholarly search, import, and citations (network dependent)'
               }
@@ -350,19 +353,19 @@ export function Ribbon({
               <span className="rb-big-icon">
                 <span className="ai-feature-icon">文</span>
               </span>
-              <span>{navigator.language.startsWith('zh') ? '科研文献' : 'Research'}</span>
+              <span>{featureText.research}</span>
             </button>
             <span className="rb-translate">
               <button
                 type="button"
                 className="rb-big ai-entry"
                 disabled={off || state?.empty}
-                onClick={() => onTranslate(navigator.language.startsWith('zh') ? 'en' : 'zh')}
+                onClick={() => onTranslate(chinese ? 'en' : 'zh')}
               >
                 <span className="rb-big-icon">
                   <span className="ai-feature-icon">译</span>
                 </span>
-                <span>{navigator.language.startsWith('zh') ? '翻译' : 'Translate'}</span>
+                <span>{featureText.translate}</span>
               </button>
               <select
                 aria-label="Translation language"
@@ -370,7 +373,7 @@ export function Ribbon({
                 defaultValue=""
               >
                 <option value="" disabled>
-                  {navigator.language.startsWith('zh') ? '目标语言' : 'Target'}
+                  {featureText.targetLanguage}
                 </option>
                 <option value="zh">中文</option>
                 <option value="en">English</option>
@@ -387,9 +390,7 @@ export function Ribbon({
               type="button"
               className="rb-big ai-entry"
               data-tip={
-                navigator.language.startsWith('zh')
-                  ? 'Pretty Mermaid 与编辑级图表'
-                  : 'Pretty Mermaid and editorial diagrams'
+                chinese ? 'Pretty Mermaid 与编辑级图表' : 'Pretty Mermaid and editorial diagrams'
               }
               disabled={off}
               onMouseDown={(e) => e.preventDefault()}
@@ -398,7 +399,7 @@ export function Ribbon({
               <span className="rb-big-icon">
                 <span className="ai-feature-icon">◇</span>
               </span>
-              <span>{navigator.language.startsWith('zh') ? '图表' : 'Diagrams'}</span>
+              <span>{featureText.diagrams}</span>
             </button>
             <button
               type="button"
@@ -411,13 +412,13 @@ export function Ribbon({
               <span className="rb-big-icon">
                 <span className="ai-feature-icon">▦</span>
               </span>
-              <span>{navigator.language.startsWith('zh') ? 'AI 信息图' : 'AI Infographic'}</span>
+              <span>{infographicLocale(lang).title}</span>
             </button>
             <button
               type="button"
               className="rb-big ai-entry"
               data-tip={
-                navigator.language.startsWith('zh')
+                chinese
                   ? '内联样式排版，复制后粘贴到微信公众号'
                   : 'Copy inline-styled HTML for WeChat MP'
               }
@@ -428,7 +429,7 @@ export function Ribbon({
               <span className="rb-big-icon">
                 <span className="ai-feature-icon">微</span>
               </span>
-              <span>{navigator.language.startsWith('zh') ? '公众号排版' : 'WeChat'}</span>
+              <span>{featureText.wechat}</span>
             </button>
           </div>
         </div>
@@ -558,9 +559,7 @@ export function Ribbon({
             <IconPicture size={ICON} />
           </IconBtn>
           <IconBtn
-            title={
-              navigator.language.toLowerCase().startsWith('zh') ? '插入公式' : 'Insert equation'
-            }
+            title={chinese ? '插入公式' : 'Insert equation'}
             disabled={off}
             onClick={onInsertEquation}
           >

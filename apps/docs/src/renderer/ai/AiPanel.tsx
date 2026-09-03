@@ -291,7 +291,7 @@ export function AiPanel({
   onCollapse,
   filePath,
 }: AiPanelProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [input, setInput] = useState('')
   const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -987,7 +987,7 @@ export function AiPanel({
                 {entry.text && (
                   <div className="ai-msg-toolbar">
                     {entry.role === 'assistant' && (
-                      <ConnectButton api={window.desktop} text={entry.text} />
+                      <ConnectButton api={window.desktop} text={entry.text} language={lang} />
                     )}
                     <button
                       className="ai-msg-tool-btn"
@@ -1095,7 +1095,9 @@ export function AiPanel({
               )}
               {showToolbar && (
                 <div className="ai-msg-toolbar">
-                  {entry.text && <ConnectButton api={window.desktop} text={entry.text} />}
+                  {entry.text && (
+                    <ConnectButton api={window.desktop} text={entry.text} language={lang} />
+                  )}
                   {entry.text && (
                     <button
                       className="ai-msg-tool-btn"
@@ -1277,6 +1279,7 @@ export function AiPanel({
             <>
               <ConnectButton
                 api={window.desktop}
+                language={lang}
                 text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
                 triggerNonce={connectNonce}
               />

@@ -734,7 +734,7 @@ function RibbonInner({
   const [tab, setTab] = useState<RibbonTab>('home')
   const ribbonBodyRef = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
-    ribbonBodyRef.current?.scrollTo({ left: 0 })
+    ribbonBodyRef.current?.scrollTo?.({ left: 0 })
   }, [tab])
   useEffect(() => {
     const showInfographicEditor = () => setTab('insert')

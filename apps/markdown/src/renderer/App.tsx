@@ -83,7 +83,7 @@ export function deriveAutoFileName(editor: Editor): string {
 }
 
 export default function App() {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [status, setStatus] = useState<LoadStatus>('loading')
   const [filePath, setFilePath] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
@@ -273,7 +273,7 @@ export default function App() {
     try {
       // edits landing while the write is in flight (AI streaming, fast typing)
       // must keep the document dirty — compare doc identity after the await
-      const language = navigator.language.startsWith('zh') ? 'zh' : 'en'
+      const language = lang === 'zh' || lang === 'zh-TW' ? 'zh' : 'en'
       const synced = syncBibliography(
         current.getMarkdown(),
         citationRecordsRef.current,
@@ -515,6 +515,7 @@ export default function App() {
       />
       <InfographicStudio
         open={infographicOpen}
+        language={lang}
         onClose={() => setInfographicOpen(false)}
         onInsert={(asset) => {
           const current = editorRef.current
@@ -626,6 +627,7 @@ export default function App() {
       )}
       {citationsOpen && editor && (
         <CitationManager
+          language={lang === 'zh' || lang === 'zh-TW' ? 'zh' : 'en'}
           initialTab={citationInitialTab}
           onClose={() => setCitationsOpen(false)}
           onInsertCitation={(record: CitationRecord, _rendered, style) => {
@@ -636,7 +638,7 @@ export default function App() {
               editor.getMarkdown(),
               citationRecordsRef.current,
               citationStyleRef.current,
-              navigator.language.startsWith('zh') ? 'zh' : 'en',
+              lang === 'zh' || lang === 'zh-TW' ? 'zh' : 'en',
             )
             editor
               .chain()
@@ -653,7 +655,7 @@ export default function App() {
             })
           }}
           onInsertBibliography={(_records, rendered) => {
-            const markdown = `\n\n## ${navigator.language.startsWith('zh') ? '参考文献' : 'References'}\n\n${rendered.map((line) => `- ${line}`).join('\n')}\n`
+            const markdown = `\n\n## ${lang === 'zh' || lang === 'zh-TW' ? '参考文献' : 'References'}\n\n${rendered.map((line) => `- ${line}`).join('\n')}\n`
             editor.chain().focus().insertContent(markdown, { contentType: 'markdown' }).run()
             markDirty()
           }}

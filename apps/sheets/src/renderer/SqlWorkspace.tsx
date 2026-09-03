@@ -33,6 +33,7 @@ import type {
 } from './sql/sql-types'
 import { SQL_COLUMN_TYPES } from './sql/sql-types'
 import { sqlForSelectionOrCursor } from './sql/sql-script'
+import { useI18n } from './i18n/locale'
 
 interface SqlWorkspaceProps {
   readonly file: WorkbookFile | null
@@ -109,7 +110,8 @@ export function SqlWorkspace({
   onAskAi,
   onClose,
 }: SqlWorkspaceProps): React.JSX.Element {
-  const chinese = navigator.language.toLowerCase().startsWith('zh')
+  const { lang } = useI18n()
+  const chinese = lang === 'zh' || lang === 'zh-TW'
   const [schema, setSchema] = useState<WorkbookDatabaseSchema | null>(null)
   const [matrices, setMatrices] = useState<Map<string, SqlScalar[][]>>(new Map())
   const [activeSheetId, setActiveSheetId] = useState('')

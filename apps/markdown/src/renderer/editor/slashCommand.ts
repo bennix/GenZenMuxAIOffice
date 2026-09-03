@@ -3,7 +3,7 @@ import type { Editor, Range } from '@tiptap/core'
 import { Suggestion } from '@tiptap/suggestion'
 import type { SuggestionProps } from '@tiptap/suggestion'
 import type { StringKey } from '../i18n/locale'
-import { t } from '../i18n/locale'
+import { getLang, t } from '../i18n/locale'
 
 export interface SlashItem {
   id: string
@@ -62,6 +62,8 @@ export function buildSlashItems(extra?: {
   openWechat?: () => void
   openCitations?: () => void
 }): SlashItem[] {
+  const language = getLang()
+  const chinese = language === 'zh' || language === 'zh-TW'
   const items: SlashItem[] = [
     {
       id: 'paragraph',
@@ -146,7 +148,7 @@ export function buildSlashItems(extra?: {
     items.push({
       id: 'mermaid',
       labelKey: 'styleCodeBlock',
-      label: navigator.language.startsWith('zh') ? 'Pretty Mermaid 图表' : 'Pretty Mermaid',
+      label: chinese ? 'Pretty Mermaid 图表' : 'Pretty Mermaid',
       keywords: ['diagram', 'flowchart', 'graph', 'mermaid', 'pretty'],
       run: (e, r) => {
         chain(e, r).run()
@@ -156,7 +158,7 @@ export function buildSlashItems(extra?: {
     items.push({
       id: 'editorial-diagram',
       labelKey: 'styleCodeBlock',
-      label: navigator.language.startsWith('zh') ? '编辑级图表' : 'Editorial diagram',
+      label: chinese ? '编辑级图表' : 'Editorial diagram',
       keywords: ['diagram-design', 'architecture', 'editorial', '图表'],
       run: (e, r) => {
         chain(e, r).run()
@@ -168,7 +170,7 @@ export function buildSlashItems(extra?: {
     items.push({
       id: 'wechat',
       labelKey: 'styleCodeBlock',
-      label: navigator.language.startsWith('zh') ? '公众号排版' : 'WeChat typesetting',
+      label: chinese ? '公众号排版' : 'WeChat typesetting',
       keywords: ['wechat', 'mp', 'mars', '公众号', '排版'],
       run: (e, r) => {
         chain(e, r).run()
@@ -180,7 +182,7 @@ export function buildSlashItems(extra?: {
     items.push({
       id: 'cite',
       labelKey: 'fmProperties',
-      label: navigator.language.startsWith('zh') ? '引用科研文献' : 'Cite research',
+      label: chinese ? '引用科研文献' : 'Cite research',
       keywords: ['citation', 'reference', 'bibliography', '文献', '引用'],
       run: (e, r) => {
         chain(e, r).run()

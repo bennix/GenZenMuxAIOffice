@@ -2677,6 +2677,7 @@ export function App() {
       />
       <InfographicStudio
         open={infographicOpen}
+        language={lang}
         initialSyntax={infographicEditTarget?.syntax}
         onClose={() => {
           setInfographicOpen(false)
@@ -3661,6 +3662,7 @@ export function App() {
       )}
       {citationsOpen && (
         <CitationManager
+          language={lang === 'zh' || lang === 'zh-TW' ? 'zh' : 'en'}
           onClose={() => setCitationsOpen(false)}
           onInsertCitation={async (_record, rendered) => {
             if (editing && restoreEditSelection()) {
@@ -3699,7 +3701,7 @@ export function App() {
                 {
                   runs: [
                     {
-                      text: navigator.language.startsWith('zh') ? '参考文献' : 'References',
+                      text: lang === 'zh' || lang === 'zh-TW' ? '参考文献' : 'References',
                       bold: true,
                       fontSize: 22,
                     },

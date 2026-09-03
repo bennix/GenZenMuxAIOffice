@@ -656,7 +656,7 @@ export function AiPanel({
               {hasTools && <ToolChipList tools={entry.tools!} />}
               {showToolbar && (
                 <div className="ai-msg-toolbar">
-                  <ConnectButton api={window.markdownApi} text={entry.text} />
+                  <ConnectButton api={window.markdownApi} text={entry.text} language={lang} />
                   <button
                     className="ai-msg-tool-btn"
                     onClick={() => void copyMessage(entry.text, `c-${i}`)}
@@ -823,6 +823,7 @@ export function AiPanel({
             <>
               <ConnectButton
                 api={window.markdownApi}
+                language={lang}
                 text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
                 triggerNonce={connectNonce}
               />

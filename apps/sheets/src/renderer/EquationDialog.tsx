@@ -83,7 +83,7 @@ export function EquationDialog({
   readonly onInsert: (dataUrl: string, width: number, height: number) => void
   readonly onClose: () => void
 }): React.JSX.Element {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [latex, setLatex] = useState('')
   const [busy, setBusy] = useState(false)
   const previewRef = useRef<HTMLSpanElement>(null)
@@ -169,7 +169,7 @@ export function EquationDialog({
               />
             )}
           </div>
-          <FormulaImageRecognition onRecognize={recognizeImage} />
+          <FormulaImageRecognition language={lang} onRecognize={recognizeImage} />
         </section>
         <div className="dialog-actions">
           <button className="secondary" onClick={onClose}>

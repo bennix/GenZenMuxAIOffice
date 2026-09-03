@@ -375,6 +375,7 @@ export function PdfReviewCommitteeModal({
               <ConnectButton
                 api={window.pdfApi}
                 text={report}
+                language={uiLanguage}
                 className="pdf-review-connect-report"
                 label={<span>{reportSendLabel}</span>}
                 onSendResult={(ok) => {
@@ -394,9 +395,9 @@ export function PdfReviewCommitteeModal({
           </div>
         )}
         <div className="pdf-review-results">
-          {chair && <ReviewCard result={chair} featured />}
+          {chair && <ReviewCard result={chair} language={uiLanguage} featured />}
           {members.map((result, index) => (
-            <ReviewCard key={`${result.role}-${index}`} result={result} />
+            <ReviewCard key={`${result.role}-${index}`} result={result} language={uiLanguage} />
           ))}
           {!members.length && (
             <div className="pdf-review-empty">
@@ -411,7 +412,15 @@ export function PdfReviewCommitteeModal({
   )
 }
 
-function ReviewCard({ result, featured = false }: { result: ReviewResult; featured?: boolean }) {
+function ReviewCard({
+  result,
+  language,
+  featured = false,
+}: {
+  result: ReviewResult
+  language: Lang
+  featured?: boolean
+}) {
   const [copied, setCopied] = useState(false)
 
   const copyReply = async (): Promise<void> => {
@@ -430,7 +439,7 @@ function ReviewCard({ result, featured = false }: { result: ReviewResult; featur
       {result.content && <Markdown text={result.content} />}
       {result.content && result.status === 'done' && (
         <div className="ai-msg-toolbar pdf-review-reply-actions">
-          <ConnectButton api={window.pdfApi} text={result.content} />
+          <ConnectButton api={window.pdfApi} text={result.content} language={language} />
           <button
             type="button"
             className="ai-msg-tool-btn"

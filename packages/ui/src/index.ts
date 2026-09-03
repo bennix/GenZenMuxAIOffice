@@ -12,6 +12,7 @@ export {
   INFOGRAPHIC_AI_SYSTEM,
   InfographicPreview,
   InfographicStudio,
+  defaultInfographicSyntax,
   infographicSyntaxFromRows,
   cleanInfographicSyntax,
   encodeInfographicMetadata,
@@ -20,6 +21,17 @@ export {
   type InfographicAsset,
   type InfographicStudioProps,
 } from './InfographicStudio'
+export {
+  connectLocale,
+  formulaImageLocale,
+  infographicLocale,
+  officeFeatureLocale,
+  type ConnectLocale,
+  type FormulaImageLocale,
+  type InfographicLocale,
+  type OfficeFeatureLocale,
+  type UiFeatureLanguage,
+} from './feature-i18n'
 export {
   WORDART_PRESETS,
   wordArtSolidColor,

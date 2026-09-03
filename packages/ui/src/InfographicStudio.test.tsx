@@ -6,7 +6,15 @@ import {
   decodeInfographicMetadata,
   encodeInfographicMetadata,
   infographicSyntaxFromRows,
+  defaultInfographicSyntax,
 } from './InfographicStudio'
+import {
+  connectLocale,
+  formulaImageLocale,
+  infographicLocale,
+  officeFeatureLocale,
+  type UiFeatureLanguage,
+} from './feature-i18n'
 
 describe('infographic studio data bridge', () => {
   it('turns a spreadsheet selection into valid, compact AntV syntax', () => {
@@ -48,5 +56,40 @@ describe('infographic studio data bridge', () => {
     const svg = await renderToString(syntax)
     expect(svg).toContain('<svg')
     expect(svg).not.toContain('https://assets.antv')
+  })
+
+  it('localizes every supported language without falling back to Chinese', () => {
+    const languages: UiFeatureLanguage[] = [
+      'zh',
+      'en',
+      'ja',
+      'ko',
+      'fr',
+      'de',
+      'es',
+      'th',
+      'id',
+      'ru',
+      'ar',
+      'pt',
+      'it',
+      'pl',
+      'nl',
+      'ms',
+      'he',
+      'hi',
+      'zh-TW',
+    ]
+    for (const language of languages) {
+      const locale = infographicLocale(language)
+      expect(locale.title.trim()).not.toBe('')
+      expect(locale.presets).toHaveLength(6)
+      expect(defaultInfographicSyntax(language)).toContain(`title ${locale.defaultTitle}`)
+      expect(connectLocale(language).label.trim()).not.toBe('')
+      expect(formulaImageLocale(language).chooseImage.trim()).not.toBe('')
+      expect(officeFeatureLocale(language).research.trim()).not.toBe('')
+    }
+    expect(infographicLocale('ja').title).toBe('インフォグラフィック スタジオ')
+    expect(infographicLocale('zh-TW').insert).toContain('資訊圖')
   })
 })

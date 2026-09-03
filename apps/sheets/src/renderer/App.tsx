@@ -298,7 +298,7 @@ import {
   recordSparklineAdd,
 } from './edit-journal'
 import { shiftPinnedCells } from './formula-closure'
-import { getLang, t, aiLangDirective } from './i18n/locale'
+import { getLang, t, aiLangDirective, useI18n } from './i18n/locale'
 import { planStillMatches } from './lazy-plan'
 import { netAxisDelta, screenToFile } from './view-transform'
 import { selectionFormatEquals, toSelectionFormat, type SelectionFormat } from './selection-format'
@@ -343,6 +343,7 @@ import { loadStoredSchema } from './sql/sql-schema'
 let pendingCopySource: string | undefined
 
 export function App(): React.JSX.Element {
+  const { lang } = useI18n()
   const adapterRef = useRef(new InMemoryWorkbookAdapter(initialSnapshot))
   const univerRef = useRef<UniverRuntime | null>(null)
   const lazyWorkbookRef = useRef<LazyWorkbookState | null>(null)
@@ -2791,7 +2792,7 @@ export function App(): React.JSX.Element {
         const values = range?.getValues() as unknown[][] | undefined
         setInfographicSyntax(
           values?.length
-            ? infographicSyntaxFromRows(values, worksheet?.getSheetName() ?? '选中数据概览')
+            ? infographicSyntaxFromRows(values, worksheet?.getSheetName(), lang)
             : undefined,
         )
         setInfographicOpen(true)
@@ -3423,6 +3424,7 @@ export function App(): React.JSX.Element {
       )}
       <InfographicStudio
         open={infographicOpen}
+        language={lang}
         initialSyntax={infographicSyntax}
         onClose={() => {
           setInfographicOpen(false)

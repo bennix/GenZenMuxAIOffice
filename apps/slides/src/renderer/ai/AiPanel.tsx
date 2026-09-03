@@ -366,7 +366,7 @@ export function AiPanel({
   onDeckProgress,
   currentFilePath,
 }: AiPanelProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [input, setInput] = useState('')
   const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -1845,7 +1845,9 @@ export function AiPanel({
               {entry.deckProgress && <DeckProgressCard progress={entry.deckProgress} />}
               {showToolbar && (
                 <div className="ai-msg-toolbar">
-                  {entry.text && <ConnectButton api={window.slidesApi} text={entry.text} />}
+                  {entry.text && (
+                    <ConnectButton api={window.slidesApi} text={entry.text} language={lang} />
+                  )}
                   {entry.text && (
                     <button
                       className="ai-msg-tool-btn"
@@ -2060,6 +2062,7 @@ export function AiPanel({
             <div className="ai-input-footer">
               <ConnectButton
                 api={window.slidesApi}
+                language={lang}
                 text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
                 triggerNonce={connectNonce}
               />
