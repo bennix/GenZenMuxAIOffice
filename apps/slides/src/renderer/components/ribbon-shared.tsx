@@ -298,7 +298,7 @@ export interface Props {
   onToggleAi: () => void
   /** Push a preset instruction to the AI panel and expand it (autoRun executes immediately) */
   /** slideShot: attach the current slide's rendering so the model sees the page (AI Beautify) */
-  onAiPreset: (text: string, opts?: { slideShot?: boolean }) => void
+  onAiPreset: (text: string, opts?: { slideShot?: boolean; beautify?: boolean }) => void
   onOpenCitations: () => void
   /** Insert an element on the current page */
   onInsert: (kind: InsertKind) => void

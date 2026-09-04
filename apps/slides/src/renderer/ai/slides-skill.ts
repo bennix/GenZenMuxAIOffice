@@ -1306,13 +1306,13 @@ export function typographyLockFromSlides(slides: RenderSlide[]): string {
   }
   if (!sizes.length) {
     return (
-      'Typography lock: page title 34-42pt, body 21-28pt. Never shrink ordinary body below 20pt. ' +
-      'In HTML, ordinary body text must be at least 28px.'
+      'Typography lock: page title 36-42pt, body 24-28pt. Never shrink ordinary body below 24pt. ' +
+      'In HTML, ordinary body text must be at least 32px.'
     )
   }
   sizes.sort((a, b) => a - b)
-  const body = sizes[Math.floor(sizes.length / 2)]!
-  const title = sizes[sizes.length - 1]!
+  const body = Math.max(24, sizes[Math.floor(sizes.length / 2)]!)
+  const title = Math.max(36, sizes[sizes.length - 1]!)
   return (
     `Typography lock from the current deck (keep or enlarge, never shrink): typical body ${body}pt, largest title ${title}pt. ` +
     `In HTML, ordinary body text must be at least ${Math.round((body * 96) / 72)}px and titles at least ${Math.round((title * 96) / 72)}px.`
@@ -1687,12 +1687,12 @@ export function auditPageHtml(html: string): string | null {
   // to read on a projector. Use the median (rather than rejecting every small label) so
   // captions, footers and page numbers remain legitimate.
   const declaredFontSizes = Array.from(
-    html.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px\b/gi),
-    (match) => Number(match[1]),
+    html.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)(px|pt)\b/gi),
+    (match) => Number(match[1]) * (match[2]!.toLowerCase() === 'pt' ? 4 / 3 : 1),
   )
     .filter(Number.isFinite)
     .sort((a, b) => a - b)
-  if (declaredFontSizes.length >= 3) {
+  if (declaredFontSizes.length >= 1) {
     const median = declaredFontSizes[Math.floor(declaredFontSizes.length / 2)]!
     if (median < 27) {
       return `uses generally undersized text (median ${median}px / ${Math.round(median * 0.75 * 10) / 10}pt); ordinary body copy should be at least 28px`
@@ -2409,14 +2409,17 @@ async function executeTool(
             .filter((part) => part && part.trim())
             .join('\n\n'),
           title: String(call.input.title ?? ''),
-          brief,
+          brief: attempt > 0 ? `${brief}\nFix the previous attempt: ${lastErr}` : brief,
           layout: String(call.input.layout ?? ''),
           images: regenImages,
           canvasW: 1280,
           canvasH: 720,
         })
-        if (res.ok && res.marker) marker = res.marker
-        else lastErr = res.error ?? t('aiErrUnknown')
+        if (res.ok && res.marker) {
+          const audit = auditPageHtml(res.marker)
+          if (audit) lastErr = `Readability/content audit: ${audit}`
+          else marker = res.marker
+        } else lastErr = res.error ?? t('aiErrUnknown')
       }
       if (!marker)
         return fail(

@@ -167,7 +167,7 @@ export function RibbonHomeTab({ rb }: { rb: RibbonTabCtx }) {
           className="rb-big ai-entry"
           disabled={!hasDoc || deckEmpty}
           data-tip={t('aiBeautifyBtn')}
-          onClick={() => onAiPreset(t('aiBeautifyPrompt'), { slideShot: true })}
+          onClick={() => onAiPreset(t('aiBeautifyPrompt'), { slideShot: true, beautify: true })}
         >
           <span className="rb-big-icon">
             <span className="ai-feature-icon" aria-hidden="true">

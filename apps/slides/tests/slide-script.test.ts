@@ -117,9 +117,22 @@ describe('AI-generated slide typography', () => {
       ],
     }
     const lock = typographyLockFromSlides([slideOf([title])])
-    expect(lock).toContain('32pt')
+    expect(lock).toContain('typical body 32pt')
+    expect(lock).toContain('largest title 36pt')
     expect(lock).not.toContain('24pt')
     expect(lock).toContain('never shrink')
+  })
+
+  it('detects a single inherited small size and sizes written in points', () => {
+    expect(
+      auditPageHtml(
+        '<body style="font-size:16px"><p>All content inherits this tiny body size.</p></body>',
+      ),
+    ).toContain('undersized')
+    expect(
+      auditPageHtml('<p style="font-size:12pt">This body paragraph is too small.</p>'),
+    ).toContain('undersized')
+    expect(typographyLockFromSlides([])).toContain('at least 32px')
   })
 
   it('allows small captions when the ordinary text scale is readable', () => {

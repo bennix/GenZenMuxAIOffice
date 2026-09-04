@@ -413,6 +413,7 @@ export function App() {
     displayText?: string
     attachments?: AttachmentMeta[]
     slideShot?: boolean
+    beautify?: boolean
   } | null>(null)
   const [_recent, setRecent] = useState<string[]>([])
   const consumePendingRef = useRef<ReturnType<typeof window.slidesApi.consumePendingOpen> | null>(
@@ -963,6 +964,7 @@ export function App() {
       displayText?: string,
       attachments?: AttachmentMeta[],
       slideShot?: boolean,
+      beautify?: boolean,
     ) => {
       setShowAi(() => {
         localStorage.setItem('ai-slides-show-ai', '1')
@@ -975,6 +977,7 @@ export function App() {
         displayText,
         ...(attachments && attachments.length > 0 ? { attachments } : {}),
         ...(slideShot ? { slideShot } : {}),
+        ...(beautify ? { beautify } : {}),
       })
     },
     [],
@@ -2482,7 +2485,9 @@ export function App() {
         onToggleThumbs={() => setShowThumbs((v) => !v)}
         aiOpen={showAi}
         onToggleAi={toggleAi}
-        onAiPreset={(text, opts) => pushAiPreset(text, true, undefined, undefined, opts?.slideShot)}
+        onAiPreset={(text, opts) =>
+          pushAiPreset(text, true, undefined, undefined, opts?.slideShot, opts?.beautify)
+        }
         onOpenCitations={() => setCitationsOpen(true)}
         onInsert={(kind) => void insertElement(kind)}
         onPickShape={pickShape}
@@ -3020,6 +3025,7 @@ export function App() {
                                   true,
                                   undefined,
                                   undefined,
+                                  true,
                                   true,
                                 )
                               }

@@ -19,6 +19,7 @@ import {
 } from './slides-skill'
 import { extractJsonObject, parseOutlineJson } from './outline-json'
 import { extractSlideHtml } from './slide-html'
+import { BeautifySuggestions } from './BeautifySuggestions'
 import { createFilesSkill } from './files-skill'
 import { createElectronTransport } from './transport'
 import { renderSlidesToPngBase64 } from '../export-render'
@@ -281,6 +282,7 @@ interface AiPanelProps {
     displayText?: string
     attachments?: AttachmentMeta[]
     slideShot?: boolean
+    beautify?: boolean
   } | null
   /** false shows only the collapsed rail; the component stays mounted so panel state survives */
   open?: boolean
@@ -374,6 +376,7 @@ export function AiPanel({
 }: AiPanelProps) {
   const { lang, t } = useI18n()
   const [input, setInput] = useState('')
+  const [showBeautify, setShowBeautify] = useState(false)
   const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
   const [chat, setChat] = useState<ChatEntry[]>([])
@@ -1311,6 +1314,12 @@ export function AiPanel({
       attachmentsRef.current = merged
       setAttachments(merged)
     }
+    if (preset.beautify) {
+      setShowBeautify(true)
+      logRef.current?.scrollTo({ top: 0 })
+      return
+    }
+    setShowBeautify(false)
     if (preset.autoRun)
       runWith(preset.text, preset.displayText, { slideShot: preset.slideShot ?? false })
     else {
@@ -1398,6 +1407,7 @@ export function AiPanel({
     // qcRunningRef: the post-generation QC pass edits the deck outside the main loop — no concurrent runs
     if (!instruction || !loop || loop.busy || runStartingRef.current || qcRunningRef.current) return
     runStartingRef.current = true
+    setShowBeautify(false)
     setInput('')
     // The message consumes the composer attachments: they ride along (echoed on the
     // bubble, images multimodal, files via the files skill) and the composer clears.
@@ -1752,6 +1762,16 @@ export function AiPanel({
       </div>
 
       <div ref={logRef} className="ai-chat" onScroll={onLogScroll}>
+        {showBeautify && (
+          <BeautifySuggestions
+            page={current + 1}
+            busy={busy}
+            onCancel={() => setShowBeautify(false)}
+            onApply={(instruction, label) => {
+              void runWith(instruction, label, { slideShot: true })
+            }}
+          />
+        )}
         {/* Past conversation (read-only transcript, not fed to the model), displayed continuously with the current turn */}
         {historicChat.length > 0 && (
           <>
@@ -1783,7 +1803,7 @@ export function AiPanel({
             <div className="ai-history-sep">{t('aiHistorySep')}</div>
           </>
         )}
-        {chat.length === 0 && historicChat.length === 0 && (
+        {!showBeautify && chat.length === 0 && historicChat.length === 0 && (
           <div className="ai-chat-empty">
             <div className="ai-chat-empty-title">
               {t(deckEmpty ? 'aiEmptyGenTitle' : 'aiEmptyTitle')}
