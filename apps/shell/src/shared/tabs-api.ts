@@ -7,6 +7,8 @@ export interface TabSummary {
   title: string
   closable: boolean
   active: boolean
+  /** Absolute path when the tab has a saved file; omitted for Home and untitled drafts. */
+  filePath?: string
 }
 
 export interface TabsApi {

@@ -1267,6 +1267,11 @@ export function AiPanel({
           sendIconDisabled={<img src={sendEnterOff} alt="" aria-hidden />}
           stopIcon={<img src={sendStop} alt="" aria-hidden />}
           textareaRef={inputRef}
+          language={lang}
+          listOpenFiles={() => window.desktop.listOpenFiles()}
+          onMentionFile={(file) => {
+            void window.desktop.addAttachmentPaths([file.filePath]).then(mergeAttachments)
+          }}
           onChange={(value) => {
             const command = removeConnectCommand(value)
             setInput(command.text)

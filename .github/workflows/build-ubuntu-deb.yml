@@ -6,7 +6,7 @@ on:
       release_tag:
         description: Existing GitHub Release tag that will receive the verified DEB
         required: true
-        default: v0.6.75
+        default: v0.6.76
 
 concurrency:
   group: ubuntu-deb-${{ inputs.release_tag }}

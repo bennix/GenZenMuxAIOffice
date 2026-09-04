@@ -153,7 +153,12 @@ import {
 } from '@genoffice/pptx-engine'
 import { buildRenderSlide, EMU_PER_PX_96, type RenderSlide } from '@genoffice/pptx-render'
 import { refineComplexWidths, shapedMetricsReady } from './shaped-metrics'
-import { applyEditParagraphs, collectParagraphFormatPatches, levelsChanged } from './edit-text'
+import {
+  applyEditParagraphs,
+  collectParagraphFormatPatches,
+  hasExplicitFontSizeChange,
+  levelsChanged,
+} from './edit-text'
 import { cfbKind, isCfbHeader } from './cfb-sniff'
 import { unplayableAudioCodec } from './mp4-audio-sniff'
 import { buildEditableSlidePptx, type EditableHtmlPage } from './html-to-editable-pptx'
@@ -1178,7 +1183,17 @@ export function registerSlidesIpc(): void {
     pushHistory(session)
     // Run-level rich-text rebuild: srcPara/srcRun back-tracing + preserving unedited fields, see applyEditParagraphs
     const levelDirty = levelsChanged(el.text.paragraphs, op.paragraphs)
+    const sizeDirty = hasExplicitFontSizeChange(el.text.paragraphs, op.paragraphs)
     el.text.paragraphs = applyEditParagraphs(el.text.paragraphs, op.paragraphs)
+    if (sizeDirty && el.text.autofit === 'shrink') {
+      el.text.autofit = 'none'
+      delete el.text.fontScale
+      delete el.text.lnSpcReduction
+      el.anchor.originalXml = el.anchor.originalXml.replace(
+        /<a:normAutofit\b[^>]*?(?:\/>|>\s*<\/a:normAutofit>)/,
+        '<a:noAutofit/>',
+      )
+    }
     ensureRunLinkRels(session.opened, op.slideIndex, el.text.paragraphs)
     el.dirty = true
     // Per-paragraph bullets/spacing marked on the editor selection

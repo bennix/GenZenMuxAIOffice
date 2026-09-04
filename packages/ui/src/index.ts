@@ -1,4 +1,6 @@
 export { AiComposer } from './AiComposer'
+export { FileMentionMenu } from './FileMentionMenu'
+export { useFileMention } from './useFileMention'
 export { installScreenTips } from './screentip'
 export { AiTypingIndicator } from './AiTypingIndicator'
 export { IconSend, IconStop, type IconProps } from './icons'
@@ -23,10 +25,12 @@ export {
 } from './InfographicStudio'
 export {
   connectLocale,
+  fileMentionLocale,
   formulaImageLocale,
   infographicLocale,
   officeFeatureLocale,
   type ConnectLocale,
+  type FileMentionLocale,
   type FormulaImageLocale,
   type InfographicLocale,
   type OfficeFeatureLocale,

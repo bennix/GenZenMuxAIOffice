@@ -776,6 +776,9 @@ export function AiChatPanel({
             </>
           }
           textareaRef={inputRef}
+          language={lang}
+          listOpenFiles={() => window.desktopApi.listOpenFiles()}
+          onMentionFile={(file) => onAddAttachmentPaths([file.filePath])}
           onChange={(value) => {
             const command = removeConnectCommand(value)
             onPromptChange(command.text)

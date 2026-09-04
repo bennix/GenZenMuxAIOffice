@@ -12,6 +12,7 @@ import type { ExportFormat, MarkdownApi, SaveMode, UiTheme } from '../shared/ipc
 const api: MarkdownApi = {
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
+  listOpenFiles: () => ipcRenderer.invoke('tabs:open-files'),
   onConnectReceive: (handler) => {
     const listener = (_e: Electron.IpcRendererEvent, payload: Parameters<typeof handler>[0]) =>
       handler(payload)

@@ -47,6 +47,13 @@ describe('HTML to editable PPTX conversion', () => {
     const pictures = elements.filter((element) => element.type === 'picture')
 
     expect(textObjects.length).toBe(2)
+    expect(
+      textObjects.every((element) =>
+        element.type === 'text' || element.type === 'shape'
+          ? element.text?.autofit !== 'shrink'
+          : true,
+      ),
+    ).toBe(true)
     expect(pictures.length).toBe(1)
     expect(elements.length).toBeGreaterThanOrEqual(4)
     expect(

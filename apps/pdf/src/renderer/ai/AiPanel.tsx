@@ -789,6 +789,11 @@ export function AiPanel({
           sendIconEnabled={<img src={sendEnterOn} alt="" aria-hidden />}
           sendIconDisabled={<img src={sendEnterOff} alt="" aria-hidden />}
           stopIcon={<img src={sendStop} alt="" aria-hidden />}
+          language={lang}
+          listOpenFiles={() => window.pdfApi.listOpenFiles()}
+          onMentionFile={(file) => {
+            void window.pdfApi.addAttachmentPaths([file.filePath]).then(mergeAttachments)
+          }}
           onChange={(value) => {
             const command = removeConnectCommand(value)
             setPrompt(command.text)

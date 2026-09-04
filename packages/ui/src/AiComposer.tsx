@@ -1,5 +1,9 @@
 import React, { useEffect, useRef } from 'react'
+import type { OpenFileRef } from '@genoffice/electron-utils/open-files'
 import { IconEnter, IconSend, IconStop } from './icons'
+import { FileMentionMenu } from './FileMentionMenu'
+import { useFileMention } from './useFileMention'
+import type { UiFeatureLanguage } from './feature-i18n'
 
 // Keep in sync with the CSS `max-height` on `.ai-input-box textarea` (7 lines à 24px)
 const MAX_TEXTAREA_HEIGHT = 168
@@ -27,6 +31,9 @@ export function AiComposer({
   sendIconDisabled,
   stopIcon,
   textareaRef,
+  language,
+  listOpenFiles,
+  onMentionFile,
   onChange,
   onSend,
   onStop,
@@ -54,6 +61,9 @@ export function AiComposer({
   readonly stopIcon?: React.ReactNode
   /** pass a ref to focus the textarea from outside */
   readonly textareaRef?: React.RefObject<HTMLTextAreaElement | null> | undefined
+  readonly language?: UiFeatureLanguage | string | undefined
+  readonly listOpenFiles?: (() => Promise<OpenFileRef[]>) | undefined
+  readonly onMentionFile?: ((file: OpenFileRef) => void) | undefined
   readonly onChange: (next: string) => void
   readonly onSend: () => void
   readonly onStop: () => void
@@ -62,6 +72,14 @@ export function AiComposer({
 }): React.JSX.Element {
   const innerRef = useRef<HTMLTextAreaElement | null>(null)
   const ref = textareaRef ?? innerRef
+  const mention = useFileMention({
+    value,
+    onChange,
+    textareaRef: ref,
+    listOpenFiles,
+    onMentionFile,
+    language,
+  })
   const canSend = value.trim().length > 0 && !busy
 
   // auto-grow up to ~6 lines; empty clears the inline height outright so the
@@ -86,8 +104,12 @@ export function AiComposer({
         placeholder={placeholder}
         aria-label={ariaLabel}
         rows={1}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => mention.handleChange(e.target.value)}
+        onSelect={mention.syncCursor}
+        onClick={mention.syncCursor}
+        onKeyUp={mention.syncCursor}
         onKeyDown={(e) => {
+          if (mention.handleKeyDown(e)) return
           if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault()
             if (canSend) onSend()
@@ -104,6 +126,17 @@ export function AiComposer({
           onPasteFiles(files)
         }}
       />
+      {mention.open && (
+        <FileMentionMenu
+          files={mention.files}
+          highlighted={mention.highlighted}
+          notice={mention.notice}
+          label={mention.label}
+          anchor={ref.current?.getBoundingClientRect() ?? null}
+          onHighlight={mention.setHighlighted}
+          onSelect={mention.handleSelect}
+        />
+      )}
       <div className="ai-input-footer">
         {footerStart}
         {!iconOnly && (

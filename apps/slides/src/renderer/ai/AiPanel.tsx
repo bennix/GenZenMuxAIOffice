@@ -24,7 +24,13 @@ import { createElectronTransport } from './transport'
 import { renderSlidesToPngBase64 } from '../export-render'
 import { isQcEnabled, mergeQcPages, qcSlidePage, QC_MAX_PAGES } from './slide-qc'
 import { useI18n, t as tGlobal, aiLangDirective, type TFunc } from '../i18n/locale'
-import { ConnectButton, copyTextToClipboard, Markdown } from '@genoffice/ui'
+import {
+  ConnectButton,
+  copyTextToClipboard,
+  FileMentionMenu,
+  Markdown,
+  useFileMention,
+} from '@genoffice/ui'
 import { removeConnectCommand } from '@genoffice/electron-utils/connect'
 import { appendLocalMemoryContext } from '@genoffice/project-store/knowledge-context'
 import { ZenMuxMark } from '../components/icons'
@@ -451,6 +457,7 @@ export function AiPanel({
   >([])
   const logRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const mergeAttachmentsRef = useRef<(result: AttachmentAddResult | null) => void>(() => {})
   /** Stop following once the user scrolls up; re-attach when near the bottom */
   const stickToBottomRef = useRef(true)
   /** Current chat's projectId/chatId, set after resolve succeeds */
@@ -624,6 +631,23 @@ export function AiPanel({
   const runStartedAtRef = useRef(0)
   const historyBatchActiveRef = useRef(false)
   const inputEditedSinceRunRef = useRef(false)
+  const mention = useFileMention({
+    value: input,
+    onChange: (next) => {
+      inputEditedSinceRunRef.current = true
+      const command = removeConnectCommand(next)
+      setInput(command.text)
+      if (command.matched) setConnectNonce((nonce) => nonce + 1)
+    },
+    textareaRef: inputRef,
+    listOpenFiles: () => window.slidesApi.listOpenFiles(),
+    onMentionFile: (file) => {
+      void window.desktop.addAttachmentPaths([file.filePath]).then((result) => {
+        mergeAttachmentsRef.current(result)
+      })
+    },
+    language: lang,
+  })
   /** This run's rollback batch — carried onto the QC entry when a QC pass
       follows (mid-turn segments never show the action toolbar) */
   const runSnapshotIdRef = useRef<number | null>(null)
@@ -949,6 +973,7 @@ export function AiPanel({
           `Content brief: ${args.brief}`,
           args.layout ? `Layout intent: ${args.layout}` : '',
           `Design system:\n${args.style}`,
+          'Honor the typography lock in the design system. Do not shrink title or body text below the locked sizes, even if the brief is dense.',
           args.context
             ? `Reference material (source of truth):\n${args.context.slice(0, 4000)}`
             : '',
@@ -1588,6 +1613,7 @@ export function AiPanel({
       window.setTimeout(() => setAttachNotice(null), 5000)
     }
   }
+  mergeAttachmentsRef.current = mergeAttachments
 
   const pickAttachments = async () => mergeAttachments(await window.desktop.pickAttachments())
 
@@ -2036,13 +2062,12 @@ export function AiPanel({
               data-slides-ai-input="true"
               data-deck-undo-ready={!busy && !inputEditedSinceRunRef.current ? 'true' : 'false'}
               placeholder={t(deckEmpty ? 'aiInputPlaceholderGen' : 'aiInputPlaceholder')}
-              onChange={(e) => {
-                inputEditedSinceRunRef.current = true
-                const command = removeConnectCommand(e.target.value)
-                setInput(command.text)
-                if (command.matched) setConnectNonce((nonce) => nonce + 1)
-              }}
+              onChange={(e) => mention.handleChange(e.target.value)}
+              onSelect={mention.syncCursor}
+              onClick={mention.syncCursor}
+              onKeyUp={mention.syncCursor}
               onKeyDown={(e) => {
+                if (mention.handleKeyDown(e)) return
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault()
                   run()
@@ -2059,6 +2084,17 @@ export function AiPanel({
               }}
               rows={1}
             />
+            {mention.open && (
+              <FileMentionMenu
+                files={mention.files}
+                highlighted={mention.highlighted}
+                notice={mention.notice}
+                label={mention.label}
+                anchor={inputRef.current?.getBoundingClientRect() ?? null}
+                onHighlight={mention.setHighlighted}
+                onSelect={mention.handleSelect}
+              />
+            )}
             <div className="ai-input-footer">
               <ConnectButton
                 api={window.slidesApi}

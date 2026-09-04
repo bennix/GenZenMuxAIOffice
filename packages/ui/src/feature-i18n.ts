@@ -853,6 +853,114 @@ export function connectLocale(lang: UiFeatureLanguage | string | undefined): Con
   return CONNECT_LOCALES[lang as UiFeatureLanguage] ?? CONNECT_LOCALES.en
 }
 
+export interface FileMentionLocale {
+  empty: string
+  listFailed: string
+  label: string
+}
+
+const FILE_MENTION_LOCALES: Record<UiFeatureLanguage, FileMentionLocale> = {
+  zh: {
+    empty: '没有其他已打开且已保存的文件',
+    listFailed: '无法读取已打开的文件，请重试',
+    label: '引用已打开的文件',
+  },
+  en: {
+    empty: 'No other open saved files',
+    listFailed: 'Unable to list open files. Try again.',
+    label: 'Mention an open file',
+  },
+  ja: {
+    empty: '他に開いている保存済みファイルはありません',
+    listFailed: '開いているファイルを取得できません。再試行してください。',
+    label: '開いているファイルを参照',
+  },
+  ko: {
+    empty: '열려 있는 다른 저장된 파일이 없습니다',
+    listFailed: '열린 파일을 불러올 수 없습니다. 다시 시도하세요.',
+    label: '열린 파일 언급',
+  },
+  fr: {
+    empty: 'Aucun autre fichier ouvert et enregistré',
+    listFailed: 'Impossible de lister les fichiers ouverts. Réessayez.',
+    label: 'Mentionner un fichier ouvert',
+  },
+  de: {
+    empty: 'Keine weiteren geöffneten gespeicherten Dateien',
+    listFailed: 'Geöffnete Dateien konnten nicht geladen werden. Erneut versuchen.',
+    label: 'Geöffnete Datei erwähnen',
+  },
+  es: {
+    empty: 'No hay otros archivos abiertos y guardados',
+    listFailed: 'No se pudieron listar los archivos abiertos. Inténtalo de nuevo.',
+    label: 'Mencionar un archivo abierto',
+  },
+  th: {
+    empty: 'ไม่มีไฟล์อื่นที่เปิดและบันทึกไว้',
+    listFailed: 'อ่านรายการไฟล์ที่เปิดอยู่ไม่ได้ โปรดลองอีกครั้ง',
+    label: 'อ้างอิงไฟล์ที่เปิดอยู่',
+  },
+  id: {
+    empty: 'Tidak ada file tersimpan lain yang terbuka',
+    listFailed: 'Daftar file yang terbuka tidak dapat dibaca. Coba lagi.',
+    label: 'Sebutkan file yang terbuka',
+  },
+  ru: {
+    empty: 'Нет других открытых сохранённых файлов',
+    listFailed: 'Не удалось получить список открытых файлов. Повторите попытку.',
+    label: 'Упомянуть открытый файл',
+  },
+  ar: {
+    empty: 'لا توجد ملفات أخرى مفتوحة ومحفوظة',
+    listFailed: 'تعذر سرد الملفات المفتوحة. حاول مجددًا.',
+    label: 'الإشارة إلى ملف مفتوح',
+  },
+  pt: {
+    empty: 'Nenhum outro arquivo aberto e salvo',
+    listFailed: 'Não foi possível listar os arquivos abertos. Tente novamente.',
+    label: 'Mencionar um arquivo aberto',
+  },
+  it: {
+    empty: 'Nessun altro file aperto e salvato',
+    listFailed: 'Impossibile elencare i file aperti. Riprova.',
+    label: 'Menziona un file aperto',
+  },
+  pl: {
+    empty: 'Brak innych otwartych zapisanych plików',
+    listFailed: 'Nie można odczytać otwartych plików. Spróbuj ponownie.',
+    label: 'Wspomnij otwarty plik',
+  },
+  nl: {
+    empty: 'Geen andere geopende opgeslagen bestanden',
+    listFailed: 'Geopende bestanden konden niet worden gelezen. Probeer opnieuw.',
+    label: 'Een geopend bestand vermelden',
+  },
+  ms: {
+    empty: 'Tiada fail tersimpan lain yang dibuka',
+    listFailed: 'Fail yang dibuka tidak dapat disenaraikan. Cuba lagi.',
+    label: 'Sebut fail yang dibuka',
+  },
+  he: {
+    empty: 'אין קבצים שמורים נוספים שפתוחים',
+    listFailed: 'לא ניתן לקרוא את הקבצים הפתוחים. נסו שוב.',
+    label: 'אזכור קובץ פתוח',
+  },
+  hi: {
+    empty: 'कोई अन्य खुली सहेजी गई फ़ाइल नहीं है',
+    listFailed: 'खुली फ़ाइलें नहीं पढ़ी जा सकीं। फिर प्रयास करें।',
+    label: 'खुली फ़ाइल का उल्लेख करें',
+  },
+  'zh-TW': {
+    empty: '沒有其他已開啟且已儲存的檔案',
+    listFailed: '無法讀取已開啟的檔案，請重試',
+    label: '引用已開啟的檔案',
+  },
+}
+
+export function fileMentionLocale(lang: UiFeatureLanguage | string | undefined): FileMentionLocale {
+  return FILE_MENTION_LOCALES[lang as UiFeatureLanguage] ?? FILE_MENTION_LOCALES.en
+}
+
 export interface FormulaImageLocale {
   invalidImage: string
   noReadableClipboard: string

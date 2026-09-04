@@ -39,6 +39,7 @@ import { IPC_CHANNELS } from '../shared/ipc-channels'
 const desktopApi: DesktopApi = {
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
+  listOpenFiles: () => ipcRenderer.invoke('tabs:open-files'),
   onConnectReceive(handler) {
     const listener = (_event: Electron.IpcRendererEvent, payload: Parameters<typeof handler>[0]) =>
       handler(payload)

@@ -123,6 +123,7 @@ export class TabManager {
       title: t.title,
       closable: t.id !== HOME_ID,
       active: t.id === this.activeId,
+      ...(t.filePath ? { filePath: t.filePath } : {}),
     }))
   }
 

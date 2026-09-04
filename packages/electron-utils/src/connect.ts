@@ -1,3 +1,5 @@
+import type { OpenFileRef } from './open-files'
+
 export type ConnectEditorKind = 'docs' | 'sheets' | 'slides' | 'markdown'
 
 export interface ConnectTarget {
@@ -21,6 +23,8 @@ export interface ConnectApi {
   listConnectTargets(): Promise<ConnectTarget[]>
   sendConnect(targetId: string, text: string): Promise<ConnectResult>
   onConnectReceive(handler: (payload: ConnectPayload) => void): () => void
+  /** Open saved tabs the current AI composer can attach as @-mention context. */
+  listOpenFiles(): Promise<OpenFileRef[]>
 }
 
 export const CONNECT_CHANNELS = {

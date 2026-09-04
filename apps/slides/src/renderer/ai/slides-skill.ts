@@ -1205,9 +1205,20 @@ function targetError(target: EditTarget | null, sourceId: string, pageNo: number
 }
 
 /**
+ * Convert a laid-out run's px back to the model pt. fontSizePx already includes autofit
+ * fontScale, so dividing it out is required — otherwise every style write-back bakes the
+ * shrunk display size in as the new designed size.
+ */
+export function renderedPxToPt(fontSizePx: number, fontScale = 1): number {
+  const scale = fontScale > 0 ? fontScale : 1
+  return Math.round(((fontSizePx / scale) * 72) / 96)
+}
+
+/**
  * Restore a render node's current text into EditParagraph[] (aggregate runs by line, keeping
  * each run's existing formatting). Used by set_element_style: change formatting while keeping
- * the text. fontSize is converted back from px to pt.
+ * the text. Font size is omitted so an unrequested style edit cannot ratchet autofit shrink
+ * into the model; pass fontSize only through the style patch.
  */
 function nodeToParagraphs(node: ShapeRenderNode): EditParagraph[] {
   const lines = node.text?.lines ?? []
@@ -1217,7 +1228,6 @@ function nodeToParagraphs(node: ShapeRenderNode): EditParagraph[] {
       ...(r.bold ? { bold: true } : {}),
       ...(r.italic ? { italic: true } : {}),
       ...(r.underline ? { underline: true } : {}),
-      ...(r.fontSizePx ? { fontSize: Math.round((r.fontSizePx * 72) / 96) } : {}),
       ...(r.fontFamily ? { fontFamily: r.fontFamily } : {}),
       ...(r.color ? { color: r.color } : {}),
     })),
@@ -1236,7 +1246,11 @@ function mergeStyleIntoParagraphs(cur: EditParagraph[], ov: SlideStylePatch): Ed
       bold: ov.bold ?? r.bold,
       italic: ov.italic ?? r.italic,
       underline: ov.underline ?? r.underline,
-      fontSize: typeof ov.fontSize === 'number' ? ov.fontSize : r.fontSize,
+      ...(typeof ov.fontSize === 'number'
+        ? { fontSize: ov.fontSize }
+        : r.fontSize != null
+          ? { fontSize: r.fontSize }
+          : {}),
       fontFamily: ov.fontFamily ?? r.fontFamily,
       color: ov.color ?? r.color,
     })),
@@ -1273,11 +1287,36 @@ function nodeText(n: RenderNode): string {
 /** Max font size of the text (pt, converted back from px); returns undefined when there is no text. */
 function nodeMaxFontPt(n: RenderNode): number | undefined {
   if (n.type !== 'shape' && n.type !== 'text') return undefined
+  const node = n as ShapeRenderNode
   let maxPx = 0
-  for (const line of (n as ShapeRenderNode).text?.lines ?? []) {
+  for (const line of node.text?.lines ?? []) {
     for (const r of line.runs) if (r.fontSizePx > maxPx) maxPx = r.fontSizePx
   }
-  return maxPx > 0 ? Math.round((maxPx * 72) / 96) : undefined
+  return maxPx > 0 ? renderedPxToPt(maxPx, node.text?.fontScale ?? 1) : undefined
+}
+
+/** Keep regenerate/edit from inventing a smaller type scale than the open deck. */
+export function typographyLockFromSlides(slides: RenderSlide[]): string {
+  const sizes: number[] = []
+  for (const slide of slides) {
+    for (const node of slide.nodes) {
+      const pt = nodeMaxFontPt(node)
+      if (pt != null && pt > 0) sizes.push(pt)
+    }
+  }
+  if (!sizes.length) {
+    return (
+      'Typography lock: page title 34-42pt, body 21-28pt. Never shrink ordinary body below 20pt. ' +
+      'In HTML, ordinary body text must be at least 28px.'
+    )
+  }
+  sizes.sort((a, b) => a - b)
+  const body = sizes[Math.floor(sizes.length / 2)]!
+  const title = sizes[sizes.length - 1]!
+  return (
+    `Typography lock from the current deck (keep or enlarge, never shrink): typical body ${body}pt, largest title ${title}pt. ` +
+    `In HTML, ordinary body text must be at least ${Math.round((body * 96) / 72)}px and titles at least ${Math.round((title * 96) / 72)}px.`
+  )
 }
 
 /** Normalize a render color to #RRGGBB (strips alpha); undefined when not a hex color. */
@@ -2366,7 +2405,9 @@ async function executeTool(
           pageIndex: idx + 1,
           totalPages: slides.length,
           coreHook: '',
-          style: state?.lastStyleSkill ?? '',
+          style: [state?.lastStyleSkill, typographyLockFromSlides(slides)]
+            .filter((part) => part && part.trim())
+            .join('\n\n'),
           title: String(call.input.title ?? ''),
           brief,
           layout: String(call.input.layout ?? ''),

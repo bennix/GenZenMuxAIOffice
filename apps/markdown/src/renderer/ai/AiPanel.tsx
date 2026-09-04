@@ -811,6 +811,11 @@ export function AiPanel({
           sendIconDisabled={<img src={sendEnterOff} alt="" aria-hidden />}
           stopIcon={<img src={sendStop} alt="" aria-hidden />}
           textareaRef={inputRef}
+          language={lang}
+          listOpenFiles={() => window.markdownApi.listOpenFiles()}
+          onMentionFile={(file) => {
+            void window.markdownApi.addAttachmentPaths([file.filePath]).then(mergeAttachments)
+          }}
           onChange={(value) => {
             const command = removeConnectCommand(value)
             setPrompt(command.text)

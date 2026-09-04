@@ -50,6 +50,9 @@ describe('regenerate_slide', () => {
     expect(r.isError).toBeUndefined()
     expect(r.mutated).toBe(true)
     expect(generatePageCloud).toHaveBeenCalledOnce()
+    expect(generatePageCloud).toHaveBeenCalledWith(
+      expect.objectContaining({ style: expect.stringContaining('Typography lock') }),
+    )
     expect(regenerateSlide).toHaveBeenCalledWith(1, 'cloudpptx:/tmp/p.pptx')
     expect(r.output).toContain('page 2')
   })

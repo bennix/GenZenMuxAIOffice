@@ -40,6 +40,8 @@ import { ZENMUX_INVITE_URL } from '@genoffice/ai-provider'
 import {
   DOCUMENT_DROP_CHANNEL,
   DEFAULT_SAVE_DIR_KEY,
+  OPEN_FILES_CHANNEL,
+  isOpenFileKind,
   appMenuLabels,
   contextMenuLabels,
   editMenuTemplate,
@@ -2240,6 +2242,24 @@ function registerConnectIpc(): void {
   })
 }
 
+function registerOpenFilesIpc(): void {
+  ipcMain.handle(OPEN_FILES_CHANNEL, (event) => {
+    if (!tabManager?.ownsWebContents(event.sender.id)) return []
+    return tabManager.list().flatMap((tab) => {
+      if (!tab.filePath || !isOpenFileKind(tab.kind)) return []
+      return [
+        {
+          id: tab.id,
+          kind: tab.kind,
+          title: tab.title,
+          filePath: tab.filePath,
+          active: tab.active,
+        },
+      ]
+    })
+  })
+}
+
 function registerDocumentDropIpc(): void {
   ipcMain.on(DOCUMENT_DROP_CHANNEL, (event, input: unknown) => {
     const trustedSender =
@@ -2643,6 +2663,7 @@ registerDocsIpc()
 registerHomeIpc()
 registerTabsIpc()
 registerConnectIpc()
+registerOpenFilesIpc()
 registerDocumentDropIpc()
 
 // sheets' project:resolveChat goes through the handler registered by docs-main; the sessionId reverse lookup hooks in here

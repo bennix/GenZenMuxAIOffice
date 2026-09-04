@@ -7,7 +7,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { RenderSlide, RenderNode, ShapeRenderNode, PlacedBox } from '@genoffice/pptx-render'
 import { runLayoutScript, type LayoutScriptElement } from '../src/renderer/ai/layout-script'
-import { auditPageHtml, createSlidesSkill, type DeckAccess } from '../src/renderer/ai/slides-skill'
+import {
+  auditPageHtml,
+  createSlidesSkill,
+  renderedPxToPt,
+  typographyLockFromSlides,
+  type DeckAccess,
+} from '../src/renderer/ai/slides-skill'
 
 const box = (x: number, y: number, w: number, h: number, rot = 0): PlacedBox => ({
   x,
@@ -91,6 +97,29 @@ describe('AI-generated slide typography', () => {
       <p style="font-size:20px">Third detailed point</p>
     </body></html>`
     expect(auditPageHtml(html)).toContain('generally undersized text')
+  })
+
+  it('does not treat autofit-shrunk display px as the designed point size', () => {
+    expect(renderedPxToPt(24, 0.75)).toBe(24)
+    expect(renderedPxToPt(24, 1)).toBe(18)
+  })
+
+  it('locks regenerate typography to the open deck instead of shrinking', () => {
+    const title = textNode('t1', box(40, 40, 400, 80), 'Title')
+    title.text = {
+      ...title.text!,
+      fontScale: 0.75,
+      lines: [
+        {
+          ...title.text!.lines[0]!,
+          runs: [{ ...title.text!.lines[0]!.runs[0]!, fontSizePx: 32 }],
+        },
+      ],
+    }
+    const lock = typographyLockFromSlides([slideOf([title])])
+    expect(lock).toContain('32pt')
+    expect(lock).not.toContain('24pt')
+    expect(lock).toContain('never shrink')
   })
 
   it('allows small captions when the ordinary text scale is readable', () => {
@@ -487,9 +516,9 @@ describe('execute_slide_script tool', () => {
       text: 'Title',
       color: '#1a73e8',
       bold: true,
-      fontSize: 18, // original 24px -> 18pt kept
       fontFamily: 'Arial', // non-overridden fields kept
     })
+    expect(styleCall.paragraphs[0].runs[0].fontSize).toBeUndefined()
     expect(api.editFill).toHaveBeenCalledWith({ slideIndex: 0, sourceId: 't2', fill: '#f8fafc' })
     expect(api.editStroke).toHaveBeenCalledWith({
       slideIndex: 0,

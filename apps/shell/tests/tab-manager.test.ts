@@ -175,6 +175,7 @@ describe('opening tabs', () => {
     manager.openSheetsTab('/tmp/budget.xlsx')
     manager.openSlidesTab('/tmp/deck.pptx')
     manager.openPdfTab('/tmp/scan.pdf')
+    expect(manager.list().find((t) => t.title === 'report.docx')?.filePath).toBe('/tmp/report.docx')
     expect(manager.list().map((t) => t.title)).toEqual([
       'ZenOffice',
       'report.docx',

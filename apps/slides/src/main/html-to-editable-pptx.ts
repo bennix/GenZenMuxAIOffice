@@ -107,7 +107,6 @@ export async function buildEditableSlidePptx(
         h,
         margin: 0,
         isTextBox: true,
-        fit: 'shrink',
         breakLine: false,
         color: asHex(node.color, '1A1A1A'),
         fontFace: node.fontFace || 'Arial',

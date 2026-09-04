@@ -54,3 +54,12 @@ export {
   type ConnectResult,
   type ConnectTarget,
 } from './connect'
+export {
+  OPEN_FILES_CHANNEL,
+  applyFileMention,
+  atMentionQuery,
+  filterOpenFiles,
+  isOpenFileKind,
+  type OpenFileKind,
+  type OpenFileRef,
+} from './open-files'
