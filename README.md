@@ -36,13 +36,13 @@ notarization on the current macOS release).
 > Intelligence, Fudan University; macOS, Windows, Ubuntu DEB, and Linux RPM installers rebuilt for this release.
 
 Apple Silicon Mac 用户可从
-[最新 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.76-arm64.dmg)。
+[最新 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.77-arm64.dmg)。
 Windows 10/11 x64 用户可下载
-[ZenOfficeSetup-0.6.76-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.76-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
+[ZenOfficeSetup-0.6.77-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.77-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
 Ubuntu 22.04/24.04 x86_64 用户可下载
-[zenoffice_0.6.76_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice_0.6.76_amd64.deb)。
+[zenoffice_0.6.77_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice_0.6.77_amd64.deb)。
 Fedora、RHEL、Rocky Linux、AlmaLinux 与 openSUSE x86_64 用户可下载
-[zenoffice-0.6.76.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice-0.6.76.x86_64.rpm)。
+[zenoffice-0.6.77.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice-0.6.77.x86_64.rpm)。
 AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。
 
 [![Meet ZenOffice — the world's first full-featured open-source AI Office (video)](https://img.youtube.com/vi/B2pLdMX95v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=B2pLdMX95v4)
@@ -65,6 +65,7 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 - **Strict PDF AI review committee** — launch the same 3-reviewer + 1-chair workflow used by Word and Markdown directly from the PDF ribbon. ZenMux models are randomly assigned across Science, Nature, Cell, Elsevier, IEEE, grant and proposal profiles; page-labelled extracted text and up to five representative page previews let the committee inspect formulas, charts, tables and figures without modifying the PDF. Every individual opinion and the complete report can be copied or sent through `@Connect` to Word, Excel, PowerPoint or Markdown.
 - **Reliable complete-report actions** — the PDF review dialog makes the entire “Connect report” control clickable, handles target-list and delivery failures, and shows explicit copied/sent/failed feedback for the complete committee report.
 - **Excel-compatible spreadsheets** — in-house engine with a Rust `.xlsx` sidecar, own charts, pivot tables, slicers.
+- **Resilient third-party XLSX display** — when an exported workbook contains real rows and columns but incorrectly declares its used range as only `A1`, ZenOffice verifies the sheet and recovers the actual extent instead of showing only the title or a blank grid. Existing values, Chinese fonts, borders, row heights, and column widths remain untouched.
 - **Excel data analysis and editable visualization** — selection-aware descriptive statistics, correlation, regression, time series, grouped analysis, outliers and forecasting; field-driven recommendations across nine native chart families with Chinese labels and interactive point tooltips.
 - **Resilient Excel AI formatting** — neutral left/center/right alignment is translated safely to the spreadsheet runtime, so a right-aligned AI format no longer aborts an otherwise valid data-generation batch.
 - **Encrypted ZenMux credentials** — API Keys are encrypted with the operating system credential service before being saved locally; legacy plaintext settings migrate automatically.
@@ -104,11 +105,11 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 
 | Platform                                                | Requirements                                  | Download                                                                                                                            |
 | ------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **macOS** — Apple Silicon (arm64)                       | macOS 11+                                     | [ZenOffice-0.6.76-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.76-arm64.dmg)       |
+| **macOS** — Apple Silicon (arm64)                       | macOS 11+                                     | [ZenOffice-0.6.77-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.77-arm64.dmg)       |
 | **macOS** — Intel (x64, upstream compatibility build)   | macOS 11+                                     | [GenOffice-0.6.101.dmg](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.dmg)                  |
-| **Windows** (x64)                                       | Windows 10/11; unsigned, SmartScreen may warn | [ZenOfficeSetup-0.6.76-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.76-x64.exe) |
-| **Ubuntu** — DEB (amd64)                                | Ubuntu 22.04/24.04 x86_64                     | [zenoffice_0.6.76_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice_0.6.76_amd64.deb)       |
-| **Linux RPM** — Fedora / RHEL / Rocky / Alma / openSUSE | x86_64, glibc 2.34+ (RHEL-compatible 9+)      | [zenoffice-0.6.76.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice-0.6.76.x86_64.rpm)     |
+| **Windows** (x64)                                       | Windows 10/11; unsigned, SmartScreen may warn | [ZenOfficeSetup-0.6.77-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.77-x64.exe) |
+| **Ubuntu** — DEB (amd64)                                | Ubuntu 22.04/24.04 x86_64                     | [zenoffice_0.6.77_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice_0.6.77_amd64.deb)       |
+| **Linux RPM** — Fedora / RHEL / Rocky / Alma / openSUSE | x86_64, glibc 2.34+ (RHEL-compatible 9+)      | [zenoffice-0.6.77.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice-0.6.77.x86_64.rpm)     |
 | **Linux** — other distributions (upstream build)        | x86_64, glibc 2.34+, FUSE 2                   | [GenOffice-0.6.101.AppImage](https://github.com/genspark-ai/genoffice/releases/download/v0.6.101/GenOffice-0.6.101.AppImage)        |
 
 All builds come from `main`. The current macOS DMG is Developer ID signed and Apple-notarized; the Windows installer is not Authenticode-signed.
@@ -120,14 +121,14 @@ The deb installs with apt — it pulls in the dependencies and adds ZenOffice
 to the applications menu:
 
 ```bash
-sudo apt install ./zenoffice_0.6.76_amd64.deb
+sudo apt install ./zenoffice_0.6.77_amd64.deb
 ```
 
 On Fedora / RHEL-family / openSUSE, install the rpm instead:
 
 ```bash
-sudo dnf install ./zenoffice-0.6.76.x86_64.rpm     # Fedora / RHEL / Rocky / Alma
-sudo zypper install ./zenoffice-0.6.76.x86_64.rpm  # openSUSE
+sudo dnf install ./zenoffice-0.6.77.x86_64.rpm     # Fedora / RHEL / Rocky / Alma
+sudo zypper install ./zenoffice-0.6.77.x86_64.rpm  # openSUSE
 ```
 
 The AppImage instead runs in place: install the FUSE 2 runtime

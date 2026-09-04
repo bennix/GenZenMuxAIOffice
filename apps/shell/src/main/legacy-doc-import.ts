@@ -67,7 +67,7 @@ export function sniffWordContainer(path: string): WordContainerKind {
   } catch {
     return 'unknown'
   }
-  let bytesRead = 0
+  let bytesRead: number
   try {
     bytesRead = readSync(descriptor, head, 0, head.length, 0)
   } finally {

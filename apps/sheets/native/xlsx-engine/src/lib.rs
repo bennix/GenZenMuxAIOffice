@@ -1123,7 +1123,9 @@ fn read_sheet_dimensions(
                 }
             }
             Event::Start(element)
-                if element.local_name().as_ref() == b"sheetData" && dimensions.is_some() =>
+                if element.local_name().as_ref() == b"sheetData"
+                    && dimensions.is_some()
+                    && dimensions != Some((1, 1)) =>
             {
                 let (row_count, column_count) = dimensions.unwrap_or((1, 1));
                 return Ok(SheetDimensions {
@@ -1148,8 +1150,16 @@ fn read_sheet_dimensions(
                 }
             }
             Event::Eof => {
-                let (row_count, column_count) =
-                    dimensions.unwrap_or((maximum_row + 1, maximum_column + 1));
+                // A surprising number of third-party producers leave the
+                // default `dimension ref="A1"` in place after populating the
+                // worksheet. Excel repairs that stale hint on open, but using
+                // it literally makes a streamed viewer appear blank. A1 is
+                // cheap to verify, so scan such sheets and expand the extent
+                // to the cells actually present. Keep the fast metadata-only
+                // path above for normal (and potentially very large) files.
+                let (declared_rows, declared_columns) = dimensions.unwrap_or((1, 1));
+                let row_count = declared_rows.max(maximum_row + 1);
+                let column_count = declared_columns.max(maximum_column + 1);
                 return Ok(SheetDimensions {
                     row_count,
                     column_count,
@@ -2711,6 +2721,38 @@ mod tests {
         let metadata = sessions.open(&path).unwrap();
         assert_eq!(metadata.sheets[0].default_column_width, None);
         assert_eq!(metadata.sheets[0].default_row_height, Some(12.75));
+    }
+
+    /// Some third-party writers populate cells but leave the template's
+    /// `dimension ref="A1"` unchanged. The visible extent must come from the
+    /// real cells in that case, matching Excel's repair-on-open behaviour.
+    #[test]
+    fn repairs_stale_a1_dimension_from_populated_cells() {
+        let (_dir, path) = open_fixture(&[
+            (
+                "xl/workbook.xml",
+                r#"<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Attendance" sheetId="1" r:id="rId1"/></sheets></workbook>"#,
+            ),
+            (
+                "xl/_rels/workbook.xml.rels",
+                r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>"#,
+            ),
+            (
+                "xl/worksheets/sheet1.xml",
+                r#"<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="A1"/>
+<cols><col min="1" max="24" width="3" customWidth="1"/></cols>
+<sheetData>
+<row r="1"><c r="A1" t="inlineStr"><is><t>Attendance</t></is></c></row>
+<row r="12"><c r="X12"><v>1</v></c></row>
+</sheetData>
+</worksheet>"#,
+            ),
+        ]);
+        let mut sessions = WorkbookSessions::new();
+        let metadata = sessions.open(&path).unwrap();
+        assert_eq!(metadata.sheets[0].row_count, 12);
+        assert_eq!(metadata.sheets[0].column_count, 24);
     }
 
     /// Shared-formula followers (`<f t="shared" si="N"/>`) must

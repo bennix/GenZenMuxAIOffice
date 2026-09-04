@@ -94,7 +94,8 @@ export function installLibreOffice(
     let output = ''
     let settled = false
     const append = (chunk: Buffer): void => {
-      const text = chunk.toString('utf8').replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '')
+      const ansiEscapeSequence = new RegExp(String.raw`\u001b\[[0-?]*[ -/]*[@-~]`, 'g')
+      const text = chunk.toString('utf8').replace(ansiEscapeSequence, '')
       output = `${output}${text}`.slice(-MAX_OUTPUT_CHARS)
       const messages = text
         .split(/[\r\n]+/)

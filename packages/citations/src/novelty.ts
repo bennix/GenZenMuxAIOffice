@@ -22,7 +22,7 @@ export function parseNoveltyQueries(raw: string, fallback: string): string[] {
     .replace(/^```(?:json)?\s*/i, '')
     .replace(/\s*```$/i, '')
     .trim()
-  let values: unknown = null
+  let values: unknown
   try {
     const parsed = JSON.parse(unfenced) as unknown
     values = Array.isArray(parsed)

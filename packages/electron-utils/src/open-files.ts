@@ -27,7 +27,7 @@ export function atMentionQuery(
 ): { start: number; query: string } | null {
   if (cursor < 0 || cursor > value.length) return null
   const before = value.slice(0, cursor)
-  const match = /(?:^|[\s(\[{])@([^\s@]*)$/u.exec(before)
+  const match = /(?:^|[\s([{])@([^\s@]*)$/u.exec(before)
   if (!match) return null
   const query = match[1] ?? ''
   if (/^connect\b/iu.test(query)) return null
