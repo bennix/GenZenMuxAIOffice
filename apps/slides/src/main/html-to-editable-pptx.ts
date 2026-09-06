@@ -26,6 +26,8 @@ export interface EditableHtmlNode {
   charSpacing?: number
   src?: string
   objectFit?: 'cover' | 'contain' | 'fill'
+  /** Explicit CSS layer, when supplied by the generated page. */
+  zIndex?: number
 }
 
 export interface EditableHtmlPage {
@@ -45,6 +47,47 @@ const asHex = (value: string | undefined, fallback: string): string => {
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value))
 
+/** PPTX paints later objects on top. Repair implicit card/background ordering
+ * without sorting all objects by size (which breaks charts and image overlays).
+ * Explicit CSS layers take precedence; within a layer only containing filled
+ * shapes are moved behind their contents. Unrelated objects retain DOM order.
+ */
+export function orderEditableHtmlNodes(nodes: EditableHtmlNode[]): EditableHtmlNode[] {
+  const layer = (node: EditableHtmlNode) => (Number.isFinite(node.zIndex) ? node.zIndex! : 0)
+  const sorted = [...nodes].sort((a, b) => layer(a) - layer(b))
+  const result: EditableHtmlNode[] = []
+  const emitted = new Set<EditableHtmlNode>()
+  const contains = (back: EditableHtmlNode, front: EditableHtmlNode) => {
+    if (back.kind !== 'shape' || !back.fill || (back.fillTransparency ?? 0) >= 99) return false
+    if (layer(back) !== layer(front)) return false
+    if (
+      ![back.x, back.y, back.w, back.h, front.x, front.y, front.w, front.h].every(Number.isFinite)
+    )
+      return false
+    // Strictly larger area makes containment acyclic; equal-sized overlays
+    // keep their original order. A same-sized text box still belongs on top.
+    const larger = back.w * back.h > front.w * front.h
+    if (!larger && !(front.kind === 'text' && back.w === front.w && back.h === front.h))
+      return false
+    return (
+      back.x <= front.x + 1 &&
+      back.y <= front.y + 1 &&
+      back.x + back.w >= front.x + front.w - 1 &&
+      back.y + back.h >= front.y + front.h - 1
+    )
+  }
+  const emit = (node: EditableHtmlNode) => {
+    if (emitted.has(node)) return
+    emitted.add(node)
+    for (const background of sorted) {
+      if (background !== node && contains(background, node)) emit(background)
+    }
+    result.push(node)
+  }
+  for (const node of sorted) emit(node)
+  return result
+}
+
 /** Convert one browser-laid-out HTML page into native PowerPoint objects. */
 export async function buildEditableSlidePptx(
   page: EditableHtmlPage,
@@ -63,7 +106,7 @@ export async function buildEditableSlidePptx(
   const sy = 7.5 / height
   const imageFailures: string[] = []
 
-  for (const node of page.nodes.slice(0, 500)) {
+  for (const node of orderEditableHtmlNodes(page.nodes.slice(0, 500))) {
     if (![node.x, node.y, node.w, node.h].every(Number.isFinite)) continue
     const x = clamp(node.x, 0, width) * sx
     const y = clamp(node.y, 0, height) * sy

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { openPptx } from '@genoffice/pptx-engine'
-import { buildEditableSlidePptx, type EditableHtmlPage } from '../src/main/html-to-editable-pptx'
+import {
+  buildEditableSlidePptx,
+  orderEditableHtmlNodes,
+  type EditableHtmlPage,
+  type EditableHtmlNode,
+} from '../src/main/html-to-editable-pptx'
 
 const RED_DOT =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
@@ -37,6 +42,96 @@ const PAGE: EditableHtmlPage = {
 }
 
 describe('HTML to editable PPTX conversion', () => {
+  it('places late backgrounds and nested cards behind text and images in the saved PPTX', async () => {
+    const text: EditableHtmlNode = {
+      kind: 'text',
+      x: 120,
+      y: 120,
+      w: 180,
+      h: 60,
+      text: 'Visible label',
+    }
+    const image: EditableHtmlNode = { kind: 'image', x: 120, y: 220, w: 100, h: 100, src: 'photo' }
+    const card: EditableHtmlNode = { kind: 'shape', x: 80, y: 80, w: 500, h: 500, fill: 'FFFFFF' }
+    const background: EditableHtmlNode = {
+      kind: 'shape',
+      x: 0,
+      y: 0,
+      w: 1280,
+      h: 720,
+      fill: '112233',
+    }
+    const nodes = [text, image, card, background]
+    expect(orderEditableHtmlNodes(nodes)).toEqual([background, card, text, image])
+    expect(nodes).toEqual([text, image, card, background])
+    const result = await buildEditableSlidePptx({ ...PAGE, nodes }, async () => RED_DOT)
+    const opened = await openPptx(result.bytes)
+    const elements = opened.deck.slides[0]!.elements
+    expect(elements).toHaveLength(4)
+    expect(elements[0]!.transform.offset.cx).toBeGreaterThan(elements[1]!.transform.offset.cx)
+    expect(
+      elements[2]!.type === 'text' || elements[2]!.type === 'shape'
+        ? Boolean(elements[2]!.text)
+        : false,
+    ).toBe(true)
+    expect(elements[3]!.type).toBe('picture')
+  })
+
+  it('respects explicit layers, image overlays and unrelated object order', () => {
+    const photo: EditableHtmlNode = {
+      kind: 'image',
+      x: 0,
+      y: 0,
+      w: 1280,
+      h: 720,
+      src: 'photo',
+      zIndex: -2,
+    }
+    const overlay: EditableHtmlNode = {
+      kind: 'shape',
+      x: 0,
+      y: 0,
+      w: 1280,
+      h: 720,
+      fill: '000000',
+      fillTransparency: 50,
+      zIndex: -1,
+    }
+    const label: EditableHtmlNode = {
+      kind: 'text',
+      x: 100,
+      y: 100,
+      w: 400,
+      h: 80,
+      text: 'Title',
+      zIndex: 1,
+    }
+    expect(orderEditableHtmlNodes([label, overlay, photo])).toEqual([photo, overlay, label])
+    const outline: EditableHtmlNode = {
+      kind: 'shape',
+      x: 0,
+      y: 0,
+      w: 1280,
+      h: 720,
+      lineColor: '000000',
+    }
+    expect(
+      orderEditableHtmlNodes([label, outline].map((n) => ({ ...n, zIndex: undefined }))),
+    ).toEqual([
+      { ...label, zIndex: undefined },
+      { ...outline, zIndex: undefined },
+    ])
+    expect(
+      orderEditableHtmlNodes([
+        { ...photo, zIndex: 0 },
+        { ...overlay, zIndex: 0 },
+      ]),
+    ).toEqual([
+      { ...photo, zIndex: 0 },
+      { ...overlay, zIndex: 0 },
+    ])
+  })
+
   it('writes text, shapes, and photos as separate PowerPoint objects', async () => {
     const result = await buildEditableSlidePptx(PAGE, async () => RED_DOT)
     const opened = await openPptx(result.bytes)

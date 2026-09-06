@@ -1537,6 +1537,7 @@ export function registerSlidesIpc(): void {
               const nodes = [];
               for (const el of elements) {
                 if (nodes.length >= 500) break;
+                const firstNode = nodes.length;
                 const s = getComputedStyle(el);
                 const r = el.getBoundingClientRect();
                 const kind = el.getAttribute('data-pptx-kind');
@@ -1552,17 +1553,20 @@ export function registerSlidesIpc(): void {
                 if (shouldShape) nodes.push({ kind:'shape', x, y, w, h, fill:fill?.hex, fillTransparency:fill?.transparency, lineColor:line?.hex, lineTransparency:line?.transparency, lineWidth, radius:parseFloat(s.borderTopLeftRadius) || 0, opacity:Number(s.opacity) || 1 });
                 if ((kind === 'image' || !kind) && el.tagName === 'IMG') {
                   nodes.push({ kind:'image', x, y, w, h, src:el.currentSrc || el.src, objectFit:['cover','contain','fill'].includes(s.objectFit) ? s.objectFit : 'fill', opacity:Number(s.opacity) || 1 });
+                  for (let i = firstNode; i < nodes.length; i++) nodes[i].zIndex = s.zIndex === 'auto' ? undefined : Number(s.zIndex);
                   continue;
                 }
                 const text = String(el.innerText || '').replace(/\\s+\\n/g, '\\n').trim();
                 const hasSemanticChild = Array.from(el.children).some((child) => semanticText.has(child.tagName) && String(child.innerText || '').trim());
                 const shouldText = kind === 'text' || (!kind && text && (semanticText.has(el.tagName) || el.children.length === 0) && !hasSemanticChild);
+                for (let i = firstNode; i < nodes.length; i++) nodes[i].zIndex = s.zIndex === 'auto' ? undefined : Number(s.zIndex);
                 if (!shouldText || !text) continue;
                 const color = parseColor(s.color);
                 const weight = Number(s.fontWeight) || (s.fontWeight === 'bold' ? 700 : 400);
                 const align = s.textAlign === 'center' ? 'center' : (s.textAlign === 'right' || s.textAlign === 'end' ? 'right' : 'left');
                 const valign = s.display.includes('flex') && s.alignItems === 'center' ? 'middle' : 'top';
                 nodes.push({ kind:'text', x, y, w, h, text:el.tagName === 'LI' && !text.startsWith('•') ? '• ' + text : text, color:color?.hex, fontFace:s.fontFamily.split(',')[0].replace(/["']/g, '').trim(), fontSize:parseFloat(s.fontSize) || 18, bold:weight >= 600, italic:s.fontStyle === 'italic', underline:s.textDecorationLine.includes('underline'), align, valign, lineHeight:parseFloat(s.lineHeight) || undefined, charSpacing:parseFloat(s.letterSpacing) || undefined, opacity:Number(s.opacity) || 1 });
+                nodes[nodes.length - 1].zIndex = s.zIndex === 'auto' ? undefined : Number(s.zIndex);
               }
               return { width: innerWidth, height: innerHeight, background: (bg && bg.transparency < 100 ? bg.hex : htmlBg?.hex) || 'FFFFFF', nodes };
             })()`,
