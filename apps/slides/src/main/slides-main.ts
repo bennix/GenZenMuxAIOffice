@@ -20,6 +20,7 @@ import {
 } from 'electron'
 import type { WebContents } from 'electron'
 import { execFile } from 'node:child_process'
+import { loadPrintHtml } from './print-html'
 import { copyFile, readFile, writeFile, rm, stat, mkdir, open } from 'node:fs/promises'
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
@@ -3834,8 +3835,9 @@ html, body { margin: 0; padding: 0; }
       .map((b64) => `<div class="page"><img src="data:image/png;base64,${b64}"></div>`)
       .join('')}</body></html>`
     const win = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+    let cleanupPrintHtml: (() => Promise<void>) | undefined
     try {
-      await win.loadURL('data:text/html;base64,' + Buffer.from(html, 'utf8').toString('base64'))
+      cleanupPrintHtml = await loadPrintHtml(win, html)
       // Wait for fonts and all images to decode before printing, avoiding blank pages
       await win.webContents.executeJavaScript(
         'Promise.all([document.fonts.ready, ...Array.from(document.images).map((i) => i.decode().catch(() => {}))])',
@@ -3853,7 +3855,8 @@ html, body { margin: 0; padding: 0; }
     } catch (err) {
       return { ok: false, error: String(err) }
     } finally {
-      win.destroy()
+      if (!win.isDestroyed()) win.destroy()
+      await cleanupPrintHtml?.()
     }
   })
 
@@ -3940,8 +3943,9 @@ html, body { margin: 0; padding: 0; font-family: -apple-system, 'Segoe UI', sans
           : {}),
         webPreferences: { sandbox: true },
       })
+      let cleanupPrintHtml: (() => Promise<void>) | undefined
       try {
-        await win.loadURL('data:text/html;base64,' + Buffer.from(html, 'utf8').toString('base64'))
+        cleanupPrintHtml = await loadPrintHtml(win, html)
         await win.webContents.executeJavaScript(
           'Promise.all([document.fonts.ready, ...Array.from(document.images).map((i) => i.decode().catch(() => {}))])',
           true,
@@ -3967,6 +3971,7 @@ html, body { margin: 0; padding: 0; font-family: -apple-system, 'Segoe UI', sans
         return { ok: false, error: String(err) }
       } finally {
         if (!win.isDestroyed()) win.destroy()
+        await cleanupPrintHtml?.()
       }
     },
   )
