@@ -5,6 +5,7 @@
  * path (proving fidelity). Element-level patch regeneration is left for Phase 3.
  */
 import JSZip from 'jszip'
+import { repairGeneratedNamespaces } from './save-namespaces'
 import { PackageArchive, relsPathFor, resolveTarget } from './zip'
 import { parseTheme, type Theme } from './theme'
 import { parseSlide, parseDecorations, sliceGroupChildXmls, type ParseContext } from './parse'
@@ -532,7 +533,11 @@ export async function savePptxToFile(opened: OpenedPptx, filePath: string): Prom
     type: 'nodebuffer',
     compression: 'DEFLATE',
     compressionOptions: { level: 6 },
-    streamFiles: true,
+    // Buffer each entry so its local ZIP header contains CRC and sizes. Data
+    // descriptors (streamFiles:true) make these PPTX files unreadable in some
+    // Office consumers, including LibreOffice. The archive still streams to
+    // disk; this only buffers one entry, not the entire presentation.
+    streamFiles: false,
   })
   await pipeline(source, createWriteStream(filePath))
 }
@@ -603,7 +608,9 @@ function buildZip(opened: OpenedPptx): JSZip {
       continue
     }
     const ext = path.slice(path.lastIndexOf('.') + 1).toLowerCase()
-    zip.file(path, data, COMPRESSED_EXTENSIONS.has(ext) ? {} : { compression: 'STORE' })
+    const content =
+      ext === 'xml' ? repairGeneratedNamespaces(Buffer.from(data).toString('utf8')) : data
+    zip.file(path, content, COMPRESSED_EXTENSIONS.has(ext) ? {} : { compression: 'STORE' })
   }
   return zip
 }
@@ -619,7 +626,7 @@ export function patchSlideXml(slide: Slide): string {
     if (el.anchor.gapAfter) parts.push(el.anchor.gapAfter)
   }
   parts.push(slide.bodySuffix)
-  return parts.join('')
+  return repairGeneratedNamespaces(parts.join(''))
 }
 
 /** One element's current XML slice (dirty elements patch-regenerated, clean elements original bytes). */

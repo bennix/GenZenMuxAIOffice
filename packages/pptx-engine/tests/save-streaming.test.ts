@@ -11,6 +11,33 @@ const fx = (name: string) => readFileSync(join(here, 'fixtures', name))
 const out = () => join(mkdtempSync(join(tmpdir(), 'save-stream-')), 'out.pptx')
 
 describe('savePptxToFile', () => {
+  it('writes complete local ZIP headers for Office consumers', async () => {
+    const opened = await openPptx(fx('01_standard_business.pptx'))
+    const target = out()
+    await savePptxToFile(opened, target)
+    const bytes = readFileSync(target)
+    let offset = 0
+    let entries = 0
+    // Read local headers independently of JSZip, which tolerates descriptors
+    // that other presentation readers reject.
+    while (bytes.readUInt32LE(offset) === 0x04034b50) {
+      const flags = bytes.readUInt16LE(offset + 6)
+      const size = bytes.readUInt32LE(offset + 18)
+      const nameLength = bytes.readUInt16LE(offset + 26)
+      const extraLength = bytes.readUInt16LE(offset + 28)
+      const name = bytes.toString('utf8', offset + 30, offset + 30 + nameLength)
+      expect(flags & 0x0008, name).toBe(0)
+      if (!name.endsWith('/')) {
+        expect(size, name).toBeGreaterThan(0)
+        expect(bytes.readUInt32LE(offset + 22), name).toBeGreaterThan(0)
+      }
+      offset += 30 + nameLength + extraLength + size
+      entries++
+    }
+    expect(entries).toBeGreaterThan(10)
+    expect(bytes.readUInt32LE(offset)).toBe(0x02014b50)
+  })
+
   it('writes a package that reopens with the same slides as the in-memory save', async () => {
     const opened = await openPptx(fx('01_standard_business.pptx'))
     const target = out()
