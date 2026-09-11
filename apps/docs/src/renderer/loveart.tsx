@@ -10,7 +10,7 @@ import type { DesktopApi } from '../shared/ipc'
 async function start() {
   const host = window.parent as Window & { desktop?: DesktopApi; loveArtHost?: OfficeBridge }
   if (host === window || !host.desktop || !host.loveArtHost)
-    throw new Error('请从 Office 的 AI 生图入口打开 LoveArt。')
+    throw new Error('请从 Office 的 AI 生图入口打开 ArtFlow。')
   window.loveArtOffice = host.loveArtHost
   const settings = await host.desktop.getAiSettings()
   const provider = settings.providers.zenmux

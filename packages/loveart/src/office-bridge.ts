@@ -10,7 +10,7 @@ declare global {
 }
 export async function insertOfficeImage(src: string): Promise<void> {
   const bridge = window.loveArtOffice
-  if (!bridge) throw new Error('请从 Office 打开 LoveArt。')
+  if (!bridge) throw new Error('请从 Office 打开 ArtFlow。')
   let dataUrl = src
   if (/^https?:/.test(src)) {
     const image = await bridge.fetchImage(src)

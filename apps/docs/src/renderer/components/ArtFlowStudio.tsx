@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-export function LoveArtStudio({
+export function ArtFlowStudio({
   editor,
   open,
   onClose,
@@ -32,7 +32,7 @@ export function LoveArtStudio({
       fetchImage: (url) => window.desktop.fetchImage(url),
       insertImage: async (dataUrl) => {
         if (editor.isDestroyed) throw new Error('文档已关闭。')
-        if (!(await insertImageFromDataUrl(editor, dataUrl, 'LoveArt AI 图片')))
+        if (!(await insertImageFromDataUrl(editor, dataUrl, 'ArtFlow AI 图片')))
           throw new Error('图片插入失败，请重试。')
       },
     }
@@ -51,18 +51,18 @@ export function LoveArtStudio({
         className="office-studio"
         role="dialog"
         aria-modal="true"
-        aria-label="LoveArt AI 生图"
+        aria-label="ArtFlow AI 生图"
       >
         <header>
           <div>
-            <strong>LoveArt · AI 生图</strong>
+            <strong>ArtFlow · AI 生图</strong>
             <span>参考图、风格模板与画布创作 · 在图片卡片上选择「插入文档」</span>
           </div>
           <button onClick={onClose} autoFocus>
             返回文档
           </button>
         </header>
-        {ready && <iframe title="LoveArt 创作工作台" src="./loveart.html" />}
+        {ready && <iframe title="ArtFlow 创作工作台" src="./loveart.html" />}
       </section>
     </div>
   )

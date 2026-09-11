@@ -753,7 +753,7 @@ export function InsertTab({
           <button
             className="rb-big"
             disabled={!hasDoc}
-            title="LoveArt AI 生图与图片编辑"
+            title="ArtFlow AI 生图与图片编辑"
             onClick={() => document.dispatchEvent(new Event('zenoffice:open-loveart'))}
           >
             <span className="rb-big-icon">

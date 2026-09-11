@@ -1,4 +1,4 @@
-import { LoveArtStudio } from './LoveArtStudio'
+import { ArtFlowStudio } from './ArtFlowStudio'
 import { GongwenStudio } from './GongwenStudio'
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
@@ -733,13 +733,13 @@ function RibbonInner({
   const { t, lang } = useI18n()
   // The one-click AI actions need text to work on; grey them out on an empty document
   const docEmpty = !hasDoc || fs.docEmpty
-  const [loveArtOpen, setLoveArtOpen] = useState(false)
-  const [loveArtMounted, setLoveArtMounted] = useState(false)
+  const [artFlowOpen, setArtFlowOpen] = useState(false)
+  const [artFlowMounted, setArtFlowMounted] = useState(false)
   const [gongwenOpen, setGongwenOpen] = useState(false)
   useEffect(() => {
     const openArt = () => {
-      setLoveArtMounted(true)
-      setLoveArtOpen(true)
+      setArtFlowMounted(true)
+      setArtFlowOpen(true)
     }
     const openGongwen = () => setGongwenOpen(true)
     document.addEventListener('zenoffice:open-loveart', openArt)
@@ -1512,8 +1512,8 @@ function RibbonInner({
 
   return (
     <div className="ribbon" ref={ribbonRef}>
-      {loveArtMounted && (
-        <LoveArtStudio editor={editor} open={loveArtOpen} onClose={() => setLoveArtOpen(false)} />
+      {artFlowMounted && (
+        <ArtFlowStudio editor={editor} open={artFlowOpen} onClose={() => setArtFlowOpen(false)} />
       )}
       {gongwenOpen && <GongwenStudio editor={editor} onClose={() => setGongwenOpen(false)} />}
       <div

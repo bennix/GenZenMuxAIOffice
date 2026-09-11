@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import JSZip from 'jszip'
 import { launchShell, closeAndSaveVideo, waitForPageWithUrl, screenshotPath } from './helpers'
 
-test('Word embeds LoveArt, inserts an image, and generates a readable gongwen DOCX', async () => {
+test('Word embeds ArtFlow, inserts an image, and generates a readable gongwen DOCX', async () => {
   const launched = await launchShell({
     onboardingSeen: true,
     recordVideo: false,
@@ -60,12 +60,12 @@ test('Word embeds LoveArt, inserts an image, and generates a readable gongwen DO
       )
     })
     await doc.getByRole('button', { name: 'AI 生图', exact: true }).click()
-    const art = doc.frameLocator('iframe[title="LoveArt 创作工作台"]')
+    const art = doc.frameLocator('iframe[title="ArtFlow 创作工作台"]')
     await art.getByRole('button', { name: 'Office 集成测试', exact: true }).click()
     await expect(art.getByRole('button', { name: '插入文档', exact: true })).toBeVisible()
     await art.getByRole('button', { name: '插入文档', exact: true }).click()
     await expect(art.getByRole('status')).toContainText('已插入文档')
-    await doc.screenshot({ path: screenshotPath('word-loveart-studio') })
+    await doc.screenshot({ path: screenshotPath('word-artflow-studio') })
     await doc.getByRole('button', { name: '返回文档', exact: true }).click()
     await expect(doc.locator('.ProseMirror img[src^="data:image/png"]')).toHaveCount(1)
     await doc.getByRole('button', { name: '设计', exact: true }).click()
