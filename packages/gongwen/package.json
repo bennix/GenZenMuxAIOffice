@@ -1,0 +1,19 @@
+{
+  "name": "@genoffice/gongwen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./src/generator.d.ts",
+      "default": "./src/generator.js"
+    }
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

@@ -141,7 +141,7 @@ import { TABS_CHANNELS } from '../shared/tabs-api'
 import { showErrorDialog } from './error-dialog'
 import { normalizeRecentQuery, pageRecentPaths, statExistingPaths } from './recent-files'
 import { TabManager } from './tab-manager'
-import { applyUpdateChannel, initAutoUpdater } from './updater'
+import { applyUpdateChannel, checkForUpdatesNow, initAutoUpdater } from './updater'
 import { isUpdateChannel, type UpdateChannel } from '../shared/update-api'
 
 /**
@@ -2029,6 +2029,8 @@ function registerHomeIpc(): void {
     writeAppSetting(APP_SETTINGS_PATH(), 'updateChannel', channel)
     applyUpdateChannel(channel)
   })
+
+  ipcMain.handle(HOME_CHANNELS.checkForUpdates, () => checkForUpdatesNow(currentUpdateChannel()))
 
   ipcMain.handle(
     HOME_CHANNELS.onboardingSeen,

@@ -135,6 +135,11 @@ export type MenuCommand =
 export type UiTheme = 'light' | 'dark' | 'system'
 
 export interface DesktopApi extends ConnectApi {
+  generateGongwen(request: {
+    markdown: string
+    options: Record<string, string | boolean>
+  }): Promise<{ path?: string; warnings?: string[]; error?: string; canceled?: boolean }>
+
   /** current UI language (persisted by the shell in app-settings.json) */
   getLanguage(): Promise<Lang>
   /** language switched from the shell home page */

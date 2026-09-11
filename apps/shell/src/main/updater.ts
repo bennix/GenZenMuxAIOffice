@@ -4,6 +4,7 @@ import { autoUpdater } from 'electron-updater'
 import type { UpdateInfo } from 'electron-updater'
 import { createI18n, getUiLang, htmlLang } from '@genoffice/i18n'
 import type { UpdateChannel, UpdateUiState, UpdateUiStrings } from '../shared/update-api'
+import type { UpdateCheckResult } from '../shared/home-api'
 import {
   closeUpdateWindow,
   isUpdateWindowOpen,
@@ -334,6 +335,76 @@ const CHANNEL_FEED: Record<UpdateChannel, string> = { stable: 'latest', beta: 'b
 // true once the packaged-run updater is configured; channel switches before
 // that (or in dev runs) must not touch electron-updater
 let updaterActive = false
+
+function versionParts(version: string): number[] {
+  return version
+    .replace(/^v/i, '')
+    .split(/[.-]/)
+    .slice(0, 3)
+    .map((part) => Number.parseInt(part, 10) || 0)
+}
+
+export function isNewerVersion(candidate: string, current: string): boolean {
+  const next = versionParts(candidate)
+  const installed = versionParts(current)
+  for (let index = 0; index < 3; index += 1) {
+    if (next[index] !== installed[index]) return next[index] > installed[index]
+  }
+  return false
+}
+
+export async function checkForUpdatesNow(channel: UpdateChannel): Promise<UpdateCheckResult> {
+  const currentVersion = app.getVersion()
+  try {
+    if (updaterActive) {
+      const result = await autoUpdater.checkForUpdates()
+      const latestVersion = result?.updateInfo?.version
+      if (!latestVersion)
+        return { status: 'current', currentVersion, latestVersion: currentVersion }
+      return {
+        status: isNewerVersion(latestVersion, currentVersion) ? 'available' : 'current',
+        currentVersion,
+        latestVersion,
+      }
+    }
+
+    // DEB/RPM and development runs cannot self-update, but About still performs
+    // a useful release check and reports whether a manual download is available.
+    const endpoint =
+      channel === 'beta'
+        ? 'https://api.github.com/repos/bennix/GenZenMuxAIOffice/releases?per_page=20'
+        : 'https://api.github.com/repos/bennix/GenZenMuxAIOffice/releases/latest'
+    const response = await fetch(endpoint, {
+      headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'ZenOffice-Updater' },
+    })
+    if (!response.ok) throw new Error(`GitHub returned ${response.status}`)
+    const payload: unknown = await response.json()
+    const release = Array.isArray(payload)
+      ? payload.find(
+          (item) => item && typeof item === 'object' && !(item as { draft?: boolean }).draft,
+        )
+      : payload
+    const tag =
+      release &&
+      typeof release === 'object' &&
+      typeof (release as { tag_name?: unknown }).tag_name === 'string'
+        ? (release as { tag_name: string }).tag_name
+        : ''
+    if (!tag) throw new Error('Latest release did not include a version tag')
+    return {
+      status: isNewerVersion(tag, currentVersion) ? 'available' : 'current',
+      currentVersion,
+      latestVersion: tag.replace(/^v/i, ''),
+    }
+  } catch (error) {
+    log('manual check failed:', error instanceof Error ? error.message : error)
+    return {
+      status: 'error',
+      currentVersion,
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+}
 
 function log(...args: unknown[]): void {
   console.log('[updater]', ...args)

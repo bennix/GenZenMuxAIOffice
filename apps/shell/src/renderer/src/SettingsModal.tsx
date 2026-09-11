@@ -7,6 +7,7 @@ import type {
   AccountStatus,
   KnowledgeMemoryItem,
   KnowledgeSettingsItem,
+  UpdateCheckResult,
   UiTheme,
 } from '../../shared/home-api'
 import { removeActiveModel, resolveModelOptions } from './model-options'
@@ -166,6 +167,9 @@ export function SettingsModal({
   const [saveDir, setSaveDir] = useState('')
   const [channel, setChannel] = useState<'stable' | 'beta'>('stable')
   const [appVersion, setAppVersion] = useState('')
+  const [updateCheck, setUpdateCheck] = useState<
+    UpdateCheckResult | { status: 'checking'; currentVersion: string }
+  >({ status: 'checking', currentVersion: '' })
   const [aiSettings, setAiSettings] = useState<AiSettings | null>(null)
   const [apiKey, setApiKey] = useState('')
   const [baseUrl, setBaseUrl] = useState(ZENMUX_BASE_URL)
@@ -252,6 +256,25 @@ export function SettingsModal({
     void window.aiOffice.pickDefaultSaveDir?.().then((dir) => {
       if (dir) setSaveDir(dir)
     })
+  }
+
+  const runUpdateCheck = () => {
+    setUpdateCheck({ status: 'checking', currentVersion: appVersion })
+    void window.aiOffice
+      .checkForUpdates()
+      .then(setUpdateCheck)
+      .catch((error) =>
+        setUpdateCheck({
+          status: 'error',
+          currentVersion: appVersion,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      )
+  }
+
+  const selectSection = (next: SectionId) => {
+    setSection(next)
+    if (next === 'about') runUpdateCheck()
   }
 
   const loggedIn = status?.loggedIn ?? false
@@ -362,7 +385,7 @@ export function SettingsModal({
                 key={s.id}
                 className={`set-nav-item${section === s.id ? ' active' : ''}`}
                 aria-current={section === s.id}
-                onClick={() => setSection(s.id)}
+                onClick={() => selectSection(s.id)}
               >
                 <SectionIcon id={s.id} />
                 {s.labelKey ? t(s.labelKey) : s.id === 'knowledge' ? knowledgeLabel : aiLabel}
@@ -940,6 +963,54 @@ export function SettingsModal({
               <>
                 <h3 className="set-pane-title">{t('setSecAbout')}</h3>
                 <Field label={t('versionLabel')} value={appVersion || '—'} />
+                <div
+                  className={`set-update-check ${updateCheck.status}`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="set-update-check-dot" aria-hidden="true" />
+                  <div>
+                    <strong>
+                      {updateCheck.status === 'checking'
+                        ? isChinese
+                          ? '正在检查更新…'
+                          : 'Checking for updates…'
+                        : updateCheck.status === 'available'
+                          ? isChinese
+                            ? `发现新版本 v${updateCheck.latestVersion}`
+                            : `Version ${updateCheck.latestVersion} is available`
+                          : updateCheck.status === 'current'
+                            ? isChinese
+                              ? '当前已是最新版本'
+                              : 'ZenOffice is up to date'
+                            : isChinese
+                              ? '暂时无法完成更新检查'
+                              : 'Could not check for updates'}
+                    </strong>
+                    <p>
+                      {updateCheck.status === 'available'
+                        ? isChinese
+                          ? '支持自动更新的平台会打开下载与安装窗口；Linux 安装包可前往下载页手动更新。'
+                          : 'Automatic-update platforms will open the download window; Linux packages can be updated from the download page.'
+                        : updateCheck.status === 'checking'
+                          ? isChinese
+                            ? '正在连接 ZenOffice 发布服务。'
+                            : 'Contacting the ZenOffice release service.'
+                          : updateCheck.status === 'error'
+                            ? isChinese
+                              ? '请检查网络后重试。'
+                              : 'Check your network connection and try again.'
+                            : isChinese
+                              ? `已检查发布通道：${channel === 'beta' ? 'Beta' : '稳定版'}`
+                              : `Checked the ${channel === 'beta' ? 'Beta' : 'Stable'} channel.`}
+                    </p>
+                  </div>
+                  {updateCheck.status !== 'checking' && (
+                    <button className="set-btn" onClick={runUpdateCheck}>
+                      {isChinese ? '重新检查' : 'Check again'}
+                    </button>
+                  )}
+                </div>
                 <div className="set-about-credit">
                   <strong>AI 适配与修改 / AI adaptation and modifications</strong>
                   <p>
@@ -964,6 +1035,8 @@ export function SettingsModal({
                       const next = e.target.value === 'beta' ? 'beta' : 'stable'
                       setChannel(next)
                       void window.aiOffice.setUpdateChannel(next)
+                      setUpdateCheck({ status: 'checking', currentVersion: appVersion })
+                      void window.aiOffice.checkForUpdates().then(setUpdateCheck)
                     }}
                   >
                     {CHANNEL_OPTIONS.map((opt) => (

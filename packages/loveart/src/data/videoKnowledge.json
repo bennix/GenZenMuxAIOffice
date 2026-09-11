@@ -1,0 +1,143 @@
+[
+  {
+    "id": "world-model-control",
+    "chapter": "Chapter 1",
+    "title": "General World Model Control Grammar",
+    "keywords": [
+      "world",
+      "model",
+      "simulation",
+      "physical",
+      "director",
+      "moving",
+      "transform",
+      "motion"
+    ],
+    "summary": "Treat video prompting as directing a simulated world rather than describing a static frame.",
+    "guidance": "Name the subject, physical state, motion cause, environment, camera intent, light behavior, and emotional pressure."
+  },
+  {
+    "id": "four-step-method",
+    "chapter": "Chapter 3",
+    "title": "Four-Step Prompt Method",
+    "keywords": ["setting", "action", "camera", "tone", "prompt", "scene", "emotion"],
+    "summary": "A complete cinematic prompt covers setting, action, camera, and tone.",
+    "guidance": "Specify where and when the scene occurs, who or what moves, how the camera observes it, and what the viewer should feel."
+  },
+  {
+    "id": "camera-intent",
+    "chapter": "Chapter 3",
+    "title": "Camera Intent",
+    "keywords": [
+      "camera",
+      "shot",
+      "tracking",
+      "push-in",
+      "push",
+      "angle",
+      "lens",
+      "close-up",
+      "wide",
+      "glide",
+      "glides",
+      "low"
+    ],
+    "summary": "The model needs camera intent, not only subject description.",
+    "guidance": "Specify shot size, angle, trajectory, speed, focal feeling, and the emotional reason for the camera distance."
+  },
+  {
+    "id": "lighting-material",
+    "chapter": "Chapter 3",
+    "title": "Lighting and Material Behavior",
+    "keywords": [
+      "light",
+      "lighting",
+      "warm",
+      "cold",
+      "temperature",
+      "reflection",
+      "contrast",
+      "material",
+      "shadow",
+      "glow"
+    ],
+    "summary": "Light words guide mood, surface response, and visual realism.",
+    "guidance": "Describe the light source, temperature, contrast, reflections, shadows, and how materials react as motion unfolds."
+  },
+  {
+    "id": "temporal-rhythm",
+    "chapter": "Chapter 1",
+    "title": "Temporal Rhythm",
+    "keywords": [
+      "rhythm",
+      "timing",
+      "duration",
+      "beat",
+      "slow",
+      "fast",
+      "linger",
+      "second",
+      "final",
+      "transformation"
+    ],
+    "summary": "Video prompts should define the moment-by-moment rhythm of change.",
+    "guidance": "Structure the clip with an opening beat, motion or transformation beat, lingering beat, and final visual state."
+  },
+  {
+    "id": "reference-continuity",
+    "chapter": "Chapter 2",
+    "title": "Reference Continuity",
+    "keywords": [
+      "reference",
+      "preserve",
+      "same",
+      "unchanged",
+      "identity",
+      "anchor",
+      "image",
+      "video",
+      "edit",
+      "delta"
+    ],
+    "summary": "References should anchor identity, style, motion, scene structure, or timing.",
+    "guidance": "State what must be preserved from the reference and what may change. For edits, name only the delta and keep everything else stable."
+  },
+  {
+    "id": "physical-causality",
+    "chapter": "Chapter 1",
+    "title": "Physical Causality and Motion",
+    "keywords": [
+      "motion",
+      "moves",
+      "drift",
+      "drifts",
+      "collide",
+      "break",
+      "dissolve",
+      "fluid",
+      "fabric",
+      "wind",
+      "causal",
+      "physics"
+    ],
+    "summary": "Motion is stronger when the prompt explains cause, direction, speed, and consequence.",
+    "guidance": "Write verbs as physical instructions: what initiates movement, where it travels, how fast it changes, and what visible consequence remains."
+  },
+  {
+    "id": "conflict-control",
+    "chapter": "Chapter 2",
+    "title": "Conflict Control",
+    "keywords": [
+      "conflict",
+      "vague",
+      "broad",
+      "many",
+      "overload",
+      "troubleshoot",
+      "inconsistent",
+      "ambiguous"
+    ],
+    "summary": "Too many references, broad edit prompts, or vague motion can cause unwanted changes.",
+    "guidance": "Use fewer controlling ideas, assign each reference a clear role, and avoid contradictory style, camera, timing, or subject instructions."
+  }
+]

@@ -84,6 +84,7 @@ const api: DesktopApi = {
     ipcRenderer.invoke('docs:save-merged-pdf', defaultName, base64Parts, outPath),
   exportMarkdown: (defaultName: string, text: string) =>
     ipcRenderer.invoke('docs:export-markdown', defaultName, text),
+  generateGongwen: (request) => ipcRenderer.invoke('docs:generate-gongwen', request),
   getAiSettings: () => ipcRenderer.invoke('ai:get-settings'),
   setAiSettings: (settings: AiSettings) => ipcRenderer.invoke('ai:set-settings', settings),
   aiChat: (request: AiChatRequest) => ipcRenderer.invoke('ai:chat', request),

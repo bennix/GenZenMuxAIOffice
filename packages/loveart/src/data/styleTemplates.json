@@ -1,0 +1,674 @@
+[
+  {
+    "slug": "acid-lime-3d-streetwear-type-poster-style",
+    "name": "Acid Lime 3D Streetwear Type Poster",
+    "summary": "A glossy C4D streetwear campaign poster system built from pale studio space, oversized black block typography, acid-lime marker strokes, sticker badges, fashion-tool props, low wide-angle character staging, and clean synthetic product lighting.",
+    "category": "Glossy C4D youth-fashion poster, streetwear product campaign, acid-lime type-and-avatar social ad.",
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main stylized 3D character, mascot, object, or group"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "main staged action or pose"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "object, product, tool, gadget, fashion prop, or campaign item"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "studio set, pop-up floor, showroom, workbench, or event setting"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "secondary props, boxes, stickers, tags, labels, fabric, tools, or small scene details"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "large replacement headline or graphic type"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "short supporting tag, subtitle, or microcopy"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "sticker icon, warning mark, smiley, barcode, loop, star, or separator"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "wardrobe, styling, material, character treatment, or product surface direction"
+      },
+      {
+        "key": "STYLE_FIDELITY_ANCHORS",
+        "hint": "observable style traits that must remain visible"
+      },
+      {
+        "key": "SOURCE_CONTENT_TO_AVOID",
+        "hint": "literal source content that generated samples must not recreate"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 or 16:9"
+      }
+    ],
+    "promptTemplate": "Create a {ASPECT_RATIO} finished raster image in the Acid Lime 3D Streetwear Type Poster Style. Subject: {SUBJECT}. Action: {SUBJECT_ACTION}. Prop/Product: {PRODUCT_OR_PROP}. Location: {LOCATION}. Background elements: {BACKGROUND_ELEMENTS}. Main text: {MAIN_TEXT}. Secondary text: {SECONDARY_TEXT}. Accent symbol: {ACCENT_SYMBOL}. Wardrobe/styling: {WARDROBE_STYLE}. Style fidelity anchors: {STYLE_FIDELITY_ANCHORS}. Source content to avoid: {SOURCE_CONTENT_TO_AVOID}. Apply these style rules: pale cool-gray or off-white studio floor and wall, one huge mass of deep black condensed block headline typography, acid-lime marker scribbles and underlines crossing the type, glossy C4D toy-like 3D character or product rendering, low wide-angle front three-quarter perspective, oversized foreground prop or footwear-scale object near the lens, tactile fashion props, stacked boxes or bags, chrome and black rubber surfaces, soft textile weave, semi-translucent acrylic details, controlled sticker-badge clusters, warning triangles, barcode strips, smiley dots, scalloped seals, tiny black tags, small hot pink and yellow accents, clean high-key commercial studio lighting, soft shadows, crisp specular highlights, polished high-resolution poster finish. For 9:16, stack the black headline above or beside the central subject and crop a foreground prop along the lower edge. For 16:9, place the headline as a left-heavy type block and stage the 3D subject cluster on the right with lime accents bridging the center. Important content rule: match the visual style first, then change the source content completely with a new subject, new action, new prop, new location, new headline, new microcopy, and no copied brand identity.",
+    "negativePrompt": "watermark, username, QR code, app logo, platform logo, real brand mark, creator signature, source platform name, source handle, source Chinese headline, source carousel counter, white-haired seated woman, sunglasses and headphones combination from the source, makeup compact, lipstick, folding chair, crossed-leg pose, green crop top, gray flared pants, black platform shoes copied from source, original beauty-app premise, copied sticker placements, exact barcode layout, exact warning triangle placement, flat vector art, anime cel shading, photorealistic fashion photography, grunge zine collage, watercolor, dark sci-fi, muted palette, minimalist product shot, unreadable typography, long text blocks, low-resolution render",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/acid-lime-3d-streetwear-type-poster-style/preview-16x9.jpg"
+  },
+  {
+    "slug": "bold-anime-reaction-thumbnail-style",
+    "name": "Bold Anime Reaction Thumbnail",
+    "summary": "A high-impact anime web-thumbnail system with oversized reaction characters, bold yellow headline typography, hard black shadows, split-screen framing, a smaller glowing action insert, and clean cel-shaded illustration.",
+    "category": "A high-impact anime web-thumbnail system with oversized reaction characters, bold yellow headline typography, hard black shadows, split-screen framing, a smaller glowing action insert, and clean cel-shaded illustration.",
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main adult anime subject or paired reaction subjects"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "surprised, amazed, competitive, or discovery-driven action"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "object, product, tool, device, food, game cabinet, package, plant, or other prop"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "clean indoor or semi-technical setting with simple background planes"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "windows, panels, cabinets, screens, glow clouds, motion puffs, framed partitions, or soft blue depth elements"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "short uppercase thumbnail headline"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "optional small callout or repeated supporting label"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "small yellow arrow, burst, glow puff, or outlined callout marker"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "bright modern anime wardrobe, fully clothed, non-sexual, readable silhouette"
+      },
+      {
+        "key": "STYLE_FIDELITY_ANCHORS",
+        "hint": "dense anime thumbnail, giant yellow-black headline, large cropped reaction characters, smaller central glowing reveal, crisp cel shading, blue/cyan background, warm accents, strong black outlines, high-contrast social thumbnail"
+      },
+      {
+        "key": "SOURCE_CONTENT_TO_AVOID",
+        "hint": "source characters, shower or bathroom setup, towel or exposed-body reveal, exact source headline, exact poses, sexualized framing, watermark, platform UI, logo, or original story premise"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 or 16:9"
+      },
+      {
+        "key": "NEGATIVE_PROMPT",
+        "hint": "negative prompt constraints copied from the top-level negative_prompt field"
+      }
+    ],
+    "promptTemplate": "Create a {ASPECT_RATIO} image in the \"Bold Anime Reaction Thumbnail Style\" visual style.\n\nSubject: {SUBJECT}\nAction: {SUBJECT_ACTION}\nProp/Product: {PRODUCT_OR_PROP}\nLocation: {LOCATION}\nBackground: {BACKGROUND_ELEMENTS}\nMain text: {MAIN_TEXT}\nSecondary text: {SECONDARY_TEXT}\nAccent symbol: {ACCENT_SYMBOL}\nWardrobe/styling: {WARDROBE_STYLE}\nStyle fidelity anchors: {STYLE_FIDELITY_ANCHORS}\nSource content to avoid: {SOURCE_CONTENT_TO_AVOID}\n\nApply these style rules:\n- Build a dense anime web-thumbnail composition with oversized reaction characters on the outer edges and a smaller central discovery scene.\n- Use clean glossy cel-shaded anime rendering, crisp black line art, smooth gradients, and bright commercial lighting.\n- Put a huge uppercase yellow headline with thick black outline and hard drop shadow near the top.\n- Use cool blue/cyan backgrounds, warm character colors, high-contrast black outlines, and a small yellow arrow or glow marker.\n- Keep the scene fully clothed and non-sexual. Change the source subject, location, prop, action, text, and story premise.\n\nAvoid:\n- {NEGATIVE_PROMPT}\n\nImportant content rule: match the reference style first, then change the source content. Use new subjects, new scene details, new props or products, and new text, while preserving the style fidelity anchors.",
+    "negativePrompt": "source characters, shower scene, bathroom, towels, exposed-body reveal, sexualized anatomy, cleavage focus, underwear focus, exact source headline, watermark, username, QR code, logo, platform UI, realistic photo, 3D render, painterly concept art, low contrast text, small unreadable typography, dark moody palette, horror gore, explicit content, minors",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/bold-anime-reaction-thumbnail-style/preview-16x9.jpg"
+  },
+  {
+    "slug": "electric-blue-silhouette-product-launch-style",
+    "name": "Electric Blue Silhouette Product Launch",
+    "summary": "A sparse premium consumer-tech launch poster style built from black negative space, a centered product silhouette, electric-blue rim lighting, a glowing horizontal platform, soft reflection, giant cropped blue background typography, and clean white announcement copy.",
+    "category": "minimal dark consumer-electronics launch poster, blue silhouette product teaser, premium social product announcement",
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main product, object, or technology category"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "how the object is staged or presented"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "specific object, product, or prop shape"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "minimal stage, tabletop, or void-like setting"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "secondary atmospheric details and background type behavior"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "main headline or giant background word"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "small launch copy or supporting text"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "tiny status light, separator, or minimal decorative mark"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "styling direction for any visible human or tactile element"
+      },
+      {
+        "key": "STYLE_FIDELITY_ANCHORS",
+        "hint": "observable style traits that must remain visible"
+      },
+      {
+        "key": "SOURCE_CONTENT_TO_AVOID",
+        "hint": "literal source content that generated samples must not recreate"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 or 16:9"
+      }
+    ],
+    "promptTemplate": "Create a {ASPECT_RATIO} premium dark consumer-tech launch poster in an electric-blue silhouette style. Feature {SUBJECT} {SUBJECT_ACTION}, with {PRODUCT_OR_PROP} staged in {LOCATION}. Add {BACKGROUND_ELEMENTS}. Preserve these style anchors: {STYLE_FIDELITY_ANCHORS}. Avoid this source content: {SOURCE_CONTENT_TO_AVOID}. Composition: one centered brandless product silhouette, large black negative space, a glowing electric-blue horizontal platform, blue floor reflection beneath the object, giant cropped blue geometric sans-serif background typography reading \"{MAIN_TEXT}\" behind the product, clean white lower launch copy using \"{SECONDARY_TEXT}\", and a tiny minimal accent mark or status light \"{ACCENT_SYMBOL}\". Lighting: low-key black stage, cyan-blue rim light, glossy edge highlights, soft bloom, haze, deep shadows, no warm accents. Typography: sparse, premium, clean geometric sans-serif, no real logos. Wardrobe or human styling if present: {WARDROBE_STYLE}. Keep the layout minimal, symmetrical, cinematic, and teaser-like rather than dense or feature-heavy.",
+    "negativePrompt": "No Redmi, no AirDots, no Pro wordmark, no wireless earbuds, no earbud charging case, no real brand logos, no copied product silhouette, no copied Chinese headline, no copied date or launch wording, no top-right brand mark, no platform UI, no carousel arrows, no page counter, no social app dots, no watermark, no QR code, no username, no price sticker, no feature cards, no warm badges, no orange or gold accent system, no bright catalog lighting, no lifestyle background, no flat vector art, no comic illustration, no dense multi-object scene, no cluttered HUD interface.",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/electric-blue-silhouette-product-launch-style/preview-16x9.jpg"
+  },
+  {
+    "slug": "impact-burst-halftone-comic-poster-style",
+    "name": "Impact Burst Halftone Comic Poster",
+    "summary": "A loud retro comic poster system built from thick black ink, flat high-saturation colors, oversized impact typography, exaggerated illustrated subjects, diagonal props, speech bursts, smoke puffs, halftone dots, and distressed screen-print grain.",
+    "category": "A loud retro comic poster system built from thick black ink, flat high-saturation colors, oversized impact typography, exaggerated illustrated subjects, diagonal props, speech bursts, smoke puffs, halftone dots, and distressed screen-print grain.",
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main illustrated subject"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "main chaotic action or reaction"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "oversized object, product, tool, weapon, camera, device, or prop"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "flat poster setting or symbolic backdrop"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "speech bursts, smoke puffs, starbursts, cyan blocks, yellow corner shapes, impact marks"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "short comic headline, e.g. ZAP!, CRASH!, BANG!, WHAM!"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "tiny impact caption or small supporting word"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "sparkle, starburst, lightning slash, jagged separator, small smoke puff"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "simple flat-color wardrobe or stylized body treatment"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 or 16:9"
+      }
+    ],
+    "promptTemplate": "Create an image in impact-burst-halftone-comic-poster-style. Aspect ratio: {ASPECT_RATIO}. Scene: {SUBJECT} {SUBJECT_ACTION}, interacting with {PRODUCT_OR_PROP}, in {LOCATION}. Include {BACKGROUND_ELEMENTS}. Style the subject with {WARDROBE_STYLE}. Layout: use a bold cropped comic-poster composition. Put a huge condensed cream block-letter headline reading \"{MAIN_TEXT}\" across the upper band, with \"{SECONDARY_TEXT}\" as tiny impact microcopy if it stays clean. Place the main subject large in the lower two-thirds and let the oversized prop cut diagonally across the body or foreground. Add {ACCENT_SYMBOL} as a graphic impact mark. Style: thick uneven black contour lines, flat hot-orange and aged-cream character shapes, saturated cyan backdrop, lemon-yellow speech-burst corner, muted olive prop color, small gray accent, distressed screen-print texture, halftone dots, paper grain, rough ink edges, and slight print misregistration. Avoid: watermark, username, creator ID, platform logo, QR code, app UI, artist signature, copied reference character, copied exact pose, copied exact text, brand logos, licensed characters, photorealism, 3D, glossy gradients, soft airbrush shading, clean vector polish, crowded paragraphs, and muted corporate design.",
+    "negativePrompt": "watermark, username, creator ID, platform logo, QR code, app UI, artist signature, copied reference character, copied exact pose, copied exact text, brand logo, licensed character, photorealism, realistic portrait, 3D render, glossy gradient, airbrush shading, polished vector logo, corporate minimal poster, soft pastel palette, long paragraphs, crowded typography, clean digital texture, no grain",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/impact-burst-halftone-comic-poster-style/preview-16x9.jpg"
+  },
+  {
+    "slug": "luxury-perspective-checkerboard-editorial",
+    "name": "Luxury Perspective Checkerboard Editorial",
+    "summary": "A high-fashion editorial poster style with low-angle luxury photography, sharp red-and-white checkerboard perspective planes, generous white space, oversized custom script typography, and restrained emerald or teal accents. It evokes international luxury maison advertising without copying any real brand mark, campaign, model, product, or exact layout.",
+    "category": null,
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main model, product, or luxury subject"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "main pose, movement, or product presentation"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "luxury object, accessory, or hero prop"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "minimal studio, runway, gallery, atelier, salon, or abstract luxury set"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "checkerboard planes, white space, small accent marks, and secondary spatial details"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "invented large script word used as a graphic field"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "small uppercase editorial maison-style text"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "single restrained decorative mark such as a dot, diamond, or small line"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "tailored black, sculptural, polished, or premium styling direction"
+      },
+      {
+        "key": "STYLE_FIDELITY_ANCHORS",
+        "hint": "observable style traits that must remain visible"
+      },
+      {
+        "key": "SOURCE_CONTENT_TO_AVOID",
+        "hint": "literal source content that generated samples must not recreate"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 or 16:9"
+      }
+    ],
+    "promptTemplate": "Create a polished international luxury editorial poster in the Luxury Perspective Checkerboard Editorial style. Subject: {SUBJECT}. Action or presentation: {SUBJECT_ACTION}. Hero product or prop: {PRODUCT_OR_PROP}. Location: {LOCATION}. Background elements: {BACKGROUND_ELEMENTS}. Wardrobe and styling: {WARDROBE_STYLE}. Typography: place the invented large script word \"{MAIN_TEXT}\" as an oversized sweeping background graphic behind the subject, and place the small uppercase editorial text \"{SECONDARY_TEXT}\" near the upper field; add the restrained accent symbol \"{ACCENT_SYMBOL}\" only once. Preserve these style fidelity anchors: {STYLE_FIDELITY_ANCHORS}. Avoid this source content: {SOURCE_CONTENT_TO_AVOID}. Use a low-angle high-fashion photographic camera, crisp studio lighting, generous white space, a red-and-white checkerboard perspective plane, deep black structure, emerald or teal accent details, clean cutout subject edges, glossy premium material highlights, and sparse typography. Do not use any real brand logos, real fashion house names, monograms, watermarks, QR codes, social media UI, price labels, or copied campaign identities. Aspect ratio: {ASPECT_RATIO}.",
+    "negativePrompt": "Gucci, real luxury brand logos, real monograms, trademarked slogans, copied campaign marks, exact source model, exact source pose, black dress with chain handbag, green pointed heels, duplicated floor-and-ceiling checkerboard layout, watermarks, creator IDs, QR codes, social media UI, price tags, retail badges, dense captions, crowded product clusters, bargain sale design, grunge zine collage, comic illustration, flat vector art, low-resolution output, blurry subject, distorted anatomy, broken hands, illegible fake logo clutter, excessive text.",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/luxury-perspective-checkerboard-editorial/preview-16x9.jpg"
+  },
+  {
+    "slug": "mono-noir-type-portrait-poster-style",
+    "name": "Mono Noir Type Portrait Poster",
+    "summary": "A stark black-and-white editorial poster system pairing a close, high-contrast photographic portrait with oversized lowercase neo-grotesk typography. One headline word is reversed into a clean white rectangular label while the remaining words sit as heavy white type over a charcoal background.",
+    "category": null,
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main person, performer, worker, athlete, maker, or character who anchors the poster"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "quiet pose, intense gaze, paused task, reflective moment, or restrained movement"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "object, tool, instrument, notebook, glove, cup, helmet, camera, or no prop"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "dim studio, late-night workspace, rehearsal room, tunnel, library corner, workshop, or minimal interior"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "soft charcoal gradient, blurred wall texture, deep negative space, faint window falloff, or subtle studio shadow"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "three-line lowercase headline with short words and a final period"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "tiny optional supporting microcopy, date, or section label"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "minimal dot, short rule, small plus, or no visible accent"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "dark plain clothing, structured jacket, workwear, athletic layer, or simple editorial styling"
+      },
+      {
+        "key": "STYLE_FIDELITY_ANCHORS",
+        "hint": "black-and-white photographic portrait, deep charcoal background, large left-weighted lowercase typography, first headline word as black type inside a white rectangular label, remaining headline lines in white, extreme contrast, sparse negative space, close crop, shallow depth of field, serious editorial mood"
+      },
+      {
+        "key": "SOURCE_CONTENT_TO_AVOID",
+        "hint": "do not recreate the original young woman with short black bangs and freckles, the phrase discipline beats procrastination, the exact same face crop, the exact same text line breaks, any watermark, logo, username, brand mark, or motivational story premise"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 or 16:9"
+      }
+    ],
+    "promptTemplate": "Create a {ASPECT_RATIO} monochrome editorial poster in the Mono Noir Type Portrait Poster Style. Style fidelity lock: {STYLE_FIDELITY_ANCHORS}. Source content to avoid: {SOURCE_CONTENT_TO_AVOID}. Scene: {SUBJECT} {SUBJECT_ACTION} with {PRODUCT_OR_PROP} in {LOCATION}. Background elements: {BACKGROUND_ELEMENTS}. Wardrobe and styling: {WARDROBE_STYLE}. Composition: one large high-contrast black-and-white photographic subject, close crop, deep charcoal background, sparse negative space, shallow depth of field, serious noir editorial mood. If the aspect ratio is 16:9, make a landscape poster with the subject weighted to the right side and the headline block on the left. If the aspect ratio is 9:16, make a vertical poster with the headline stacked in the upper-left or middle-left field and the subject cropped large on the right or lower-right. Typography: render the exact readable lowercase headline text \"{MAIN_TEXT}\" as three short left-aligned lines with tight leading; put the first headline word as black type inside a crisp white rectangular label, then set the remaining lines in heavy white type directly on the dark background. Add \"{SECONDARY_TEXT}\" only as tiny unobtrusive white microcopy if it fits. Use {ACCENT_SYMBOL} only as a minimal typographic mark. Keep type sharp, flat, square-cornered, and massive. Photo treatment: realistic black-and-white studio photography, strong shadow falloff, visible facial or fabric texture, subtle grain, no color, no illustration, no collage, no extra panels, no logos, no watermark.",
+    "negativePrompt": "color image, sepia, beige paper, neon, duotone color accent, gradient orb, decorative stickers, collage, ransom note typography, comic halftone, illustration, vector art, anime, 3D render, glossy advertising product shot, UI screenshot, social media frame, watermark, username, logo, QR code, brand mark, exact copied face, short black blunt bangs, freckled young woman close-up, discipline beats procrastination, motivational quote duplicate, handwritten type, serif headline, outlined text, glowing text, curved text, long paragraph, cluttered background, many props, bright happy lifestyle lighting",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/mono-noir-type-portrait-poster-style/preview-16x9.jpg"
+  },
+  {
+    "slug": "neon-kinetic-typographic-poster-style",
+    "name": "Neon Kinetic Typographic Poster",
+    "summary": "A dramatic outdoor editorial poster style combining low-angle lifestyle photography, oversized warped neon typography, film grain, and high-energy youth-culture campaign design.",
+    "category": "A dramatic outdoor editorial poster style combining low-angle lifestyle photography, oversized warped neon typography, film grain, and high-energy youth-culture campaign design.",
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main human figure or object"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "dynamic action performed by the subject"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "object held, worn, used, or displayed by the subject"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "outdoor environment or contextual scene"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "sky, hills, architecture, crowd, stage lights, roads, rocks, grass, clouds, dust, or other secondary scenery"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "large repeated headline word or phrase"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "small repeating line of text"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "small separator icon such as diamond, dot, slash, star, or warning mark"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "streetwear, outdoor fashion, sportswear, festival outfit, or editorial styling"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 vertical poster or 16:9 horizontal banner"
+      }
+    ],
+    "promptTemplate": "Create a {ASPECT_RATIO} poster in the \"Neon Kinetic Typographic Poster\" style.\n\nMain subject: {SUBJECT}.\nAction: {SUBJECT_ACTION}.\nProp or product: {PRODUCT_OR_PROP}.\nLocation: {LOCATION}.\nBackground elements: {BACKGROUND_ELEMENTS}.\nWardrobe or styling: {WARDROBE_STYLE}.\n\nUse an extreme low-angle wide-angle camera perspective, as if the camera is near the ground looking upward. The subject should feel large, energetic, and close to the viewer.\n\nAdd oversized warped neon yellow typography using the main text \"{MAIN_TEXT}\". The letters should be ultra-bold, condensed, stretched, slanted, and partially cropped by the canvas edges. The typography should wrap around the composition and sit behind or partially around the subject.\n\nAdd a thin repeated uppercase text band reading \"{SECONDARY_TEXT}\", separated by \"{ACCENT_SYMBOL}\" symbols. The secondary text should run horizontally across the image like a campaign graphic stripe.\n\nUse electric neon yellow graphics, warm sunlit photographic tones, blue sky contrast, visible film grain, analog print texture, hard shadows, and an energetic youth-culture campaign poster mood.\n\nAvoid clean corporate design, small typography, flat illustration, pastel colors, luxury minimalism, and symmetrical static layout.",
+    "negativePrompt": "Avoid small typography, clean corporate layout, symmetrical centered poster design, flat vector illustration, pastel palette, luxury minimalism, soft studio lighting, plain white background, low contrast, overly polished 3D render, generic stock photo, tiny subject, unreadable clutter, and text that covers the subject's key action or product.",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/neon-kinetic-typographic-poster-style/preview-16x9.jpg"
+  },
+  {
+    "slug": "plush-comic-toy-product-poster-style",
+    "name": "Plush Comic Toy Product Poster",
+    "summary": "A loud toy-product poster style built around one fuzzy plush product hero, retro cream poster paper, a cyan circular backdrop, oversized slanted comic typography, thick black shadows, doodle annotations, sticker labels, lightning graphics, and dense campaign microcopy.",
+    "category": "A loud toy-product poster style built around one fuzzy plush product hero, retro cream poster paper, a cyan circular backdrop, oversized slanted comic typography, thick black shadows, doodle annotations, sticker labels, lightning graphics, and dense campaign microcopy.",
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main plush product, toy vehicle, mascot object, gadget, food mascot, or collectible prop"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "parked, bouncing, leaning forward, racing, floating, charging, wobbling, or posing like a hero product"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "plush car, scooter, radio, vending machine, snack pack, mini bus, camera, delivery pod, noodle cart, or featured toy object"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "cream studio poster backdrop, toy catalog set, tabletop product stage, campaign poster scene, or flat editorial background"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "large cyan circle, giant tilted block headline, doodle icons, sticker labels, lightning patches, warning-card graphic, small product metadata"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "short loud campaign headline, preferably 1 to 4 words"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "small product-series caption, tiny spec label, date line, mock catalog note, or playful warning label"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "lightning bolt, arrow capsule, doodle fish, cloud puff, speed line, hazard triangle, steam doodle, or stitched patch"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "not applicable for objects; use plush surface styling, sewn patches, fuzzy trim, cartoon eyes, and toy-like color blocking"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 vertical poster or 16:9 horizontal campaign poster"
+      },
+      {
+        "key": "PRODUCT_TEXTURE",
+        "hint": "dense fuzzy plush fiber, soft seams, raised fabric patches, embroidered symbols, matte toy finish"
+      },
+      {
+        "key": "TYPOGRAPHY_LANGUAGE",
+        "hint": "Latin block type, CJK-style display type, or mixed poster typography without copied reference wording"
+      }
+    ],
+    "promptTemplate": "Create an image in the \"Plush Comic Toy Product Poster\" style.\n\nAspect ratio: {ASPECT_RATIO}.\n\nScene: {SUBJECT} {SUBJECT_ACTION}, presented as {PRODUCT_OR_PROP}, placed in {LOCATION}. Use {PRODUCT_TEXTURE}. Style the object with {WARDROBE_STYLE}.\n\nLayout: put the plush product large in the lower-middle frame, photographed as a tactile 3D product with a three-quarter view and soft studio shadow. Place {BACKGROUND_ELEMENTS} around it. Add a large cyan circle or oval behind the product. Build the biggest graphic area from oversized tilted block typography using \"{MAIN_TEXT}\" as the campaign headline.\n\nTypography: use {TYPOGRAPHY_LANGUAGE}. Make the headline huge, angular, stacked, and slanted, with thick black outline and offset shadow. Add \"{SECONDARY_TEXT}\" only as tiny campaign metadata or small label copy. Keep microcopy compact and decorative, not dominant.\n\nGraphic language: retro cream poster background, turquoise and cyan anchor color, lemon yellow headline block, signal red headline block, heavy black shadows, sticker-like labels, doodle icons, arrows, lightning-bolt patches, warning-card shapes, and {ACCENT_SYMBOL}. Combine soft plush 3D texture with flat printed poster graphics.\n\nDo not include watermarks, usernames, creator IDs, QR codes, platform logos, app marks, copied reference text, copied brand names, or copied license-plate details.",
+    "negativePrompt": "watermark, username, creator ID, QR code, platform logo, app mark, copied reference text, copied brand name, copied license plate, exact duplicate plush car, minimalist luxury ad, glossy plastic without fibers, realistic car commercial, dark horror mood, dystopian cyberpunk, busy city background, elegant thin serif headline, unreadable paragraph-heavy layout, app screenshot UI",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/plush-comic-toy-product-poster-style/preview-16x9.jpg"
+  },
+  {
+    "slug": "rough-ink-music-doodle-poster-style",
+    "name": "Rough Ink Music Doodle Poster",
+    "summary": "A rough hand-inked poster style built from oversized dark green-black brush lettering, pale blush paper, hot pink secondary type, naive mascot drawings, teal and pink flat fills, sharp yellow burst marks, scattered music-note doodles, and scanned risograph-like print texture.",
+    "category": null,
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main simplified mascot, person, or object group"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "main action, gesture, or frozen performance moment"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "oversized instrument, wellness object, snack, tool, product, or ritual prop"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "minimal poster setting or implied environment"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "secondary doodles, labels, small props, rhythm marks, stars, steam, arrows, or loose line marks"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "short hand-drawn headline"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "small stacked supporting text or bracketed label"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "burst, music note, sparkle, bracket, capsule, slash, or loose marker sign"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "simple flat garment or mascot styling direction"
+      },
+      {
+        "key": "STYLE_FIDELITY_ANCHORS",
+        "hint": "observable style traits that must remain visible"
+      },
+      {
+        "key": "SOURCE_CONTENT_TO_AVOID",
+        "hint": "literal source content that generated samples must not recreate"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 or 16:9"
+      }
+    ],
+    "promptTemplate": "Create a {ASPECT_RATIO} finished raster poster image in the Rough Ink Music Doodle Poster Style. Preserve these style fidelity anchors first: {STYLE_FIDELITY_ANCHORS}. Avoid these source-specific elements completely: {SOURCE_CONTENT_TO_AVOID}. The poster should show {SUBJECT} {SUBJECT_ACTION}, with {PRODUCT_OR_PROP} as an oversized graphic prop, set in {LOCATION}. Add {BACKGROUND_ELEMENTS} as floating doodle clusters. Use the main headline text \"{MAIN_TEXT}\" as huge rough deep green-black brush lettering, plus \"{SECONDARY_TEXT}\" as small hot pink stacked or bracketed supporting text. Include {ACCENT_SYMBOL} as a sharp graphic accent. Style the subject with {WARDROBE_STYLE}. Use pale blush paper, deep green-black scratchy outlines, hot pink and teal flat fills, one acidic yellow burst, scattered music-note marks, loose scribbles, dry marker texture, scuffed risograph grain, imperfect registration, flat poster perspective, airy asymmetric composition, and handmade zine-event energy. Do not use polished digital typography, realistic lighting, 3D depth, brand marks, watermarks, QR codes, copied source text, or copied source characters.",
+    "negativePrompt": "watermark, username, creator ID, platform logo, app UI, QR code, signature, copied source headline, copied source English phrase, original date range, platform badge, goji berries, medicine bowl, seated horned listener, green seated guitarist, same pink guitar, exact yellow lightning layout, brand logo, licensed character, recognizable person, photorealism, 3D render, glossy vector art, clean corporate icon set, smooth gradients, cinematic lighting, airbrush shading, realistic anatomy, precise perspective, dense city scene, long paragraphs, beige monochrome design, luxury editorial design",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/rough-ink-music-doodle-poster-style/preview-16x9.jpg"
+  },
+  {
+    "slug": "tokyo-kawaii-travel-collage-poster-style",
+    "name": "Tokyo Kawaii Travel Collage Poster",
+    "summary": "A maximalist Japanese city-travel collage style with bold destination typography, cute sticker elements, manga speech bubbles, cutout fashion photography, halftone urban backgrounds, and scrapbook editorial layout.",
+    "category": "A maximalist Japanese city-travel collage style with bold destination typography, cute sticker elements, manga speech bubbles, cutout fashion photography, halftone urban backgrounds, and scrapbook editorial layout.",
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main cutout person, character, model, traveler, idol, or fashion figure"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "gesture or pose toward the viewer"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "object, product, prop, or visual anchor"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "environment or setting"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "secondary scene details and visual texture"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "large destination headline"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "small slogan, greeting, or travel phrase"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "separator, sticker, symbol, or decorative mark"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "styling, clothing, character, or visual treatment"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 vertical poster or 16:9 horizontal banner"
+      }
+    ],
+    "promptTemplate": "Create a {ASPECT_RATIO} poster in the \"Tokyo Kawaii Travel Collage Poster\" style.\n\nMain subject: {SUBJECT}.\nAction or pose: {SUBJECT_ACTION}.\nFeatured prop, food, or sticker object: {PRODUCT_OR_PROP}.\nDestination or location: {LOCATION}.\nCity background and botanical elements: {BACKGROUND_ELEMENTS}.\nMain headline text: \"{MAIN_TEXT}\".\nSecondary or speech-bubble text: \"{SECONDARY_TEXT}\".\nTravel stickers and accent symbols: {ACCENT_SYMBOL}.\nWardrobe and cutout styling: {WARDROBE_STYLE}.\n\nUse a maximalist Japanese travel scrapbook collage layout. Place the cutout subject large in the center with a sticker-like white edge. Put huge playful rounded block letters across the top, each letter on a separate bright paper tile, slightly rotated and overlapping. Use yellow letter fill, green tile blocks, red accents, cream paper textures, and black ink details.\n\nLayer the background with black-and-white or sepia city photography, crowd scenes, buildings, street signs, and halftone print texture. Add manga speech bubbles, handwritten notes, tiny captions, food icons, ticket stubs, barcode graphics, mini photo panels, sticker stars, arrows, and travel labels.\n\nAdd a dense yellow bottom information bar with small photos, captions, travel snippets, barcode, and bold label typography. Mix in watercolor or pressed-flower botanical elements near the lower area. The finish should feel like scanned paper, teen magazine collage, souvenir zine, sticker album, and cute travel advertisement.\n\nAvoid minimalism, clean corporate design, luxury travel style, plain backgrounds, low density, and overly polished digital graphics.",
+    "negativePrompt": "Avoid minimal layout, plain background, luxury travel advertisement, clean corporate grid, single typeface, low sticker density, empty negative space, realistic seamless photo composite, muted palette, sterile digital polish, and unreadable main headline.",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/tokyo-kawaii-travel-collage-poster-style/preview-16x9.jpg"
+  },
+  {
+    "slug": "tri-color-hardcut-portrait-poster-style",
+    "name": "Tri Color Hardcut Portrait Poster",
+    "summary": "A clean three-color hardcut portrait poster style using flat teal background fields, coral-red subject planes, and near-black silhouettes or shadows, with all detail reduced into large hard-edged vector-like cutouts.",
+    "category": "A clean three-color hardcut portrait poster style using flat teal background fields, coral-red subject planes, and near-black silhouettes or shadows, with all detail reduced into large hard-edged vector-like cutouts.",
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main person, character, performer, athlete, worker, object-as-portrait, or stylized figure"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "staring forward, leaning on one hand, turning sideways, holding a prop, pausing mid-action, or facing the viewer"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "headphones, camera, drink cup, helmet, microphone, book, bag, tool, or no prop"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "flat teal poster field, abstract studio background, simplified transit corner, stage-like color field, or clean editorial backdrop"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "large coral wedges, teal negative space, cropped black silhouette edges, and a few hard geometric cut planes"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "none by default; optional short block headline only if requested"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "none by default; optional tiny supporting label only if requested"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "teal slash, black cut notch, coral wedge, angular cheek mark, or geometric background block"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "simplified collar, jacket, hoodie, bob haircut, helmet, or graphic clothing reduced to coral and black planes"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 vertical poster or 16:9 horizontal banner"
+      }
+    ],
+    "promptTemplate": "Create a {ASPECT_RATIO} image in the \"Tri Color Hardcut Portrait Poster\" style.\n\nScene: {SUBJECT} {SUBJECT_ACTION} with {PRODUCT_OR_PROP} against {LOCATION}. Use {WARDROBE_STYLE}. Build the image from only three flat colors: teal background #0E819E, coral red #FF5447, and near black #000805.\n\nComposition: one oversized cropped portrait or upper-body subject, heavy black hair, hood, helmet, clothing, or shadow mass, coral face and body planes, hard teal negative-space slashes, {BACKGROUND_ELEMENTS}, and {ACCENT_SYMBOL}. Keep the subject close to the frame and let some silhouette edges crop off the canvas.\n\nTypography: no visible text by default. If text is explicitly required, use \"{MAIN_TEXT}\" as a very short block headline outside the face area and \"{SECONDARY_TEXT}\" as a tiny supporting mark. Do not add text otherwise.\n\nFinish: clean flat vector-like poster, stencil portrait, screen-print simplicity without grain, blunt cutout shapes, high contrast, no gradients, no outlines, no photorealistic rendering.\n\nAvoid watermark, username, creator ID, QR code, platform logo, app interface, exact copied reference identity, exact copied face, photorealism, painterly blending, airbrush, soft shading, extra colors, thin line art, detailed background, paper texture, halftone, noisy distress, glossy 3D, anime style, comic paneling, long text, and brand logo.",
+    "negativePrompt": "Avoid watermark, username, creator ID, QR code, platform logo, app interface, exact copied reference identity, exact copied face, photorealistic portrait, painterly brushwork, airbrush gradients, soft shading, realistic skin texture, more than three colors, thin outlines, contour drawing, detailed eyelashes, paper grain, halftone, distressed texture, complex environment, glossy 3D, chrome, neon gradient, anime, comic panel, long paragraph text, and brand logo.",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/tri-color-hardcut-portrait-poster-style/preview-16x9.jpg"
+  },
+  {
+    "slug": "y2k-grunge-hiphop-cutout-poster-style",
+    "name": "Y2K Grunge Hip-Hop Cutout Poster",
+    "summary": "A Y2K grunge hip-hop magazine collage poster style built from oversized photo cutouts, acid yellow retro typography, rough black-and-white wall textures, dense editorial footer panels, and photocopied print noise.",
+    "category": "A Y2K grunge hip-hop magazine collage poster style built from oversized photo cutouts, acid yellow retro typography, rough black-and-white wall textures, dense editorial footer panels, and photocopied print noise.",
+    "variables": [
+      {
+        "key": "SUBJECT",
+        "hint": "main subject, artist, dancer, musician, skater, model, or youth culture figure"
+      },
+      {
+        "key": "SUBJECT_ACTION",
+        "hint": "sitting, leaning, holding a prop, looking away, posing casually, or performing a relaxed streetwear pose"
+      },
+      {
+        "key": "PRODUCT_OR_PROP",
+        "hint": "cassette player, headphones, soda can, compact camera, skateboard, magazine, CD player, or portable music device"
+      },
+      {
+        "key": "LOCATION",
+        "hint": "street wall, underground club, bedroom studio, subway corner, record shop, rehearsal room, or back alley"
+      },
+      {
+        "key": "BACKGROUND_ELEMENTS",
+        "hint": "black-and-white grunge wall texture, graffiti-like marks, photocopy noise, rough concrete, scanned poster grain"
+      },
+      {
+        "key": "MAIN_TEXT",
+        "hint": "large acid yellow retro headline"
+      },
+      {
+        "key": "SECONDARY_TEXT",
+        "hint": "small editorial text, lyric fragments, event notes, mixed-language microcopy, or tracklist-style text"
+      },
+      {
+        "key": "ACCENT_SYMBOL",
+        "hint": "triangle arrows, diagonal blocks, barcode-like marks, small stickers, cropped inset frames"
+      },
+      {
+        "key": "WARDROBE_STYLE",
+        "hint": "oversized Y2K streetwear, baggy denim, graphic tee, bucket hat, cap, headphones, chunky shoes"
+      },
+      {
+        "key": "ASPECT_RATIO",
+        "hint": "9:16 or 16:9"
+      }
+    ],
+    "promptTemplate": "Create a Y2K grunge hip-hop cutout poster featuring {SUBJECT} {SUBJECT_ACTION}, wearing {WARDROBE_STYLE}, holding or interacting with {PRODUCT_OR_PROP}. Place the subject as a large central photo cutout with an irregular white sticker-like outline. Use a dirty black-and-white grunge wall background with {BACKGROUND_ELEMENTS}. Add a huge acid yellow retro serif headline reading \"{MAIN_TEXT}\" across the top, partially hidden behind the subject. Add a bright acid yellow information strip at the bottom with small editorial text reading \"{SECONDARY_TEXT}\", small inset photo frames, barcode-like graphic elements, and {ACCENT_SYMBOL}. The image should feel like an early-2000s underground music magazine cover, mixtape poster, streetwear flyer, rough scanned print, high contrast, heavy grain, photocopy texture, cyan and magenta print noise, energetic collage layout. Do not include watermarks, usernames, QR codes, platform logos, or app marks. Aspect ratio: {ASPECT_RATIO}.",
+    "negativePrompt": "clean minimalist design, luxury editorial style, smooth gradient background, polished corporate poster, modern sans-serif-only layout, sterile studio lighting, glossy 3D text, empty whitespace, clean vector illustration, watermark, username, QR code, platform logo, app interface marks",
+    "preview": "https://raw.githubusercontent.com/VigoZhao/AI-Visual-Prompt-Cookbook/main/styles/y2k-grunge-hiphop-cutout-poster-style/preview-16x9.jpg"
+  }
+]

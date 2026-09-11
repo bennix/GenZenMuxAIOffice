@@ -271,6 +271,10 @@ for (const [name, { dir, pkg }] of resolved) {
   if (notice) out += `\nNOTICE:\n${notice}\n`
 }
 
+out += sub('gongwen-gbt9704-skill — MIT')
+out += 'https://github.com/mizzlelover/gongwen-gbt9704-skill\n'
+out += readFileSync(join(ROOT, 'packages/gongwen/LICENSE'), 'utf8') + '\n'
+
 const crates = rustCrates()
 out += hr(`2. Rust crates (xlsx-sidecar native component, statically linked)`)
 if (crates === null) {

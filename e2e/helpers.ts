@@ -19,6 +19,8 @@ export const ARTIFACTS_DIR = resolve(__dirname, 'artifacts')
 const SHELL_MAIN = join(SHELL_DIR, 'out/main/index.js')
 
 interface LaunchOptions {
+  /** Disable screencast when verifying embedded frames on affected Chromium builds. */
+  recordVideo?: boolean
   /** reuse a previous scratch dir to simulate a second launch */
   userDataDir?: string
   /** UI language override (GENOFFICE_LANG); defaults to English for stable assertions */
@@ -75,7 +77,7 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
     // (page.url() stays empty, no lifecycle events, evaluate hangs) — record
     // only where it works
     recordVideo:
-      process.platform === 'linux'
+      process.platform === 'linux' || options.recordVideo === false
         ? undefined
         : {
             dir: join(ARTIFACTS_DIR, options.videoDir),

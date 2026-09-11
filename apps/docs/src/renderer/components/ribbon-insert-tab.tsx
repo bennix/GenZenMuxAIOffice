@@ -753,6 +753,17 @@ export function InsertTab({
           <button
             className="rb-big"
             disabled={!hasDoc}
+            title="LoveArt AI 生图与图片编辑"
+            onClick={() => document.dispatchEvent(new Event('zenoffice:open-loveart'))}
+          >
+            <span className="rb-big-icon">
+              <IconPicture size={BIG} />
+            </span>
+            <span>AI 生图</span>
+          </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
             title="AntV 可编辑信息图 / Editable infographic"
             onClick={() => {
               setInfographicEditTarget(null)

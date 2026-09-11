@@ -1,0 +1,27 @@
+{
+  "name": "@genoffice/loveart",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/App.tsx"
+  },
+  "dependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-markdown": "^9.1.0",
+    "react-router-dom": "^6.26.2",
+    "react-zoom-pan-pinch": "^3.6.1",
+    "zustand": "^4.5.5"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "jsdom": "^28.0.0"
+  }
+}

@@ -28,7 +28,7 @@ const updaterState = {
   channel: null as string | null,
   allowDowngrade: false,
 }
-const checkForUpdates = vi.fn(() => Promise.resolve(null))
+const checkForUpdates = vi.fn<() => Promise<unknown>>(() => Promise.resolve(null))
 const downloadUpdate = vi.fn<() => Promise<unknown>>(() => Promise.resolve([]))
 const quitAndInstall = vi.fn()
 
@@ -125,7 +125,8 @@ beforeEach(() => {
   updaterState.disableDifferentialDownload = false
   updaterState.channel = null
   updaterState.allowDowngrade = false
-  checkForUpdates.mockClear()
+  checkForUpdates.mockReset()
+  checkForUpdates.mockImplementation(() => Promise.resolve(null))
   downloadUpdate.mockReset()
   downloadUpdate.mockImplementation(() => Promise.resolve([]))
   quitAndInstall.mockClear()
@@ -204,6 +205,26 @@ describe('initAutoUpdater', () => {
     // strings are localized main-side and pushed into the window state
     expect(state.strings.title.length).toBeGreaterThan(0)
     expect(state.strings.install.length).toBeGreaterThan(0)
+  })
+
+  it('performs an immediate user-initiated check for the About page', async () => {
+    checkForUpdates.mockResolvedValue({ updateInfo: { version: '0.2.0' } })
+    const { checkForUpdatesNow, initAutoUpdater } = await loadUpdater()
+    initAutoUpdater(() => null)
+
+    await expect(checkForUpdatesNow('stable')).resolves.toEqual({
+      status: 'available',
+      currentVersion: '0.1.0',
+      latestVersion: '0.2.0',
+    })
+    expect(checkForUpdates).toHaveBeenCalledTimes(1)
+  })
+
+  it('compares release versions numerically', async () => {
+    const { isNewerVersion } = await loadUpdater()
+    expect(isNewerVersion('v0.6.82', '0.6.81')).toBe(true)
+    expect(isNewerVersion('0.6.9', '0.6.81')).toBe(false)
+    expect(isNewerVersion('0.6.81', '0.6.81')).toBe(false)
   })
 
   it('starts the download and pushes progress when the user clicks download', async () => {

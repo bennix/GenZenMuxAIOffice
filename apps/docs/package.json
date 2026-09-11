@@ -45,7 +45,8 @@
     "react-dom": "^19.2.4",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.0",
+    "@genoffice/loveart": "*"
   },
   "author": "ZenOffice",
   "build": {
@@ -98,6 +99,7 @@
     "electron-updater": "^6.8.9",
     "pdf-lib": "^1.17.1",
     "@genoffice/pptx-render": "*",
-    "word-extractor": "^1.0.4"
+    "word-extractor": "^1.0.4",
+    "@genoffice/gongwen": "*"
   }
 }

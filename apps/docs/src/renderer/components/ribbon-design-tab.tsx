@@ -248,6 +248,23 @@ export function DesignTab({
     <>
       <div className="ribbon-group">
         <div className="ribbon-group-items">
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="GB/T 9704-2012 公文排版与 AI 起草"
+            onClick={() => document.dispatchEvent(new Event('zenoffice:open-gongwen'))}
+          >
+            <span className="rb-big-icon">
+              <IconTheme size={BIG} />
+            </span>
+            <span>公文排版</span>
+          </button>
+        </div>
+        <div className="ribbon-group-label">GB/T 9704</div>
+      </div>
+      <div className="ribbon-sep" />
+      <div className="ribbon-group">
+        <div className="ribbon-group-items">
           <div className="rb-split-wrap">
             <button
               className="rb-big"

@@ -1,3 +1,5 @@
+import { LoveArtStudio } from './LoveArtStudio'
+import { GongwenStudio } from './GongwenStudio'
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { ChainedCommands, Editor } from '@tiptap/core'
@@ -731,6 +733,22 @@ function RibbonInner({
   const { t, lang } = useI18n()
   // The one-click AI actions need text to work on; grey them out on an empty document
   const docEmpty = !hasDoc || fs.docEmpty
+  const [loveArtOpen, setLoveArtOpen] = useState(false)
+  const [loveArtMounted, setLoveArtMounted] = useState(false)
+  const [gongwenOpen, setGongwenOpen] = useState(false)
+  useEffect(() => {
+    const openArt = () => {
+      setLoveArtMounted(true)
+      setLoveArtOpen(true)
+    }
+    const openGongwen = () => setGongwenOpen(true)
+    document.addEventListener('zenoffice:open-loveart', openArt)
+    document.addEventListener('zenoffice:open-gongwen', openGongwen)
+    return () => {
+      document.removeEventListener('zenoffice:open-loveart', openArt)
+      document.removeEventListener('zenoffice:open-gongwen', openGongwen)
+    }
+  }, [])
   const [tab, setTab] = useState<RibbonTab>('home')
   const ribbonBodyRef = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
@@ -1494,6 +1512,10 @@ function RibbonInner({
 
   return (
     <div className="ribbon" ref={ribbonRef}>
+      {loveArtMounted && (
+        <LoveArtStudio editor={editor} open={loveArtOpen} onClose={() => setLoveArtOpen(false)} />
+      )}
+      {gongwenOpen && <GongwenStudio editor={editor} onClose={() => setGongwenOpen(false)} />}
       <div
         className={`ribbon-tabs ${IN_TAB ? '' : IS_MAC ? 'ribbon-tabs-mac' : 'ribbon-tabs-win'}`}
       >

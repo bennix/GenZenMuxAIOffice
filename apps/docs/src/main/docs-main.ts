@@ -1,3 +1,4 @@
+import { generateGongwen, type GongwenRequest } from '@genoffice/gongwen'
 import { createHash } from 'node:crypto'
 import {
   existsSync,
@@ -3012,6 +3013,31 @@ export function registerProjectIpc(): void {
 
 /** document/attachment/window IPC (everything except the AI proxy above) */
 export function registerDocsIpc(): void {
+  ipcMain.handle('docs:generate-gongwen', async (event, request: GongwenRequest) => {
+    try {
+      if (
+        !request ||
+        typeof request.markdown !== 'string' ||
+        !request.options ||
+        typeof request.options !== 'object'
+      )
+        throw new Error('无效的公文请求。')
+      const generated = await generateGongwen(request.markdown, request.options)
+      const result = await saveDialog(event, {
+        title: '保存公文 DOCX',
+        defaultPath: '公文.docx',
+        filters: [{ name: 'Word', extensions: ['docx'] }],
+      })
+      if (result.canceled || !result.filePath) return { canceled: true }
+      await import('node:fs/promises').then(({ writeFile }) =>
+        writeFile(result.filePath!, generated.bytes),
+      )
+      return { path: result.filePath, warnings: generated.warnings }
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : String(error) }
+    }
+  })
+
   // shared with the other editor modules — last (identical) registration wins
   ipcMain.removeHandler('app:get-language')
   ipcMain.handle('app:get-language', () => getUiLang())
