@@ -189,6 +189,25 @@ export default function App() {
   })
   editorRef.current = editor
   filePathRef.current = filePath
+  useEffect(
+    () =>
+      window.markdownApi.onSharedImage(async (dataUrl) => {
+        const current = editorRef.current
+        const originalPath = filePathRef.current
+        if (!current || current.isDestroyed || !current.isEditable || !originalPath)
+          throw new Error('请先保存并打开可编辑的 Markdown 文件。')
+        const path = await window.markdownApi.saveImage({
+          base64: dataUrl.split(',')[1]!,
+          ext: dataUrl.startsWith('data:image/png;') ? 'png' : 'jpg',
+        })
+        if (!path || editorRef.current !== current || filePathRef.current !== originalPath)
+          throw new Error('Markdown 文件已切换或图片保存失败。')
+        if (!current.chain().focus().setImage({ src: path }).run())
+          throw new Error('Markdown 图片插入失败。')
+        markDirty()
+      }),
+    [markDirty],
+  )
 
   useEffect(
     () =>

@@ -10,6 +10,7 @@ import { AI_CHANNELS, PDF_CHANNELS } from '../shared/ipc'
 import type { PdfApi, UiTheme } from '../shared/ipc'
 
 const api: PdfApi = {
+  ...imageShareBridge(ipcRenderer),
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
   listOpenFiles: () => ipcRenderer.invoke('tabs:open-files'),
@@ -107,3 +108,4 @@ installDocumentDropBridge({
   getPathForFile: (file) => webUtils.getPathForFile(file),
   openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
 })
+import { imageShareBridge } from '@genoffice/electron-utils/connect'

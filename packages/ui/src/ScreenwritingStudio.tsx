@@ -13,11 +13,13 @@ export function ScreenwritingStudio({
   generate,
   onInsert,
   onClose,
+  surface = 'document',
 }: {
   initialSource: string
   generate: (prompt: { system: string; user: string }) => Promise<string>
   onInsert: (text: string) => boolean
   onClose: () => void
+  surface?: 'document' | 'spreadsheet'
 }) {
   const [source, setSource] = useState(initialSource)
   const [instruction, setInstruction] = useState('')
@@ -68,7 +70,7 @@ export function ScreenwritingStudio({
           <p>Screenwriting Skills · 沿用当前 AI 模型设置</p>
         </div>
         <button disabled={busy} onClick={onClose}>
-          返回文档
+          {surface === 'spreadsheet' ? '返回工作簿' : '返回文档'}
         </button>
       </header>
       <div className="screenwriting-columns">
@@ -101,7 +103,9 @@ export function ScreenwritingStudio({
             />
           </label>
           <label>
-            剧本素材（从当前文档提取，可编辑）
+            {surface === 'spreadsheet'
+              ? '剧本素材（从当前选区提取，可编辑）'
+              : '剧本素材（从当前文档提取，可编辑）'}
             <textarea rows={12} value={source} onChange={(e) => setSource(e.target.value)} />
           </label>
           <button disabled={!source.trim() && !instruction.trim()} onClick={() => void run()}>
@@ -119,7 +123,11 @@ export function ScreenwritingStudio({
               rows={22}
               value={result}
               onChange={(e) => setResult(e.target.value)}
-              placeholder="生成结果显示在这里，确认后再插入文档。"
+              placeholder={
+                surface === 'spreadsheet'
+                  ? '生成结果为制表符分隔的表格，可编辑后写入新工作表。'
+                  : '生成结果显示在这里，确认后再插入文档。'
+              }
             />
           </label>
           <div className="screenwriting-actions">
@@ -135,11 +143,15 @@ export function ScreenwritingStudio({
             <button
               disabled={!result.trim()}
               onClick={() => {
-                if (onInsert(result)) onClose()
-                else setError('插入失败，请返回文档检查编辑状态。')
+                try {
+                  if (onInsert(result)) onClose()
+                  else setError('插入失败，请检查编辑状态。')
+                } catch (cause) {
+                  setError(cause instanceof Error ? cause.message : String(cause))
+                }
               }}
             >
-              插入到文档末尾
+              {surface === 'spreadsheet' ? '写入新工作表' : '插入到文档末尾'}
             </button>
           </div>
         </fieldset>

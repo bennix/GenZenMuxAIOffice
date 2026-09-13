@@ -1,6 +1,8 @@
 export interface OfficeBridge {
   saveApiKey?(key: string): Promise<void>
   insertImage(dataUrl: string): Promise<void>
+  listImageTargets?(): Promise<Array<{ id: string; kind: string; title: string }>>
+  shareImage?(targetId: string, dataUrl: string): Promise<{ ok: boolean; error?: string }>
   fetchImage(url: string): Promise<{ base64: string; mime: string } | null>
 }
 declare global {
@@ -8,7 +10,7 @@ declare global {
     loveArtOffice?: OfficeBridge
   }
 }
-export async function insertOfficeImage(src: string): Promise<void> {
+export async function insertOfficeImage(src: string, targetId?: string): Promise<void> {
   const bridge = window.loveArtOffice
   if (!bridge) throw new Error('请从 Office 打开 ArtFlow。')
   let dataUrl = src
@@ -38,5 +40,9 @@ export async function insertOfficeImage(src: string): Promise<void> {
     canvas.getContext('2d')!.drawImage(img, 0, 0)
     dataUrl = canvas.toDataURL('image/png')
   }
-  await bridge.insertImage(dataUrl)
+  if (targetId) {
+    if (!bridge.shareImage) throw new Error('当前环境不支持跨文件分享。')
+    const result = await bridge.shareImage(targetId, dataUrl)
+    if (!result.ok) throw new Error(result.error || '图片分享失败。')
+  } else await bridge.insertImage(dataUrl)
 }

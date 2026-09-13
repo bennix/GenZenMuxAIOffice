@@ -16,6 +16,7 @@ import type {
 import type { ProjectApi } from '@genoffice/project-store'
 
 const api: DesktopApi = {
+  ...imageShareBridge(ipcRenderer),
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
   listOpenFiles: () => ipcRenderer.invoke('tabs:open-files'),
@@ -169,3 +170,4 @@ installDocumentDropBridge({
   getPathForFile: (file) => webUtils.getPathForFile(file),
   openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
 })
+import { imageShareBridge } from '@genoffice/electron-utils/connect'

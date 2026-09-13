@@ -3294,6 +3294,53 @@ export default function App() {
   }
 
   /** Committed move/resize of a pending image op */
+  useEffect(() => {
+    let active = true
+    const off = window.pdfApi.onSharedImage(async (dataUrl) => {
+      const origIdx = visList[currentPage - 1]
+      if (status !== 'ready' || readOnly || origIdx === undefined)
+        throw new Error('PDF 当前不可编辑。')
+      const image = new Image()
+      image.src = dataUrl
+      await image.decode()
+      if (!active) throw new Error('PDF 页面已切换，请重新分享。')
+      const canvas = document.createElement('canvas')
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('无法读取图片。')
+      context.drawImage(image, 0, 0)
+      const png = canvas.toDataURL('image/png').split(',')[1]!
+      const geom = pageGeom(origIdx)
+      const disp = geomDispSize(geom)
+      const scale = Math.min(disp.width / 2 / canvas.width, disp.height / 2 / canvas.height, 0.75)
+      const width = canvas.width * scale
+      const height = canvas.height * scale
+      const [ax, ay] = viewToPdf(geom, (disp.width - width) / 2, (disp.height - height) / 2)
+      const [bx, by] = viewToPdf(geom, (disp.width + width) / 2, (disp.height + height) / 2)
+      pushUndoRef.current()
+      setImageEdits((prev) => [
+        ...prev,
+        {
+          id: newId(),
+          input: {
+            kind: 'insertImage',
+            pageIndex: origIdx,
+            image: png,
+            rect: [Math.min(ax, bx), Math.min(ay, by), Math.max(ax, bx), Math.max(ay, by)],
+            layer: 'aboveText',
+            rotate: ((geom.rot % 360) + 360) % 360,
+          },
+        },
+      ])
+    })
+    return () => {
+      active = false
+      off()
+    }
+  }, [status, readOnly, filePath, currentPage, visList, pageGeom])
+
+  /** Committed move/resize of a pending image op */
   const updateImageEditRect = (id: string, rect: [number, number, number, number]) => {
     pushUndo()
     setSelected(null)

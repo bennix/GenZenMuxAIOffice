@@ -1178,6 +1178,18 @@ export function App() {
   useEffect(() => {
     editorRef.current = editor
   }, [editor])
+  useEffect(
+    () =>
+      window.desktop.onSharedImage(async (dataUrl) => {
+        const current = editorRef.current
+        if (!current || current.isDestroyed || !current.isEditable)
+          throw new Error('Word 文档不可编辑。')
+        if (!(await insertImageFromDataUrl(current, dataUrl, 'ArtFlow 图片')))
+          throw new Error('Word 图片插入失败。')
+        setStatus('已插入分享图片')
+      }),
+    [],
+  )
 
   useEffect(
     () =>

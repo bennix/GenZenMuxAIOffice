@@ -37,6 +37,7 @@ import type {
 import { IPC_CHANNELS } from '../shared/ipc-channels'
 
 const desktopApi: DesktopApi = {
+  ...imageShareBridge(ipcRenderer),
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
   listOpenFiles: () => ipcRenderer.invoke('tabs:open-files'),
@@ -2222,3 +2223,4 @@ function isOptionalEnum<T extends string>(
 ): input is T | undefined {
   return input === undefined || (values as readonly unknown[]).includes(input)
 }
+import { imageShareBridge } from '@genoffice/electron-utils/connect'

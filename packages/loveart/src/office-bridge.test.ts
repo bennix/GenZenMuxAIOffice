@@ -21,3 +21,15 @@ it('does not persist the shared Office API key', () => {
   expect(useSettings.getState().apiKey).toBe('test-office-key')
   expect(localStorage.getItem('zenoffice_loveart_settings')).not.toContain('test-office-key')
 })
+it('shares an image to a chosen file and surfaces target rejection', async () => {
+  const shareImage = vi.fn().mockResolvedValue({ ok: true })
+  const insertImage = vi.fn()
+  window.loveArtOffice = { insertImage, fetchImage: vi.fn(), shareImage }
+  await insertOfficeImage('data:image/png;base64,YWJj', 'pdf-target')
+  expect(shareImage).toHaveBeenCalledWith('pdf-target', 'data:image/png;base64,YWJj')
+  expect(insertImage).not.toHaveBeenCalled()
+  shareImage.mockResolvedValue({ ok: false, error: 'PDF 当前不可编辑。' })
+  await expect(insertOfficeImage('data:image/png;base64,YWJj', 'pdf-target')).rejects.toThrow(
+    '不可编辑',
+  )
+})

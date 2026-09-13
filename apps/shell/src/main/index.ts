@@ -2223,6 +2223,59 @@ function registerTabsIpc(): void {
 }
 
 function registerConnectIpc(): void {
+  let nextImageId = 0
+  const pendingImages = new Map<
+    string,
+    { receiver: number; finish: (result: { ok: boolean; error?: string }) => void }
+  >()
+  ipcMain.handle(
+    'image-share:targets',
+    (event) => tabManager?.imageShareTargets(event.sender.id) ?? [],
+  )
+  ipcMain.on('image-share:ack', (event, id: unknown, result: unknown) => {
+    if (typeof id !== 'string') return
+    const pending = pendingImages.get(id)
+    if (!pending || pending.receiver !== event.sender.id || !result || typeof result !== 'object')
+      return
+    const value = result as { ok?: unknown; error?: unknown }
+    pending.finish({
+      ok: value.ok === true,
+      ...(typeof value.error === 'string' ? { error: value.error.slice(0, 500) } : {}),
+    })
+  })
+  ipcMain.handle('image-share:send', (event, targetId: unknown, dataUrl: unknown) => {
+    if (
+      !tabManager?.ownsWebContents(event.sender.id) ||
+      typeof targetId !== 'string' ||
+      typeof dataUrl !== 'string'
+    )
+      return { ok: false, error: '无法分享图片。' }
+    if (dataUrl.length > 20 * 1024 * 1024)
+      return { ok: false, error: '图片超过 20 MB，请缩小后重试。' }
+    if (!/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(dataUrl))
+      return { ok: false, error: '请选择 PNG 或 JPEG 图片。' }
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      const id = `image-${++nextImageId}`
+      const timer = setTimeout(() => {
+        pendingImages.delete(id)
+        resolve({ ok: false, error: '目标文件未确认插入，请检查目标文件后再重试。' })
+      }, 30000)
+      const receiver = tabManager?.sendSharedImage(event.sender.id, targetId, { id, dataUrl })
+      if (receiver == null) {
+        clearTimeout(timer)
+        resolve({ ok: false, error: '目标文件已关闭或不可用。' })
+        return
+      }
+      pendingImages.set(id, {
+        receiver,
+        finish: (result) => {
+          clearTimeout(timer)
+          pendingImages.delete(id)
+          resolve(result)
+        },
+      })
+    })
+  })
   ipcMain.handle(
     'connect:list-targets',
     (event) => tabManager?.connectTargets(event.sender.id) ?? [],

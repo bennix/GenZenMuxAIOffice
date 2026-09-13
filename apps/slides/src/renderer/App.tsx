@@ -1010,6 +1010,40 @@ export function App() {
     if (kind) void insertActions.insertShapeAt(ctxRef.current, kind, rect)
   }, [])
   const insertImage = useCallback(() => insertActions.insertImage(ctxRef.current), [])
+  useEffect(
+    () =>
+      window.slidesApi.onSharedImage(async (dataUrl) => {
+        const ctx = ctxRef.current
+        if (!ctx.slide) throw new Error('请先打开演示文稿。')
+        const image = new Image()
+        image.src = dataUrl
+        await image.decode()
+        if (ctxRef.current.slide !== ctx.slide) throw new Error('幻灯片已切换，请重新分享。')
+        const scale = Math.min(
+          1,
+          (ctx.slide.widthPx * 0.76) / image.naturalWidth,
+          (ctx.slide.heightPx * 0.68) / image.naturalHeight,
+        )
+        const width = Math.max(1, Math.round(image.naturalWidth * scale))
+        const height = Math.max(1, Math.round(image.naturalHeight * scale))
+        const result = await window.slidesApi.addImageBytes({
+          slideIndex: ctx.current,
+          base64: dataUrl.split(',')[1]!,
+          ext: dataUrl.startsWith('data:image/png;') ? 'png' : 'jpg',
+          xPx: Math.round((ctx.slide.widthPx - width) / 2),
+          yPx: Math.round((ctx.slide.heightPx - height) / 2),
+          wPx: width,
+          hPx: height,
+          fitWidthPx: FIT_WIDTH,
+          name: 'ArtFlow 图片',
+        })
+        if (!result || 'error' in result) throw new Error('PPT 图片插入失败。')
+        ctx.applySlide(ctx.current, result.slide)
+        ctx.setSelectedIds([result.sourceId])
+        ctx.setDirty(true)
+      }),
+    [],
+  )
 
   const onBackground = useCallback(
     (color: string, allSlides: boolean) =>

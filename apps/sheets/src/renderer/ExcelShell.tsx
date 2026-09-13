@@ -2282,6 +2282,13 @@ function Ribbon({
   return (
     <div className="ribbon">
       <RibbonGroup label={t('appGroupAiAssistant')}>
+        <RibbonButton
+          large
+          label="AI 编剧"
+          detail="从选区素材生成编剧表格"
+          symbol="✎"
+          onClick={() => onCommand('screenwriting-open')}
+        />
         <button
           className={`ribbon-tool as-button large ai-entry ${aiOpen ? 'active' : ''}`}
           data-tip={t('aiOpenAssistant')}

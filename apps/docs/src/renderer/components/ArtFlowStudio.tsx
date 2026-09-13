@@ -22,6 +22,8 @@ export function ArtFlowStudio({
   const [ready, setReady] = useState(false)
   useEffect(() => {
     const bridge: OfficeBridge = {
+      listImageTargets: () => window.desktop.listImageShareTargets(),
+      shareImage: (targetId, dataUrl) => window.desktop.shareImage(targetId, dataUrl),
       saveApiKey: async (apiKey) => {
         const settings = await window.desktop.getAiSettings()
         await window.desktop.setAiSettings({

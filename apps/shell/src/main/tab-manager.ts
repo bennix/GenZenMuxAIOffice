@@ -144,6 +144,30 @@ export class TabManager {
     })
   }
 
+  imageShareTargets(sourceWebContentsId: number) {
+    if (!this.ownsWebContents(sourceWebContentsId)) return []
+    return this.tabs.flatMap((tab) =>
+      tab.view &&
+      tab.view.webContents.id !== sourceWebContentsId &&
+      ['docs', 'slides', 'markdown', 'pdf'].includes(tab.kind)
+        ? [{ id: tab.id, kind: tab.kind, title: tab.title }]
+        : [],
+    )
+  }
+
+  sendSharedImage(
+    sourceWebContentsId: number,
+    targetId: string,
+    payload: { id: string; dataUrl: string },
+  ): number | null {
+    if (!this.imageShareTargets(sourceWebContentsId).some((tab) => tab.id === targetId)) return null
+    const target = this.tabs.find((tab) => tab.id === targetId)!
+    if (!target.view || target.view.webContents.isDestroyed()) return null
+    target.view.webContents.send('image-share:receive', payload)
+    this.activateTab(target.id)
+    return target.view.webContents.id
+  }
+
   sendConnect(sourceWebContentsId: number, targetId: string, payload: ConnectPayload): boolean {
     const target = this.tabs.find((tab) => tab.id === targetId)
     if (

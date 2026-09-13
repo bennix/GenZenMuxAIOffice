@@ -44,6 +44,11 @@ export default function AssetCard({ card, scale, onBranchStart }: AssetCardProps
   const [src, setSrc] = useState<string | undefined>(card.url)
   const [inserting, setInserting] = useState(false)
   const [insertStatus, setInsertStatus] = useState('')
+  const [shareTargets, setShareTargets] = useState<Array<{
+    id: string
+    kind: string
+    title: string
+  }> | null>(null)
   const [playbackError, setPlaybackError] = useState(false)
   useEffect(() => {
     setPlaybackError(false)
@@ -409,6 +414,63 @@ export default function AssetCard({ card, scale, onBranchStart }: AssetCardProps
             >
               {inserting ? '插入中…' : '插入文档'}
             </button>
+          )}
+          {card.type === 'image' && src && window.loveArtOffice?.listImageTargets && (
+            <button
+              disabled={inserting}
+              onClick={async () => {
+                setInserting(true)
+                try {
+                  const targets = await window.loveArtOffice!.listImageTargets!()
+                  setShareTargets(targets)
+                  setInsertStatus(
+                    targets.length
+                      ? '选择正在编辑的目标文件'
+                      : '请先打开 Word、PPT、MD 或 PDF 目标文件。',
+                  )
+                } catch (error) {
+                  setInsertStatus(error instanceof Error ? error.message : String(error))
+                } finally {
+                  setInserting(false)
+                }
+              }}
+            >
+              分享至文件
+            </button>
+          )}
+          {shareTargets && shareTargets.length > 0 && (
+            <select
+              aria-label="图片分享目标文件"
+              value=""
+              disabled={inserting}
+              onChange={async (event) => {
+                const targetId = event.target.value
+                if (!targetId || !src) return
+                setInserting(true)
+                try {
+                  await insertOfficeImage(src, targetId)
+                  setInsertStatus('已作为图片插入目标文件，请在目标文件中保存。')
+                  setShareTargets(null)
+                } catch (error) {
+                  setInsertStatus(error instanceof Error ? error.message : String(error))
+                } finally {
+                  setInserting(false)
+                }
+              }}
+            >
+              <option value="">选择目标文件…</option>
+              {shareTargets.map((target) => (
+                <option key={target.id} value={target.id}>
+                  {(
+                    { docs: 'Word', slides: 'PPT', markdown: 'MD', pdf: 'PDF' } as Record<
+                      string,
+                      string
+                    >
+                  )[target.kind] || target.kind}{' '}
+                  · {target.title}
+                </option>
+              ))}
+            </select>
           )}
           {insertStatus && <span role="status">{insertStatus}</span>}
           {canDownload && (

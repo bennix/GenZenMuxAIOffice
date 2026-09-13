@@ -2,8 +2,10 @@ import {
   decodeInfographicMetadata,
   INFOGRAPHIC_AI_SYSTEM,
   InfographicStudio,
+  ScreenwritingStudio,
   infographicSyntaxFromRows,
 } from '@genoffice/ui'
+import { parseScreenwritingTable, SCREENWRITING_TABLE_INSTRUCTION } from './screenwriting-table'
 import {
   absRangeRef,
   activateFormulaClosure,
@@ -476,6 +478,7 @@ export function App(): React.JSX.Element {
   const [iconsDialogOpen, setIconsDialogOpen] = useState(false)
   const [equationDialogOpen, setEquationDialogOpen] = useState(false)
   const [infographicOpen, setInfographicOpen] = useState(false)
+  const [screenwritingSource, setScreenwritingSource] = useState<string | null>(null)
   const [infographicSyntax, setInfographicSyntax] = useState<string | undefined>()
   const [infographicEditTarget, setInfographicEditTarget] = useState<WorkbookVisualObject | null>(
     null,
@@ -2812,6 +2815,23 @@ export function App(): React.JSX.Element {
   }
 
   function handleRibbonCommand(command: string): void {
+    if (command === 'screenwriting-open') {
+      const workbook = univerRef.current?.univerAPI.getActiveWorkbook()
+      if (!workbook) {
+        setMessage(t('appNoWorkbookOpen'))
+        return
+      }
+      const range = workbook.getActiveRange()
+      if (range && range.getHeight() * range.getWidth() > 2000) {
+        setMessage('请将编剧素材选区缩小到 2000 个单元格以内。')
+        return
+      }
+      const values = range?.getValues() as unknown[][] | undefined
+      setScreenwritingSource(
+        values?.map((row) => row.map((cell) => String(cell ?? '')).join('\t')).join('\n') ?? '',
+      )
+      return
+    }
     if (command === 'sql-database-open') {
       setSqlWorkspaceOpen(true)
       return
@@ -3420,6 +3440,45 @@ export function App(): React.JSX.Element {
             handleInsertEquationImpl(visualContext(), dataUrl, width, height)
           }
           onClose={() => setEquationDialogOpen(false)}
+        />
+      )}
+      {screenwritingSource !== null && (
+        <ScreenwritingStudio
+          surface="spreadsheet"
+          initialSource={screenwritingSource}
+          onClose={() => setScreenwritingSource(null)}
+          generate={async (prompt) => {
+            const settings = await window.desktopApi.getAiSettings()
+            const response = await window.desktopApi.aiChat({
+              settings,
+              ...prompt,
+              system: `${prompt.system}\n\n${SCREENWRITING_TABLE_INSTRUCTION}`,
+            })
+            if (!response.ok) throw new Error(response.error || 'AI 编剧生成失败。')
+            return response.content ?? ''
+          }}
+          onInsert={(text) => {
+            const rows = parseScreenwritingTable(text)
+            const workbook = univerRef.current?.univerAPI.getActiveWorkbook()
+            if (!workbook) throw new Error(t('appNoWorkbookOpen'))
+            const sheet = workbook.insertSheet(`AI编剧_${Date.now().toString(36)}`, {
+              sheet: {
+                rowCount: Math.max(1000, rows.length),
+                columnCount: Math.max(26, rows[0]!.length),
+              },
+            })
+            sheet
+              .getRange(0, 0, rows.length, rows[0]!.length)
+              .setValues(
+                rows.map((row) => row.map((value) => ({ v: value, t: 1, f: null, si: null }))),
+              )
+            sheet.getRange(0, 0, 1, rows[0]!.length).setFontWeight('bold')
+            sheet.getRange(0, 0, rows.length, rows[0]!.length).setWrap(true)
+            sheet.setColumnWidths(0, rows[0]!.length, 220)
+            setPendingEdits((count) => Math.max(1, count))
+            setMessage(`已写入 ${sheet.getSheetName()}，共 ${rows.length - 1} 条编剧记录。`)
+            return true
+          }}
         />
       )}
       <InfographicStudio
