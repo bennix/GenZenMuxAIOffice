@@ -335,6 +335,8 @@ const CHANNEL_FEED: Record<UpdateChannel, string> = { stable: 'latest', beta: 'b
 // true once the packaged-run updater is configured; channel switches before
 // that (or in dev runs) must not touch electron-updater
 let updaterActive = false
+let manualCheck: Promise<UpdateCheckResult> | null = null
+let downloadFromAbout = false
 
 function versionParts(version: string): number[] {
   return version
@@ -353,7 +355,18 @@ export function isNewerVersion(candidate: string, current: string): boolean {
   return false
 }
 
-export async function checkForUpdatesNow(channel: UpdateChannel): Promise<UpdateCheckResult> {
+export function checkForUpdatesNow(channel: UpdateChannel): Promise<UpdateCheckResult> {
+  if (manualCheck) return manualCheck
+  dismissedVersion = null
+  downloadFromAbout = true
+  manualCheck = performUpdateCheck(channel).finally(() => {
+    manualCheck = null
+    downloadFromAbout = false
+  })
+  return manualCheck
+}
+
+async function performUpdateCheck(channel: UpdateChannel): Promise<UpdateCheckResult> {
   const currentVersion = app.getVersion()
   try {
     if (updaterActive) {
@@ -490,6 +503,7 @@ export function initAutoUpdater(
   // paths funnel into failDownload() and the in-flight flag dedupes them
   let failedAttempts = 0
   let downloadInFlight = false
+  let downloadComplete = false
 
   const failDownload = (): void => {
     if (!downloadInFlight) return
@@ -500,6 +514,7 @@ export function initAutoUpdater(
 
   const actions = {
     onDownload: () => {
+      if (downloadInFlight || downloadComplete) return
       downloadInFlight = true
       pushUpdateState({ phase: 'downloading', percent: 0 })
       autoUpdater.downloadUpdate().catch((err) => {
@@ -531,15 +546,26 @@ export function initAutoUpdater(
   autoUpdater.on('update-available', (info: UpdateInfo) => {
     if (info.version === dismissedVersion) return
     const sameVersionRecheck = info.version === latestSeenVersion
-    if (!sameVersionRecheck) failedAttempts = 0
+    if (!sameVersionRecheck) {
+      failedAttempts = 0
+      downloadComplete = false
+    }
     latestSeenVersion = info.version
     log('update available:', info.version)
     // a periodic recheck resolving to the version the open dialog already
     // shows must not reset its phase to 'available' — that would wipe an
     // in-progress download or a terminal 'manual' fallback back to the
     // "Update Now" offer
-    if (sameVersionRecheck && isUpdateWindowOpen()) return
-    showUpdateWindow(getWindow(), initialState(info.version), actions)
+    if (sameVersionRecheck && isUpdateWindowOpen()) {
+      if (downloadFromAbout && failedAttempts < MANUAL_FALLBACK_AFTER) actions.onDownload()
+      return
+    }
+    const state = initialState(info.version)
+    if (downloadComplete) Object.assign(state, { phase: 'downloaded', percent: 100 })
+    else if (downloadInFlight) state.phase = 'downloading'
+    else if (failedAttempts >= MANUAL_FALLBACK_AFTER) state.phase = 'manual'
+    showUpdateWindow(getWindow(), state, actions)
+    if (downloadFromAbout && failedAttempts < MANUAL_FALLBACK_AFTER) actions.onDownload()
   })
 
   autoUpdater.on('download-progress', (progress) => {
@@ -549,6 +575,7 @@ export function initAutoUpdater(
   autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
     log('downloaded:', info.version)
     downloadInFlight = false
+    downloadComplete = true
     failedAttempts = 0
     pushUpdateState({ phase: 'downloaded', percent: 100 })
   })

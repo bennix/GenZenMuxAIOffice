@@ -51,3 +51,5 @@ export {
   type ShapeGalleryGroup,
   type ShapeGalleryShape,
 } from './shape-gallery'
+export { ScreenwritingStudio } from './ScreenwritingStudio'
+export { screenplayParagraphs } from './screenwriting'

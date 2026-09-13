@@ -38,6 +38,7 @@ interface Props {
   onTranslate: (language: 'zh' | 'en') => void
   onReview: () => void
   onEssayReview: () => void
+  onScreenwriting: () => void
   aiOpen: boolean
   onToggleAi: () => void
   onAiPreset: (instruction: string) => void
@@ -163,6 +164,7 @@ export function Ribbon({
   onTranslate,
   onReview,
   onEssayReview,
+  onScreenwriting,
   aiOpen,
   onToggleAi,
   onAiPreset,
@@ -325,6 +327,18 @@ export function Ribbon({
                 <span className="ai-feature-icon">✓</span>
               </span>
               <span>{featureText.aiReview}</span>
+            </button>
+            <button
+              type="button"
+              className="rb-big ai-entry"
+              disabled={off}
+              onClick={onScreenwriting}
+              aria-label="AI 编剧"
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon">✎</span>
+              </span>
+              <span>AI 编剧</span>
             </button>
             <button
               type="button"

@@ -990,8 +990,8 @@ export function SettingsModal({
                     <p>
                       {updateCheck.status === 'available'
                         ? isChinese
-                          ? '支持自动更新的平台会打开下载与安装窗口；Linux 安装包可前往下载页手动更新。'
-                          : 'Automatic-update platforms will open the download window; Linux packages can be updated from the download page.'
+                          ? '支持自动更新的平台会自动下载新版；下载完成后可重启安装，或在正常退出时安装。不支持自动更新的安装包可前往下载页更新。'
+                          : 'Supported platforms download the update automatically. Restart to install when ready, or install on normal quit. Other packages can be updated from the download page.'
                         : updateCheck.status === 'checking'
                           ? isChinese
                             ? '正在连接 ZenOffice 发布服务。'

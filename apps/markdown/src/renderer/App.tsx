@@ -24,6 +24,7 @@ import { SlashMenu, type SlashMenuHandle } from './components/SlashMenu'
 import { TableMenu } from './components/TableMenu'
 import { EquationDialog, type MarkdownEquationTarget } from './components/EquationDialog'
 import { MermaidDialog } from './components/MermaidDialog'
+import { ScreenwritingStudio, screenplayParagraphs } from '@genoffice/ui'
 import { WechatExportDialog } from './components/WechatExportDialog'
 import { AiReviewCommitteeModal } from './components/AiReviewCommitteeModal'
 import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
@@ -97,6 +98,7 @@ export default function App() {
   const [equationOpen, setEquationOpen] = useState(false)
   const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
   const [mermaidOpen, setMermaidOpen] = useState(false)
+  const [screenwritingOpen, setScreenwritingOpen] = useState(false)
   const [infographicOpen, setInfographicOpen] = useState(false)
   const [mermaidTab, setMermaidTab] = useState<'pretty' | 'editorial' | 'wechat'>('pretty')
   const [wechatOpen, setWechatOpen] = useState(false)
@@ -496,6 +498,7 @@ export default function App() {
         }}
         onReview={() => setReviewOpen(true)}
         onEssayReview={() => setEssayReviewOpen(true)}
+        onScreenwriting={() => setScreenwritingOpen(true)}
         onTranslate={(language) => {
           const selection = editor && editor.state.selection.from !== editor.state.selection.to
           const target = language === 'zh' ? '简体中文' : 'English'
@@ -610,6 +613,25 @@ export default function App() {
           editor={editor}
           initialTab={mermaidTab}
           onClose={() => setMermaidOpen(false)}
+        />
+      )}
+      {screenwritingOpen && editor && (
+        <ScreenwritingStudio
+          initialSource={editor.getText({ blockSeparator: '\n\n' })}
+          onClose={() => setScreenwritingOpen(false)}
+          onInsert={(text) =>
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(editor.state.doc.content.size, screenplayParagraphs(text))
+              .run()
+          }
+          generate={async (prompt) => {
+            const settings = await window.markdownApi.getAiSettings()
+            const response = await window.markdownApi.aiChat({ settings, ...prompt })
+            if (!response.ok) throw new Error(response.error || 'AI 生成失败。')
+            return response.content || ''
+          }}
         />
       )}
       {wechatOpen && editor && (

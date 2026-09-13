@@ -1,5 +1,6 @@
 import { ArtFlowStudio } from './ArtFlowStudio'
 import { GongwenStudio } from './GongwenStudio'
+import { ScreenwritingStudio, screenplayParagraphs } from '@genoffice/ui'
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { ChainedCommands, Editor } from '@tiptap/core'
@@ -736,17 +737,21 @@ function RibbonInner({
   const [artFlowOpen, setArtFlowOpen] = useState(false)
   const [artFlowMounted, setArtFlowMounted] = useState(false)
   const [gongwenOpen, setGongwenOpen] = useState(false)
+  const [screenwritingOpen, setScreenwritingOpen] = useState(false)
   useEffect(() => {
     const openArt = () => {
       setArtFlowMounted(true)
       setArtFlowOpen(true)
     }
     const openGongwen = () => setGongwenOpen(true)
+    const openScreenwriting = () => setScreenwritingOpen(true)
+    document.addEventListener('zenoffice:open-screenwriting', openScreenwriting)
     document.addEventListener('zenoffice:open-loveart', openArt)
     document.addEventListener('zenoffice:open-gongwen', openGongwen)
     return () => {
       document.removeEventListener('zenoffice:open-loveart', openArt)
       document.removeEventListener('zenoffice:open-gongwen', openGongwen)
+      document.removeEventListener('zenoffice:open-screenwriting', openScreenwriting)
     }
   }, [])
   const [tab, setTab] = useState<RibbonTab>('home')
@@ -1516,6 +1521,28 @@ function RibbonInner({
         <ArtFlowStudio editor={editor} open={artFlowOpen} onClose={() => setArtFlowOpen(false)} />
       )}
       {gongwenOpen && <GongwenStudio editor={editor} onClose={() => setGongwenOpen(false)} />}
+      {screenwritingOpen && (
+        <ScreenwritingStudio
+          initialSource={editor.getText({ blockSeparator: '\n\n' })}
+          onClose={() => setScreenwritingOpen(false)}
+          onInsert={(text) =>
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(
+                editor.state.doc.content.size,
+                screenplayParagraphs(text, 'docParagraph'),
+              )
+              .run()
+          }
+          generate={async (prompt) => {
+            const settings = await window.desktop.getAiSettings()
+            const response = await window.desktop.aiChat({ settings, ...prompt })
+            if (!response.ok) throw new Error(response.error || 'AI 生成失败。')
+            return response.content || ''
+          }}
+        />
+      )}
       <div
         className={`ribbon-tabs ${IN_TAB ? '' : IS_MAC ? 'ribbon-tabs-mac' : 'ribbon-tabs-win'}`}
       >

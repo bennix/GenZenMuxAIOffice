@@ -77,11 +77,13 @@ const showUpdateWindow =
   vi.fn<(parent: unknown, state: UpdateUiState, actions: UpdateActions) => void>()
 const pushUpdateState = vi.fn<(patch: Partial<UpdateUiState>) => void>()
 const closeUpdateWindow = vi.fn()
+const isUpdateWindowOpen = vi.fn(() => false)
 
 vi.mock('../src/main/update-window', () => ({
   showUpdateWindow: (...args: [unknown, UpdateUiState, UpdateActions]) => showUpdateWindow(...args),
   pushUpdateState: (patch: Partial<UpdateUiState>) => pushUpdateState(patch),
   closeUpdateWindow: () => closeUpdateWindow(),
+  isUpdateWindowOpen: () => isUpdateWindowOpen(),
 }))
 
 const FIRST_CHECK_DELAY_MS = 15_000
@@ -133,6 +135,7 @@ beforeEach(() => {
   showUpdateWindow.mockClear()
   pushUpdateState.mockClear()
   closeUpdateWindow.mockClear()
+  isUpdateWindowOpen.mockReset().mockReturnValue(false)
   setPlatform('darwin')
 })
 
@@ -144,6 +147,47 @@ afterEach(() => {
 })
 
 describe('initAutoUpdater', () => {
+  it('About reopens a dismissed update and downloads once across repeated clicks', async () => {
+    const { initAutoUpdater, checkForUpdatesNow } = await loadUpdater()
+    initAutoUpdater(() => null)
+    updaterState.listeners.get('update-available')!({ version: '0.2.0' })
+    lastShownActions().onLater()
+    checkForUpdates.mockImplementation(async () => {
+      updaterState.listeners.get('update-available')!({ version: '0.2.0' })
+      return { updateInfo: { version: '0.2.0' } }
+    })
+    const first = checkForUpdatesNow('stable')
+    const second = checkForUpdatesNow('stable')
+    expect(first).toBe(second)
+    await first
+    expect(checkForUpdates).toHaveBeenCalledTimes(1)
+    expect(downloadUpdate).toHaveBeenCalledTimes(1)
+    expect(showUpdateWindow).toHaveBeenCalledTimes(2)
+    isUpdateWindowOpen.mockReturnValue(true)
+    await checkForUpdatesNow('stable')
+    expect(downloadUpdate).toHaveBeenCalledTimes(1)
+    updaterState.listeners.get('update-downloaded')!({ version: '0.2.0' })
+    lastShownActions().onLater()
+    isUpdateWindowOpen.mockReturnValue(false)
+    await checkForUpdatesNow('stable')
+    expect(lastShownState().phase).toBe('downloaded')
+    expect(downloadUpdate).toHaveBeenCalledTimes(1)
+    expect(quitAndInstall).not.toHaveBeenCalled()
+  })
+
+  it('About starts downloading an already open available update', async () => {
+    const { initAutoUpdater, checkForUpdatesNow } = await loadUpdater()
+    initAutoUpdater(() => null)
+    updaterState.listeners.get('update-available')!({ version: '0.2.0' })
+    isUpdateWindowOpen.mockReturnValue(true)
+    checkForUpdates.mockImplementation(async () => {
+      updaterState.listeners.get('update-available')!({ version: '0.2.0' })
+      return { updateInfo: { version: '0.2.0' } }
+    })
+    await checkForUpdatesNow('stable')
+    expect(downloadUpdate).toHaveBeenCalledTimes(1)
+    expect(showUpdateWindow).toHaveBeenCalledTimes(1)
+  })
   it('does nothing in unpacked (dev) runs without the fake-update env', async () => {
     appState.isPackaged = false
     const { initAutoUpdater } = await loadUpdater()
