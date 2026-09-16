@@ -115,13 +115,7 @@ export function layoutChartLegend(
     grid: reserveGridSpace(grid, footer, height),
     ...(zooms.length
       ? {
-          dataZoom: zooms.map((zoom) =>
-            zoom.type === 'slider' && zoom.yAxisIndex === undefined
-              ? { ...zoom, bottom: legendHeight + 6, height: 16 }
-              : zoom.type === 'slider'
-                ? { ...zoom, top: 65, bottom: footer }
-                : zoom,
-          ),
+          dataZoom: zooms.map((zoom) => zoom),
         }
       : {}),
   }
