@@ -26,7 +26,7 @@ import { EquationDialog, type MarkdownEquationTarget } from './components/Equati
 import { MermaidDialog } from './components/MermaidDialog'
 import { ScreenwritingStudio, screenplayParagraphs } from '@genoffice/ui'
 import { WechatExportDialog } from './components/WechatExportDialog'
-import { AiReviewCommitteeModal } from './components/AiReviewCommitteeModal'
+import { AiReviewCommitteeModal, documentImages } from './components/AiReviewCommitteeModal'
 import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
 import { DOCX_MAX_IMAGE_PX, exportDocxBytes } from './export/docxExport'
 import { buildPrintHtml } from './export/printHtml'
@@ -194,12 +194,12 @@ export default function App() {
       window.markdownApi.onSharedImage(async (dataUrl) => {
         const current = editorRef.current
         const originalPath = filePathRef.current
-        if (!current || current.isDestroyed || !current.isEditable || !originalPath)
-          throw new Error('请先保存并打开可编辑的 Markdown 文件。')
-        const path = await window.markdownApi.saveImage({
+        if (!current || current.isDestroyed || !current.isEditable)
+          throw new Error('Markdown 文件当前不可编辑。')
+        const path = originalPath ? await window.markdownApi.saveImage({
           base64: dataUrl.split(',')[1]!,
           ext: dataUrl.startsWith('data:image/png;') ? 'png' : 'jpg',
-        })
+        }) : dataUrl
         if (!path || editorRef.current !== current || filePathRef.current !== originalPath)
           throw new Error('Markdown 文件已切换或图片保存失败。')
         if (!current.chain().focus().setImage({ src: path }).run())
@@ -353,6 +353,37 @@ export default function App() {
     }
   }, [])
   saveUntitledRef.current = () => doSave('save')
+
+  useEffect(() => window.markdownApi.onMcpRequest((request) => {
+    void (async () => {
+      try {
+        const current = editorRef.current
+        if (!current || statusRef.current !== 'ready' || savingRef.current || current.view.composing)
+          throw new Error('编辑器正在加载、保存或输入，请稍后重试')
+        if (request.action === 'replace') {
+          if (current.getMarkdown() !== request.expectedText)
+            throw new Error('正文已变化，请重新读取后再修改')
+          if (typeof request.text !== 'string' || request.text.length > 200_000)
+            throw new Error('正文超出限制')
+          current.chain().setContent(request.text, { contentType: 'markdown' }).run()
+          markDirty()
+        } else if (request.action === 'save') {
+          if (!filePathRef.current) throw new Error('请先在界面保存未命名文档')
+          if (!await doSave('save')) throw new Error('保存未完成')
+        }
+        const text = current.getMarkdown()
+        if (text.length > 200_000) throw new Error('正文超过 MCP 读取限制（200000 字符）')
+        const snapshot = current.state.doc
+        const images = request.action === 'ai_context' ? await documentImages(current) : undefined
+        if (images && (editorRef.current !== current || current.state.doc !== snapshot)) throw new Error('文档已变化，请重新读取 AI 上下文')
+        window.markdownApi.sendMcpResult({ requestId: request.requestId,
+          data: { text, path: filePathRef.current, dirty: dirtyRef.current, ...(images ? { images } : {}) } })
+      } catch (error) {
+        window.markdownApi.sendMcpResult({ requestId: request.requestId,
+          error: error instanceof Error ? error.message : String(error) })
+      }
+    })()
+  }), [doSave, markDirty])
 
   const runExport = useCallback(async (format: ExportFormat) => {
     const current = editorRef.current
@@ -636,6 +667,7 @@ export default function App() {
       )}
       {screenwritingOpen && editor && (
         <ScreenwritingStudio
+          getDocumentVersion={() => editor.state.doc}
           initialSource={editor.getText({ blockSeparator: '\n\n' })}
           onClose={() => setScreenwritingOpen(false)}
           onInsert={(text) =>

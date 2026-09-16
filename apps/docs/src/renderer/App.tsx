@@ -32,6 +32,8 @@ import { toRoman } from './note-format'
 import { CommentsPanel } from './components/CommentsPanel'
 import { EquationModal } from './components/EquationModal'
 import { AiReviewCommitteeModal } from './components/AiReviewCommitteeModal'
+import { collectReviewDocumentMaterial } from './ai-review-committee'
+import { serializeRangeToHtml } from './ai/protocol'
 import { HeaderFooterArea } from './components/HeaderFooterArea'
 import { PaginationPreview } from './components/PaginationPreview'
 import {
@@ -567,6 +569,8 @@ export function App() {
   const saveIncompleteRef = useRef(false)
 
   const editorRef = useRef<Editor | null>(null)
+  const mcpBodyRevisionRef = useRef<{ doc: unknown; token: string }>({ doc: null, token: '' })
+  const loadingDocumentRef = useRef(0)
   const editor = useEditor({
     extensions: editorExtensions,
     content: { type: 'doc', content: [{ type: 'docParagraph' }] },
@@ -931,7 +935,11 @@ export function App() {
   }
 
   const loadFile = useCallback(
-    (result: OpenFileResult | null) => loadFileImpl(fileCtxRef.current, result),
+    async (result: OpenFileResult | null) => {
+      loadingDocumentRef.current++
+      try { await loadFileImpl(fileCtxRef.current, result) }
+      finally { loadingDocumentRef.current-- }
+    },
     [],
   )
 
@@ -991,7 +999,11 @@ export function App() {
   }, [loadFile])
 
   /** new document from the built-in blank template (AI can then generate into it) */
-  const newFile = useCallback(() => newFileImpl(fileCtxRef.current), [])
+  const newFile = useCallback(async () => {
+    loadingDocumentRef.current++
+    try { return await newFileImpl(fileCtxRef.current) }
+    finally { loadingDocumentRef.current-- }
+  }, [])
 
   const openRecent = useCallback(
     async (path: string) => {
@@ -1004,6 +1016,54 @@ export function App() {
     (saveAs: boolean, auto = false) => saveImpl(fileCtxRef.current, saveAs, auto),
     [],
   )
+
+  useEffect(() => window.desktop.onMcpRequest((request) => {
+    void (async () => {
+      try {
+        const current = editorRef.current
+        if (tornDown || loadingDocumentRef.current || !fileCtxRef.current.doc || !current || current.isDestroyed || current.view.composing || saveInFlightRef.current)
+          throw new Error('Word 编辑器未就绪或正在保存、输入，请稍后重试')
+        window.dispatchEvent(new Event('ai-docs-commit-tables'))
+        const revision = () => {
+          if (mcpBodyRevisionRef.current.doc !== current.state.doc)
+            mcpBodyRevisionRef.current = { doc: current.state.doc, token: crypto.randomUUID() }
+          return mcpBodyRevisionRef.current.token
+        }
+        let extra: { text?: string; totalChars?: number; offset?: number; insertedParagraphs?: number; reviewMaterial?: { text: string; images: { mime: string; base64: string }[]; omittedImageCount: number } } = {}
+        if (request.action === 'insert') {
+          if (!current.isEditable) throw new Error('Word 文档当前不可编辑')
+          if (request.expectedRevision !== revision()) throw new Error('正文已变化，请重新读取并合并后再插入')
+          if (typeof request.text !== 'string' || !request.text.length || request.text.length > 50_000)
+            throw new Error('插入正文长度无效')
+          const paragraphs = request.text.replace(/\r\n?/g, '\n').split('\n').map((text) => ({
+            type: 'docParagraph', ...(text ? { content: [{ type: 'text', text }] } : {}),
+          }))
+          if (!current.chain().insertContentAt(request.position === 'start' ? 0 : current.state.doc.content.size, paragraphs).run())
+            throw new Error('Word 段落插入失败')
+          extra = { insertedParagraphs: paragraphs.length }
+        } else if (request.action === 'ai_context') {
+          const material = collectReviewDocumentMaterial(current)
+          const html = current.state.doc.childCount ? serializeRangeToHtml(current, 0, current.state.doc.childCount - 1) : ''
+          const text = current.getText({ blockSeparator: '\n\n' })
+          if (text.length > 120_000 || html.length > 120_000) throw new Error('文档超过 AI 上下文限制，请缩小文档后重试')
+          extra = { text, reviewMaterial: { text: `${html}\n\nOBJECT CATALOG:\n${material.objectCatalog}`, images: material.images, omittedImageCount: material.omittedImageCount } }
+        } else if (request.action === 'read') {
+          const text = current.getText({ blockSeparator: '\n' })
+          const offset = request.offset ?? 0
+          extra = { text: text.slice(offset, offset + (request.maxChars ?? 100_000)), totalChars: text.length, offset }
+        } else if (request.action === 'save') {
+          if (!fileCtxRef.current.doc.filePath) throw new Error('请先在界面保存未命名 Word 文档')
+          if (!await save(false, true)) throw new Error('保存未完成；请检查文件是否被外部修改或应用中的错误提示')
+        }
+        window.desktop.sendMcpResult({ requestId: request.requestId, data: {
+          revision: revision(), path: fileCtxRef.current.doc?.filePath ?? null,
+          dirty: isDocDirty(fileCtxRef.current) || saveIncompleteRef.current, ...extra,
+        } })
+      } catch (error) {
+        window.desktop.sendMcpResult({ requestId: request.requestId, error: error instanceof Error ? error.message : String(error) })
+      }
+    })()
+  }), [save, tornDown])
 
   // inserting a section break needs one save for the new section to take effect; the
   // flag is consumed in the render after state commit, guaranteeing the save closure

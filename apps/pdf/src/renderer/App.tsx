@@ -3305,11 +3305,17 @@ export default function App() {
       await image.decode()
       if (!active) throw new Error('PDF 页面已切换，请重新分享。')
       const canvas = document.createElement('canvas')
-      canvas.width = image.naturalWidth
-      canvas.height = image.naturalHeight
+      if (!image.naturalWidth || !image.naturalHeight) throw new Error('图片尺寸无效。')
+      const rasterScale = Math.min(
+        dataUrl.startsWith('data:image/svg+xml;') ? 2 : 1,
+        4096 / image.naturalWidth,
+        4096 / image.naturalHeight,
+      )
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * rasterScale))
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * rasterScale))
       const context = canvas.getContext('2d')
       if (!context) throw new Error('无法读取图片。')
-      context.drawImage(image, 0, 0)
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
       const png = canvas.toDataURL('image/png').split(',')[1]!
       const geom = pageGeom(origIdx)
       const disp = geomDispSize(geom)
@@ -3319,6 +3325,14 @@ export default function App() {
       const [ax, ay] = viewToPdf(geom, (disp.width - width) / 2, (disp.height - height) / 2)
       const [bx, by] = viewToPdf(geom, (disp.width + width) / 2, (disp.height + height) / 2)
       pushUndoRef.current()
+      setEditTextMode(false)
+      setTextDraft(null)
+      setDrawTool(null)
+      setPendingSign(null)
+      setPanMode(false)
+      setEditImageMode(true)
+      setRibbonTab('edit')
+      setImagePick(null)
       setImageEdits((prev) => [
         ...prev,
         {
@@ -4778,7 +4792,8 @@ export default function App() {
       <input
         ref={imageFileRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml,.svg"
+        aria-label="插入图片文件"
         style={{ display: 'none' }}
         onChange={(e) => {
           const f = e.target.files?.[0]

@@ -13,6 +13,8 @@ export type {
   AiImageGenerateOptions,
   AiImageReference,
 } from './types'
+export { runDocumentReview } from './review-runner'
+export type { ReviewResult } from './review-runner'
 export {
   AI_PROVIDERS,
   ZENMUX_BASE_URL,

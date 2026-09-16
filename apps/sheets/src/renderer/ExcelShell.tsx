@@ -2284,10 +2284,10 @@ function Ribbon({
       <RibbonGroup label={t('appGroupAiAssistant')}>
         <RibbonButton
           large
-          label="AI 编剧"
-          detail="从选区素材生成编剧表格"
-          symbol="✎"
-          onClick={() => onCommand('screenwriting-open')}
+          label="数据可视化"
+          detail="选区图形、统计分布与导出"
+          symbol="▥"
+          onClick={() => onCommand('visualization-open')}
         />
         <button
           className={`ribbon-tool as-button large ai-entry ${aiOpen ? 'active' : ''}`}

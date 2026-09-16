@@ -10,18 +10,19 @@ import './screenwriting.css'
 
 export function ScreenwritingStudio({
   initialSource,
+  getDocumentVersion,
   generate,
   onInsert,
   onClose,
-  surface = 'document',
 }: {
   initialSource: string
+  getDocumentVersion: () => unknown
   generate: (prompt: { system: string; user: string }) => Promise<string>
   onInsert: (text: string) => boolean
   onClose: () => void
-  surface?: 'document' | 'spreadsheet'
 }) {
   const [source, setSource] = useState(initialSource)
+  const [sourceVersion] = useState(() => getDocumentVersion())
   const [instruction, setInstruction] = useState('')
   const [task, setTask] = useState<ScreenwritingTask>('sw-premise-theme')
   const [medium, setMedium] = useState('电影')
@@ -67,10 +68,10 @@ export function ScreenwritingStudio({
       <header>
         <div>
           <strong>AI 编剧工作台</strong>
-          <p>Screenwriting Skills · 沿用当前 AI 模型设置</p>
+          <p>确认素材 → 选择创作任务 → 审阅结果 → 插入文档 · 沿用当前 AI 模型设置</p>
         </div>
         <button disabled={busy} onClick={onClose}>
-          {surface === 'spreadsheet' ? '返回工作簿' : '返回文档'}
+          返回文档
         </button>
       </header>
       <div className="screenwriting-columns">
@@ -103,9 +104,7 @@ export function ScreenwritingStudio({
             />
           </label>
           <label>
-            {surface === 'spreadsheet'
-              ? '剧本素材（从当前选区提取，可编辑）'
-              : '剧本素材（从当前文档提取，可编辑）'}
+            剧本素材（从当前文档提取，可编辑）
             <textarea rows={12} value={source} onChange={(e) => setSource(e.target.value)} />
           </label>
           <button disabled={!source.trim() && !instruction.trim()} onClick={() => void run()}>
@@ -123,11 +122,7 @@ export function ScreenwritingStudio({
               rows={22}
               value={result}
               onChange={(e) => setResult(e.target.value)}
-              placeholder={
-                surface === 'spreadsheet'
-                  ? '生成结果为制表符分隔的表格，可编辑后写入新工作表。'
-                  : '生成结果显示在这里，确认后再插入文档。'
-              }
+              placeholder="生成结果显示在这里，确认后再插入文档。"
             />
           </label>
           <div className="screenwriting-actions">
@@ -144,6 +139,7 @@ export function ScreenwritingStudio({
               disabled={!result.trim()}
               onClick={() => {
                 try {
+                  if (getDocumentVersion() !== sourceVersion) throw new Error('原文已变化，请返回文档并重新打开编剧工作台后再插入。')
                   if (onInsert(result)) onClose()
                   else setError('插入失败，请检查编辑状态。')
                 } catch (cause) {
@@ -151,7 +147,7 @@ export function ScreenwritingStudio({
                 }
               }}
             >
-              {surface === 'spreadsheet' ? '写入新工作表' : '插入到文档末尾'}
+              插入到文档末尾
             </button>
           </div>
         </fieldset>

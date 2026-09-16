@@ -1,0 +1,35 @@
+{
+  "name": "@genoffice/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./src/registry.ts",
+    "./application-tools": "./src/application-tools.ts",
+    "./project-tools": "./src/project-tools.ts",
+    "./knowledge-tools": "./src/knowledge-tools.ts",
+    "./image-tools": "./src/image-tools.ts",
+    "./ai-tools": "./src/ai-tools.ts",
+    "./writing-tools": "./src/writing-tools.ts",
+    "./markdown-tools": "./src/markdown-tools.ts",
+    "./word-tools": "./src/word-tools.ts",
+    "./application-bridge": "./src/application-bridge.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@genoffice/ai-provider": "*",
+    "@genoffice/i18n": "*",
+    "@genoffice/visualization": "^0.1.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}

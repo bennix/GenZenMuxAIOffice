@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "zenoffice": {
+      "command": "node",
+      "args": [
+        "--import",
+        "/path/GenOffice/node_modules/tsx/dist/loader.mjs",
+        "/path/GenOffice/packages/mcp-server/src/cli.ts"
+      ],
+      "env": {
+        "ZENOFFICE_MCP_PORT": "19385",
+        "ZENOFFICE_MCP_TOKEN": "YOUR_LOCAL_TOKEN"
+      }
+    }
+  }
+}

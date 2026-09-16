@@ -25,6 +25,7 @@
     "vitest": "^4.1.0"
   },
   "dependencies": {
+    "@genoffice/ai-provider": "*",
     "@antv/infographic": "^0.2.20",
     "@genoffice/electron-utils": "*",
     "@genoffice/pptx-render": "*",

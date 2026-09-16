@@ -63,6 +63,16 @@ describe('markdown round-trip for GFM nodes', () => {
     expect(stable).toBe(true)
   })
 
+  it('shared image in an untitled document survives saving and parsing', () => {
+    const src = 'data:image/png;base64,iVBORw0KGgo='
+    const { out, stable } = roundTrip(editor, `![图表](${src})`)
+    expect(out).toContain(src)
+    expect(stable).toBe(true)
+    const fresh = createEditor()
+    fresh.commands.setContent(out, { contentType: 'markdown' })
+    expect(fresh.getHTML()).toContain(src)
+  })
+
   it('plain constructs round-trip', () => {
     const md = '# Title\n\n> quoted\n\n```js\ncode()\n```\n\n---'
     const { out, stable } = roundTrip(editor, md)

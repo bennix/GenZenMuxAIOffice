@@ -9,6 +9,8 @@ import type {
 import type { ConnectApi } from '@genoffice/electron-utils/connect'
 
 export const MARKDOWN_CHANNELS = {
+  mcpRequest: 'markdown:mcp-request',
+  mcpResult: 'markdown:mcp-result',
   consumePending: 'markdown:consume-pending',
   readFile: 'markdown:read-file',
   readBibliography: 'markdown:read-bibliography',
@@ -33,6 +35,18 @@ export const MARKDOWN_CHANNELS = {
 } as const
 
 export type UiTheme = 'light' | 'dark' | 'system'
+
+export interface MarkdownMcpRequest {
+  requestId: string
+  action: 'read' | 'replace' | 'save' | 'ai_context'
+  text?: string
+  expectedText?: string
+}
+export type MarkdownMcpResult = {
+  requestId: string
+  data?: { text: string; path: string | null; dirty: boolean; images?: { mime: string; base64: string }[] }
+  error?: string
+}
 
 export type SaveMode = 'save' | 'saveAs'
 
@@ -117,6 +131,8 @@ export interface AttachmentImageResult {
 
 /** API exposed by preload to the renderer (window.markdownApi) */
 export interface MarkdownApi extends ConnectApi {
+  onMcpRequest(handler: (request: MarkdownMcpRequest) => void): () => void
+  sendMcpResult(result: MarkdownMcpResult): void
   /** Take the md path pending for this view (queued at tab creation); null = new untitled document */
   consumePending(): Promise<string | null>
   /** Read the file as UTF-8 text. Only paths granted to this view are allowed */

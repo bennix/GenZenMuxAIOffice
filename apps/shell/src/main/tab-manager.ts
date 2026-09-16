@@ -1,5 +1,8 @@
 import { basename } from 'node:path'
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
+import { randomUUID } from 'node:crypto'
+import { MARKDOWN_CHANNELS, type MarkdownMcpRequest } from '../../../markdown/src/shared/ipc'
+import { WORD_MCP_CHANNELS, type WordMcpRequest } from '../../../docs/src/shared/ipc'
 import type { Rectangle, WebContents, WebContentsView } from 'electron'
 
 import {
@@ -131,6 +134,41 @@ export class TabManager {
     return this.tabs.some((tab) => tab.view?.webContents.id === webContentsId)
   }
 
+  requestMarkdown(id: string, request: Omit<MarkdownMcpRequest, 'requestId'>): Promise<unknown> {
+    return this.requestEditor(id, 'markdown', { request: MARKDOWN_CHANNELS.mcpRequest, result: MARKDOWN_CHANNELS.mcpResult }, request)
+  }
+
+  requestWord(id: string, request: Omit<WordMcpRequest, 'requestId'>): Promise<unknown> {
+    return this.requestEditor(id, 'docs', WORD_MCP_CHANNELS, request)
+  }
+
+  private requestEditor(id: string, kind: 'docs' | 'markdown', channels: { request: string; result: string }, request: object): Promise<unknown> {
+    const target = this.tabs.find((tab) => tab.id === id && tab.kind === kind)?.view?.webContents
+    if (!target || target.isDestroyed()) return Promise.reject(new Error('编辑标签不存在或类型不匹配'))
+    const requestId = randomUUID()
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer)
+        ipcMain.removeListener(channels.result, listener)
+        target.removeListener('destroyed', onDestroyed)
+      }
+      const listener = (event: Electron.IpcMainEvent, result: { requestId: string; error?: string; data?: unknown }) => {
+        if (event.sender !== target || event.senderFrame !== target.mainFrame || result?.requestId !== requestId) return
+        cleanup()
+        if (result.error) reject(new Error(result.error))
+        else resolve(result.data)
+      }
+      const onDestroyed = () => { cleanup(); reject(new Error('编辑标签已关闭')) }
+      const timer = setTimeout(() => {
+        cleanup()
+        reject(new Error('编辑器响应超时；请读取当前状态后再重试修改'))
+      }, 25_000)
+      ipcMain.on(channels.result, listener)
+      target.once('destroyed', onDestroyed)
+      target.send(channels.request, { ...request, requestId })
+    })
+  }
+
   connectTargets(sourceWebContentsId: number): ConnectTarget[] {
     return this.tabs.flatMap((tab) => {
       if (
@@ -144,8 +182,8 @@ export class TabManager {
     })
   }
 
-  imageShareTargets(sourceWebContentsId: number) {
-    if (!this.ownsWebContents(sourceWebContentsId)) return []
+  imageShareTargets(sourceWebContentsId: number | null) {
+    if (sourceWebContentsId !== null && !this.ownsWebContents(sourceWebContentsId)) return []
     return this.tabs.flatMap((tab) =>
       tab.view &&
       tab.view.webContents.id !== sourceWebContentsId &&
@@ -156,7 +194,7 @@ export class TabManager {
   }
 
   sendSharedImage(
-    sourceWebContentsId: number,
+    sourceWebContentsId: number | null,
     targetId: string,
     payload: { id: string; dataUrl: string },
   ): number | null {

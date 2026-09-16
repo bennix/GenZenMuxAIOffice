@@ -45,7 +45,7 @@ export function buildExtensions(options: BuildExtensionsOptions): AnyExtension[]
     TableKit.configure({ table: { resizable: false, renderWrapper: true } }),
     TaskList,
     TaskItem.configure({ nested: true }),
-    LocalImage,
+    LocalImage.configure({ allowBase64: true }),
     InlineEquation,
     BlockEquation,
     BlockDragHandle,

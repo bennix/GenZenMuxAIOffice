@@ -19,6 +19,7 @@ export const ARTIFACTS_DIR = resolve(__dirname, 'artifacts')
 const SHELL_MAIN = join(SHELL_DIR, 'out/main/index.js')
 
 interface LaunchOptions {
+  env?: Record<string, string>
   /** Disable screencast when verifying embedded frames on affected Chromium builds. */
   recordVideo?: boolean
   /** reuse a previous scratch dir to simulate a second launch */
@@ -69,6 +70,7 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
     args,
     env: {
       ...hostEnv,
+      ...options.env,
       GENOFFICE_USER_DATA: userDataDir,
       GENOFFICE_LANG: options.lang ?? 'en',
       ...(process.platform === 'linux' ? { ELECTRON_DISABLE_SANDBOX: '1' } : {}),

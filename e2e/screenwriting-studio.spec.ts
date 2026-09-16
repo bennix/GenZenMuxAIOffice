@@ -63,6 +63,32 @@ for (const kind of ['word', 'markdown'] as const) {
       await expect(editor).toContainText('保留原有文稿')
       await expect(editor).toContainText('你终于来了')
       await expect(editor.locator('img')).toHaveCount(0)
+      await doc.getByRole('button', { name: 'AI 编剧', exact: true }).click()
+      await studio.getByLabel('AI 建议稿（可编辑）').fill('旧版本建议不应写回')
+      await app.evaluate(async ({ webContents, ipcMain }, kind) => {
+        const module = kind === 'word' ? 'docs' : 'markdown'
+        const target = webContents.getAllWebContents().find((wc) => wc.getURL().includes(`${module}/out`))!
+        const request = (args: object) => new Promise<any>((resolve, reject) => {
+          const requestId = `fixture-${Math.random()}`
+          const timer = setTimeout(() => { ipcMain.removeListener(`${module}:mcp-result`, listener); reject(new Error('MCP timeout')) }, 5000)
+          const listener = (_event: unknown, result: any) => {
+            if (result.requestId !== requestId) return
+            clearTimeout(timer)
+            ipcMain.removeListener(`${module}:mcp-result`, listener)
+            if (result.error) reject(new Error(result.error)); else resolve(result.data)
+          }
+          ipcMain.on(`${module}:mcp-result`, listener)
+          target.send(`${module}:mcp-request`, { requestId, ...args })
+        })
+        const before = await request({ action: 'read' })
+        await request(kind === 'word'
+          ? { action: 'insert', text: '生成期间的新修改', expectedRevision: before.revision }
+          : { action: 'replace', text: before.text + '\n\n生成期间的新修改', expectedText: before.text })
+      }, kind)
+      await studio.getByRole('button', { name: '插入到文档末尾' }).click()
+      await expect(studio.getByRole('alert')).toContainText('原文已变化')
+      await expect(editor).toContainText('生成期间的新修改')
+      await expect(editor).not.toContainText('旧版本建议不应写回')
     } finally {
       await closeAndSaveVideo(launched, `screenwriting-${kind}`)
     }

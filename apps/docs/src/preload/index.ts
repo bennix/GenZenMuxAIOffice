@@ -14,8 +14,15 @@ import type {
   UiTheme,
 } from '../shared/ipc'
 import type { ProjectApi } from '@genoffice/project-store'
+import { WORD_MCP_CHANNELS } from '../shared/ipc'
 
 const api: DesktopApi = {
+  onMcpRequest: (handler) => {
+    const listener = (_event: IpcRendererEvent, request: Parameters<typeof handler>[0]) => handler(request)
+    ipcRenderer.on(WORD_MCP_CHANNELS.request, listener)
+    return () => ipcRenderer.removeListener(WORD_MCP_CHANNELS.request, listener)
+  },
+  sendMcpResult: (result) => ipcRenderer.send(WORD_MCP_CHANNELS.result, result),
   ...imageShareBridge(ipcRenderer),
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),

@@ -2580,18 +2580,32 @@ const activeAiStreams = new Map<string, AbortController>()
  * register them exactly once for all window types (docs, sheets, home) —
  * sheets' standalone AI handlers use the same channel names.
  */
+export function readAiSettings(): AiSettings {
+  const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
+  const restored = restoreAiSettingsFromDisk(stored, safeStorage)
+  const settings = resolveAiSettings(restored.settings, defaultAiSettings())
+  // Text AI is served exclusively through ZenMux's OpenAI-compatible endpoint.
+  settings.provider = 'zenmux'
+  if (restored.needsMigration) {
+    writeJson(SETTINGS_PATH(), protectAiSettingsForDisk(settings, safeStorage))
+  }
+  return settings
+}
+
+export async function runAiChat(request: AiChatRequest, signal?: AbortSignal) {
+  const { settings, system, user, images } = request
+  const config = settings.providers?.zenmux
+  if (!config?.apiKey) return { ok: false, error: tm('errNoApiKey', { provider: 'ZenMux' }) }
+  if (!config.model) return { ok: false, error: tm('errNoModel') }
+  try {
+    return await chatZenMux(config, system, user, images, signal)
+  } catch (err) {
+    return { ok: false, error: String(err) }
+  }
+}
+
 export function registerAiIpc(): void {
-  ipcMain.handle('ai:get-settings', (): AiSettings => {
-    const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
-    const restored = restoreAiSettingsFromDisk(stored, safeStorage)
-    const settings = resolveAiSettings(restored.settings, defaultAiSettings())
-    // Text AI is served exclusively through ZenMux's OpenAI-compatible endpoint.
-    settings.provider = 'zenmux'
-    if (restored.needsMigration) {
-      writeJson(SETTINGS_PATH(), protectAiSettingsForDisk(settings, safeStorage))
-    }
-    return settings
-  })
+  ipcMain.handle('ai:get-settings', () => readAiSettings())
 
   ipcMain.handle('ai:set-settings', (_event, settings: AiSettings) => {
     writeJson(
@@ -2785,22 +2799,7 @@ export function registerAiIpc(): void {
     },
   )
 
-  ipcMain.handle('ai:chat', async (_event, request: AiChatRequest) => {
-    const { settings, system, user, images } = request
-    const config = settings.providers?.zenmux
-    if (!config?.apiKey) {
-      return {
-        ok: false,
-        error: tm('errNoApiKey', { provider: 'ZenMux' }),
-      }
-    }
-    if (!config.model) return { ok: false, error: tm('errNoModel') }
-    try {
-      return await chatZenMux(config, system, user, images)
-    } catch (err) {
-      return { ok: false, error: String(err) }
-    }
-  })
+  ipcMain.handle('ai:chat', (_event, request: AiChatRequest) => runAiChat(request))
 }
 
 // ── project-store IPC (shared across docs / slides / sheets) ──────────────
@@ -2808,7 +2807,7 @@ export function registerAiIpc(): void {
 let projectStore: ProjectStore | null = null
 let projectIpcRegistered = false
 
-function getProjectStore(): ProjectStore {
+export function getProjectStore(): ProjectStore {
   if (!projectStore) projectStore = new ProjectStore(app.getPath('userData'))
   return projectStore
 }

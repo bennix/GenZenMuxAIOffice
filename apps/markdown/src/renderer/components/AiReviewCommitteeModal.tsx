@@ -1,18 +1,12 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Editor, JSONContent } from '@tiptap/core'
 import { Markdown } from '@genoffice/ui'
 import { LANGUAGE_OPTIONS } from '@genoffice/i18n'
 import { parseNoveltyQueries, searchNoveltyEvidence } from '@genoffice/citations'
 import {
   REVIEW_PROFILES,
-  assignReviewModels,
-  availableReviewModels,
-  chairSystemPrompt,
-  noveltyQuerySystemPrompt,
-  reviewerSystemPrompt,
-  settingsForReviewModel,
+  runDocumentReview,
   supportsLiteratureReview,
-  type AiSettings,
   type ReviewLanguage,
 } from '@genoffice/ai-provider'
 import { useI18n } from '../i18n/locale'
@@ -35,7 +29,7 @@ function selectedMarkdown(editor: Editor): string {
   )
 }
 
-async function documentImages(editor: Editor): Promise<{ mime: string; base64: string }[]> {
+export async function documentImages(editor: Editor): Promise<{ mime: string; base64: string }[]> {
   const sources: string[] = []
   const visit = (node: JSONContent): void => {
     if (node.type === 'image' && typeof node.attrs?.src === 'string') sources.push(node.attrs.src)
@@ -79,7 +73,11 @@ export function AiReviewCommitteeModal({
   const [keyMissing, setKeyMissing] = useState(false)
   const [literatureEnabled, setLiteratureEnabled] = useState(true)
   const [literatureStatus, setLiteratureStatus] = useState('')
-  const runRef = useRef(0)
+  useEffect(() => {
+    setMembers([])
+    setChair(null)
+    setLiteratureStatus('')
+  }, [profileId, language, literatureEnabled])
   const profile = useMemo(
     () => profileOptions.find((p) => p.id === profileId) ?? profileOptions[0]!,
     [profileId, profileOptions],
@@ -87,128 +85,43 @@ export function AiReviewCommitteeModal({
 
   const start = async () => {
     if (running) return
-    const settings: AiSettings = await window.markdownApi.getAiSettings()
-    if (!settings.providers.zenmux.apiKey) {
-      setKeyMissing(true)
-      return
-    }
-    setKeyMissing(false)
     setRunning(true)
+    setMembers([])
     setChair(null)
     setLiteratureStatus('')
-    const runId = ++runRef.current
-    const assignments = assignReviewModels(
-      availableReviewModels(settings),
-      profile.members.length + 1,
-    )
-    const initial = profile.members.map((member, i) => ({
-      role: language === 'zh' || language === 'zh-TW' ? member.roleZh : member.roleEn,
-      model: assignments[i]!,
-      status: 'pending' as const,
-    }))
-    setMembers(initial)
-    const { from, to } = editor.state.selection
-    const selected = from !== to
-    const document = selectedMarkdown(editor)
-    const images = await documentImages(editor)
-    const material = document.slice(0, 120_000)
-    const limit =
-      document.length > 120_000
-        ? '\n[Content was truncated at 120,000 characters; disclose this limitation.]'
-        : ''
-    let noveltyEvidence = ''
-    if (literatureEnabled && supportsLiteratureReview(profile)) {
-      try {
-        setLiteratureStatus(
-          chinese ? '创新性委员正在提取检索式…' : 'Novelty reviewer is preparing search queries…',
-        )
-        const queryResponse = await window.markdownApi.aiChat({
-          settings: settingsForReviewModel(settings, assignments[0]!),
-          system: noveltyQuerySystemPrompt(language),
-          user: material.slice(0, 30_000),
-        })
-        if (queryResponse.ok) {
-          const queries = parseNoveltyQueries(queryResponse.content ?? '', material.slice(0, 240))
-          setLiteratureStatus(
-            chinese
-              ? `正在检索 OpenAlex、Crossref、Semantic Scholar、PubMed 与 arXiv（${queries.length} 组）…`
-              : `Searching scholarly sources (${queries.length} queries)…`,
-          )
-          noveltyEvidence = (await searchNoveltyEvidence(queries)).evidence
-          setLiteratureStatus(
-            chinese
-              ? '文献证据已交给创新性委员'
-              : 'Literature evidence supplied to the novelty reviewer',
-          )
-        } else {
-          noveltyEvidence = `LIVE SCHOLARLY SEARCH FAILED: ${queryResponse.error ?? 'query generation failed'}. External novelty was not verified.`
-          setLiteratureStatus(
-            chinese
-              ? '文献检索未完成，将披露限制'
-              : 'Literature search incomplete; limitation will be disclosed',
-          )
-        }
-      } catch (error) {
-        noveltyEvidence = `LIVE SCHOLARLY SEARCH FAILED: ${error instanceof Error ? error.message : String(error)}. External novelty was not verified.`
-        setLiteratureStatus(
-          chinese
-            ? '文献检索未完成，将披露限制'
-            : 'Literature search incomplete; limitation will be disclosed',
-        )
-      }
-    }
     try {
-      const reviews = await Promise.all(
-        profile.members.map(async (member, index): Promise<Result> => {
-          setMembers((old) =>
-            old.map((item, i) => (i === index ? { ...item, status: 'running' } : item)),
-          )
-          let result: Result
-          try {
-            const response = await window.markdownApi.aiChat({
-              settings: settingsForReviewModel(settings, assignments[index]!),
-              system: reviewerSystemPrompt(profile, member, language),
-              user: `${selected ? 'SELECTED MARKDOWN' : 'MARKDOWN DOCUMENT'}:\n\n${material}${limit}${member.literatureReviewer && noveltyEvidence ? `\n\n${noveltyEvidence}` : ''}`,
-              images,
-            })
-            result = response.ok
-              ? { ...initial[index]!, status: 'done', content: response.content ?? '' }
-              : { ...initial[index]!, status: 'error', error: response.error ?? 'Unknown error' }
-          } catch (error) {
-            result = {
-              ...initial[index]!,
-              status: 'error',
-              error: error instanceof Error ? error.message : String(error),
-            }
-          }
-          if (runRef.current === runId)
-            setMembers((old) => old.map((item, i) => (i === index ? result : item)))
-          return result
-        }),
-      )
-      const successful = reviews.filter((r) => r.content)
-      if (!successful.length || runRef.current !== runId) return
-      const model = assignments.at(-1)!
-      const role = language === 'zh' || language === 'zh-TW' ? '委员会主席' : 'Committee Chair'
-      setChair({ role, model, status: 'running' })
-      const response = await window.markdownApi.aiChat({
-        settings: settingsForReviewModel(settings, model),
-        system: chairSystemPrompt(profile, language),
-        user: [
-          mode === 'composition' ? `ORIGINAL ESSAY:\n${material}` : '',
-          ...successful.map((r, i) => `## Reviewer ${i + 1}: ${r.role}\n${r.content}`),
-        ]
-          .filter(Boolean)
-          .join('\n\n'),
+      const settings = await window.markdownApi.getAiSettings()
+      setKeyMissing(!settings.providers.zenmux.apiKey)
+      if (!settings.providers.zenmux.apiKey) return
+      const source = selectedMarkdown(editor)
+      const text =
+        source.slice(0, 120000) +
+        (source.length > 120000 ? '\n[Document truncated; disclose this limitation.]' : '') +
+        '\n[At most five readable document images supplied; other images were not inspected.]'
+      const images = await documentImages(editor)
+      await runDocumentReview({
+        settings,
+        profileId,
+        language,
+        text,
+        images,
+        literature: literatureEnabled,
+        chat: (request) => window.markdownApi.aiChat(request),
+        searchEvidence: async (raw, fallback) =>
+          (await searchNoveltyEvidence(parseNoveltyQueries(raw, fallback))).evidence,
+        onMember: (index, result) =>
+          setMembers((current) => {
+            const next = [...current]
+            next[index] = result
+            return next
+          }),
+        onChair: setChair,
+        onLiterature: setLiteratureStatus,
       })
-      if (runRef.current === runId)
-        setChair(
-          response.ok
-            ? { role, model, status: 'done', content: response.content ?? '' }
-            : { role, model, status: 'error', error: response.error ?? 'Unknown error' },
-        )
+    } catch (error) {
+      setLiteratureStatus(error instanceof Error ? error.message : String(error))
     } finally {
-      if (runRef.current === runId) setRunning(false)
+      setRunning(false)
     }
   }
 
@@ -221,7 +134,7 @@ export function AiReviewCommitteeModal({
       className="md-modal-backdrop"
       onMouseDown={(e) => e.target === e.currentTarget && !running && onClose()}
     >
-      <div className="md-review-dialog">
+      <div className="md-review-dialog" role="dialog" aria-modal="true" aria-label="AI 审稿工作台">
         <header>
           <div>
             <h2>
@@ -241,11 +154,16 @@ export function AiReviewCommitteeModal({
                 : '3 independent reviewers + 1 chair; models are randomly assigned, all through ZenMux. Network or proxy conditions may affect AI.'}
             </p>
           </div>
-          <button disabled={running} onClick={onClose}>
+          <button aria-label={chinese ? '关闭' : 'Close'} disabled={running} onClick={onClose}>
             ×
           </button>
         </header>
         <div className="md-review-options">
+          <p>
+            {chinese
+              ? '确认当前选区或全文 → 选择审稿标准 → 审阅报告。不会自动改写正文。'
+              : 'Confirm selection or document → choose criteria → review report. The source is not rewritten automatically.'}
+          </p>
           <label>
             {chinese
               ? mode === 'composition'

@@ -1,4 +1,14 @@
 import { execSync, spawn } from 'node:child_process'
+import { ToolRegistry } from '@genoffice/mcp-server'
+import { registerApplicationTools } from '@genoffice/mcp-server/application-tools'
+import { registerProjectTools } from '@genoffice/mcp-server/project-tools'
+import { registerAiTools } from '@genoffice/mcp-server/ai-tools'
+import { registerDocumentAi } from './mcp-writing'
+import { registerMarkdownTools } from '@genoffice/mcp-server/markdown-tools'
+import { registerWordTools } from '@genoffice/mcp-server/word-tools'
+import { registerKnowledgeTools } from '@genoffice/mcp-server/knowledge-tools'
+import { registerImageTools } from '@genoffice/mcp-server/image-tools'
+import { startApplicationBridge } from '@genoffice/mcp-server/application-bridge'
 import {
   copyFileSync,
   cpSync,
@@ -74,7 +84,10 @@ import {
   removeRecentFiles,
   replaceRecentFile,
   registerAiIpc,
+  readAiSettings,
+  runAiChat,
   registerProjectIpc,
+  getProjectStore,
   toggleStarredFile,
   registerDocsIpc,
   setDocsExtraFileMenuItems,
@@ -2222,6 +2235,9 @@ function registerTabsIpc(): void {
   })
 }
 
+let shareMcpImage:
+  ((targetId: string, dataUrl: string) => Promise<{ ok: boolean; error?: string }>) | undefined
+
 function registerConnectIpc(): void {
   let nextImageId = 0
   const pendingImages = new Map<
@@ -2243,24 +2259,27 @@ function registerConnectIpc(): void {
       ...(typeof value.error === 'string' ? { error: value.error.slice(0, 500) } : {}),
     })
   })
-  ipcMain.handle('image-share:send', (event, targetId: unknown, dataUrl: unknown) => {
+  const sendImage = async (source: number | null, targetId: unknown, dataUrl: unknown) => {
     if (
-      !tabManager?.ownsWebContents(event.sender.id) ||
+      (source !== null && !tabManager?.ownsWebContents(source)) ||
       typeof targetId !== 'string' ||
       typeof dataUrl !== 'string'
     )
       return { ok: false, error: '无法分享图片。' }
     if (dataUrl.length > 20 * 1024 * 1024)
       return { ok: false, error: '图片超过 20 MB，请缩小后重试。' }
-    if (!/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(dataUrl))
-      return { ok: false, error: '请选择 PNG 或 JPEG 图片。' }
+    const svgForPdf = dataUrl.startsWith('data:image/svg+xml;base64,') &&
+      tabManager?.imageShareTargets(source).some((target) => target.id === targetId && target.kind === 'pdf')
+    if (!/^data:image\/(png|jpeg|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(dataUrl) ||
+        (dataUrl.startsWith('data:image/svg+xml;') && !svgForPdf))
+      return { ok: false, error: '请选择 PNG 或 JPEG 图片；SVG 可直接插入 PDF。' }
     return new Promise<{ ok: boolean; error?: string }>((resolve) => {
       const id = `image-${++nextImageId}`
       const timer = setTimeout(() => {
         pendingImages.delete(id)
         resolve({ ok: false, error: '目标文件未确认插入，请检查目标文件后再重试。' })
       }, 30000)
-      const receiver = tabManager?.sendSharedImage(event.sender.id, targetId, { id, dataUrl })
+      const receiver = tabManager?.sendSharedImage(source, targetId, { id, dataUrl })
       if (receiver == null) {
         clearTimeout(timer)
         resolve({ ok: false, error: '目标文件已关闭或不可用。' })
@@ -2275,7 +2294,11 @@ function registerConnectIpc(): void {
         },
       })
     })
-  })
+  }
+  shareMcpImage = (targetId, dataUrl) => sendImage(null, targetId, dataUrl)
+  ipcMain.handle('image-share:send', (event, targetId: unknown, dataUrl: unknown) =>
+    sendImage(event.sender.id, targetId, dataUrl),
+  )
   ipcMain.handle(
     'connect:list-targets',
     (event) => tabManager?.connectTargets(event.sender.id) ?? [],
@@ -2727,6 +2750,151 @@ setSessionPathResolver(resolveSheetsSessionPath)
 /** Dev-only pid marker for the takeover below; scoped to userData like the lock itself. */
 const devPidFile = () => join(app.getPath('userData'), 'dev-instance.pid')
 
+let closeMcpBridge: (() => Promise<void>) | undefined
+async function startMcpBridge(): Promise<void> {
+  const token = process.env.ZENOFFICE_MCP_TOKEN
+  if (!token) return
+  const port = Number(process.env.ZENOFFICE_MCP_PORT)
+  if (!Number.isInteger(port) || port < 1 || port > 65535)
+    throw new Error('ZENOFFICE_MCP_PORT must be between 1 and 65535')
+  const registry = new ToolRegistry()
+  registerMarkdownTools(registry, (id, request) => {
+    if (!tabManager) throw new Error('应用尚未就绪')
+    return tabManager.requestMarkdown(id, request)
+  })
+  registerWordTools(registry, (id, request) => {
+    if (!tabManager) throw new Error('应用尚未就绪')
+    return tabManager.requestWord(id, request)
+  })
+  registerAiTools(registry, {
+    status: () => {
+      const config = readAiSettings().providers?.zenmux
+      return {
+        provider: 'zenmux',
+        model: config?.model ?? '',
+        configured: Boolean(config?.apiKey && config?.model),
+      }
+    },
+    chat: async (system, user, signal) => {
+      const result = await runAiChat({ settings: readAiSettings(), system, user }, signal)
+      if (!result.ok) throw new Error(result.error ?? 'AI 生成失败')
+      return { content: result.content }
+    },
+  })
+  if (tabManager) registerDocumentAi(registry, tabManager, readAiSettings, runAiChat)
+  registerApplicationTools(registry, {
+    status: () => ({ version: app.getVersion(), name: app.getName() }),
+    listTabs: () => tabManager?.list() ?? [],
+    activateTab: (id) => {
+      if (!tabManager?.list().some((tab) => tab.id === id)) throw new Error('标签不存在')
+      tabManager.activateTab(id)
+      return { id, active: true }
+    },
+    openFile: (path) => {
+      if (!isAbsolute(path) || !existsSync(path) || !statSync(path).isFile())
+        throw new Error('文件不存在或路径不是绝对路径')
+      if (!openDocumentPath(path)) throw new Error('无法打开此文件类型')
+      return { opened: true, path }
+    },
+    createDocument: async (kind) => {
+      revealShellWindow()
+      const existing = new Set(tabManager?.list().map((tab) => tab.id) ?? [])
+      if (kind === 'word') newDocTab()
+      else if (kind === 'excel') await newSheetTab()
+      else if (kind === 'ppt') newSlideTab()
+      else newMarkdownTab()
+      const tab = tabManager?.list().find((item) => !existing.has(item.id))
+      if (!tab) throw new Error('未能创建编辑标签')
+      return { tab, saved: Boolean(tab.filePath) }
+    },
+  })
+  const store = getProjectStore()
+  store.ensureDefaultProject()
+  const requireProject = (id: string) => {
+    const project = store.getProject(id)
+    if (!project) throw new Error('项目不存在')
+    return project
+  }
+  registerProjectTools(registry, {
+    chats: (id) => {
+      requireProject(id)
+      return store.listChats(id)
+    },
+    chat: (id, chatId, limit) => {
+      requireProject(id)
+      if (!store.listChats(id).some((chat) => chat.chatId === chatId)) throw new Error('对话不存在')
+      return store.loadChat(id, chatId, limit)
+    },
+    list: () => store.listProjectsSummary(),
+    create: (name) => store.createProject(name),
+    rename: (id, name) => {
+      requireProject(id)
+      store.renameProject(id, name)
+      return requireProject(id)
+    },
+    files: (id) => {
+      requireProject(id)
+      return store.listProjectFiles(id)
+    },
+    moveFile: (path, id) => {
+      requireProject(id)
+      if (!isAbsolute(path) || !existsSync(path) || !statSync(path).isFile())
+        throw new Error('需要已有文件的绝对路径')
+      store.resolveProjectForFile(path)
+      store.moveFileToProject(path, id)
+      return { path, projectId: id }
+    },
+    timeline: (id, limit) => {
+      requireProject(id)
+      return store.getProjectTimeline(id, limit)
+    },
+  })
+  registerKnowledgeTools(registry, {
+    list: (query, limit) => store.listKnowledge(query, limit),
+    search: ({ query, projectId, sourceFile, limit }) => {
+      if (projectId) requireProject(projectId)
+      return store.searchKnowledge(query, {
+        ...(projectId === undefined ? {} : { projectId }),
+        ...(sourceFile === undefined ? {} : { sourceFile }),
+        ...(limit === undefined ? {} : { limit }),
+      })
+    },
+    delete: (id) => {
+      store.deleteKnowledge(id)
+      return { id, deleted: true }
+    },
+    clear: () => {
+      store.clearKnowledge()
+      return { cleared: true }
+    },
+    getSettings: () => store.getKnowledgeSettings(),
+    setSettings: (settings) => store.setKnowledgeSettings(settings),
+  })
+  registerImageTools(registry, {
+    targets: () => tabManager?.imageShareTargets(null) ?? [],
+    insert: async (targetId, path) => {
+      if (!shareMcpImage) throw new Error('图片共享尚未就绪')
+      if (!isAbsolute(path) || !existsSync(path) || !statSync(path).isFile())
+        throw new Error('需要已有图片的绝对路径')
+      if (statSync(path).size > 15 * 1024 * 1024) throw new Error('图片文件不能超过 15 MB')
+      const bytes = readFileSync(path)
+      const png = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+      const jpeg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
+      const svg = /\.svg$/i.test(path) && /<svg(?:\s|>)/i.test(bytes.toString('utf8'))
+      if (!png && !jpeg && !svg) throw new Error('仅支持 PNG、JPEG 或 SVG 图片')
+      if (svg && !tabManager?.imageShareTargets(null).some((target) => target.id === targetId && target.kind === 'pdf'))
+        throw new Error('SVG 图片目前仅支持插入 PDF；其他模块请使用 PNG 或 JPEG')
+      const result = await shareMcpImage(
+        targetId,
+        `data:image/${png ? 'png' : jpeg ? 'jpeg' : 'svg+xml'};base64,${bytes.toString('base64')}`,
+      )
+      if (!result.ok) throw new Error(result.error ?? '图片插入失败')
+      return { inserted: true, targetId, saved: false }
+    },
+  })
+  closeMcpBridge = (await startApplicationBridge(registry, token, port)).close
+}
+
 app.whenReady().then(async () => {
   const lockData = () => (pendingLaunchPath ? { launchPath: pendingLaunchPath } : {})
   let hasLock = app.requestSingleInstanceLock(lockData())
@@ -2784,6 +2952,15 @@ app.whenReady().then(async () => {
   if (!pendingLaunchPath || !openDocumentPath(pendingLaunchPath)) tabManager?.openHomeTab()
   pendingLaunchPath = null
 
+  try {
+    await startMcpBridge()
+  } catch (error) {
+    console.error(
+      '[mcp] Failed to start local application bridge:',
+      error instanceof Error ? error.message : String(error),
+    )
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createShellWindow()
   })
@@ -2794,6 +2971,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  void closeMcpBridge?.()
   // No close prompt may fall through to "Save" during shutdown
   markSheetsShuttingDown()
   stopSheetsSidecar()

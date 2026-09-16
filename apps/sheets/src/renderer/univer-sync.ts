@@ -1136,6 +1136,75 @@ export async function readChartGridValues(
   return grid
 }
 
+export async function readVisualizationRange(
+  state: LazyWorkbookState | null,
+  runtime: UniverRuntime,
+  sheetId: string,
+  bounds: IRange,
+): Promise<unknown[][]> {
+  const target = runtime.univerAPI.getActiveWorkbook()?.getSheetBySheetId(sheetId)
+  if (!target) throw new Error('工作表已关闭，请重新选择数据。')
+  const width = bounds.endColumn - bounds.startColumn + 1
+  const height = bounds.endRow - bounds.startRow + 1
+  if (width < 1 || width > 256 || height < 2 || width * height > 200000)
+    throw new Error('请选择包含列名和数据的区域，最多 256 列、200000 个单元格。')
+  const sheet = state?.file.sheets.find((candidate) => candidate.id === sheetId)
+  if (!state || !sheet || state.formulaMode) {
+    if (state?.formulaMode && !state.flags.preloadComplete)
+      throw new Error('工作簿仍在加载，请稍后重试。')
+    return target.getRange(bounds).getRawValues()
+  }
+  const structuralOps = JSON.stringify(state.editJournal.structuralOps.get(sheetId) ?? [])
+  const values: unknown[][] = Array.from({ length: height }, () => Array(width).fill(null))
+  const put = (row: number, column: number, value: unknown): void => {
+    if (
+      row >= bounds.startRow &&
+      row <= bounds.endRow &&
+      column >= bounds.startColumn &&
+      column <= bounds.endColumn
+    )
+      values[row - bounds.startRow]![column - bounds.startColumn] = value ?? null
+  }
+  const batchRows = Math.max(1, Math.floor(18000 / width))
+  for (let row = bounds.startRow; row <= bounds.endRow; row += batchRows) {
+    const range = { ...bounds, startRow: row, endRow: Math.min(bounds.endRow, row + batchRows - 1) }
+    const mapped = await readSheetRangeMapped(state, sheetId, range, sheet)
+    if (
+      mapped &&
+      !mapped.raw.indexingComplete &&
+      (mapped.indexedThroughScreen === null || mapped.indexedThroughScreen < range.endRow)
+    )
+      throw new Error(t('appSheetStillIndexing'))
+    for (const cell of mapped?.screen.cells ?? []) put(cell.row, cell.column, cell.value)
+  }
+  if (JSON.stringify(state.editJournal.structuralOps.get(sheetId) ?? []) !== structuralOps)
+    throw new Error('读取期间行列结构发生变化，请重新选择数据。')
+  for (const entry of journalEntriesInRange(state.editJournal, sheetId, bounds))
+    if (entry.hasValue) put(entry.row, entry.column, entry.value)
+  for (const [key, cell] of state.recalc.overlay.get(sheetId) ?? []) {
+    if (state.editJournal.cells.get(sheetId)?.has(key) || structuralOps !== '[]') continue
+    const [row, column] = key.split(':').map(Number)
+    put(row!, column!, cell.v)
+  }
+  for (const [key] of state.closure.pinned.get(sheetId) ?? []) {
+    const [row, column] = key.split(':').map(Number)
+    if (
+      row! >= bounds.startRow &&
+      row! <= bounds.endRow &&
+      column! >= bounds.startColumn &&
+      column! <= bounds.endColumn
+    )
+      put(
+        row!,
+        column!,
+        target
+          .getRange({ startRow: row!, endRow: row!, startColumn: column!, endColumn: column! })
+          .getRawValues()[0]?.[0],
+      )
+  }
+  return values
+}
+
 export async function readChartRangeVector(
   state: LazyWorkbookState,
   runtime: UniverRuntime,
@@ -1501,6 +1570,7 @@ async function loadRange(
       // properties only become available at the end of the worksheet part.
       const indexedRows = (result.indexedThroughRow ?? -1) + 1
       if (
+        !state.flags.preloadComplete &&
         isActiveSheet(runtime, sheetId) &&
         (result.indexedThroughRow === null || result.indexedThroughRow < mapped.fileEndRow)
       ) {
@@ -1537,7 +1607,9 @@ async function loadRange(
         }, 250)
         state.retryTimers.set(sheetId, timer)
       }
-    } else if (isActiveSheet(runtime, sheetId)) {
+    } else if (!state.flags.preloadComplete && isActiveSheet(runtime, sheetId)) {
+      // A viewport request may finish after full preload. Keep applying its
+      // trailing metadata, but do not downgrade the completed workbook status.
       setMessage(
         t('appStreamingRows', {
           name: state.file.name,

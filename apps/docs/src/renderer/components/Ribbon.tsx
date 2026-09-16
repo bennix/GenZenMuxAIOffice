@@ -1523,6 +1523,7 @@ function RibbonInner({
       {gongwenOpen && <GongwenStudio editor={editor} onClose={() => setGongwenOpen(false)} />}
       {screenwritingOpen && (
         <ScreenwritingStudio
+          getDocumentVersion={() => editor.state.doc}
           initialSource={editor.getText({ blockSeparator: '\n\n' })}
           onClose={() => setScreenwritingOpen(false)}
           onInsert={(text) =>

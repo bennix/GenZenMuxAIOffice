@@ -1,0 +1,145 @@
+% Release supplement, 2026-09-16. Shared by all three manual editions.
+\clearpage
+\fancyhead[R]{\footnotesize\color{GOMuted} MCP Release · 2026-09-16}
+\setmonofont{Menlo}[Scale=0.82,Mapping={}]
+\newcommand{\McpCode}[1]{\texttt{\detokenize{#1}}}
+
+\CNPage{44}{MCP：连接桌面应用}{MCP: connect the desktop app}{开发版补充 · 2026-09-16。MCP 让外部 AI 客户端调用 ZenOffice 的应用服务。本节描述当前源码功能，不表示已发布安装版具备全部接口。}{
+\textbf{准备与启动}
+\begin{enumerate}
+\item 安装 Node.js 22.12 或更新版本，在仓库根目录运行 \McpCode{npm ci} 和 \McpCode{npm run build:all}。
+\item 使用 \McpCode{openssl rand -hex 32} 生成本地令牌。完全退出已运行的 ZenOffice；在同一终端设置下列变量并启动：
+\end{enumerate}
+\begin{flushleft}\small
+\McpCode{export ZENOFFICE_MCP_PORT=19385}\\
+\McpCode{export ZENOFFICE_MCP_TOKEN="YOUR_LOCAL_TOKEN"}\\
+\McpCode{./node_modules/.bin/electron apps/shell}
+\end{flushleft}
+将下面配置加入客户端；两处路径改成本机仓库路径，令牌替换为上面生成的同一个值。
+\VerbatimInput[fontsize=\small]{mcp-client.example.json}
+\Tip{客户端应重新连接并列出工具。连接桌面时应有 38 个工具；不配置 env 时只有 6 个独立可视化工具。调用 \McpCode{application_status} 检查连接，调用 \McpCode{application_list_tabs} 获取实时标签列表。服务默认关闭，仅监听本机；令牌至少 32 字符，不要提交到仓库。}
+}
+
+\ENPage{44}{MCP：连接桌面应用}{MCP: connect the desktop app}{Release supplement · 2026-09-16. MCP exposes application services to an external AI client. These instructions describe current source functionality, not a claim about the published installer.}{
+\textbf{Prepare and launch}
+\begin{enumerate}
+\item Install Node.js 22.12 or newer. Run \McpCode{npm ci} and \McpCode{npm run build:all} in the repository root.
+\item Generate a local token with \McpCode{openssl rand -hex 32}. Quit any running ZenOffice instance, then launch from the same terminal:
+\end{enumerate}
+\begin{flushleft}\small
+\McpCode{export ZENOFFICE_MCP_PORT=19385}\\
+\McpCode{export ZENOFFICE_MCP_TOKEN="YOUR_LOCAL_TOKEN"}\\
+\McpCode{./node_modules/.bin/electron apps/shell}
+\end{flushleft}
+Add this configuration to the client. Replace both paths with your repository path and use the same generated token:
+\VerbatimInput[fontsize=\small]{mcp-client.example.json}
+\Tip{Reconnect and list tools: expect 38 with the desktop bridge, or 6 independent visualization tools without env. Check \McpCode{application_status}, then fetch live tabs with \McpCode{application_list_tabs}. The bridge is disabled by default and listens only on loopback. Tokens must be at least 32 characters; never commit them.}
+}
+
+\CNPage{45}{MCP：选图与插入 PDF}{MCP: choose a chart and insert into PDF}{与 Excel 引导使用相同的图表绑定、AI 建议校验和渲染逻辑。字段必须由实际数据提供，生成结果先预览再插入。}{
+\begin{enumerate}
+\item 调用 \McpCode{visualization_suggest}：传入 table（columns 列名数组及 rows 行数组）、selectedColumns（允许使用的列名）和 instruction（分析目的）。例如列为“地区、收入、备注”，仅选择“地区、收入”，目的为“比较各地区收入”。
+\item 返回 suggestion（图表类型、横轴、显示列、标题、理由）、request（可直接用于渲染）、svg 和 saved=false。只有所选列概况及前 30 行发给模型；完整所选数据用于校验。整个输入先经过本机客户端，敏感列可在调用前移除。
+\item 审阅并按需修改 request 的 x、y、title，然后调用 \McpCode{visualization_render_svg}。客户端将返回的 svg 文本保存为本机 \McpCode{/absolute/path/chart.svg}。渲染工具本身不写磁盘。
+\item 在应用打开 PDF，再调用 \McpCode{images_targets}，选择 kind=pdf 的最新目标 ID；调用 \McpCode{images_insert}，传入 targetId 和 SVG 的绝对路径 path。
+\item 收到 inserted=true 后，PDF 当前页已插入图片并进入编辑状态。可移动、缩放，最后在 PDF 界面保存。saved=false 表示接口未主动保存。
+\end{enumerate}
+\textbf{本地文件与其他目标}
+\begin{itemize}
+\item PDF 的“编辑 $\rightarrow$ 插入图片”允许直接选择 .svg，然后点击页面放置。SVG 会转为图片，不保留可编辑矢量路径。
+\item PNG/JPEG 可插入 Word、PPT、MD、PDF；MCP 的 SVG 当前仅支持 PDF。单文件上限 15 MB。
+\item 新建未保存 MD 可接收内嵌图片；已有路径的 MD 使用旁边的 assets 目录。插入不等于保存。
+\item 新开或关闭文件后，重新调用 \McpCode{images_targets}；Excel 分享面板会自动刷新。超时先检查目标，避免重复插入。
+\end{itemize}
+\Tip{AI 选图需已配置桌面模型，可能产生调用费用；建议客户端超时设为 1200000 毫秒。没有模型时，\McpCode{visualization_profile} 提供本地推荐，\McpCode{visualization_catalog} 提供字段规则。当前支持 81/104 种图形，以目录的可用标记为准。}
+}
+
+\ENPage{45}{MCP：选图与插入 PDF}{MCP: choose a chart and insert into PDF}{The workflow shares chart bindings, AI validation, and rendering with the Excel guide. Use actual data fields and review the preview before insertion.}{
+\begin{enumerate}
+\item Call \McpCode{visualization_suggest} with table (columns and rows), selectedColumns (allowed field names), and instruction (analysis goal). For Region, Revenue, Notes, select only Region and Revenue to compare revenue by region.
+\item The result contains suggestion (chart, axes, fields, title, reason), request (render-ready input), svg, and saved=false. Only selected-column profiles and the first 30 rows reach the model; validation uses all selected data. Remove sensitive fields before calling if the local client must not receive them either.
+\item Review or change x, y, and title in request, then call \McpCode{visualization_render_svg}. A file-capable client saves the returned svg text as \McpCode{/absolute/path/chart.svg}; the renderer does not write files.
+\item Open a PDF, call \McpCode{images_targets}, and choose the latest kind=pdf target ID. Call \McpCode{images_insert} with targetId and the absolute SVG path in path.
+\item inserted=true confirms insertion on the current PDF page. Move or resize the image, then save in the PDF UI. saved=false means the tool did not explicitly save.
+\end{enumerate}
+\textbf{Local files and other targets}
+\begin{itemize}
+\item PDF Edit $\rightarrow$ Insert Image also accepts .svg files; click the page to place the image. SVG is rasterized; editable vector paths are not retained.
+\item PNG/JPEG work in Word, PPT, Markdown, and PDF. SVG through MCP currently requires a PDF target. The file limit is 15 MB.
+\item Untitled Markdown accepts embedded images; saved Markdown uses the adjacent assets directory. Insertion does not imply saving.
+\item Refresh \McpCode{images_targets} after opening or closing tabs; Excel refreshes its sharing list automatically. Inspect the target before retrying a timeout.
+\end{itemize}
+\Tip{AI recommendations use the configured desktop model and may incur provider charges. Use a 1200000 ms client timeout. Without AI, use \McpCode{visualization_profile} for local recommendations and \McpCode{visualization_catalog} for bindings. Currently 81 of 104 chart types render; consult availability flags.}
+}
+
+\CNPage{46}{MCP：服务清单与写回}{MCP: services and document writes}{MCP 指应用服务接口，不仅是图表服务。当前覆盖如下；未列出的编辑操作不能当作已有工具。}{
+\begin{itemize}
+\item 可视化 6 项：目录、数据概况、SVG 渲染、仪表盘 SVG、仪表盘 JSON 导出和导入。仪表盘支持 1–6 张图表、1–3 列及共享分类字段筛选。
+\item 应用 5 项：状态、标签列表、激活、打开文件、新建文档。
+\item 项目与对话 8 项、知识库 6 项：项目列表/创建/重命名、文件与对话读取、知识检索和设置等。
+\item 图片共享 2 项：\McpCode{images_targets}、\McpCode{images_insert}。
+\item AI 5 项：\McpCode{ai_status}、\McpCode{ai_chat}、\McpCode{visualization_suggest}、\McpCode{ai_review}、\McpCode{ai_screenwriting}。
+\item Markdown 3 项：\McpCode{markdown_read}、\McpCode{markdown_replace}、\McpCode{markdown_save}。
+\item Word 3 项：\McpCode{word_read_text}、\McpCode{word_insert_text}、\McpCode{word_save}。
+\end{itemize}
+\textbf{安全写回顺序}
+\begin{enumerate}
+\item 从标签列表取得 id。Markdown 先 read，再把读取的 text 原样作为 replace 的 expectedText，另传新 text；不一致时重新读取合并。最后 save。
+\item Word 先 read\_text，保留 revision；insert\_text 传 id、text、expectedRevision 和 position（start/end）。插入为纯文本段落，可在保存前撤销，再调用 save。
+\item 两种保存工具都要求已有文件路径；未命名文档先在界面保存。Word 检测到文件被外部修改时拒绝覆盖。
+\end{enumerate}
+\Tip{AI 编剧专用入口位于 Word 和 MD，Excel 不提供。审稿与编剧服务见下一节。公文排版、ArtFlow 生图、PDF 保存及全部 Excel/PPT 编辑操作仍未完整接入 MCP。完整参数、示例和错误规则见仓库 \McpCode{docs/mcp-usage.md}；以客户端实时工具列表为准。}
+}
+
+\ENPage{46}{MCP：服务清单与写回}{MCP: services and document writes}{MCP covers application services, beyond charts. Current coverage is listed below; unlisted editing operations must not be assumed available.}{
+\begin{itemize}
+\item Visualization (6): catalog, profile, SVG rendering, dashboard SVG, dashboard JSON export and import. Dashboards support 1–6 cards, 1–3 columns, and a shared categorical filter.
+\item Application (5): status, tabs, activation, open file, create document.
+\item Projects/chats (8) and knowledge (6): project creation and renaming, file/chat reads, knowledge search and settings.
+\item Images (2): \McpCode{images_targets}, \McpCode{images_insert}.
+\item AI (5): \McpCode{ai_status}, \McpCode{ai_chat}, \McpCode{visualization_suggest}, \McpCode{ai_review}, \McpCode{ai_screenwriting}.
+\item Markdown (3): \McpCode{markdown_read}, \McpCode{markdown_replace}, \McpCode{markdown_save}.
+\item Word (3): \McpCode{word_read_text}, \McpCode{word_insert_text}, \McpCode{word_save}.
+\end{itemize}
+\textbf{Document write sequence}
+\begin{enumerate}
+\item Get id from the live tab list. Read Markdown first; pass the exact returned text as expectedText to replace, together with the new text. On conflict, read again and merge. Then save.
+\item Read Word text and keep revision. Insert text with id, text, expectedRevision, and position (start/end). This adds literal paragraphs and supports undo before saving. Then call save.
+\item Both save tools require an existing file path. Save untitled documents in the UI first. Word refuses to overwrite externally changed files.
+\end{enumerate}
+\Tip{Dedicated screenwriting UI belongs to Word and Markdown, not Excel. Review and screenwriting tools are described next. Official-document formatting, ArtFlow generation, PDF saving, and full Excel/PPT editing remain incomplete in MCP. See \McpCode{docs/mcp-usage.md} for full parameters and errors; use the client's live tool list as the source of truth.}
+}
+
+\CNPage{47}{AI 审稿与编剧：统一流程}{AI review and screenwriting: shared workflow}{Word、Markdown 界面与 MCP 复用相同的模型设置、编剧技能和审稿委员会执行流程。先确认素材与任务，再审阅结果，最后写回文档。}{
+\textbf{界面操作}
+\begin{itemize}
+\item AI 审稿：选择标准、报告语言及是否检索文献；查看委员独立意见、主席汇总和失败信息。报告不会自动替换原稿。
+\item AI 编剧：入口只在 Word 与 MD。确认可编辑的素材，选择故事构思、人物、大纲、场景、对白、剧集、改编或诊断；建议稿可编辑，确认后插入末尾。若原文已改变，须重新打开工作台再插入。
+\end{itemize}
+\textbf{MCP 调用}
+\begin{itemize}
+\item \McpCode{ai_review}：参数 targetId、profileId（默认 science）、language（默认 zh）、literature（默认 true）。返回 source、members、chair、literatureEvidence、partial、inserted=false 和 saved=false。
+\item \McpCode{ai_screenwriting}：参数 targetId、task（如 \McpCode{sw-premise-theme}）、medium（电影/短片/电视剧 / 网剧/舞台剧）、instruction。返回 source、content、task、inserted=false 和 saved=false。完整任务与审稿标准枚举见客户端 schema。
+\item 目标必须是 Word 或 MD；读取当前整篇未保存正文，超过 120000 字符报错。Word 包含可用对象信息和图片；MD 最多提供 5 张可解析图片。文献或图片未检查时披露限制，不宣称已验证。
+\end{itemize}
+\textbf{审阅后写回}\par
+source 包含目标、路径、脏状态及原文版本。Word 将 source.revision 传给 \McpCode{word_insert_text} 的 expectedRevision；MD 将 source.expectedText 传给 \McpCode{markdown_replace} 并合并原文。版本不符时先重新读取，不覆盖新修改。\par
+\Tip{编剧技能来自固定版本的 screenwriting-skills，首次使用需联网。AI 使用桌面配置并可能计费；审稿启用文献检索时会发送检索词。取消会传给模型与文献请求。MCP 不自动写回或保存，界面和接口均保留用户审阅步骤。}
+}
+
+\ENPage{47}{AI 审稿与编剧：统一流程}{AI review and screenwriting: shared workflow}{Word, Markdown, and MCP share model settings, screenwriting skills, and the review committee runner. Confirm the source and task, review the result, then write back.}{
+\textbf{In the interface}
+\begin{itemize}
+\item AI review: choose a profile, report language, and literature search. Inspect independent reviews, chair synthesis, and failures. Reports do not automatically replace the draft.
+\item Screenwriting belongs to Word and Markdown. Confirm editable source material; choose premise, characters, outline, scene, dialogue, series, adaptation, or diagnosis. Edit the proposal, then append it. If the source document changed, reopen the studio before insertion.
+\end{itemize}
+\textbf{MCP calls}
+\begin{itemize}
+\item \McpCode{ai_review}: targetId, profileId (default science), language (default zh), literature (default true). Returns source, members, chair, literatureEvidence, partial, inserted=false, saved=false.
+\item \McpCode{ai_screenwriting}: targetId, task (for example \McpCode{sw-premise-theme}), medium, instruction. Returns source, content, task, inserted=false, saved=false. Consult the tool schema for exact task, medium, and review-profile values.
+\item Only Word and Markdown targets are accepted. MCP reads the whole current unsaved body and rejects documents above 120000 characters. Word supplies available objects/images; Markdown includes up to five readable images. Missing visual or literature evidence is disclosed.
+\end{itemize}
+\textbf{Write back after review}\par
+source contains the target, path, dirty state, and source version. Pass source.revision as expectedRevision to \McpCode{word_insert_text}; for Markdown, merge the original text and pass source.expectedText to \McpCode{markdown_replace}. Read and merge again if the source changed.\par
+\Tip{Screenwriting loads a pinned screenwriting-skills revision and requires network access on first use. Model calls may incur charges; literature search sends search terms. Cancellation propagates to model and literature requests. Neither MCP service automatically inserts or saves its output.}
+}
