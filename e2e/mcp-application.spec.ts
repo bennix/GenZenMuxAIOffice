@@ -357,7 +357,7 @@ test('MCP stdio operates the real desktop application', async () => {
       ).isError,
     ).toBe(true)
     await wordPage.locator('.ProseMirror').first().click()
-    await wordPage.keyboard.press('Meta+z')
+    await wordPage.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z')
     await expect(wordPage.locator('.ProseMirror').first()).not.toContainText('MCP 字面文本')
     const afterUndo = await call('word_read_text', { id: wordId })
     expect(afterUndo.text).toBe(wordBefore.text)
