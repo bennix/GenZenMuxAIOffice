@@ -284,7 +284,7 @@ test('MCP stdio operates the real desktop application', async () => {
       ).isError,
     ).toBe(true)
     await savedPage.locator('.ProseMirror').click()
-    await savedPage.keyboard.press('Meta+z')
+    await savedPage.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z')
     await expect(savedPage.locator('.ProseMirror')).toContainText('MCP 实际文件')
     await call('markdown_replace', {
       id: targetId,
