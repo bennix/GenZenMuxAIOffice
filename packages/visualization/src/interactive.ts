@@ -95,7 +95,7 @@ export function mountInteractiveChart(
     chart.setOption(option)
     observer = new ResizeObserver(() => {
       chart.resize()
-      const { legend, grid, dataZoom } = interactiveChartOption(
+      const { legend, grid } = interactiveChartOption(
         request,
         element.clientWidth,
         element.clientHeight,
@@ -103,19 +103,6 @@ export function mountInteractiveChart(
       chart.setOption({
         legend,
         grid,
-        ...(Array.isArray(dataZoom)
-          ? {
-              dataZoom: dataZoom.map((zoom) =>
-                'bottom' in zoom
-                  ? {
-                      bottom: zoom.bottom,
-                      ...('height' in zoom ? { height: zoom.height } : {}),
-                      ...('top' in zoom ? { top: zoom.top } : {}),
-                    }
-                  : {},
-              ),
-            }
-          : {}),
       })
     })
     observer.observe(element)
