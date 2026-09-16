@@ -481,7 +481,7 @@ export function App(): React.JSX.Element {
   const [equationDialogOpen, setEquationDialogOpen] = useState(false)
   const [infographicOpen, setInfographicOpen] = useState(false)
   const [visualizationTable, setVisualizationTable] = useState<DataTable | null>(null)
-  const [visualizationRangePrompt, setVisualizationRangePrompt] = useState(false)
+  const [visualizationRangePrompt, setVisualizationRangePrompt] = useState<string | null>(null)
   const [infographicSyntax, setInfographicSyntax] = useState<string | undefined>()
   const [infographicEditTarget, setInfographicEditTarget] = useState<WorkbookVisualObject | null>(
     null,
@@ -2817,27 +2817,62 @@ export function App(): React.JSX.Element {
     }
   }
 
+  function visualizationRangeRef(bounds: IRange): string {
+    return (
+      `${columnLabel(bounds.startColumn)}${bounds.startRow + 1}:` +
+      `${columnLabel(bounds.endColumn)}${bounds.endRow + 1}`
+    )
+  }
+
+  function suggestedVisualizationRange(sheetId: string | undefined, bounds?: IRange): string {
+    if (bounds && bounds.endRow > bounds.startRow && bounds.endColumn >= bounds.startColumn) {
+      return visualizationRangeRef(bounds)
+    }
+    const sheet = lazyWorkbookRef.current?.file.sheets.find((candidate) => candidate.id === sheetId)
+    if (sheet && sheet.rowCount >= 2 && sheet.columnCount >= 1) {
+      const width = Math.min(sheet.columnCount, 256)
+      const height = Math.min(sheet.rowCount, Math.max(2, Math.floor(200000 / width)))
+      return `A1:${columnLabel(width - 1)}${height}`
+    }
+    if (bounds) {
+      const width = 4
+      const height = 20
+      return (
+        `${columnLabel(bounds.startColumn)}${bounds.startRow + 1}:` +
+        `${columnLabel(bounds.startColumn + width - 1)}${bounds.startRow + height}`
+      )
+    }
+    return 'A1:D20'
+  }
+
+  function promptVisualizationRange(sheetId: string | undefined, bounds?: IRange): void {
+    setVisualizationRangePrompt(suggestedVisualizationRange(sheetId, bounds))
+  }
+
   async function openVisualization(reference?: string): Promise<void> {
     const runtime = univerRef.current
     const state = lazyWorkbookRef.current
     const workbook = runtime?.univerAPI.getActiveWorkbook()
-    const sheetId = workbook?.getActiveSheet()?.getSheetId()
-    const range = reference
-      ? workbook?.getActiveSheet()?.getRange(reference)
-      : workbook?.getActiveRange()
+    const worksheet = workbook?.getActiveSheet()
+    const sheetId = worksheet?.getSheetId()
+    if (!runtime || !workbook || !worksheet || !sheetId) {
+      if (reference) throw new Error('请先打开工作表。')
+      promptVisualizationRange(undefined)
+      return
+    }
+    const range = reference ? worksheet.getRange(reference) : workbook.getActiveRange()
     if (!range || range.getHeight() < 2) {
       if (reference) throw new Error('范围需要包含列名和至少一行数据。')
-      setVisualizationRangePrompt(true)
+      promptVisualizationRange(sheetId, range?.getRange())
       return
     }
     if (range.getHeight() * range.getWidth() > 200000)
       throw new Error('可视化选区不能超过 200000 个单元格。')
-    if (!runtime || !sheetId) throw new Error('请先打开工作表。')
     const values = await readVisualizationRange(state, runtime, sheetId, range.getRange())
     if (
       univerRef.current !== runtime ||
       lazyWorkbookRef.current !== state ||
-      runtime.univerAPI.getActiveWorkbook()?.getId() !== workbook?.getId() ||
+      runtime.univerAPI.getActiveWorkbook()?.getId() !== workbook.getId() ||
       runtime.univerAPI.getActiveWorkbook()?.getActiveSheet()?.getSheetId() !== sheetId
     )
       return
@@ -2847,7 +2882,7 @@ export function App(): React.JSX.Element {
         rows: values.slice(1).map((row) => row.map((value) => value ?? null)),
       }),
     )
-    setVisualizationRangePrompt(false)
+    setVisualizationRangePrompt(null)
   }
 
   function handleRibbonCommand(command: string): void {
@@ -3473,10 +3508,11 @@ export function App(): React.JSX.Element {
           onClose={() => setVisualizationTable(null)}
         />
       )}
-      {visualizationRangePrompt && (
+      {visualizationRangePrompt !== null && (
         <VisualizationRangePicker
+          initialRange={visualizationRangePrompt}
           onLoad={openVisualization}
-          onClose={() => setVisualizationRangePrompt(false)}
+          onClose={() => setVisualizationRangePrompt(null)}
         />
       )}
       <InfographicStudio

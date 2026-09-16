@@ -19,14 +19,16 @@ const chartName = (id: string) => chartCatalog.find((c) => c.id === id)?.label ?
 const svgUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 
 export function VisualizationRangePicker({
+  initialRange,
   onLoad,
   onClose,
 }: {
+  initialRange?: string
   onLoad: (range: string) => Promise<void>
   onClose: () => void
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
-  const [range, setRange] = useState(''),
+  const [range, setRange] = useState(initialRange ?? ''),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('')
   useEffect(() => {
@@ -48,7 +50,9 @@ export function VisualizationRangePicker({
           关闭
         </button>
       </header>
-      <p>当前选区不足两行。请输入当前工作表的数据范围，第一行应为列名，后面为数据。</p>
+      <p>
+        当前选区不足两行。请输入当前工作表的数据范围，第一行应为列名，后面为数据。若已自动填入范围，可直接确认或按需修改。
+      </p>
       <form
         onSubmit={(event) => {
           event.preventDefault()

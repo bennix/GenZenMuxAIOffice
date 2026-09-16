@@ -52,6 +52,7 @@ test('Excel guides data selection, AI chart choice and review of displayed colum
     await sheets.getByRole('button', { name: '数据可视化', exact: true }).click()
     const range = sheets.getByRole('dialog', { name: '选择可视化数据' })
     await expect(range).toBeVisible()
+    await expect(range.getByLabel('可视化数据范围')).toHaveValue('A1:D4')
     await range.getByLabel('可视化数据范围').fill('A1:D4')
     await range.getByRole('button', { name: '读取数据并开始引导' }).click()
     const studio = sheets.getByRole('dialog', { name: '数据可视化工作台' })
