@@ -281,9 +281,9 @@
 \Kicker{版本与版权 · Edition \& Credits}{SOURCE-VERIFIED MANUAL}
 \TopicTitle{关于本手册}{About this manual}
 
-\CNText{本手册面向第一次使用 ZenOffice 的用户，以当前仓库 \textbf{v0.6.86} 源码与真实运行态为依据，说明安装、ZenMux 设置、Word、Excel、PowerPoint、Markdown、PDF、工作簿 SQL 数据库、跨平台打印以及跨编辑器 AI 工作流。界面截图于 2026-08-16 至 17 日在隔离的临时用户目录中从应用运行态取得；截图没有包含用户文件、真实 API Key 或个人数据。演示科研稿与工作簿均为专门制作的合成素材，不代表真实科研或企业结论。}
+\CNText{本手册面向第一次使用 ZenOffice 的用户，以当前仓库 \textbf{v0.6.86} 源码与真实运行态为依据，说明安装、ZenMux 设置、Word、Excel、PowerPoint、Markdown、PDF、工作簿 SQL 数据库、跨平台打印、跨编辑器 AI 工作流，以及 2026-09-16 新增的 MCP 应用服务补充。界面截图于 2026-08-16 至 17 日在隔离的临时用户目录中从应用运行态取得；截图没有包含用户文件、真实 API Key 或个人数据。演示科研稿与工作簿均为专门制作的合成素材，不代表真实科研或企业结论。}
 
-\ENText{This manual is based on the current \textbf{v0.6.86} source tree and real runtime UI. It covers installation, ZenMux configuration, Word, Excel, PowerPoint, Markdown, PDF, workbook SQL databases, cross-platform printing, and cross-editor AI workflows. Screenshots were captured on 16--17 August 2026 in an isolated temporary profile and contain no user documents, real API Key, or personal data. The research draft and workbooks are purpose-built synthetic demonstrations, not real scientific or business findings.}
+\ENText{This manual is based on the current \textbf{v0.6.86} source tree and real runtime UI. It covers installation, ZenMux configuration, Word, Excel, PowerPoint, Markdown, PDF, workbook SQL databases, cross-platform printing, cross-editor AI workflows, and the MCP application-services supplement added on 16 September 2026. Screenshots were captured on 16--17 August 2026 in an isolated temporary profile and contain no user documents, real API Key, or personal data. The research draft and workbooks are purpose-built synthetic demonstrations, not real scientific or business findings.}
 
 \vspace{5mm}
 \begin{tikzpicture}
@@ -1408,7 +1408,7 @@ Rendered multiline: \(\displaystyle\begin{aligned}F&=ma\\E_k&=\frac12mv^2\end{al
   \item 从主页 AI PDF、打开本地文件、系统文件关联或 PDF 专用入口打开；加密文件会要求输入打开密码。
   \item 阅读时根据任务切换连续、单页或双页；缩放后用手形工具平移，避免误选批注对象。
   \item 页面操作前另存副本。提取、插入、旋转、重排或删除后检查页码、书签、表单、签名和总页数。
-  \item 当前 PDF 功能区不提供编辑文字、编辑图片或公式插入入口；需要内容级修改时优先回到源文件再重新导出 PDF。
+  \item PDF 功能区支持插入 PNG/JPEG/SVG 图片并在页面上放置、移动和缩放；SVG 会作为图片对象写入，不保留可编辑矢量路径。需要大范围文字、公式或排版修改时，仍应优先回到源文件再重新导出 PDF。
 \end{itemize}
 \Warn{页面删除和重排会改变引用页码及签名有效性。对合同、档案或签名 PDF 操作前先确认合规要求。}
 }
@@ -1426,7 +1426,7 @@ Rendered multiline: \(\displaystyle\begin{aligned}F&=ma\\E_k&=\frac12mv^2\end{al
   \item Open through AI PDF, Open local file, an operating-system association, or the dedicated PDF entry point. Encrypted files request an open password.
   \item Switch between continuous, single, and spread views. After zooming, use the hand tool to pan without selecting annotations accidentally.
   \item Save a copy before page operations. After extract, insert, rotate, reorder, or delete, check page numbers, bookmarks, forms, signatures, and total count.
-  \item The current PDF ribbon does not expose text editing, image editing, or equation insertion. For content-level changes, edit the source document and export PDF again.
+  \item The PDF ribbon can insert PNG/JPEG/SVG images and place, move, and resize them on the page. SVG is written as an image object rather than retained as editable vector paths. For broad text, equation, or layout changes, edit the source document and export PDF again.
 \end{itemize}
 \Warn{Deleting or reordering pages changes cited page numbers and may invalidate signatures. Check compliance before modifying contracts, archives, or signed PDFs.}
 }
@@ -1455,7 +1455,7 @@ Rendered multiline: \(\displaystyle\begin{aligned}F&=ma\\E_k&=\frac12mv^2\end{al
 \Flow{框选页面区域}{检查缩略图}{向 ZenMux 提问}{@Connect 到文档}
 \begin{enumerate}
   \item 启用框选工具，在当前 PDF 页面拖出矩形。缩略图出现后放大确认文字、表格、图或公式完整可见；按 Esc 取消。
-  \item 还可添加文件、拖放或粘贴图片，总数最多 5 个。普通附件在本机解析，图片作为视觉输入。
+  \item 还可添加文件、拖放或粘贴图片，总数最多 5 个。普通附件在本机解析，图片作为视觉输入。Excel 可视化或 MCP 生成的 SVG 也可插入当前 PDF 页，再由用户保存。
   \item 提问要指出需要识别、解释、核对或转写的对象；对于表格和公式，要求保留单位、脚注、符号和上下标。
   \item 提问和 AI 回复均可复制，或通过 \texttt{@Connect} 把回复送到已打开的 Word、Excel、PPT 或 Markdown；保存后再次打开同一路径 PDF，会恢复最近 200 条问答。
 \end{enumerate}
@@ -1466,7 +1466,7 @@ Rendered multiline: \(\displaystyle\begin{aligned}F&=ma\\E_k&=\frac12mv^2\end{al
 \Flow{Capture region}{Check thumbnail}{Ask ZenMux}{@Connect to file}
 \begin{enumerate}
   \item Activate region capture and drag on the current page. Inspect the thumbnail at high zoom so text, table, figure, or equation is complete; press Escape to cancel.
-  \item Add files by picker/drop or paste images, up to five total. Ordinary files are parsed locally; images are visual input.
+  \item Add files by picker/drop or paste images, up to five total. Ordinary files are parsed locally; images are visual input. SVG produced by Excel visualization or MCP can also be inserted into the current PDF page, then saved by the user.
   \item State whether to recognize, explain, verify, or transcribe. For tables and equations, require units, footnotes, symbols, superscripts, and subscripts to be preserved.
   \item Copy either the prompt or reply, or use \texttt{@Connect} to send the reply to an open Word, Excel, PowerPoint, or Markdown tab. Reopening the same PDF path restores up to the latest 200 messages.
 \end{enumerate}
@@ -1632,7 +1632,7 @@ Cmd/Ctrl+W & Close current tab/window\\
 
 \CNPage{40}{保存、导出与跨应用复核}{Save, export, and verify in another app}{“界面里看起来正确”只是第一步。DOCX、XLSX、PPTX、PDF 与 Markdown 都应在另一个兼容应用中打开，确认保存内容真正写入。}{
 \begin{enumerate}
-  \item 保存后关闭当前文件，重新打开一次；确认图片修改、公式、表格、引用和水印不是仅存在于临时预览层。
+  \item 保存后关闭当前文件，重新打开一次；确认图片修改、PDF 插图、公式、表格、引用和水印不是仅存在于临时预览层。
   \item DOCX 在 Word/LibreOffice，XLSX 在 Excel/LibreOffice，PPTX 在 PowerPoint/LibreOffice，PDF 在系统预览或 Acrobat，Markdown 在纯文本编辑器中复核。
   \item 导出 PDF 时对比纸张大小、方向、边距、页面满幅、图像宽高、边框和浮动层级；选择几页叠加或并排核对。
   \item 交付前计算文件大小和页数，检查损坏、密码、外链、媒体、字体与隐私元数据，并保留源文件。
@@ -1642,7 +1642,7 @@ Cmd/Ctrl+W & Close current tab/window\\
 
 \ENPage{40}{保存、导出与跨应用复核}{Save, export, and verify in another app}{Correct appearance inside the editor is only the first step. Open DOCX, XLSX, PPTX, PDF, and Markdown in another compatible application to confirm changes were truly written.}{
 \begin{enumerate}
-  \item Save, close, and reopen. Confirm that image edits, equations, tables, citations, and watermarks are not merely temporary preview layers.
+  \item Save, close, and reopen. Confirm that image edits, PDF inserted images, equations, tables, citations, and watermarks are not merely temporary preview layers.
   \item Verify DOCX in Word/LibreOffice, XLSX in Excel/LibreOffice, PPTX in PowerPoint/LibreOffice, PDF in Preview or Acrobat, and Markdown in a plain-text editor.
   \item For PDF export, compare paper size, orientation, margins, full-page position, image width/height, borders, and floating z-order across representative pages.
   \item Before delivery, check file size, page count, corruption, passwords, external links, media, fonts, and privacy metadata; retain the source file.
