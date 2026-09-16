@@ -158,6 +158,7 @@ export type MenuCommand =
   | 'find'
   | 'print'
   | 'export-pdf'
+  | 'print-preview'
   | 'export-markdown'
   | 'word-count'
 
@@ -217,7 +218,7 @@ export interface DesktopApi extends ConnectApi {
   getAiSettings(): Promise<AiSettings>
   setAiSettings(settings: AiSettings): Promise<void>
   /** system print dialog for the current window */
-  print(): Promise<void>
+  print(pageWidthTwips: number, pageHeightTwips: number): Promise<{ ok: boolean; error?: string }>
   /** render the document to PDF and ask where to save; size in twips.
    *  outPath is only honored when a previous export dialog chose that exact path */
   exportPdf(

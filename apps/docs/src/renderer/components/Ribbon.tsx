@@ -1,6 +1,6 @@
 import { ArtFlowStudio } from './ArtFlowStudio'
 import { GongwenStudio } from './GongwenStudio'
-import { ScreenwritingStudio, screenplayParagraphs } from '@genoffice/ui'
+import { ScreenwritingStudio, LessAiToneStudio, screenplayParagraphs } from '@genoffice/ui'
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { ChainedCommands, Editor } from '@tiptap/core'
@@ -738,6 +738,7 @@ function RibbonInner({
   const [artFlowMounted, setArtFlowMounted] = useState(false)
   const [gongwenOpen, setGongwenOpen] = useState(false)
   const [screenwritingOpen, setScreenwritingOpen] = useState(false)
+  const [lessAiToneOpen, setLessAiToneOpen] = useState(false)
   useEffect(() => {
     const openArt = () => {
       setArtFlowMounted(true)
@@ -745,6 +746,8 @@ function RibbonInner({
     }
     const openGongwen = () => setGongwenOpen(true)
     const openScreenwriting = () => setScreenwritingOpen(true)
+    const openLessAiTone = () => setLessAiToneOpen(true)
+    document.addEventListener('zenoffice:open-less-ai-tone', openLessAiTone)
     document.addEventListener('zenoffice:open-screenwriting', openScreenwriting)
     document.addEventListener('zenoffice:open-loveart', openArt)
     document.addEventListener('zenoffice:open-gongwen', openGongwen)
@@ -752,6 +755,7 @@ function RibbonInner({
       document.removeEventListener('zenoffice:open-loveart', openArt)
       document.removeEventListener('zenoffice:open-gongwen', openGongwen)
       document.removeEventListener('zenoffice:open-screenwriting', openScreenwriting)
+      document.removeEventListener('zenoffice:open-less-ai-tone', openLessAiTone)
     }
   }, [])
   const [tab, setTab] = useState<RibbonTab>('home')
@@ -1544,6 +1548,19 @@ function RibbonInner({
           }}
         />
       )}
+      {lessAiToneOpen && (
+        <LessAiToneStudio
+          editor={editor}
+          onClose={() => setLessAiToneOpen(false)}
+          generate={async (prompt) => {
+            const settings = await window.desktop.getAiSettings()
+            const response = await window.desktop.aiChat({ settings, ...prompt })
+            if (!response.ok)
+              throw new Error(response.error || 'AI 处理失败。请检查 AI 设置后重试。')
+            return response.content || ''
+          }}
+        />
+      )}
       <div
         className={`ribbon-tabs ${IN_TAB ? '' : IS_MAC ? 'ribbon-tabs-mac' : 'ribbon-tabs-win'}`}
       >
@@ -1588,6 +1605,16 @@ function RibbonInner({
           </div>
         )}
         {quickActions}
+        <button
+          type="button"
+          className="tone-quick-entry"
+          disabled={!hasDoc}
+          title="检测处理前后 AI 特征占比，审阅并应用去 AI 味建议"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => setLessAiToneOpen(true)}
+        >
+          AI 检测 / 去 AI 味
+        </button>
         {TABS.filter((tabName) => tabName !== 'file').map((tabName) => (
           <button
             key={tabName}
@@ -1726,8 +1753,8 @@ function RibbonInner({
                   disabled={!canEdit}
                   title={
                     lang === 'zh' || lang === 'zh-TW'
-                      ? 'ZenMux AI 去除手写痕迹或增强黑白扫描件'
-                      : 'ZenMux AI handwriting removal and scan enhancement'
+                      ? '使用当前图像模型去除手写痕迹、增强扫描件或清晰化模糊文稿'
+                      : 'Use the configured image model to remove handwriting, enhance scans or clarify blurry documents'
                   }
                   onClick={() => setPictureDialog('aiEnhance')}
                 >

@@ -6775,6 +6775,10 @@ body.docs-crop-active
     display: none !important;
   }
 
+  .pv-print-error {
+    display: none !important;
+  }
+
   .pv-scroll {
     overflow: visible;
     padding: 0;

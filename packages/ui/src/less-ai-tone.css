@@ -1,0 +1,49 @@
+.less-ai-tone-studio {
+  text-align: left;
+}
+.less-ai-tone-studio pre {
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow: auto;
+  font: inherit;
+}
+.less-ai-tone-studio .tone-report {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.less-ai-tone-studio .tone-report ul {
+  max-height: 220px;
+  overflow: auto;
+  padding-left: 20px;
+}
+.less-ai-tone-studio .tone-change {
+  padding: 12px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+.less-ai-tone-studio .tone-change ins {
+  text-decoration: none;
+  border-left: 3px solid var(--accent);
+  padding-left: 8px;
+}
+.ribbon-tabs .tone-quick-entry {
+  flex-shrink: 0;
+  margin: 0 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+.ribbon-tabs .tone-quick-entry:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -39,6 +39,7 @@ interface Props {
   onReview: () => void
   onEssayReview: () => void
   onScreenwriting: () => void
+  onLessAiTone: () => void
   aiOpen: boolean
   onToggleAi: () => void
   onAiPreset: (instruction: string) => void
@@ -165,6 +166,7 @@ export function Ribbon({
   onReview,
   onEssayReview,
   onScreenwriting,
+  onLessAiTone,
   aiOpen,
   onToggleAi,
   onAiPreset,
@@ -281,6 +283,16 @@ export function Ribbon({
             onChange={(e) => onToggleAutoSave(e.target.checked)}
           />
         </label>
+        <button
+          type="button"
+          className="tone-quick-entry"
+          disabled={off}
+          title="检测处理前后 AI 特征占比，审阅并应用去 AI 味建议"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={onLessAiTone}
+        >
+          AI 检测 / 去 AI 味
+        </button>
       </div>
 
       <div className="ribbon-body">
@@ -339,6 +351,18 @@ export function Ribbon({
                 <span className="ai-feature-icon">✎</span>
               </span>
               <span>AI 编剧</span>
+            </button>
+            <button
+              type="button"
+              className="rb-big ai-entry"
+              disabled={off || state?.empty}
+              onClick={onLessAiTone}
+              aria-label="去 AI 味"
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon">✎</span>
+              </span>
+              <span>去 AI 味</span>
             </button>
             <button
               type="button"

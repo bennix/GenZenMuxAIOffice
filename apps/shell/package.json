@@ -1,7 +1,7 @@
 {
   "name": "@genoffice/shell",
   "productName": "ZenOffice",
-  "version": "0.6.86",
+  "version": "0.6.88",
   "license": "Apache-2.0",
   "homepage": "https://github.com/bennix/GenZenMuxAIOffice",
   "private": true,

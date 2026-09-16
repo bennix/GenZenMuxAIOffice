@@ -52,4 +52,5 @@ export {
   type ShapeGalleryShape,
 } from './shape-gallery'
 export { ScreenwritingStudio } from './ScreenwritingStudio'
+export { LessAiToneStudio } from './LessAiToneStudio'
 export { screenplayParagraphs } from './screenwriting'

@@ -3356,9 +3356,27 @@ export function registerDocsIpc(): void {
     },
   )
 
-  ipcMain.handle('docs:print', (event) => {
-    // print the calling tab's own content; zero margins — the docx page padding provides them
-    event.sender.print({ margins: { marginType: 'none' } })
+  ipcMain.handle('docs:print', async (event, pageWidthTwips: number, pageHeightTwips: number) => {
+    if (
+      ![pageWidthTwips, pageHeightTwips].every((n) => Number.isFinite(n) && n >= 144 && n <= 144000)
+    )
+      return { ok: false, error: 'Invalid document paper size.' }
+    // Print the renderer's pagination snapshot at physical size. Native print uses microns,
+    // unlike printToPDF (inches); document page padding already contains its margins.
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      event.sender.print(
+        {
+          printBackground: true,
+          scaleFactor: 100,
+          margins: { marginType: 'none' },
+          pageSize: {
+            width: Math.round((pageWidthTwips / TWIPS_PER_INCH) * 25400),
+            height: Math.round((pageHeightTwips / TWIPS_PER_INCH) * 25400),
+          },
+        },
+        (ok, error) => resolve({ ok, ...(error ? { error } : {}) }),
+      )
+    })
   })
 
   ipcMain.handle(
@@ -3622,12 +3640,12 @@ export function buildDocsMenu(): void {
         { label: 'Export Markdown…', click: () => sendCommand('export-markdown') },
         {
           label: getUiLang() === 'zh' ? '打印预览…' : 'Print Preview…',
-          click: () => activeDocsWebContents()?.print({ printBackground: true }),
+          click: () => sendCommand('print-preview'),
         },
         {
           label: tm('menuPrint'),
           accelerator: 'CmdOrCtrl+P',
-          click: () => activeDocsWebContents()?.print({ printBackground: true }),
+          click: () => sendCommand('print-preview'),
         },
       ],
     },

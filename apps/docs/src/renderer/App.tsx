@@ -2639,6 +2639,9 @@ export function App() {
         case 'export-pdf':
           void exportPdf()
           break
+        case 'print-preview':
+          if (doc) setShowPagePreview(true)
+          break
         case 'export-markdown':
           if (editor) {
             void window.desktop.exportMarkdown(

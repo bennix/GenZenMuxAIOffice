@@ -80,7 +80,8 @@ const api: DesktopApi = {
     ipcRenderer.invoke('docs:save-bibliography', path, bibText),
   getRecentFiles: () => ipcRenderer.invoke('docs:recent'),
   pickImage: () => ipcRenderer.invoke('docs:pick-image'),
-  print: () => ipcRenderer.invoke('docs:print'),
+  print: (pageWidthTwips: number, pageHeightTwips: number) =>
+    ipcRenderer.invoke('docs:print', pageWidthTwips, pageHeightTwips),
   exportPdf: (
     defaultName: string,
     pageWidthTwips: number,

@@ -24,7 +24,7 @@ import { SlashMenu, type SlashMenuHandle } from './components/SlashMenu'
 import { TableMenu } from './components/TableMenu'
 import { EquationDialog, type MarkdownEquationTarget } from './components/EquationDialog'
 import { MermaidDialog } from './components/MermaidDialog'
-import { ScreenwritingStudio, screenplayParagraphs } from '@genoffice/ui'
+import { ScreenwritingStudio, LessAiToneStudio, screenplayParagraphs } from '@genoffice/ui'
 import { WechatExportDialog } from './components/WechatExportDialog'
 import { AiReviewCommitteeModal, documentImages } from './components/AiReviewCommitteeModal'
 import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
@@ -99,6 +99,7 @@ export default function App() {
   const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
   const [mermaidOpen, setMermaidOpen] = useState(false)
   const [screenwritingOpen, setScreenwritingOpen] = useState(false)
+  const [lessAiToneOpen, setLessAiToneOpen] = useState(false)
   const [infographicOpen, setInfographicOpen] = useState(false)
   const [mermaidTab, setMermaidTab] = useState<'pretty' | 'editorial' | 'wechat'>('pretty')
   const [wechatOpen, setWechatOpen] = useState(false)
@@ -571,6 +572,7 @@ export default function App() {
         onReview={() => setReviewOpen(true)}
         onEssayReview={() => setEssayReviewOpen(true)}
         onScreenwriting={() => setScreenwritingOpen(true)}
+        onLessAiTone={() => setLessAiToneOpen(true)}
         onTranslate={(language) => {
           const selection = editor && editor.state.selection.from !== editor.state.selection.to
           const target = language === 'zh' ? '简体中文' : 'English'
@@ -703,6 +705,19 @@ export default function App() {
             const settings = await window.markdownApi.getAiSettings()
             const response = await window.markdownApi.aiChat({ settings, ...prompt })
             if (!response.ok) throw new Error(response.error || 'AI 生成失败。')
+            return response.content || ''
+          }}
+        />
+      )}
+      {lessAiToneOpen && editor && (
+        <LessAiToneStudio
+          editor={editor}
+          onClose={() => setLessAiToneOpen(false)}
+          generate={async (prompt) => {
+            const settings = await window.markdownApi.getAiSettings()
+            const response = await window.markdownApi.aiChat({ settings, ...prompt })
+            if (!response.ok)
+              throw new Error(response.error || 'AI 处理失败。请检查 AI 设置后重试。')
             return response.content || ''
           }}
         />

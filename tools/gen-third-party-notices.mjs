@@ -274,6 +274,12 @@ for (const [name, { dir, pkg }] of resolved) {
 out += sub('gongwen-gbt9704-skill — MIT')
 out += 'https://github.com/mizzlelover/gongwen-gbt9704-skill\n'
 out += readFileSync(join(ROOT, 'packages/gongwen/LICENSE'), 'utf8') + '\n'
+out += sub('lieflat-less-ai-tone — MIT, pinned 27d29232f10124db904ca9c0536d0b67cb3b2833')
+out += 'https://github.com/larashero3-dotcom/lieflat-less-ai-tone\n'
+out += readFileSync(join(ROOT, 'packages/ui/src/less-ai-tone-LICENSE.txt'), 'utf8') + '\n'
+out += sub('no-ai-slop-zh — MIT, pinned 89d6fab9079bb249c25a254924c418885e964d34')
+out += 'https://github.com/shenxianpeng/no-ai-slop-zh\n'
+out += readFileSync(join(ROOT, 'packages/ui/src/no-ai-slop-zh-LICENSE.txt'), 'utf8') + '\n'
 
 const crates = rustCrates()
 out += hr(`2. Rust crates (xlsx-sidecar native component, statically linked)`)

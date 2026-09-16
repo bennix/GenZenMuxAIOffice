@@ -270,6 +270,17 @@ export function DesignTab({
             </span>
             <span>AI 编剧</span>
           </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="检测 AI 写作痕迹，审阅并应用局部修改"
+            onClick={() => document.dispatchEvent(new Event('zenoffice:open-less-ai-tone'))}
+          >
+            <span className="rb-big-icon">
+              <IconTheme size={BIG} />
+            </span>
+            <span>去 AI 味</span>
+          </button>
         </div>
         <div className="ribbon-group-label">专业写作</div>
       </div>

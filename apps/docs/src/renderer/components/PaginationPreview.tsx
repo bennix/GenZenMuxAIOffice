@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { printPaginationPreview } from '../print-preview'
 import type {
   HeaderFooter,
   HfImage,
@@ -182,7 +183,21 @@ export function PaginationPreview({
   onExportPdf: () => void
   onClose: () => void
 }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
+  const [printing, setPrinting] = useState(false)
+  const [printError, setPrintError] = useState('')
+  const zh = lang === 'zh' || lang === 'zh-TW'
+  const print = async () => {
+    setPrinting(true)
+    setPrintError('')
+    try {
+      await printPaginationPreview()
+    } catch (error) {
+      setPrintError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setPrinting(false)
+    }
+  }
   const [slices, setSlices] = useState<PageSlice[]>([])
   const [pageNotes, setPageNotes] = useState<PageNoteItem[][]>([])
   /** Top Y of the endnote area (virtual coordinates); null = no endnotes */
@@ -325,12 +340,12 @@ export function PaginationPreview({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
-        onClose()
+        if (!printing) onClose()
       }
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  }, [onClose, printing])
 
   const multiSection = secs.length > 1
   const effRefs = useMemo(() => effectiveHfRefs(secs), [secs])
@@ -421,13 +436,30 @@ export function PaginationPreview({
         <span className="pv-title">{t('appPaginationPreview')}</span>
         <span className="pv-count">{t('appTotalPagesN', { n: slices.length })}</span>
         <span className="pv-hint">{t('appPvHint')}</span>
-        <button className="pv-close" title={t('appPvExportTip')} onClick={onExportPdf}>
+        <button
+          className="pv-close"
+          disabled={printing || !slices.length}
+          onClick={() => void print()}
+        >
+          {printing ? (zh ? '打印中…' : 'Printing…') : zh ? '打印…' : 'Print…'}
+        </button>
+        <button
+          className="pv-close"
+          disabled={printing}
+          title={t('appPvExportTip')}
+          onClick={onExportPdf}
+        >
           {t('appExportPdf')}
         </button>
-        <button className="pv-close" onClick={onClose}>
+        <button className="pv-close" disabled={printing} onClick={onClose}>
           {t('appClose')}
         </button>
       </div>
+      {printError && (
+        <p className="pv-print-error" role="alert">
+          {printError}
+        </p>
+      )}
       <div className="pv-scroll">
         {slices.map((slice, i) => {
           const parts = hfFor(i)
