@@ -51,8 +51,12 @@ export function filterDashboardCards(
   const selected = new Set(filter.values.map((value) => JSON.stringify(value)))
   return cards.map((card) => {
     const index = card.table.columns.indexOf(filter.column)
-    return { ...card, table: { ...card.table,
-      rows: card.table.rows.filter((row) => selected.has(JSON.stringify(row[index]))),
-    } }
+    return {
+      ...card,
+      table: {
+        ...card.table,
+        rows: card.table.rows.filter((row) => selected.has(JSON.stringify(row[index]))),
+      },
+    }
   })
 }

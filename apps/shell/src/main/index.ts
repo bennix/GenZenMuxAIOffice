@@ -2268,10 +2268,15 @@ function registerConnectIpc(): void {
       return { ok: false, error: '无法分享图片。' }
     if (dataUrl.length > 20 * 1024 * 1024)
       return { ok: false, error: '图片超过 20 MB，请缩小后重试。' }
-    const svgForPdf = dataUrl.startsWith('data:image/svg+xml;base64,') &&
-      tabManager?.imageShareTargets(source).some((target) => target.id === targetId && target.kind === 'pdf')
-    if (!/^data:image\/(png|jpeg|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(dataUrl) ||
-        (dataUrl.startsWith('data:image/svg+xml;') && !svgForPdf))
+    const svgForPdf =
+      dataUrl.startsWith('data:image/svg+xml;base64,') &&
+      tabManager
+        ?.imageShareTargets(source)
+        .some((target) => target.id === targetId && target.kind === 'pdf')
+    if (
+      !/^data:image\/(png|jpeg|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(dataUrl) ||
+      (dataUrl.startsWith('data:image/svg+xml;') && !svgForPdf)
+    )
       return { ok: false, error: '请选择 PNG 或 JPEG 图片；SVG 可直接插入 PDF。' }
     return new Promise<{ ok: boolean; error?: string }>((resolve) => {
       const id = `image-${++nextImageId}`
@@ -2882,7 +2887,12 @@ async function startMcpBridge(): Promise<void> {
       const jpeg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
       const svg = /\.svg$/i.test(path) && /<svg(?:\s|>)/i.test(bytes.toString('utf8'))
       if (!png && !jpeg && !svg) throw new Error('仅支持 PNG、JPEG 或 SVG 图片')
-      if (svg && !tabManager?.imageShareTargets(null).some((target) => target.id === targetId && target.kind === 'pdf'))
+      if (
+        svg &&
+        !tabManager
+          ?.imageShareTargets(null)
+          .some((target) => target.id === targetId && target.kind === 'pdf')
+      )
         throw new Error('SVG 图片目前仅支持插入 PDF；其他模块请使用 PNG 或 JPEG')
       const result = await shareMcpImage(
         targetId,

@@ -36,11 +36,11 @@ MCP 的目标是覆盖全部应用服务。目前 stdio 服务提供 6 个独立
 
 使用 `application_list_tabs` 返回的 Word（kind 为 docs）标签 `id`：
 
-| 工具 | 参数 | 行为 |
-| --- | --- | --- |
-| `word_read_text` | `{id,offset?,maxChars?}` | 读取编辑中正文纯文本，返回 `{text,totalChars,offset,revision,path,dirty}`；默认从 0 开始，最多 100000 字符 |
-| `word_insert_text` | `{id,text,expectedRevision,position?}` | 在 start 或 end 插入纯文本段落，默认 end，换行形成新段落；返回版本号和 insertedParagraphs，不主动保存 |
-| `word_save` | `{id}` | 通过原生 DOCX 序列化保存已有路径的文档；返回 `{revision,path,dirty}` |
+| 工具               | 参数                                   | 行为                                                                                                       |
+| ------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `word_read_text`   | `{id,offset?,maxChars?}`               | 读取编辑中正文纯文本，返回 `{text,totalChars,offset,revision,path,dirty}`；默认从 0 开始，最多 100000 字符 |
+| `word_insert_text` | `{id,text,expectedRevision,position?}` | 在 start 或 end 插入纯文本段落，默认 end，换行形成新段落；返回版本号和 insertedParagraphs，不主动保存      |
+| `word_save`        | `{id}`                                 | 通过原生 DOCX 序列化保存已有路径的文档；返回 `{revision,path,dirty}`                                       |
 
 先 `word_read_text`，再将 revision 原样传给 `word_insert_text` 的 expectedRevision。正文（包括格式）已变更时拒绝插入，需重新读取并合并；不要盲目重试。插入最多 50000 字符，`<b>` 等字符按文字处理，不执行 HTML，保留原有段落、图片与格式。操作通过编辑器事务完成，可在保存前撤销；原生保存可能重建文档节点及撤销历史。读取仅是正文纯文本视图，不含页眉页脚、图片数据或完整 DOCX 结构；offset/maxChars 按 JavaScript UTF-16 字符位置计数。
 
@@ -60,11 +60,11 @@ MCP 的目标是覆盖全部应用服务。目前 stdio 服务提供 6 个独立
 
 使用 `application_list_tabs` 返回的 Markdown 标签 `id`：
 
-| 工具 | 参数 | 行为 |
-| --- | --- | --- |
-| `markdown_read` | `{id}` | 返回编辑器当前 `{text,path,dirty}`，包含未保存修改，text 只含正文 |
+| 工具               | 参数                     | 行为                                                                          |
+| ------------------ | ------------------------ | ----------------------------------------------------------------------------- |
+| `markdown_read`    | `{id}`                   | 返回编辑器当前 `{text,path,dirty}`，包含未保存修改，text 只含正文             |
 | `markdown_replace` | `{id,expectedText,text}` | expectedText 必须等于最近读取的正文；替换可撤销，保留 frontmatter，不主动保存 |
-| `markdown_save` | `{id}` | 调用原生保存及参考文献同步流程；返回保存后的状态 |
+| `markdown_save`    | `{id}`                   | 调用原生保存及参考文献同步流程；返回保存后的状态                              |
 
 先读取，再将返回的 text 原样作为 expectedText 提交替换。发生冲突时重新读取并合并用户修改。正文上限 200000 字符，同时请求整体受桥接 1MB UTF-8 限制（包含 text 和 expectedText）；未命名文档须先在界面保存。原有自动保存设置仍生效。编辑器加载、保存或输入法组合输入期间返回忙碌错误。请求超时后先读取现状，避免重复修改；保存结果 dirty=true 表示保存期间有新编辑尚未落盘。
 

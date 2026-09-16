@@ -28,7 +28,14 @@ it('round-trips the editable configuration and exact data including missing and 
   expect(dashboard.cards[0]!.table.rows[0]![1]).toBe(0)
 })
 it('rejects unsupported files and validates all chart data before accepting them', () => {
-  expect(() => serializeDashboardFile({ ...dashboard, cards: [{ ...dashboard.cards[0]!, table: { columns: ['地区', '收入'], rows: [['东', NaN]] } }] })).toThrow()
+  expect(() =>
+    serializeDashboardFile({
+      ...dashboard,
+      cards: [
+        { ...dashboard.cards[0]!, table: { columns: ['地区', '收入'], rows: [['东', NaN]] } },
+      ],
+    }),
+  ).toThrow()
   const envelope = JSON.parse(serializeDashboardFile(dashboard))
   expect(() => parseDashboardFile('not json')).toThrow('JSON')
   expect(() => parseDashboardFile(JSON.stringify({ ...envelope, version: 2 }))).toThrow('版本')

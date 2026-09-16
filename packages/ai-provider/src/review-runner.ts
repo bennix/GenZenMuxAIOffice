@@ -49,10 +49,7 @@ export async function runDocumentReview(options: {
       user,
     }
     if (visual && images?.length) request.images = images
-    const response = await options.chat(
-      request,
-      signal,
-    )
+    const response = await options.chat(request, signal)
     signal?.throwIfAborted()
     if (!response.ok || !response.content?.trim())
       throw new Error(response.error || 'AI 未返回有效内容')

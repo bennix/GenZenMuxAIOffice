@@ -8,28 +8,83 @@ const table = {
   ],
 }
 it('validates the full contour grid beyond the AI sample', () => {
-  const proposal={chartId:'contour',x:'x',y:['y','z'],title:'等高线',reason:'展示网格高度'}
-  const input={columns:['x','y','z'],rows:Array.from({length:7},(_,x)=>Array.from({length:7},(_,y)=>[x,y,x+y])).flat()}
-  expect(parseChartSuggestion(JSON.stringify(proposal),input)).toEqual(proposal)
-  expect(()=>parseChartSuggestion(JSON.stringify(proposal),{...input,rows:input.rows.slice(0,-1)})).toThrow('完整矩形')
+  const proposal = {
+    chartId: 'contour',
+    x: 'x',
+    y: ['y', 'z'],
+    title: '等高线',
+    reason: '展示网格高度',
+  }
+  const input = {
+    columns: ['x', 'y', 'z'],
+    rows: Array.from({ length: 7 }, (_, x) =>
+      Array.from({ length: 7 }, (_, y) => [x, y, x + y]),
+    ).flat(),
+  }
+  expect(parseChartSuggestion(JSON.stringify(proposal), input)).toEqual(proposal)
+  expect(() =>
+    parseChartSuggestion(JSON.stringify(proposal), { ...input, rows: input.rows.slice(0, -1) }),
+  ).toThrow('完整矩形')
 })
 it('accepts circle packing parent bindings and rejects an inconsistent parent total', () => {
-  const proposal = {chartId:'circle-packing',x:'node',parent:'parent',y:['weight'],title:'层级',reason:'比较叶子权重'}
-  const input = {columns:['node','parent','weight'],rows:[['root',null,null],['A','root',4],['B','root',1]]}
-  expect(parseChartSuggestion(JSON.stringify(proposal),input)).toEqual(proposal)
-  expect(() => parseChartSuggestion(JSON.stringify(proposal),{...input,rows:[['root',null,10],...input.rows.slice(1)]})).toThrow('合计不一致')
+  const proposal = {
+    chartId: 'circle-packing',
+    x: 'node',
+    parent: 'parent',
+    y: ['weight'],
+    title: '层级',
+    reason: '比较叶子权重',
+  }
+  const input = {
+    columns: ['node', 'parent', 'weight'],
+    rows: [
+      ['root', null, null],
+      ['A', 'root', 4],
+      ['B', 'root', 1],
+    ],
+  }
+  expect(parseChartSuggestion(JSON.stringify(proposal), input)).toEqual(proposal)
+  expect(() =>
+    parseChartSuggestion(JSON.stringify(proposal), {
+      ...input,
+      rows: [['root', null, 10], ...input.rows.slice(1)],
+    }),
+  ).toThrow('合计不一致')
 })
 it('accepts horizon proposals with dates and rejects repeated times outside the sample', () => {
-  const input = { columns: ['time', 'value'], rows: Array.from({ length: 31 }, (_, i) => [i, i - 15]) }
-  const proposal = { chartId: 'horizon', x: 'time', y: ['value'], title: '正负变化', reason: '紧凑趋势比较' }
+  const input = {
+    columns: ['time', 'value'],
+    rows: Array.from({ length: 31 }, (_, i) => [i, i - 15]),
+  }
+  const proposal = {
+    chartId: 'horizon',
+    x: 'time',
+    y: ['value'],
+    title: '正负变化',
+    reason: '紧凑趋势比较',
+  }
   expect(parseChartSuggestion(JSON.stringify(proposal), input)).toEqual(proposal)
   const invalid = { ...input, rows: [...input.rows.slice(0, 30), [0, 1]] }
   expect(() => parseChartSuggestion(JSON.stringify(proposal), invalid)).toThrow('重复')
-  expect(parseChartSuggestion(JSON.stringify(proposal), { columns: input.columns, rows: [['2026-01-01', -3], ['2026-01-02', 3]] })).toEqual(proposal)
+  expect(
+    parseChartSuggestion(JSON.stringify(proposal), {
+      columns: input.columns,
+      rows: [
+        ['2026-01-01', -3],
+        ['2026-01-02', 3],
+      ],
+    }),
+  ).toEqual(proposal)
 })
 it('accepts hexbin AI proposals and checks coordinates outside the 30-row sample', () => {
   const input = { columns: ['x', 'y'], rows: Array.from({ length: 31 }, (_, i) => [i, i * i]) }
-  const proposal = { chartId: 'hexbin', x: 'x', y: ['y'], title: '分箱计数', reason: '显示密集观测' }
+  const proposal = {
+    chartId: 'hexbin',
+    x: 'x',
+    y: ['y'],
+    title: '分箱计数',
+    reason: '显示密集观测',
+  }
   expect(parseChartSuggestion(JSON.stringify(proposal), input)).toEqual(proposal)
   const invalid = { ...input, rows: [...input.rows.slice(0, 30), [null, 1]] }
   expect(() => parseChartSuggestion(JSON.stringify(proposal), invalid)).toThrow('完整')

@@ -159,7 +159,9 @@ export function VisualizationStudio({
       try {
         const next = await window.desktopApi.listImageShareTargets()
         if (active) setTargets(next)
-      } catch { /* Keep the last list; explicit refresh reports errors. */ }
+      } catch {
+        /* Keep the last list; explicit refresh reports errors. */
+      }
     }
     const timer = window.setInterval(() => void refresh(), 1500)
     window.addEventListener('focus', refresh)
@@ -223,9 +225,10 @@ export function VisualizationStudio({
     if (!targetId || !output.svg) return
     setBusy(true)
     try {
-      const dataUrl = targets.find((item) => item.id === targetId)?.kind === 'pdf'
-        ? visualizationSvgDataUrl(output.svg)
-        : await visualizationPng(output.svg)
+      const dataUrl =
+        targets.find((item) => item.id === targetId)?.kind === 'pdf'
+          ? visualizationSvgDataUrl(output.svg)
+          : await visualizationPng(output.svg)
       const result = await window.desktopApi.shareImage(targetId, dataUrl)
       if (!result.ok) throw new Error(result.error || '图片插入失败。')
       setStatus('图表已插入目标文件，请在目标文件中保存。')
@@ -252,18 +255,51 @@ export function VisualizationStudio({
             {table.rows.length} 行 · {table.columns.length} 列，首行为字段名
           </p>
         </div>
-        {!guided && <button disabled={busy} onClick={() => setGuided(true)}>重新引导选图</button>}
+        {!guided && (
+          <button disabled={busy} onClick={() => setGuided(true)}>
+            重新引导选图
+          </button>
+        )}
         <button disabled={busy} onClick={onClose}>
           关闭
         </button>
       </header>
-      {guided && <VisualizationGuide table={initialTable} initialColumns={table.columns} onSkip={(next) => {
-        setTable(next); setChartId('column'); setX(next.columns[0]!); setY(profileTable(next).filter((column) => column.kind === 'number').slice(0, 1).map((column) => column.name)); setParent(''); setTarget(''); setGuided(false)
-      }} onApply={(request) => {
-        setTable(request.table); setChartId(request.chartId); setX(request.x); setY(request.y)
-        setParent(request.parent ?? ''); setTarget(request.target ?? ''); setTitle(request.title ?? '数据可视化')
-        setGroup(''); setDataKind(''); setSearch(''); setSuggestion(null); setView('chart'); setEditingCard(null); setGuided(false)
-      }} />}
+      {guided && (
+        <VisualizationGuide
+          table={initialTable}
+          initialColumns={table.columns}
+          onSkip={(next) => {
+            setTable(next)
+            setChartId('column')
+            setX(next.columns[0]!)
+            setY(
+              profileTable(next)
+                .filter((column) => column.kind === 'number')
+                .slice(0, 1)
+                .map((column) => column.name),
+            )
+            setParent('')
+            setTarget('')
+            setGuided(false)
+          }}
+          onApply={(request) => {
+            setTable(request.table)
+            setChartId(request.chartId)
+            setX(request.x)
+            setY(request.y)
+            setParent(request.parent ?? '')
+            setTarget(request.target ?? '')
+            setTitle(request.title ?? '数据可视化')
+            setGroup('')
+            setDataKind('')
+            setSearch('')
+            setSuggestion(null)
+            setView('chart')
+            setEditingCard(null)
+            setGuided(false)
+          }}
+        />
+      )}
       <div className="screenwriting-columns" style={{ display: guided ? 'none' : undefined }}>
         <fieldset>
           <label>
@@ -366,7 +402,11 @@ export function VisualizationStudio({
           </label>
           <label>
             类别 / X / 节点列
-            <select aria-label="类别 / X / 节点列" value={x} onChange={(event) => setX(event.target.value)}>
+            <select
+              aria-label="类别 / X / 节点列"
+              value={x}
+              onChange={(event) => setX(event.target.value)}
+            >
               {table.columns.map((name) => (
                 <option key={name}>{name}</option>
               ))}
@@ -413,7 +453,11 @@ export function VisualizationStudio({
           {['treemap', 'sunburst', 'tree', 'icicle', 'circle-packing'].includes(chartId) && (
             <label>
               父节点列
-              <select aria-label="父节点列" value={parent} onChange={(event) => setParent(event.target.value)}>
+              <select
+                aria-label="父节点列"
+                value={parent}
+                onChange={(event) => setParent(event.target.value)}
+              >
                 <option value="">请选择</option>
                 {table.columns.map((name) => (
                   <option key={name}>{name}</option>

@@ -5,14 +5,28 @@ import { assertHorizonSize } from './horizon'
 /** Only Cartesian plots with one pair of axes get a shared range control. */
 export function interactiveChartOption(request: ChartRequest): EChartsOption {
   const option = buildChartOption(request)
-  if (request.chartId === 'horizon') return {
-    ...option,
-    dataZoom: [
-      { type: 'inside', xAxisIndex: request.y.map((_, i) => i), filterMode: 'none', zoomOnMouseWheel: 'ctrl', moveOnMouseWheel: false },
-      { type: 'slider', xAxisIndex: request.y.map((_, i) => i), filterMode: 'none', bottom: 42, height: 16, showDetail: false },
-    ],
-    toolbox: { right: 8, top: 28, feature: { restore: { title: '重置视图' } } },
-  }
+  if (request.chartId === 'horizon')
+    return {
+      ...option,
+      dataZoom: [
+        {
+          type: 'inside',
+          xAxisIndex: request.y.map((_, i) => i),
+          filterMode: 'none',
+          zoomOnMouseWheel: 'ctrl',
+          moveOnMouseWheel: false,
+        },
+        {
+          type: 'slider',
+          xAxisIndex: request.y.map((_, i) => i),
+          filterMode: 'none',
+          bottom: 42,
+          height: 16,
+          showDetail: false,
+        },
+      ],
+      toolbox: { right: 8, top: 28, feature: { restore: { title: '重置视图' } } },
+    }
   if (
     request.chartId === 'sparkline' ||
     option.visualMap ||
@@ -60,7 +74,8 @@ export function mountInteractiveChart(
   dispose: () => void
 } {
   const option = interactiveChartOption(request)
-  if (request.chartId === 'horizon') assertHorizonSize(element.clientWidth, element.clientHeight, request.y.length)
+  if (request.chartId === 'horizon')
+    assertHorizonSize(element.clientWidth, element.clientHeight, request.y.length)
   const chart = init(element, undefined, { renderer: 'svg' })
   let observer: ResizeObserver | undefined
   try {

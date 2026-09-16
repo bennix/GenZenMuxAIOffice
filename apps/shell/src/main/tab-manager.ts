@@ -135,16 +135,27 @@ export class TabManager {
   }
 
   requestMarkdown(id: string, request: Omit<MarkdownMcpRequest, 'requestId'>): Promise<unknown> {
-    return this.requestEditor(id, 'markdown', { request: MARKDOWN_CHANNELS.mcpRequest, result: MARKDOWN_CHANNELS.mcpResult }, request)
+    return this.requestEditor(
+      id,
+      'markdown',
+      { request: MARKDOWN_CHANNELS.mcpRequest, result: MARKDOWN_CHANNELS.mcpResult },
+      request,
+    )
   }
 
   requestWord(id: string, request: Omit<WordMcpRequest, 'requestId'>): Promise<unknown> {
     return this.requestEditor(id, 'docs', WORD_MCP_CHANNELS, request)
   }
 
-  private requestEditor(id: string, kind: 'docs' | 'markdown', channels: { request: string; result: string }, request: object): Promise<unknown> {
+  private requestEditor(
+    id: string,
+    kind: 'docs' | 'markdown',
+    channels: { request: string; result: string },
+    request: object,
+  ): Promise<unknown> {
     const target = this.tabs.find((tab) => tab.id === id && tab.kind === kind)?.view?.webContents
-    if (!target || target.isDestroyed()) return Promise.reject(new Error('编辑标签不存在或类型不匹配'))
+    if (!target || target.isDestroyed())
+      return Promise.reject(new Error('编辑标签不存在或类型不匹配'))
     const requestId = randomUUID()
     return new Promise((resolve, reject) => {
       const cleanup = () => {
@@ -152,13 +163,24 @@ export class TabManager {
         ipcMain.removeListener(channels.result, listener)
         target.removeListener('destroyed', onDestroyed)
       }
-      const listener = (event: Electron.IpcMainEvent, result: { requestId: string; error?: string; data?: unknown }) => {
-        if (event.sender !== target || event.senderFrame !== target.mainFrame || result?.requestId !== requestId) return
+      const listener = (
+        event: Electron.IpcMainEvent,
+        result: { requestId: string; error?: string; data?: unknown },
+      ) => {
+        if (
+          event.sender !== target ||
+          event.senderFrame !== target.mainFrame ||
+          result?.requestId !== requestId
+        )
+          return
         cleanup()
         if (result.error) reject(new Error(result.error))
         else resolve(result.data)
       }
-      const onDestroyed = () => { cleanup(); reject(new Error('编辑标签已关闭')) }
+      const onDestroyed = () => {
+        cleanup()
+        reject(new Error('编辑标签已关闭'))
+      }
       const timer = setTimeout(() => {
         cleanup()
         reject(new Error('编辑器响应超时；请读取当前状态后再重试修改'))

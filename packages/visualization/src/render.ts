@@ -159,21 +159,42 @@ export function buildChartOption(request: ChartRequest): EChartsOption {
   const labels = table.rows.map((row) => String(row[xi] ?? ''))
   if (chartId === 'contour') {
     if (yi.length !== 2) throw new Error('等高线需要 Y 坐标和高度 Z 两个字段。')
-    return contourOption(table.rows.map((row,index)=>{
-      const x=numericValue(row[xi]!),y=values[0]![index],z=values[1]![index]
-      if(x===null || y===null || y===undefined || z===null || z===undefined) throw new Error('等高线需要完整 X、Y、Z 数值。')
-      return [x,y,z]
-    }),request.x,request.y[0]!,request.y[1]!,title)
+    return contourOption(
+      table.rows.map((row, index) => {
+        const x = numericValue(row[xi]!),
+          y = values[0]![index],
+          z = values[1]![index]
+        if (x === null || y === null || y === undefined || z === null || z === undefined)
+          throw new Error('等高线需要完整 X、Y、Z 数值。')
+        return [x, y, z]
+      }),
+      request.x,
+      request.y[0]!,
+      request.y[1]!,
+      title,
+    )
   }
-  if (chartId === 'horizon') return horizonOption(table.rows.map((row) => row[xi]!), values, request.y, title)
+  if (chartId === 'horizon')
+    return horizonOption(
+      table.rows.map((row) => row[xi]!),
+      values,
+      request.y,
+      title,
+    )
   if (chartId === 'hexbin') {
     if (yi.length !== 1) throw new Error('六边形分箱的 Y 轴只选择一个数值列。')
-    return hexbinOption(table.rows.map((row, index) => {
-      const x = numericValue(row[xi]!), y = values[0]![index]
-      if (x === null || y === null || y === undefined)
-        throw new Error('六边形分箱需要完整有限的 X、Y 数值配对。')
-      return [x, y]
-    }), request.x, request.y[0]!, title)
+    return hexbinOption(
+      table.rows.map((row, index) => {
+        const x = numericValue(row[xi]!),
+          y = values[0]![index]
+        if (x === null || y === null || y === undefined)
+          throw new Error('六边形分箱需要完整有限的 X、Y 数值配对。')
+        return [x, y]
+      }),
+      request.x,
+      request.y[0]!,
+      title,
+    )
   }
   const common: EChartsOption = {
     backgroundColor: '#ffffff',

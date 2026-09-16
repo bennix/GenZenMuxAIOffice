@@ -11,7 +11,8 @@ import type { ExportFormat, MarkdownApi, SaveMode, UiTheme } from '../shared/ipc
 
 const api: MarkdownApi = {
   onMcpRequest: (handler) => {
-    const listener = (_e: Electron.IpcRendererEvent, request: Parameters<typeof handler>[0]) => handler(request)
+    const listener = (_e: Electron.IpcRendererEvent, request: Parameters<typeof handler>[0]) =>
+      handler(request)
     ipcRenderer.on(MARKDOWN_CHANNELS.mcpRequest, listener)
     return () => ipcRenderer.removeListener(MARKDOWN_CHANNELS.mcpRequest, listener)
   },

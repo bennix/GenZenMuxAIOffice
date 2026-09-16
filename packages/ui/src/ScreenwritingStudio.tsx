@@ -139,7 +139,8 @@ export function ScreenwritingStudio({
               disabled={!result.trim()}
               onClick={() => {
                 try {
-                  if (getDocumentVersion() !== sourceVersion) throw new Error('原文已变化，请返回文档并重新打开编剧工作台后再插入。')
+                  if (getDocumentVersion() !== sourceVersion)
+                    throw new Error('原文已变化，请返回文档并重新打开编剧工作台后再插入。')
                   if (onInsert(result)) onClose()
                   else setError('插入失败，请检查编辑状态。')
                 } catch (cause) {

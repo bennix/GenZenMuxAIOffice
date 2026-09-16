@@ -28,7 +28,11 @@ export interface WordMcpResult {
     totalChars?: number
     offset?: number
     insertedParagraphs?: number
-    reviewMaterial?: { text: string; images: { mime: string; base64: string }[]; omittedImageCount: number }
+    reviewMaterial?: {
+      text: string
+      images: { mime: string; base64: string }[]
+      omittedImageCount: number
+    }
   }
 }
 

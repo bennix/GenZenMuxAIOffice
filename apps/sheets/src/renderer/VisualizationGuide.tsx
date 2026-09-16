@@ -342,9 +342,7 @@ export function VisualizationGuide({
       {step === 2 && selected && (
         <>
           <h3>确认显示哪些列</h3>
-          <p>
-            图表类型：{chartName(selected.request.chartId)}。调整显示列后，预览同步更新。
-          </p>
+          <p>图表类型：{chartName(selected.request.chartId)}。调整显示列后，预览同步更新。</p>
           <div className="viz-review">
             <fieldset>
               <label>

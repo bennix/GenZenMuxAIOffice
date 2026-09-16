@@ -32,7 +32,10 @@ if (process.env.ZENOFFICE_MCP_PORT || process.env.ZENOFFICE_MCP_TOKEN) {
   })
   registerWordTools(registry, (id, request) => {
     const { action, ...args } = request
-    return call(action === 'read' ? 'word_read_text' : action === 'insert' ? 'word_insert_text' : 'word_save', { id, ...args })
+    return call(
+      action === 'read' ? 'word_read_text' : action === 'insert' ? 'word_insert_text' : 'word_save',
+      { id, ...args },
+    )
   })
   registerProjectTools(registry, {
     list: () => call('projects_list', {}),

@@ -8,10 +8,22 @@ describe('Markdown tools', () => {
     const call = vi.fn().mockResolvedValue({ text: 'new', dirty: true })
     registerMarkdownTools(registry, call)
     const context = { signal: new AbortController().signal }
-    expect((await registry.call('markdown_replace', { id: 'md', text: 'new' }, context)).isError).toBe(true)
-    expect((await registry.call('markdown_save', { id: 'md', path: '/tmp/other.md' }, context)).isError).toBe(true)
+    expect(
+      (await registry.call('markdown_replace', { id: 'md', text: 'new' }, context)).isError,
+    ).toBe(true)
+    expect(
+      (await registry.call('markdown_save', { id: 'md', path: '/tmp/other.md' }, context)).isError,
+    ).toBe(true)
     expect(call).not.toHaveBeenCalled()
-    expect((await registry.call('markdown_replace', { id: 'md', text: 'new', expectedText: 'old' }, context)).isError).toBeUndefined()
+    expect(
+      (
+        await registry.call(
+          'markdown_replace',
+          { id: 'md', text: 'new', expectedText: 'old' },
+          context,
+        )
+      ).isError,
+    ).toBeUndefined()
     expect(call).toHaveBeenCalledWith('md', { action: 'replace', text: 'new', expectedText: 'old' })
   })
 })

@@ -190,8 +190,12 @@ for (const mode of ['chart', 'dashboard'] as const) {
       if (mode === 'chart') {
         // New unsaved documents must appear without reopening the sharing panel.
         const before = new Set(launched.app.windows())
-        await shell.evaluate(async () => { await (window as any).aiOffice.newMarkdown() })
-        await expect.poll(() => launched.app.windows().filter((page) => !before.has(page)).length).toBe(1)
+        await shell.evaluate(async () => {
+          await (window as any).aiOffice.newMarkdown()
+        })
+        await expect
+          .poll(() => launched.app.windows().filter((page) => !before.has(page)).length)
+          .toBe(1)
         const fresh = launched.app.windows().find((page) => !before.has(page))!
         await expect(fresh.locator('.ProseMirror')).toBeVisible()
         const freshId = await shell.evaluate(async () => {
@@ -200,10 +204,15 @@ for (const mode of ['chart', 'dashboard'] as const) {
           await api.activate(tabs.find((tab: any) => tab.kind === 'sheets').id)
           return tabs.filter((tab: any) => tab.kind === 'markdown').at(-1).id
         })
-        await expect(studio.getByLabel('目标文件').locator(`option[value="${freshId}"]`)).toHaveCount(1)
+        await expect(
+          studio.getByLabel('目标文件').locator(`option[value="${freshId}"]`),
+        ).toHaveCount(1)
         await studio.getByLabel('目标文件').selectOption(freshId)
         await expect(studio.getByRole('status')).toContainText('已插入')
-        await expect(fresh.locator('.ProseMirror img')).toHaveAttribute('src', /^data:image\/png;base64,/)
+        await expect(fresh.locator('.ProseMirror img')).toHaveAttribute(
+          'src',
+          /^data:image\/png;base64,/,
+        )
         const unsavedPath = join(dir, 'new-document.md')
         await launched.app.evaluate(({ dialog }, path) => {
           dialog.showSaveDialog = async () => ({ canceled: false, filePath: path })

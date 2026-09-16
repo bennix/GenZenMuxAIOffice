@@ -2,115 +2,198 @@ import { test, expect, chromium } from '@playwright/test'
 import { build } from 'esbuild'
 
 test('contour lines display the actual level on hover and preserve grid coordinates', async () => {
-  const bundle=await build({stdin:{contents:`import {mountInteractiveChart} from './packages/visualization/src/interactive.ts';
+  const bundle = await build({
+    stdin: {
+      contents: `import {mountInteractiveChart} from './packages/visualization/src/interactive.ts';
     window.mounted=mountInteractiveChart(document.getElementById('chart'),{chartId:'contour',title:'地形等高线',x:'X',y:['Y','高度'],
-    table:{columns:['X','Y','高度'],rows:Array.from({length:21},(_,i)=>i/5-2).flatMap(x=>Array.from({length:21},(_,j)=>j/5-2).map(y=>[x,y,4-x*x-y*y]))}});`,resolveDir:process.cwd()},bundle:true,format:'iife',write:false})
-  const browser=await chromium.launch({channel:'chrome',headless:true})
+    table:{columns:['X','Y','高度'],rows:Array.from({length:21},(_,i)=>i/5-2).flatMap(x=>Array.from({length:21},(_,j)=>j/5-2).map(y=>[x,y,4-x*x-y*y]))}});`,
+      resolveDir: process.cwd(),
+    },
+    bundle: true,
+    format: 'iife',
+    write: false,
+  })
+  const browser = await chromium.launch({ channel: 'chrome', headless: true })
   try {
-    const page=await browser.newPage({viewport:{width:960,height:600}})
-    await page.setContent('<body style="margin:0"><div id="chart" style="width:960px;height:600px"></div></body>')
-    await page.addScriptTag({content:bundle.outputFiles[0]!.text})
-    const target=await page.evaluate(()=>{
-      const chart=(window as any).mounted.chart,series=chart.getOption().series[3],line=series.data[10]
-      return {point:chart.convertToPixel({seriesIndex:3},[(line[0]+line[2])/2,(line[1]+line[3])/2]),level:line[4]}
+    const page = await browser.newPage({ viewport: { width: 960, height: 600 } })
+    await page.setContent(
+      '<body style="margin:0"><div id="chart" style="width:960px;height:600px"></div></body>',
+    )
+    await page.addScriptTag({ content: bundle.outputFiles[0]!.text })
+    const target = await page.evaluate(() => {
+      const chart = (window as any).mounted.chart,
+        series = chart.getOption().series[3],
+        line = series.data[10]
+      return {
+        point: chart.convertToPixel({ seriesIndex: 3 }, [
+          (line[0] + line[2]) / 2,
+          (line[1] + line[3]) / 2,
+        ]),
+        level: line[4],
+      }
     })
-    await page.mouse.move(target.point[0],target.point[1])
-    await expect(page.getByText(`高度等值：${target.level}`,{exact:true})).toBeVisible()
-    await page.mouse.move(0,0)
-    await page.evaluate(()=>(window as any).mounted.chart.dispatchAction({type:'hideTip'}))
-    await page.screenshot({path:'/tmp/zenoffice-contour.png'})
-  } finally {await browser.close()}
+    await page.mouse.move(target.point[0], target.point[1])
+    await expect(page.getByText(`高度等值：${target.level}`, { exact: true })).toBeVisible()
+    await page.mouse.move(0, 0)
+    await page.evaluate(() => (window as any).mounted.chart.dispatchAction({ type: 'hideTip' }))
+    await page.screenshot({ path: '/tmp/zenoffice-contour.png' })
+  } finally {
+    await browser.close()
+  }
 })
 
 test('circle packing preserves hierarchy and displays leaf details on hover', async () => {
-  const bundle = await build({ stdin: { contents: `import {mountInteractiveChart} from './packages/visualization/src/interactive.ts';
+  const bundle = await build({
+    stdin: {
+      contents: `import {mountInteractiveChart} from './packages/visualization/src/interactive.ts';
     window.mounted=mountInteractiveChart(document.getElementById('chart'),{chartId:'circle-packing',title:'产品收入构成',x:'节点',parent:'父节点',y:['收入'],
-      table:{columns:['节点','父节点','收入'],rows:[['总计',null,null],['产品组','总计',null],['服务','总计',15],['产品甲','产品组',20],['产品乙','产品组',5],['零收入','总计',0]]}});`, resolveDir: process.cwd() },
-    bundle: true, format: 'iife', write: false })
+      table:{columns:['节点','父节点','收入'],rows:[['总计',null,null],['产品组','总计',null],['服务','总计',15],['产品甲','产品组',20],['产品乙','产品组',5],['零收入','总计',0]]}});`,
+      resolveDir: process.cwd(),
+    },
+    bundle: true,
+    format: 'iife',
+    write: false,
+  })
   const browser = await chromium.launch({ channel: 'chrome', headless: true })
   try {
-    const page = await browser.newPage({viewport:{width:960,height:600}})
-    await page.setContent('<body style="margin:0"><div id="chart" style="width:960px;height:600px"></div></body>')
-    await page.addScriptTag({content:bundle.outputFiles[0]!.text})
-    await expect(page.getByText('产品甲', {exact:true})).toBeVisible()
+    const page = await browser.newPage({ viewport: { width: 960, height: 600 } })
+    await page.setContent(
+      '<body style="margin:0"><div id="chart" style="width:960px;height:600px"></div></body>',
+    )
+    await page.addScriptTag({ content: bundle.outputFiles[0]!.text })
+    await expect(page.getByText('产品甲', { exact: true })).toBeVisible()
     const layout = await page.evaluate(() => {
       const data = (window as any).mounted.chart.getModel().getSeriesByIndex(0).getData()
       return ['总计 / 产品组 / 产品甲', '总计 / 产品组 / 产品乙', '总计 / 服务'].map((name) => {
         const index = data.indexOfName(name)
         const circle = data.getItemGraphicEl(index).childAt(0).shape
         const label = name.split(' / ').at(-1)!
-        const node = [...document.querySelectorAll('svg text')].find((node) => node.textContent === label)!
+        const node = [...document.querySelectorAll('svg text')].find(
+          (node) => node.textContent === label,
+        )!
         const box = node.getBoundingClientRect()
-        return {circle, box:{x:box.x,y:box.y,width:box.width,height:box.height}}
+        return { circle, box: { x: box.x, y: box.y, width: box.width, height: box.height } }
       })
     })
-    for (const {circle, box} of layout) for (const x of [box.x,box.x+box.width]) for (const y of [box.y,box.y+box.height])
-      expect(Math.hypot(x-circle.cx,y-circle.cy)).toBeLessThan(circle.r)
-    await page.getByText('产品甲', {exact:true}).hover()
-    await expect(page.getByText('总计 / 产品组 / 产品甲', {exact:true})).toBeVisible()
-    await expect(page.getByText('叶子权重：20', {exact:true})).toBeVisible()
-    await page.mouse.move(0,0)
-    await page.evaluate(() => (window as any).mounted.chart.dispatchAction({type:'hideTip'}))
-    await page.screenshot({path:'/tmp/zenoffice-circle-packing.png'})
-  } finally { await browser.close() }
+    for (const { circle, box } of layout)
+      for (const x of [box.x, box.x + box.width])
+        for (const y of [box.y, box.y + box.height])
+          expect(Math.hypot(x - circle.cx, y - circle.cy)).toBeLessThan(circle.r)
+    await page.getByText('产品甲', { exact: true }).hover()
+    await expect(page.getByText('总计 / 产品组 / 产品甲', { exact: true })).toBeVisible()
+    await expect(page.getByText('叶子权重：20', { exact: true })).toBeVisible()
+    await page.mouse.move(0, 0)
+    await page.evaluate(() => (window as any).mounted.chart.dispatchAction({ type: 'hideTip' }))
+    await page.screenshot({ path: '/tmp/zenoffice-circle-packing.png' })
+  } finally {
+    await browser.close()
+  }
 })
 
 test('horizon folds signed bands and hover reports the original value', async () => {
-  const bundle = await build({ stdin: { contents: `import {mountInteractiveChart} from './packages/visualization/src/interactive.ts';
+  const bundle = await build({
+    stdin: {
+      contents: `import {mountInteractiveChart} from './packages/visualization/src/interactive.ts';
     window.mounted=mountInteractiveChart(document.getElementById('chart'),{chartId:'horizon',title:'季度盈亏趋势',x:'时间',y:['甲公司','乙公司'],
-    table:{columns:['时间','甲公司','乙公司'],rows:[[0,-3,2],[1,-1,1],[2,0,0],[3,2,-2],[4,3,-3],[5,1,2],[6,null,1],[7,2,0],[8,-1,-2]]}});`, resolveDir: process.cwd() },
-    bundle: true, format: 'iife', write: false })
+    table:{columns:['时间','甲公司','乙公司'],rows:[[0,-3,2],[1,-1,1],[2,0,0],[3,2,-2],[4,3,-3],[5,1,2],[6,null,1],[7,2,0],[8,-1,-2]]}});`,
+      resolveDir: process.cwd(),
+    },
+    bundle: true,
+    format: 'iife',
+    write: false,
+  })
   const browser = await chromium.launch({ channel: 'chrome', headless: true })
   try {
     const page = await browser.newPage({ viewport: { width: 960, height: 600 } })
-    await page.setContent('<body style="margin:0"><div id="chart" style="width:960px;height:600px"></div></body>')
+    await page.setContent(
+      '<body style="margin:0"><div id="chart" style="width:960px;height:600px"></div></body>',
+    )
     await page.addScriptTag({ content: bundle.outputFiles[0]!.text })
     await expect(page.getByText('正 2–3', { exact: true })).toBeVisible()
     await expect(page.getByText('负 2–3', { exact: true })).toBeVisible()
-    const point = await page.evaluate(() => (window as any).mounted.chart.convertToPixel({seriesIndex:0}, [0,0.5]))
+    const point = await page.evaluate(() =>
+      (window as any).mounted.chart.convertToPixel({ seriesIndex: 0 }, [0, 0.5]),
+    )
     await page.mouse.move(point[0] + 1, point[1])
     await expect(page.getByText('甲公司：-3', { exact: true })).toBeVisible()
     const zoom = await page.evaluate(() => {
       const chart = (window as any).mounted.chart
-      chart.dispatchAction({type:'dataZoom',start:25,end:75})
-      return chart.getOption().dataZoom.map((item: any) => ({start:item.start,end:item.end,xAxisIndex:item.xAxisIndex}))
+      chart.dispatchAction({ type: 'dataZoom', start: 25, end: 75 })
+      return chart.getOption().dataZoom.map((item: any) => ({
+        start: item.start,
+        end: item.end,
+        xAxisIndex: item.xAxisIndex,
+      }))
     })
-    expect(zoom[0]).toEqual({start:25,end:75,xAxisIndex:[0,1]})
-    await page.evaluate(() => (window as any).mounted.chart.dispatchAction({type:'restore'}))
-    await page.mouse.move(0,0)
-    await page.evaluate(() => (window as any).mounted.chart.dispatchAction({type:'hideTip'}))
+    expect(zoom[0]).toEqual({ start: 25, end: 75, xAxisIndex: [0, 1] })
+    await page.evaluate(() => (window as any).mounted.chart.dispatchAction({ type: 'restore' }))
+    await page.mouse.move(0, 0)
+    await page.evaluate(() => (window as any).mounted.chart.dispatchAction({ type: 'hideTip' }))
     await page.screenshot({ path: '/tmp/zenoffice-horizon.png' })
-  } finally { await browser.close() }
+  } finally {
+    await browser.close()
+  }
 })
 
 test('hexbin hover reports duplicate counts and resize preserves bins', async () => {
-  const bundle = await build({ stdin: { contents: `import {mountInteractiveChart} from './packages/visualization/src/interactive.ts';
+  const bundle = await build({
+    stdin: {
+      contents: `import {mountInteractiveChart} from './packages/visualization/src/interactive.ts';
     import {buildChartOption} from './packages/visualization/src/render.ts';
     window.drawDense=()=>window.mounted.chart.setOption(buildChartOption({chartId:'hexbin',title:'密集观测分箱',x:'长度',y:['重量'],
       table:{columns:['长度','重量'],rows:Array.from({length:10000},(_,i)=>[(i*71%1000)/10-50,(i*193%997)/20-25])}}),true);
     window.mounted=mountInteractiveChart(document.getElementById('chart'), {chartId:'hexbin',title:'六边形分箱',x:'长度',y:['重量'],
-      table:{columns:['长度','重量'],rows:[[0,0],[0,0],[0,0],[10,10],[5,3],[5,3],[4,8]]}});`, resolveDir: process.cwd() },
-    bundle: true, format: 'iife', write: false })
+      table:{columns:['长度','重量'],rows:[[0,0],[0,0],[0,0],[10,10],[5,3],[5,3],[4,8]]}});`,
+      resolveDir: process.cwd(),
+    },
+    bundle: true,
+    format: 'iife',
+    write: false,
+  })
   const browser = await chromium.launch({ channel: 'chrome', headless: true })
   try {
     const page = await browser.newPage({ viewport: { width: 960, height: 600 } })
-    await page.setContent('<body style="margin:0"><div id="chart" style="width:960px;height:600px"></div></body>')
+    await page.setContent(
+      '<body style="margin:0"><div id="chart" style="width:960px;height:600px"></div></body>',
+    )
     await page.addScriptTag({ content: bundle.outputFiles[0]!.text })
-    const counts = await page.evaluate(() => (window as any).mounted.chart.getOption().series[0].data.map((p: number[]) => p[2]))
+    const counts = await page.evaluate(() =>
+      (window as any).mounted.chart.getOption().series[0].data.map((p: number[]) => p[2]),
+    )
     expect(counts.reduce((sum: number, n: number) => sum + n, 0)).toBe(7)
-    const point = await page.evaluate(() => (window as any).mounted.chart.convertToPixel({seriesIndex:0}, [0,0]))
+    const point = await page.evaluate(() =>
+      (window as any).mounted.chart.convertToPixel({ seriesIndex: 0 }, [0, 0]),
+    )
     await page.mouse.move(point[0], point[1])
     await expect(page.getByText('观测数', { exact: true }).last()).toBeVisible()
     await expect(page.getByText('3', { exact: true })).toHaveCount(2)
     await expect(page.getByText('3', { exact: true }).last()).toBeVisible()
     await page.mouse.move(0, 0)
     await page.screenshot({ path: '/tmp/zenoffice-hexbin.png' })
-    await page.evaluate(() => { const mounted = (window as any).mounted; mounted.chart.resize({ width: 800, height: 500 }) })
-    expect(await page.evaluate(() => (window as any).mounted.chart.getOption().series[0].data.map((p: number[]) => p[2]))).toEqual(counts)
-    await page.evaluate(() => { (window as any).mounted.chart.resize({ width: 960, height: 600 }); (window as any).drawDense() })
-    expect(await page.evaluate(() => (window as any).mounted.chart.getOption().series[0].data.reduce((sum: number, p: number[]) => sum + p[2], 0))).toBe(10000)
+    await page.evaluate(() => {
+      const mounted = (window as any).mounted
+      mounted.chart.resize({ width: 800, height: 500 })
+    })
+    expect(
+      await page.evaluate(() =>
+        (window as any).mounted.chart.getOption().series[0].data.map((p: number[]) => p[2]),
+      ),
+    ).toEqual(counts)
+    await page.evaluate(() => {
+      ;(window as any).mounted.chart.resize({ width: 960, height: 600 })
+      ;(window as any).drawDense()
+    })
+    expect(
+      await page.evaluate(() =>
+        (window as any).mounted.chart
+          .getOption()
+          .series[0].data.reduce((sum: number, p: number[]) => sum + p[2], 0),
+      ),
+    ).toBe(10000)
     await page.screenshot({ path: '/tmp/zenoffice-hexbin-dense.png' })
-  } finally { await browser.close() }
+  } finally {
+    await browser.close()
+  }
 })
 
 test('dendrogram hover reports the computed merge distance and sample count', async () => {

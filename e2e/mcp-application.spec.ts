@@ -64,9 +64,21 @@ test('MCP stdio operates the real desktop application', async () => {
       })
       response.writeHead(200, { 'Content-Type': 'application/json' }).end(
         JSON.stringify({
-          choices: [{ message: { content: body.messages[0].content.includes('数据可视化助手')
-            ? JSON.stringify({ chartId: 'column', x: '地区', y: ['收入'], title: '收入比较', reason: '按地区比较收入' })
-            : '公文提纲：一、背景；二、安排。' } }],
+          choices: [
+            {
+              message: {
+                content: body.messages[0].content.includes('数据可视化助手')
+                  ? JSON.stringify({
+                      chartId: 'column',
+                      x: '地区',
+                      y: ['收入'],
+                      title: '收入比较',
+                      reason: '按地区比较收入',
+                    })
+                  : '公文提纲：一、背景；二、安排。',
+              },
+            },
+          ],
         }),
       )
     })
@@ -109,7 +121,8 @@ test('MCP stdio operates the real desktop application', async () => {
       ])
       const recommended = await call('visualization_suggest', {
         table: { columns: ['地区', '收入', '备注'], rows: [['东区', 12, '禁止发送']] },
-        selectedColumns: ['地区', '收入'], instruction: '比较收入',
+        selectedColumns: ['地区', '收入'],
+        instruction: '比较收入',
       })
       expect(recommended.suggestion.y).toEqual(['收入'])
       expect(recommended.svg).toContain('<svg')
@@ -187,8 +200,12 @@ test('MCP stdio operates the real desktop application', async () => {
     expect(created.saved).toBe(false)
     const markdownPage = await waitForPageWithUrl(launched.app, 'markdown/out')
     await expect(markdownPage.locator('.ProseMirror')).toBeVisible()
-    expect((await client.callTool({ name: 'markdown_save', arguments: { id: created.tab.id } })).isError).toBe(true)
-    expect((await client.callTool({ name: 'markdown_read', arguments: { id: 'missing' } })).isError).toBe(true)
+    expect(
+      (await client.callTool({ name: 'markdown_save', arguments: { id: created.tab.id } })).isError,
+    ).toBe(true)
+    expect(
+      (await client.callTool({ name: 'markdown_read', arguments: { id: 'missing' } })).isError,
+    ).toBe(true)
     const imagePath = join(launched.userDataDir, 'mcp-image.png')
     await writeFile(
       imagePath,
@@ -201,9 +218,14 @@ test('MCP stdio operates the real desktop application', async () => {
       (await call('images_targets')).some((target: { id: string }) => target.id === created.tab.id),
     ).toBe(true)
     expect(await call('images_insert', { targetId: created.tab.id, path: imagePath })).toEqual({
-      inserted: true, targetId: created.tab.id, saved: false,
+      inserted: true,
+      targetId: created.tab.id,
+      saved: false,
     })
-    await expect(markdownPage.locator('.ProseMirror img')).toHaveAttribute('src', /^data:image\/png;base64,/)
+    await expect(markdownPage.locator('.ProseMirror img')).toHaveAttribute(
+      'src',
+      /^data:image\/png;base64,/,
+    )
     expect(
       (
         await client.callTool({
@@ -241,20 +263,32 @@ test('MCP stdio operates the real desktop application', async () => {
     expect(before.text).toContain('# MCP 实际文件')
     expect(before.text).not.toContain('保留元数据')
     const changed = await call('markdown_replace', {
-      id: targetId, expectedText: before.text, text: '# MCP 已修改\n\n尚未保存的正文',
+      id: targetId,
+      expectedText: before.text,
+      text: '# MCP 已修改\n\n尚未保存的正文',
     })
     expect(changed.dirty).toBe(true)
     await expect(savedPage.locator('.ProseMirror')).toContainText('尚未保存的正文')
     expect((await call('markdown_read', { id: targetId })).text).toBe(changed.text)
-    expect((await readFile(file, 'utf8'))).toContain('MCP 实际文件')
-    expect((await client.callTool({ name: 'markdown_replace', arguments: {
-      id: targetId, expectedText: before.text, text: '过期覆盖',
-    } })).isError).toBe(true)
+    expect(await readFile(file, 'utf8')).toContain('MCP 实际文件')
+    expect(
+      (
+        await client.callTool({
+          name: 'markdown_replace',
+          arguments: {
+            id: targetId,
+            expectedText: before.text,
+            text: '过期覆盖',
+          },
+        })
+      ).isError,
+    ).toBe(true)
     await savedPage.locator('.ProseMirror').click()
     await savedPage.keyboard.press('Meta+z')
     await expect(savedPage.locator('.ProseMirror')).toContainText('MCP 实际文件')
     await call('markdown_replace', {
-      id: targetId, expectedText: (await call('markdown_read', { id: targetId })).text,
+      id: targetId,
+      expectedText: (await call('markdown_read', { id: targetId })).text,
       text: '# MCP 已修改\n\n尚未保存的正文',
     })
     expect((await call('markdown_save', { id: targetId })).dirty).toBe(false)
@@ -290,46 +324,91 @@ test('MCP stdio operates the real desktop application', async () => {
     await call('application_open_file', { path: wordPath })
     const wordPage = await waitForPageWithUrl(launched.app, 'docs/out')
     await expect(wordPage.locator('.ProseMirror').first()).toBeVisible()
-    const wordId = (await call('application_list_tabs')).find((tab: {filePath?:string}) => tab.filePath === wordPath).id
+    const wordId = (await call('application_list_tabs')).find(
+      (tab: { filePath?: string }) => tab.filePath === wordPath,
+    ).id
     let wordBefore: any
-    await expect(async () => { wordBefore = await call('word_read_text', {id:wordId}); expect(wordBefore.totalChars).toBeGreaterThan(0) }).toPass()
-    const pageText = await call('word_read_text', {id:wordId,offset:2,maxChars:5})
-    expect(pageText.text).toBe(wordBefore.text.slice(2,7))
+    await expect(async () => {
+      wordBefore = await call('word_read_text', { id: wordId })
+      expect(wordBefore.totalChars).toBeGreaterThan(0)
+    }).toPass()
+    const pageText = await call('word_read_text', { id: wordId, offset: 2, maxChars: 5 })
+    expect(pageText.text).toBe(wordBefore.text.slice(2, 7))
     expect(pageText.revision).toBe(wordBefore.revision)
-    expect((await client.callTool({name:'word_read_text',arguments:{id:targetId}})).isError).toBe(true)
+    expect(
+      (await client.callTool({ name: 'word_read_text', arguments: { id: targetId } })).isError,
+    ).toBe(true)
     const insertedText = '<b>MCP 字面文本</b>\n第二段由 MCP 插入'
-    const inserted = await call('word_insert_text',{id:wordId,text:insertedText,expectedRevision:wordBefore.revision})
+    const inserted = await call('word_insert_text', {
+      id: wordId,
+      text: insertedText,
+      expectedRevision: wordBefore.revision,
+    })
     expect(inserted.insertedParagraphs).toBe(2)
     expect(inserted.dirty).toBe(true)
     await expect(wordPage.locator('.ProseMirror').first()).toContainText('<b>MCP 字面文本</b>')
-    expect((await readFile(wordPath))).toEqual(originalWord)
-    expect((await client.callTool({name:'word_insert_text',arguments:{id:wordId,text:'过期插入',expectedRevision:wordBefore.revision}})).isError).toBe(true)
+    expect(await readFile(wordPath)).toEqual(originalWord)
+    expect(
+      (
+        await client.callTool({
+          name: 'word_insert_text',
+          arguments: { id: wordId, text: '过期插入', expectedRevision: wordBefore.revision },
+        })
+      ).isError,
+    ).toBe(true)
     await wordPage.locator('.ProseMirror').first().click()
     await wordPage.keyboard.press('Meta+z')
     await expect(wordPage.locator('.ProseMirror').first()).not.toContainText('MCP 字面文本')
-    const afterUndo = await call('word_read_text',{id:wordId})
+    const afterUndo = await call('word_read_text', { id: wordId })
     expect(afterUndo.text).toBe(wordBefore.text)
-    await call('word_insert_text',{id:wordId,text:insertedText,expectedRevision:afterUndo.revision})
-    const savedWord = await call('word_save',{id:wordId})
+    await call('word_insert_text', {
+      id: wordId,
+      text: insertedText,
+      expectedRevision: afterUndo.revision,
+    })
+    const savedWord = await call('word_save', { id: wordId })
     expect(savedWord.dirty).toBe(false)
     const wordZip = await JSZip.loadAsync(await readFile(wordPath))
     const wordXml = await wordZip.file('word/document.xml')!.async('string')
     expect(wordXml).toContain('&lt;b&gt;MCP 字面文本&lt;/b&gt;')
     expect(wordXml).toContain('第二段由 MCP 插入')
-    expect((await call('word_read_text',{id:wordId})).text).toContain(wordBefore.text)
-    const latestWord = await call('word_read_text',{id:wordId})
-    await call('word_insert_text',{id:wordId,text:'外部修改后不得覆盖',position:'start',expectedRevision:latestWord.revision})
-    await writeFile(wordPath,originalWord)
-    expect((await client.callTool({name:'word_save',arguments:{id:wordId}})).isError).toBe(true)
+    expect((await call('word_read_text', { id: wordId })).text).toContain(wordBefore.text)
+    const latestWord = await call('word_read_text', { id: wordId })
+    await call('word_insert_text', {
+      id: wordId,
+      text: '外部修改后不得覆盖',
+      position: 'start',
+      expectedRevision: latestWord.revision,
+    })
+    await writeFile(wordPath, originalWord)
+    expect((await client.callTool({ name: 'word_save', arguments: { id: wordId } })).isError).toBe(
+      true,
+    )
     expect(await readFile(wordPath)).toEqual(originalWord)
     const svgPath = join(launched.userDataDir, 'chart.svg')
     const pdfPath = join(launched.userDataDir, 'chart.pdf')
     const chart = await call('visualization_render_svg', {
-      chartId: 'column', table: { columns: ['地区', '收入'], rows: [['东区', 12], ['西区', 8]] },
-      x: '地区', y: ['收入'], title: 'MCP 图表',
+      chartId: 'column',
+      table: {
+        columns: ['地区', '收入'],
+        rows: [
+          ['东区', 12],
+          ['西区', 8],
+        ],
+      },
+      x: '地区',
+      y: ['收入'],
+      title: 'MCP 图表',
     })
     await writeFile(svgPath, chart.svg)
-    expect((await client.callTool({ name: 'images_insert', arguments: { targetId: wordId, path: svgPath } })).isError).toBe(true)
+    expect(
+      (
+        await client.callTool({
+          name: 'images_insert',
+          arguments: { targetId: wordId, path: svgPath },
+        })
+      ).isError,
+    ).toBe(true)
     const blankPdf = await PDFDocument.create()
     blankPdf.addPage([600, 800])
     await writeFile(pdfPath, await blankPdf.save())
@@ -337,12 +416,18 @@ test('MCP stdio operates the real desktop application', async () => {
     const pdfPage = await waitForPageWithUrl(launched.app, 'pdf/out')
     await expect(pdfPage.locator('.pdf-page')).toBeVisible()
     const pdfTarget = (await call('images_targets')).find((target: any) => target.kind === 'pdf')
-    expect(await call('images_insert', { targetId: pdfTarget.id, path: svgPath })).toEqual({ inserted: true, targetId: pdfTarget.id, saved: false })
+    expect(await call('images_insert', { targetId: pdfTarget.id, path: svgPath })).toEqual({
+      inserted: true,
+      targetId: pdfTarget.id,
+      saved: false,
+    })
     await expect(pdfPage.locator('.pdf-imgedit-img')).toHaveCount(1)
     await pdfPage.locator('.qa-btn').first().click()
     await expect(async () => {
       const saved = await PDFDocument.load(await readFile(pdfPath))
-      expect(saved.getPage(0).node.Resources()?.lookup(PDFName.of('XObject'), PDFDict).keys().length).toBeGreaterThan(0)
+      expect(
+        saved.getPage(0).node.Resources()?.lookup(PDFName.of('XObject'), PDFDict).keys().length,
+      ).toBeGreaterThan(0)
     }).toPass()
   } finally {
     await client.close()

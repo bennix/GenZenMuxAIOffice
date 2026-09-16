@@ -44,7 +44,12 @@ export interface MarkdownMcpRequest {
 }
 export type MarkdownMcpResult = {
   requestId: string
-  data?: { text: string; path: string | null; dirty: boolean; images?: { mime: string; base64: string }[] }
+  data?: {
+    text: string
+    path: string | null
+    dirty: boolean
+    images?: { mime: string; base64: string }[]
+  }
   error?: string
 }
 

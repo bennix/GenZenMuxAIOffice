@@ -5,9 +5,15 @@ import { applicationBridgeClient, startApplicationBridge } from './application-b
 
 it('recommends only selected columns and validates the result against all rows', async () => {
   const registry = new ToolRegistry()
-  const chat = vi.fn(async () => ({ content: JSON.stringify({
-    chartId: 'column', x: '地区', y: ['收入'], title: '收入', reason: '比较地区收入',
-  }) }))
+  const chat = vi.fn(async () => ({
+    content: JSON.stringify({
+      chartId: 'column',
+      x: '地区',
+      y: ['收入'],
+      title: '收入',
+      reason: '比较地区收入',
+    }),
+  }))
   registerAiTools(registry, { status: () => ({}), chat })
   const context = { signal: new AbortController().signal }
   const table = { columns: ['地区', '收入', '保密备注'], rows: [['东区', 12, '不发送']] }
@@ -19,9 +25,25 @@ it('recommends only selected columns and validates the result against all rows',
   expect(output.request.table.columns).toEqual(['地区', '收入'])
   expect(JSON.stringify(chat.mock.calls)).not.toContain('不发送')
   expect(JSON.stringify(chat.mock.calls)).not.toContain('保密备注')
-  expect((await registry.call('visualization_suggest', { ...args, selectedColumns: ['不存在'] }, context)).isError).toBe(true)
+  expect(
+    (
+      await registry.call(
+        'visualization_suggest',
+        { ...args, selectedColumns: ['不存在'] },
+        context,
+      )
+    ).isError,
+  ).toBe(true)
   expect(chat).toHaveBeenCalledTimes(1)
-  chat.mockResolvedValueOnce({ content: JSON.stringify({ chartId: 'column', x: '地区', y: ['保密备注'], title: '错误', reason: '错误' }) })
+  chat.mockResolvedValueOnce({
+    content: JSON.stringify({
+      chartId: 'column',
+      x: '地区',
+      y: ['保密备注'],
+      title: '错误',
+      reason: '错误',
+    }),
+  })
   expect((await registry.call('visualization_suggest', args, context)).isError).toBe(true)
 })
 

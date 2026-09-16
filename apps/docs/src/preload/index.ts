@@ -18,7 +18,8 @@ import { WORD_MCP_CHANNELS } from '../shared/ipc'
 
 const api: DesktopApi = {
   onMcpRequest: (handler) => {
-    const listener = (_event: IpcRendererEvent, request: Parameters<typeof handler>[0]) => handler(request)
+    const listener = (_event: IpcRendererEvent, request: Parameters<typeof handler>[0]) =>
+      handler(request)
     ipcRenderer.on(WORD_MCP_CHANNELS.request, listener)
     return () => ipcRenderer.removeListener(WORD_MCP_CHANNELS.request, listener)
   },
