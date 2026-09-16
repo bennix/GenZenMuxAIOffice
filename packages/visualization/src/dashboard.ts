@@ -36,6 +36,7 @@ const xml = (text: string) =>
     /[&<>"']/g,
     (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[ch]!,
   )
+const isAscii = (ch: string) => ch.charCodeAt(0) <= 0x7f
 
 /** Re-render each saved chart at its actual tile size; never stretch a prior thumbnail. */
 export function renderDashboardSvg(request: DashboardRequest, width = 1920): string {
@@ -45,7 +46,7 @@ export function renderDashboardSvg(request: DashboardRequest, width = 1920): str
   const titleLines = ['']
   let titleWidth = 0
   for (const ch of request.title) {
-    const advance = /[\x00-\x7f]/.test(ch) ? 17 : 28
+    const advance = isAscii(ch) ? 17 : 28
     if (ch === '\n' || titleWidth + advance > width - 48) {
       titleLines.push('')
       titleWidth = 0
@@ -74,6 +75,7 @@ export function renderDashboardSvg(request: DashboardRequest, width = 1920): str
     } catch (error) {
       throw new Error(
         `第 ${index + 1} 张图表：${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
       )
     }
   })
@@ -95,6 +97,7 @@ export function renderDashboardSvg(request: DashboardRequest, width = 1920): str
       } catch (error) {
         throw new Error(
           `第 ${i + 1} 张图表：${error instanceof Error ? error.message : String(error)}`,
+          { cause: error },
         )
       }
     })

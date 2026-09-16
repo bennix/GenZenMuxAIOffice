@@ -87,7 +87,10 @@ export function arcOption(edges: readonly FlowEdge[], title = ''): EChartsOption
           const index = Number(api.value(0)),
             name = graph.names[index]!
           const step = (api.getWidth() - 80) / Math.max(graph.names.length, 1)
-          const width = [...name].reduce((sum, ch) => sum + (/[\x00-\x7f]/.test(ch) ? 8.5 : 14), 0)
+          const width = [...name].reduce(
+            (sum, ch) => sum + (ch.charCodeAt(0) <= 0x7f ? 8.5 : 14),
+            0,
+          )
           if (width > step - 8 || api.getHeight() < 260 || /[\r\n]/.test(name))
             throw new Error('节点标签无法完整显示，请减少节点、缩短名称或增大尺寸。')
           const x = 40 + (index + 0.5) * step,

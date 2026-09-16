@@ -10,6 +10,15 @@ export interface WordToolRequest {
   expectedRevision?: string
 }
 
+function hasUnsupportedDocxCharacter(text: string): boolean {
+  for (const ch of text) {
+    const code = ch.charCodeAt(0)
+    if (code <= 0x8 || code === 0xb || code === 0xc || (code >= 0xe && code <= 0x1f)) return true
+    if (code === 0xfffe || code === 0xffff) return true
+  }
+  return false
+}
+
 export function registerWordTools(
   registry: ToolRegistry,
   call: (id: string, request: WordToolRequest) => Promise<unknown>,
@@ -43,10 +52,7 @@ export function registerWordTools(
           .string()
           .min(1)
           .max(50_000)
-          .refine(
-            (text) => !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/u.test(text),
-            '正文包含 DOCX 不支持的控制字符',
-          ),
+          .refine((text) => !hasUnsupportedDocxCharacter(text), '正文包含 DOCX 不支持的控制字符'),
         position: z.enum(['start', 'end']).default('end'),
         expectedRevision: z.string().uuid(),
       })

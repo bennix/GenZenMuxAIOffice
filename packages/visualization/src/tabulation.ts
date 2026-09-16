@@ -111,7 +111,7 @@ export function tabulationOption(result: Tabulation, title = ''): EChartsOption 
           const lines = ['']
           let used = 0
           for (const character of cells[r]![c]!) {
-            const advance = /[\x00-\x7f]/.test(character) ? 8.5 : 14
+            const advance = character.charCodeAt(0) <= 0x7f ? 8.5 : 14
             if (character === '\n' || used + advance > width - 16) {
               lines.push('')
               used = 0
