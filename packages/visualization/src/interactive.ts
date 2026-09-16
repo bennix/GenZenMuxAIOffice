@@ -1,10 +1,23 @@
 import { init, type ECharts, type EChartsOption } from 'echarts'
+import { layoutChartLegend } from './legend-layout'
 import { buildChartOption, type ChartRequest } from './render'
 import { assertHorizonSize } from './horizon'
 
 /** Only Cartesian plots with one pair of axes get a shared range control. */
-export function interactiveChartOption(request: ChartRequest): EChartsOption {
-  const option = buildChartOption(request)
+export function interactiveChartOption(
+  request: ChartRequest,
+  width = 960,
+  height = 600,
+): EChartsOption {
+  return layoutChartLegend(buildInteractiveOption(request, width, height), width, height)
+}
+
+function buildInteractiveOption(
+  request: ChartRequest,
+  width: number,
+  height: number,
+): EChartsOption {
+  const option = buildChartOption(request, width, height)
   if (request.chartId === 'horizon')
     return {
       ...option,
@@ -73,14 +86,38 @@ export function mountInteractiveChart(
   chart: ECharts
   dispose: () => void
 } {
-  const option = interactiveChartOption(request)
+  const option = interactiveChartOption(request, element.clientWidth, element.clientHeight)
   if (request.chartId === 'horizon')
     assertHorizonSize(element.clientWidth, element.clientHeight, request.y.length)
   const chart = init(element, undefined, { renderer: 'svg' })
   let observer: ResizeObserver | undefined
   try {
     chart.setOption(option)
-    observer = new ResizeObserver(() => chart.resize())
+    observer = new ResizeObserver(() => {
+      chart.resize()
+      const { legend, grid, dataZoom } = interactiveChartOption(
+        request,
+        element.clientWidth,
+        element.clientHeight,
+      )
+      chart.setOption({
+        legend,
+        grid,
+        ...(Array.isArray(dataZoom)
+          ? {
+              dataZoom: dataZoom.map((zoom) =>
+                'bottom' in zoom
+                  ? {
+                      bottom: zoom.bottom,
+                      ...('height' in zoom ? { height: zoom.height } : {}),
+                      ...('top' in zoom ? { top: zoom.top } : {}),
+                    }
+                  : {},
+              ),
+            }
+          : {}),
+      })
+    })
     observer.observe(element)
   } catch (error) {
     observer?.disconnect()

@@ -1,4 +1,5 @@
 import { init, graphic, type EChartsOption } from 'echarts'
+import { layoutChartLegend } from './legend-layout'
 import { numericValue, validateTable, type DataTable } from './data'
 import { boxSummary, histogram, kernelDensity, pearson } from './statistics'
 import { buildHierarchy } from './hierarchy'
@@ -123,7 +124,11 @@ export const renderedChartIds = [
   'contour',
 ] as const
 
-export function buildChartOption(request: ChartRequest): EChartsOption {
+export function buildChartOption(request: ChartRequest, width = 960, height = 600): EChartsOption {
+  return layoutChartLegend(buildBaseChartOption(request), width, height)
+}
+
+function buildBaseChartOption(request: ChartRequest): EChartsOption {
   const table = validateTable(request.table)
   const { chartId, title } = request
   if (!(renderedChartIds as readonly string[]).includes(chartId))
@@ -2181,7 +2186,7 @@ export function renderChartSvg(request: ChartRequest, width = 960, height = 600)
     throw new Error('导出尺寸超出范围。')
   const chart = init(null, undefined, { renderer: 'svg', ssr: true, width, height })
   try {
-    chart.setOption(buildChartOption(request))
+    chart.setOption(buildChartOption(request, width, height))
     return chart.renderToSVGString()
   } finally {
     chart.dispose()
