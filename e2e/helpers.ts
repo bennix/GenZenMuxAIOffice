@@ -73,6 +73,7 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
       ...options.env,
       GENOFFICE_USER_DATA: userDataDir,
       GENOFFICE_LANG: options.lang ?? 'en',
+      GENOFFICE_E2E_PLAINTEXT_AI_SETTINGS: '1',
       ...(process.platform === 'linux' ? { ELECTRON_DISABLE_SANDBOX: '1' } : {}),
     },
     // Playwright's Electron screencast wedges the page CDP session on Linux

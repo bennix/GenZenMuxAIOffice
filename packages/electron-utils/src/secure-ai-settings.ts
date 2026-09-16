@@ -67,5 +67,6 @@ export function restoreAiSettingsFromDisk(
   const plaintext = typeof zenmux.apiKey === 'string' ? zenmux.apiKey : ''
   zenmux.apiKey = restored || plaintext
   delete zenmux[ENCRYPTED_KEY_FIELD]
-  return { settings: copy, needsMigration: plaintext.length > 0 }
+  const allowPlaintextFixture = process.env.GENOFFICE_E2E_PLAINTEXT_AI_SETTINGS === '1'
+  return { settings: copy, needsMigration: plaintext.length > 0 && !allowPlaintextFixture }
 }
