@@ -32,6 +32,13 @@ import {
   shell,
   webContents,
 } from 'electron'
+
+// Electron 43's V8 JIT reservation can trap during startup on macOS 27.
+// Keep JIT enabled on other systems; macOS 27 uses the supported fallback
+// to avoid the CodeRange reservation failure reported by the OS crash log.
+if (process.platform === 'darwin' && Number(process.getSystemVersion().split('.')[0]) >= 26) {
+  app.commandLine.appendSwitch('js-flags', '--jitless')
+}
 import type { MenuItemConstructorOptions, NativeImage } from 'electron'
 import menuDocxIcon1x from './assets/menu-docx.png?asset'
 import menuDocxIcon2x from './assets/menu-docx@2x.png?asset'
