@@ -65,15 +65,28 @@ describe('applyStructuralOps rows', () => {
     expect(xml).toContain('sqref="A1:A8"')
   })
 
-  it('aborts when a formula references only deleted cells', async () => {
-    expect(() =>
+  it('preserves formulas with #REF! when their referenced cells are deleted', async () => {
+    expect(
       shiftFormulaText(
         'A5*2',
         SHEET,
         { boundary: 4, delta: -2, deleted: { start: 4, end: 5 } },
         'row',
       ),
-    ).toThrow(StructuralShiftError)
+    ).toBe('#REF!*2')
+  })
+
+  it('handles deleted B4, ranges and subsequent shifts without changing literals or other sheets', () => {
+    const deletion = { boundary: 1, delta: -1, deleted: { start: 1, end: 1 } }
+    const formula = shiftFormulaText(
+      'B4+$B$4+SUM(B:B)+SUM(B2:B8)+Other!B4+"B4"+C4',
+      SHEET, deletion, 'column',
+    )
+    expect(formula).toBe('#REF!+#REF!+SUM(#REF!)+SUM(#REF!)+Other!B4+"B4"+B4')
+    expect(shiftFormulaText(formula, SHEET, { boundary: 0, delta: 1, deleted: null }, 'row'))
+      .toBe('#REF!+#REF!+SUM(#REF!)+SUM(#REF!)+Other!B4+"B4"+B5')
+    expect(shiftFormulaText("'My Sheet'!B4+B4", 'My Sheet', deletion, 'column', true))
+      .toBe("'My Sheet'!#REF!+B4")
   })
 
   it('clamps a range formula that straddles the deleted rows', () => {
@@ -205,10 +218,10 @@ describe('cross-sheet reference rewriting', () => {
     expect(shifted).not.toContain('&lt;v&gt;')
   })
 
-  it('fails closed when a qualified reference lands in a deleted range', () => {
-    expect(() =>
+  it('keeps a qualified reference as #REF! when its target is deleted', () => {
+    expect(
       shiftCrossSheetFormulas(otherSheet, SHEET, [{ kind: 'remove-rows', index: 7, count: 1 }]),
-    ).toThrow(StructuralShiftError)
+    ).toContain('Data!#REF!')
   })
 
   it('shifts defined names', () => {
@@ -476,7 +489,7 @@ describe('structural save integration', () => {
     expect(other).toContain('<f>Data!A8</f>')
   })
 
-  it('still fails closed when a cross-sheet reference is deleted', async () => {
+  it('saves a workbook when a cross-sheet reference is deleted', async () => {
     const zip = await JSZip.loadAsync(await buildStructureFixture())
     zip.file(
       'xl/worksheets/sheet2.xml',
@@ -484,13 +497,14 @@ describe('structural save integration', () => {
       { createFolders: false },
     )
     const buffer = await zip.generateAsync({ type: 'nodebuffer' })
-    await expect(
-      applyCellEditsToXlsx(
+    const mutation = await applyCellEditsToXlsx(
         buffer,
         [],
         [{ sheetName: SHEET, ops: [{ kind: 'remove-rows', index: 0, count: 1 }] }],
-      ),
-    ).rejects.toThrow('deleted range')
+      )
+    expect(() => assertOnlyTouchedEntriesChanged(mutation)).not.toThrow()
+    const saved = await JSZip.loadAsync(mutation.buffer)
+    expect(await saved.file('xl/worksheets/sheet2.xml')?.async('text')).toContain('<f>Data!#REF!</f>')
   })
 
   const anchoredTable =
