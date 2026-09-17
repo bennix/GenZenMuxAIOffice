@@ -1,0 +1,61 @@
+\contentsline {section}{I 安装与设置}{5}{section*.1}%
+\contentsline {subsection}{01 安装并验证应用}{6}{section*.2}%
+\contentsline {subsection}{02 首次启动与欢迎页}{7}{section*.3}%
+\contentsline {subsection}{03 主页、项目与最近文件}{8}{section*.4}%
+\contentsline {subsection}{04 快速配置 AI 算力与模型}{9}{section*.5}%
+\contentsline {subsection}{05 增加、选择与删除模型}{10}{section*.6}%
+\contentsline {subsection}{06 确认隐私保护、版本与网络状态}{11}{section*.7}%
+\contentsline {section}{I+ 3 分钟尝鲜指南}{12}{section*.8}%
+\contentsline {subsection}{A 场景 A：公式截图变成 Word 可编辑公式}{13}{section*.9}%
+\contentsline {subsection}{B 场景 B：Excel 一键完成图表与 EDA}{14}{section*.10}%
+\contentsline {subsection}{C 场景 C：真实 DOI 变成 GB/T 7714 引用}{15}{section*.11}%
+\contentsline {section}{II 选中、提问、流转：AI 工作流}{16}{section*.12}%
+\contentsline {subsection}{07 选择内容作为 AI 上下文}{17}{section*.13}%
+\contentsline {subsection}{08 附件、图片与剪贴板}{18}{section*.14}%
+\contentsline {subsection}{09 复制消息并恢复文档 AI 历史}{19}{section*.15}%
+\contentsline {subsection}{10 跨编辑器联动：用 @Connect 一键流转 AI 结果}{20}{section*.16}%
+\contentsline {section}{III Word：从写作到投稿预审}{21}{section*.17}%
+\contentsline {subsection}{11 创建、打开与保存 DOCX}{22}{section*.18}%
+\contentsline {subsection}{12 文字、段落、样式与 AI 修改}{23}{section*.19}%
+\contentsline {subsection}{13 插入图片与文字环绕}{24}{section*.20}%
+\contentsline {subsection}{14 一张截图变成可编辑 LaTeX 公式}{25}{section*.21}%
+\contentsline {subsection}{15 一键找到真文献并生成规范引用}{26}{section*.22}%
+\contentsline {subsection}{16 论文防拒稿利器：3 委员 + 1 主席严苛预审}{28}{section*.23}%
+\contentsline {subsection}{17 AI 配图与扫描件处理}{30}{section*.24}%
+\contentsline {section}{IV Excel：从原始数据到可信结论}{31}{section*.25}%
+\contentsline {subsection}{18 工作簿、工作表与基础编辑}{32}{section*.26}%
+\contentsline {subsection}{19 从原始数据到可信结论：完整 EDA}{33}{section*.27}%
+\contentsline {subsection}{20 让数据说话：一键生成可编辑中文图表}{34}{section*.28}%
+\contentsline {subsection}{21 选中一块数据，让 AI 分析并安全回填}{35}{section*.29}%
+\contentsline {subsection}{21A 把一个工作簿定义成关系数据库}{36}{section*.30}%
+\contentsline {subsection}{21B SQL 工作台：写脚本、定位错误并回填结果}{37}{section*.31}%
+\contentsline {subsection}{21C 下载两个样例数据库并复现实测查询}{38}{section*.32}%
+\contentsline {section}{V PowerPoint：制作真正可编辑的演示}{39}{section*.33}%
+\contentsline {subsection}{22 打开、编辑与生成可编辑幻灯片}{40}{section*.34}%
+\contentsline {subsection}{23 形状、艺术字、表格与图表}{41}{section*.35}%
+\contentsline {subsection}{24 插入并播放视频、音频和图片}{42}{section*.36}%
+\contentsline {subsection}{25 录制旁白并合成 MP4}{43}{section*.37}%
+\contentsline {subsection}{26 PPT 公式、文献与 ZenMux 配图}{44}{section*.38}%
+\contentsline {section}{VI Markdown 与 PDF：结构化写作和阅读}{45}{section*.39}%
+\contentsline {subsection}{27 Markdown 基础编辑与图片}{46}{section*.40}%
+\contentsline {subsection}{28 Markdown 中的行内与多行 LaTeX}{47}{section*.41}%
+\contentsline {subsection}{29 Mermaid 插入、编辑与 AI 生成}{48}{section*.42}%
+\contentsline {subsection}{30 Markdown 与 Word 互转}{49}{section*.43}%
+\contentsline {subsection}{31 Markdown 审稿、翻译与文献}{50}{section*.44}%
+\contentsline {subsection}{32 PDF 预览与页面处理}{51}{section*.45}%
+\contentsline {subsection}{33 PDF 水印、批注与安全}{52}{section*.46}%
+\contentsline {subsection}{34 PDF 框选提问、附件与 @Connect}{53}{section*.47}%
+\contentsline {section}{VII 联网查证、可靠性与交付}{54}{section*.48}%
+\contentsline {subsection}{35 让“最新”真的最新：按当前日期联网查证}{55}{section*.49}%
+\contentsline {subsection}{36 科研检索入口与合法全文}{56}{section*.50}%
+\contentsline {subsection}{37 AI 超时也不丢结果：判断状态并安全重试}{57}{section*.51}%
+\contentsline {subsection}{38 麦克风、屏幕录制与文件权限}{58}{section*.52}%
+\contentsline {subsection}{39 常用快捷键与可恢复操作}{59}{section*.53}%
+\contentsline {subsection}{40 保存、导出与跨应用复核}{60}{section*.54}%
+\contentsline {subsection}{41 隐私、安全与更新}{61}{section*.55}%
+\contentsline {subsection}{42 首次使用与交付检查单}{62}{section*.56}%
+\contentsline {subsection}{43 一分钟故障排查表}{63}{section*.57}%
+\contentsline {subsection}{44 MCP：连接桌面应用}{64}{section*.58}%
+\contentsline {subsection}{45 MCP：选图与插入 PDF}{65}{section*.59}%
+\contentsline {subsection}{46 MCP：服务清单与写回}{66}{section*.60}%
+\contentsline {subsection}{47 AI 审稿与编剧：统一流程}{67}{section*.61}%
