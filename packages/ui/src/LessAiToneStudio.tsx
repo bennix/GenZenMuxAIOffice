@@ -4,6 +4,7 @@ import {
   applyToneChanges,
   captureToneSource,
   detectTone,
+  humanizeTone,
   previewTone,
   rewriteTone,
   toneCoverage,
@@ -66,7 +67,7 @@ export function LessAiToneStudio({
         setStatus('原文检测完成，尚未改写。')
         return
       }
-      setStatus('正在按 11 条规则生成局部修改建议…')
+      setStatus('正在按规则生成局部修改建议…')
       const next = await rewriteTone(generate, snapshot.segments, style, profile)
       setChanges(next)
       setSelected(next.map((_, i) => i))
@@ -75,6 +76,23 @@ export function LessAiToneStudio({
       setStatus(
         next.length ? '两次检测完成，请核对原意并选择要应用的修改。' : '未生成需要应用的修改。',
       )
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+      setStatus('')
+    } finally {
+      setBusy(false)
+    }
+  }
+  const humanize = async () => {
+    reset()
+    setBusy(true)
+    try {
+      if (editor.state.doc !== snapshot.doc) throw new Error('文档已变化，请重新打开工作台。')
+      setStatus('正在重写，去掉 AI 腔并换成更像人写的句子…')
+      const next = await humanizeTone(generate, snapshot.segments, style)
+      setChanges(next)
+      setSelected(next.map((_, i) => i))
+      setStatus('重写完成。核对原意后可以写回文档。')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
       setStatus('')
@@ -100,6 +118,11 @@ export function LessAiToneStudio({
     }
   }
   const revised = previewTone(snapshot.segments, chosen)
+  const fullRewrite =
+    chosen.length > 0 &&
+    chosen.every(
+      (change) => snapshot.segments.find((segment) => segment.id === change.id)?.text === change.before,
+    )
   const beforeCoverage = before === null ? null : toneCoverage(snapshot.segments, before)
   const afterCoverage = after === null ? null : toneCoverage(revised, after)
   const report = (title: string, findings: ToneFinding[] | null, segments: ToneSegment[]) => {
@@ -142,7 +165,7 @@ export function LessAiToneStudio({
       <header>
         <div>
           <strong>去 AI 味工作台</strong>
-          <p>原文检测 → 局部改写 → 建议稿检测 → 确认应用</p>
+          <p>选中正文后重写，去掉套话，保留事实</p>
         </div>
         <button disabled={busy} onClick={onClose}>
           返回文档
@@ -207,11 +230,14 @@ export function LessAiToneStudio({
           保留标题、段落、列表、表格及文字格式；跳过代码、链接、引用块和嵌入对象。应用后可撤销。
         </small>
         <div className="screenwriting-actions">
+          <button disabled={!snapshot.segments.length} onClick={() => void humanize()}>
+            去 AI 味
+          </button>
           <button disabled={!snapshot.segments.length} onClick={() => void run(false)}>
             仅检测原文
           </button>
           <button disabled={!snapshot.segments.length} onClick={() => void run(true)}>
-            检测并去 AI 味
+            检测并局部修改
           </button>
         </div>
       </fieldset>
@@ -248,7 +274,9 @@ export function LessAiToneStudio({
                     setStatus('选中版本已变化，请重新检测建议稿。')
                   }}
                 />
-                {TONE_RULES[change.rule - 1]}
+                {change.before === snapshot.segments.find((s) => s.id === change.id)?.text
+                  ? '整段重写'
+                  : TONE_RULES[change.rule - 1]}
               </span>
               <del>{change.before}</del>
               <ins>{change.after || '（删除）'}</ins>
@@ -257,7 +285,7 @@ export function LessAiToneStudio({
           <div className="screenwriting-actions">
             <button onClick={() => void recheck()}>重新检测选中修改</button>
             <button
-              disabled={!chosen.length || after === null}
+              disabled={!chosen.length || (after === null && !fullRewrite)}
               onClick={() => {
                 try {
                   applyToneChanges(editor, snapshot, chosen)

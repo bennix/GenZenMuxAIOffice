@@ -1026,8 +1026,8 @@ export function SettingsModal({
                     <p>
                       {updateCheck.status === 'available'
                         ? isChinese
-                          ? '支持自动更新的平台会自动下载新版；下载完成后可重启安装，或在正常退出时安装。不支持自动更新的安装包可前往下载页更新。'
-                          : 'Supported platforms download the update automatically. Restart to install when ready, or install on normal quit. Other packages can be updated from the download page.'
+                          ? '发现新版本后会自动下载，下载完成即重启安装。不支持自动更新的安装包请前往下载页更新。'
+                          : 'A new version downloads automatically and installs as soon as the download finishes. Other packages can be updated from the download page.'
                         : updateCheck.status === 'checking'
                           ? isChinese
                             ? '正在连接 ZenOffice 发布服务。'

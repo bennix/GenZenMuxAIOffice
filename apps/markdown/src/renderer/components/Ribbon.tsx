@@ -287,7 +287,7 @@ export function Ribbon({
           type="button"
           className="tone-quick-entry"
           disabled={off}
-          title="检测处理前后 AI 特征占比，审阅并应用去 AI 味建议"
+          title="重写选中正文，去掉 AI 套话并保留事实"
           onMouseDown={(event) => event.preventDefault()}
           onClick={onLessAiTone}
         >

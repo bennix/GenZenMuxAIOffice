@@ -7,6 +7,8 @@ import {
   applyToneChanges,
   captureToneSource,
   detectTone,
+  humanizeChanges,
+  humanizeTone,
   previewTone,
   toneCoverage,
   validateToneChanges,
@@ -126,5 +128,18 @@ describe('less AI tone edits', () => {
     await detectTone(generate, previewTone(segments, changes), '保留正式语体')
     expect(generate.mock.calls[0]![0].system).toContain('硬性边界')
     expect(JSON.parse(generate.mock.calls[0]![0].user).segments[0].text).toBe('预算不足。')
+  })
+  it('rewrites each paragraph and refuses a result that changes numbers', async () => {
+    const segments = [
+      { id: 0, from: 1, text: '这个方案至关重要，效率提升了 20%。', context: 'paragraph' },
+      { id: 1, from: 40, text: '总而言之，团队完成了优化。', context: 'paragraph' },
+    ]
+    const generate = vi.fn().mockResolvedValue('方案把效率提高了 20%。\n<<<SEG>>>\n团队把流程改完了。')
+    const changes = await humanizeTone(generate, segments, '')
+    expect(changes.map((change) => change.after)).toEqual(['方案把效率提高了 20%。', '团队把流程改完了。'])
+    expect(generate.mock.calls[0]![0].system).toContain('只交付最终版本')
+    expect(() => humanizeChanges(segments, ['方案把效率提高了 30%。', '团队把流程改完了。'])).toThrow(
+      '数字',
+    )
   })
 })

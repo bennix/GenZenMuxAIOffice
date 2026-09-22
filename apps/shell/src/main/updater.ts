@@ -337,6 +337,8 @@ const CHANNEL_FEED: Record<UpdateChannel, string> = { stable: 'latest', beta: 'b
 let updaterActive = false
 let manualCheck: Promise<UpdateCheckResult> | null = null
 let downloadFromAbout = false
+/** Stays set after an About check until the package is installed or the user chooses later. */
+let aboutInstallPending = false
 
 function versionParts(version: string): number[] {
   return version
@@ -359,6 +361,7 @@ export function checkForUpdatesNow(channel: UpdateChannel): Promise<UpdateCheckR
   if (manualCheck) return manualCheck
   dismissedVersion = null
   downloadFromAbout = true
+  aboutInstallPending = true
   manualCheck = performUpdateCheck(channel).finally(() => {
     manualCheck = null
     downloadFromAbout = false
@@ -372,10 +375,12 @@ async function performUpdateCheck(channel: UpdateChannel): Promise<UpdateCheckRe
     if (updaterActive) {
       const result = await autoUpdater.checkForUpdates()
       const latestVersion = result?.updateInfo?.version
-      if (!latestVersion)
-        return { status: 'current', currentVersion, latestVersion: currentVersion }
+      if (!latestVersion || !isNewerVersion(latestVersion, currentVersion)) {
+        aboutInstallPending = false
+        return { status: 'current', currentVersion, latestVersion: latestVersion || currentVersion }
+      }
       return {
-        status: isNewerVersion(latestVersion, currentVersion) ? 'available' : 'current',
+        status: 'available',
         currentVersion,
         latestVersion,
       }
@@ -404,12 +409,16 @@ async function performUpdateCheck(channel: UpdateChannel): Promise<UpdateCheckRe
         ? (release as { tag_name: string }).tag_name
         : ''
     if (!tag) throw new Error('Latest release did not include a version tag')
+    const latestVersion = tag.replace(/^v/i, '')
+    const newer = isNewerVersion(latestVersion, currentVersion)
+    if (!newer || !updaterActive) aboutInstallPending = false
     return {
-      status: isNewerVersion(tag, currentVersion) ? 'available' : 'current',
+      status: newer ? 'available' : 'current',
       currentVersion,
-      latestVersion: tag.replace(/^v/i, ''),
+      latestVersion,
     }
   } catch (error) {
+    aboutInstallPending = false
     log('manual check failed:', error instanceof Error ? error.message : error)
     return {
       status: 'error',
@@ -528,6 +537,7 @@ export function initAutoUpdater(
       setImmediate(() => autoUpdater.quitAndInstall(true, true))
     },
     onLater: () => {
+      aboutInstallPending = false
       dismissedVersion = latestSeenVersion
       closeUpdateWindow()
     },
@@ -565,6 +575,11 @@ export function initAutoUpdater(
     else if (downloadInFlight) state.phase = 'downloading'
     else if (failedAttempts >= MANUAL_FALLBACK_AFTER) state.phase = 'manual'
     showUpdateWindow(getWindow(), state, actions)
+    if (aboutInstallPending && downloadComplete) {
+      aboutInstallPending = false
+      actions.onInstall()
+      return
+    }
     if (downloadFromAbout && failedAttempts < MANUAL_FALLBACK_AFTER) actions.onDownload()
   })
 
@@ -578,6 +593,10 @@ export function initAutoUpdater(
     downloadComplete = true
     failedAttempts = 0
     pushUpdateState({ phase: 'downloaded', percent: 100 })
+    if (aboutInstallPending) {
+      aboutInstallPending = false
+      actions.onInstall()
+    }
   })
 
   const check = (): void => {

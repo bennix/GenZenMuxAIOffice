@@ -12,7 +12,6 @@ import type { AiSettings, AttachmentAddResult, AttachmentMeta } from '../../shar
 import { ATTACHMENT_IMAGE_EXTS } from '../../shared/ipc'
 import {
   createSlidesSkill,
-  formatSlideDump,
   type DeckAccess,
   type ClarifyQuestion,
   type DeckProgressEvent,
@@ -26,7 +25,7 @@ import { createElectronTransport } from './transport'
 import { renderSlidesToPngBase64 } from '../export-render'
 import { isQcEnabled, mergeQcPages, qcSlidePage, QC_MAX_PAGES } from './slide-qc'
 import { auditSlideLayout } from './layout-audit'
-import { judgeGeneratedLayout } from './slide-jev'
+import { describeLayoutAction, judgeGeneratedLayout } from './slide-jev'
 import { useI18n, t as tGlobal, aiLangDirective, type TFunc } from '../i18n/locale'
 import {
   ConnectButton,
@@ -1522,7 +1521,7 @@ export function AiPanel({
         const slide = access.getSlides()[page]
         const issues = slide ? auditSlideLayout(slide) : []
         const judged = slide
-          ? await judgeGeneratedLayout(issues, formatSlideDump(slide), (state, questions) =>
+          ? await judgeGeneratedLayout(slide, issues, (state, questions) =>
               window.slidesApi.systemOne({ state, questions }),
             )
           : { status: 'unavailable' as const }
@@ -1532,8 +1531,30 @@ export function AiPanel({
           patchLastAssistant({ text: renderEntry() })
           continue
         }
-        if (judged.status === 'rejected') {
-          lines.push(tGlobal('aiQcJevRejected', { n: page + 1 }))
+        if (judged.status === 'apply') {
+          const batchOpened = await window.slidesApi.beginHistoryBatch()
+          const updated = await window.slidesApi.batchEditTransform({
+            slideIndex: page,
+            fitWidthPx: access.fitWidthPx,
+            items: judged.ops.map((op) => ({
+              sourceId: op.id,
+              xPx: op.x,
+              yPx: op.y,
+              wPx: op.w,
+              hPx: op.h,
+              rotationDeg: op.rotation,
+            })),
+          })
+          const batchId = batchOpened ? await window.slidesApi.endHistoryBatch() : null
+          if (updated) {
+            access.applySlide(page, updated)
+            lines.push(
+              tGlobal('aiQcPageFixed', { n: page + 1, summary: describeLayoutAction(judged.action) }),
+            )
+            if (typeof batchId === 'number' && qcSnapshotId == null) qcSnapshotId = batchId
+          } else {
+            lines.push(tGlobal('aiQcPageFailed', { n: page + 1, error: 'layout apply failed' }))
+          }
           patchLastAssistant({ text: renderEntry() })
           continue
         }
@@ -1545,7 +1566,6 @@ export function AiPanel({
           screenshot: shot,
           systemSuffix: aiLangDirective,
           signal: controller.signal,
-          ...(judged.status === 'apply' ? { approvedPlan: judged.plan } : {}),
         })
         const batchId = batchOpened ? await window.slidesApi.endHistoryBatch() : null
         if (controller.signal.aborted) break

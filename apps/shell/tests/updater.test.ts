@@ -167,12 +167,8 @@ describe('initAutoUpdater', () => {
     await checkForUpdatesNow('stable')
     expect(downloadUpdate).toHaveBeenCalledTimes(1)
     updaterState.listeners.get('update-downloaded')!({ version: '0.2.0' })
-    lastShownActions().onLater()
-    isUpdateWindowOpen.mockReturnValue(false)
-    await checkForUpdatesNow('stable')
-    expect(lastShownState().phase).toBe('downloaded')
-    expect(downloadUpdate).toHaveBeenCalledTimes(1)
-    expect(quitAndInstall).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(quitAndInstall).toHaveBeenCalledTimes(1)
   })
 
   it('About starts downloading an already open available update', async () => {

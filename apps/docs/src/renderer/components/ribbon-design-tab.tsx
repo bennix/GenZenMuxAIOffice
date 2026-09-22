@@ -273,7 +273,7 @@ export function DesignTab({
           <button
             className="rb-big"
             disabled={!hasDoc}
-            title="检测 AI 写作痕迹，审阅并应用局部修改"
+            title="重写选中正文，去掉 AI 套话并保留事实"
             onClick={() => document.dispatchEvent(new Event('zenoffice:open-less-ai-tone'))}
           >
             <span className="rb-big-icon">

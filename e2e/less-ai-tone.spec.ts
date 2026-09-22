@@ -42,7 +42,7 @@ for (const kind of ['word', 'markdown'] as const) {
       await studio.getByRole('button', { name: '仅检测原文', exact: true }).click()
       await expect(studio.getByRole('region', { name: '处理前检测', exact: true })).toContainText('44.4%')
       if (kind === 'markdown') await studio.getByLabel('检测方式', { exact: true }).selectOption('ai')
-      await studio.getByRole('button', { name: '检测并去 AI 味', exact: true }).click()
+      await studio.getByRole('button', { name: '检测并局部修改', exact: true }).click()
       await expect(studio.getByRole('region', { name: '处理前检测', exact: true })).toContainText(
         '44.4%',
       )
