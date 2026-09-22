@@ -22,6 +22,8 @@ export const ZENMUX_IMAGE_MODELS = [
   'z-ai/glm-image',
 ] as const
 export const ZENMUX_DEFAULT_IMAGE_MODEL = ZENMUX_IMAGE_MODELS[0]
+/** TypeSafe Jev on ZenMux. Judges layout; it does not write slide copy. */
+export const ZENMUX_DEFAULT_JEV_MODEL = 'typesafe/jev-1.13'
 
 /**
  * Genspark server-side LLM proxy endpoints. All three protocols share the
@@ -122,6 +124,7 @@ export function defaultAiSettings(
   }
   providers.zenmux.baseUrl = ZENMUX_BASE_URL
   providers.zenmux.imageModel = ZENMUX_DEFAULT_IMAGE_MODEL
+  providers.zenmux.jevModel = ZENMUX_DEFAULT_JEV_MODEL
   return { provider: 'zenmux', providers }
 }
 
@@ -145,6 +148,8 @@ export function resolveAiSettings(
     providers: { ...defaults.providers, ...stored.providers },
   }
   resolved.providers.zenmux.imageModel ??= ZENMUX_DEFAULT_IMAGE_MODEL
+  resolved.providers.zenmux.jevModel =
+    resolved.providers.zenmux.jevModel?.trim() || ZENMUX_DEFAULT_JEV_MODEL
   resolved.providers.zenmux.baseUrl = resolveZenmuxBaseUrl(resolved.providers.zenmux)
   return resolved
 }

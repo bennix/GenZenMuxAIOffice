@@ -22,6 +22,11 @@ export interface AiProviderConfig {
   imageModels?: string[] | undefined
   /** image model ids explicitly hidden by the user */
   removedImageModels?: string[] | undefined
+  /**
+   * ZenMux System One model used to judge slide layout (yes/no and whether a
+   * fix plan is reasonable). Not a chat model.
+   */
+  jevModel?: string | undefined
   /** ZenMux (defaults to zenmux.ai) and the custom OpenAI-compatible provider */
   baseUrl?: string | undefined
 }

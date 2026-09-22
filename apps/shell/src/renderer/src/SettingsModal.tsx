@@ -13,6 +13,7 @@ import type {
 import { removeActiveModel, resolveModelOptions } from './model-options'
 import {
   ZENMUX_BASE_URL,
+  ZENMUX_DEFAULT_JEV_MODEL,
   ZENMUX_IMAGE_MODELS,
   ZENMUX_MODELS,
   type AiSettings,
@@ -181,6 +182,7 @@ export function SettingsModal({
   const [imageModels, setImageModels] = useState<string[]>([...ZENMUX_IMAGE_MODELS])
   const [removedImageModels, setRemovedImageModels] = useState<string[]>([])
   const [newImageModel, setNewImageModel] = useState('')
+  const [jevModel, setJevModel] = useState(ZENMUX_DEFAULT_JEV_MODEL)
   const [aiSaved, setAiSaved] = useState(false)
   const [knowledgeSettings, setKnowledgeSettings] = useState<KnowledgeSettingsItem | null>(null)
   const [memories, setMemories] = useState<KnowledgeMemoryItem[]>([])
@@ -225,6 +227,7 @@ export function SettingsModal({
           activeImageModel,
         ),
       )
+      setJevModel(config.jevModel?.trim() || ZENMUX_DEFAULT_JEV_MODEL)
     })
     void window.aiOfficeProject?.getKnowledgeSettings().then((settings) => {
       if (alive) setKnowledgeSettings(settings)
@@ -347,6 +350,7 @@ export function SettingsModal({
           imageModel,
           imageModels,
           removedImageModels,
+          jevModel: jevModel.trim() || ZENMUX_DEFAULT_JEV_MODEL,
           baseUrl: baseUrl.trim().replace(/\/+$/, '') || ZENMUX_BASE_URL,
         },
       },
@@ -680,6 +684,38 @@ export function SettingsModal({
                       {isChinese ? '增加' : 'Add'}
                     </button>
                   </div>
+                </div>
+                <label className="set-ai-field" htmlFor="set-zenmux-jev-model">
+                  <span>{isChinese ? '版式判断模型（JEV）' : 'Layout judgement model (JEV)'}</span>
+                  <div className="set-ai-add-row">
+                    <input
+                      id="set-zenmux-jev-model"
+                      className="set-input"
+                      value={jevModel}
+                      placeholder={ZENMUX_DEFAULT_JEV_MODEL}
+                      spellCheck={false}
+                      onChange={(e) => {
+                        setJevModel(e.target.value)
+                        setAiSaved(false)
+                      }}
+                    />
+                    <button
+                      className="set-btn"
+                      type="button"
+                      disabled={jevModel.trim() === ZENMUX_DEFAULT_JEV_MODEL}
+                      onClick={() => {
+                        setJevModel(ZENMUX_DEFAULT_JEV_MODEL)
+                        setAiSaved(false)
+                      }}
+                    >
+                      {isChinese ? '恢复默认' : 'Reset'}
+                    </button>
+                  </div>
+                </label>
+                <div className="set-ai-help">
+                  {isChinese
+                    ? '生成或美化结束后，用这个模型判断要不要改版式、改法是否合理。它只返回判断，不写文案。默认 typesafe/jev-1.13。'
+                    : 'After generation or beautify, this model decides whether a layout fix is needed and whether the plan is reasonable. It returns a judgement, not copy. Default: typesafe/jev-1.13.'}
                 </div>
                 <div className="set-pane-footer">
                   {aiSaved && <span className="set-saved">{isChinese ? '已保存' : 'Saved'}</span>}

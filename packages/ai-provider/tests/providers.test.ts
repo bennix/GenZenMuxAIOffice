@@ -21,6 +21,7 @@ describe('defaultAiSettings', () => {
     expect(settings.providers.zenmux.baseUrl).toBe(ZENMUX_BASE_URL)
     expect(settings.providers.zenmux.model).toBe(ZENMUX_MODELS[0])
     expect(settings.providers.zenmux.imageModel).toBe(ZENMUX_DEFAULT_IMAGE_MODEL)
+    expect(settings.providers.zenmux.jevModel).toBe('typesafe/jev-1.13')
     expect(settings.providers.anthropic.baseUrl).toBeUndefined()
   })
 
@@ -90,6 +91,7 @@ describe('resolveAiSettings', () => {
     expect(resolved.providers.zenmux.models).toEqual(['vendor/new-model'])
     expect(resolved.providers.zenmux.model).toBe('vendor/new-model')
     expect(resolved.providers.zenmux.imageModel).toBe(ZENMUX_DEFAULT_IMAGE_MODEL)
+    expect(resolved.providers.zenmux.jevModel).toBe('typesafe/jev-1.13')
   })
 
   it('preserves a custom ZenMux Base URL and fills an empty one', () => {

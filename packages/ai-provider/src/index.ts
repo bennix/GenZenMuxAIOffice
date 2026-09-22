@@ -21,6 +21,7 @@ export {
   resolveZenmuxBaseUrl,
   ZENMUX_INVITE_URL,
   ZENMUX_DEFAULT_IMAGE_MODEL,
+  ZENMUX_DEFAULT_JEV_MODEL,
   ZENMUX_IMAGE_MODELS,
   ZENMUX_MODELS,
   defaultAiSettings,
@@ -28,6 +29,16 @@ export {
 } from './providers'
 export { generateZenMuxImage } from './images'
 export { chatForProvider, chatZenMux } from './chat'
+export { askSystemOne } from './systemone'
+export type {
+  ChoiceAnswer,
+  NoulAnswer,
+  ScoreAnswer,
+  SystemOneAnswer,
+  SystemOneCall,
+  SystemOneQuestion,
+  SystemOneResponse,
+} from './systemone'
 export {
   ZENMUX_FORMULA_MODEL,
   FORMULA_RECOGNITION_SYSTEM,

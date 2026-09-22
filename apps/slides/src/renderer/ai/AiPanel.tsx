@@ -12,6 +12,7 @@ import type { AiSettings, AttachmentAddResult, AttachmentMeta } from '../../shar
 import { ATTACHMENT_IMAGE_EXTS } from '../../shared/ipc'
 import {
   createSlidesSkill,
+  formatSlideDump,
   type DeckAccess,
   type ClarifyQuestion,
   type DeckProgressEvent,
@@ -24,6 +25,8 @@ import { createFilesSkill } from './files-skill'
 import { createElectronTransport } from './transport'
 import { renderSlidesToPngBase64 } from '../export-render'
 import { isQcEnabled, mergeQcPages, qcSlidePage, QC_MAX_PAGES } from './slide-qc'
+import { auditSlideLayout } from './layout-audit'
+import { judgeGeneratedLayout } from './slide-jev'
 import { useI18n, t as tGlobal, aiLangDirective, type TFunc } from '../i18n/locale'
 import {
   ConnectButton,
@@ -965,7 +968,7 @@ export function AiPanel({
           'Use absolute pixel positioning. Do not use CSS transforms, gradients, filters, pseudo-elements, canvas, JavaScript, SVG, iframes, forms, external CSS, icon libraries, CSS background images, or CSS-generated placeholder illustrations. ' +
           'Use only system fonts. Keep text separate from its background card so both remain independently editable. ' +
           'Paint back to front: emit background blocks and cards before their contents, then images/diagrams, then labels and text. Never place a large filled shape over smaller content. Use explicit z-index for intentional overlays; keep all marked elements as direct children of body so their layers share one stacking context. ' +
-          'Keep every visible element inside the canvas. Use a projection-readable type scale: cover title 56-72px, page title 46-58px, subtitle 32-40px, ordinary body 28-36px, and chart/table labels or captions 20-24px. Only footers and page numbers may be 15-18px. ' +
+          'Keep every visible element inside the canvas. Size each text box so a soft wrap never leaves only the last 1–4 characters on their own line; widen the box (and its card, pill, or banner) or shorten the copy instead. Every text run must sit fully inside its decorative shape, including the last line, with at least 16px of padding — a line must not hang out under the shape. Use a projection-readable type scale: cover title 56-72px, page title 46-58px, subtitle 32-40px, ordinary body 28-36px, and chart/table labels or captions 20-24px. Only footers and page numbers may be 15-18px. ' +
           'Never make ordinary body text smaller than 28px to make content fit. Prefer 3-5 concise points per content slide with generous line spacing; if the brief is dense, preserve its facts with tighter wording and a clearer hierarchy instead of tiny type. Use strong contrast. ' +
           'Use the supplied image URLs exactly when useful; use object-fit:cover and a graceful CSS color block when an image cannot load. ' +
           'Preserve all supplied facts, names, and figures; never invent precise data.'
@@ -1516,6 +1519,24 @@ export function AiPanel({
           if (slidesRef.current[page]) lines.push(tGlobal('aiQcPageSkipped', { n: page + 1 }))
           continue
         }
+        const slide = access.getSlides()[page]
+        const issues = slide ? auditSlideLayout(slide) : []
+        const judged = slide
+          ? await judgeGeneratedLayout(issues, formatSlideDump(slide), (state, questions) =>
+              window.slidesApi.systemOne({ state, questions }),
+            )
+          : { status: 'unavailable' as const }
+        if (controller.signal.aborted) break
+        if (judged.status === 'skip') {
+          lines.push(tGlobal('aiQcJevSkip', { n: page + 1 }))
+          patchLastAssistant({ text: renderEntry() })
+          continue
+        }
+        if (judged.status === 'rejected') {
+          lines.push(tGlobal('aiQcJevRejected', { n: page + 1 }))
+          patchLastAssistant({ text: renderEntry() })
+          continue
+        }
         const batchOpened = await window.slidesApi.beginHistoryBatch()
         const result = await qcSlidePage({
           access,
@@ -1524,6 +1545,7 @@ export function AiPanel({
           screenshot: shot,
           systemSuffix: aiLangDirective,
           signal: controller.signal,
+          ...(judged.status === 'apply' ? { approvedPlan: judged.plan } : {}),
         })
         const batchId = batchOpened ? await window.slidesApi.endHistoryBatch() : null
         if (controller.signal.aborted) break

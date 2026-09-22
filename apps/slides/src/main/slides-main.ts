@@ -1536,6 +1536,52 @@ export function registerSlidesIpc(): void {
               const elements = Array.from(document.body.querySelectorAll('*')).filter(visible);
               const semanticText = new Set(['H1','H2','H3','H4','H5','H6','P','LI','TD','TH','BLOCKQUOTE','FIGCAPTION','LABEL','SPAN','STRONG','EM','SMALL']);
               const nodes = [];
+              const measureWrap = (el, fontPx, contentLeft, contentRight) => {
+                let range;
+                try {
+                  range = document.createRange();
+                  range.selectNodeContents(el);
+                } catch (err) {
+                  return { widenPx: 0, unwrapLines: 0 };
+                }
+                const merged = [];
+                for (const rect of range.getClientRects()) {
+                  if (rect.width < 0.5 || rect.height < 0.5) continue;
+                  let hit = null;
+                  for (const line of merged) {
+                    const mid = rect.top + rect.height / 2;
+                    if (Math.abs(line.top + line.h / 2 - mid) < Math.max(2, rect.height * 0.45)) {
+                      hit = line;
+                      break;
+                    }
+                  }
+                  if (hit) {
+                    hit.left = Math.min(hit.left, rect.left);
+                    hit.right = Math.max(hit.right, rect.right);
+                    hit.w = hit.right - hit.left;
+                    hit.h = Math.max(hit.h, rect.height);
+                  } else {
+                    merged.push({ top: rect.top, left: rect.left, right: rect.right, w: rect.width, h: rect.height });
+                  }
+                }
+                const contentW = Math.max(1, contentRight - contentLeft);
+                let widenPx = 0;
+                let unwrapLines = 0;
+                for (let i = 1; i < merged.length; i++) {
+                  const prev = merged[i - 1];
+                  const cur = merged[i];
+                  const prevFilled = prev.right >= contentRight - fontPx * 1.15;
+                  const shortTail = cur.w <= fontPx * 4.5 && cur.w < prev.w * 0.5;
+                  if (prevFilled && shortTail) {
+                    widenPx = Math.max(widenPx, cur.w + fontPx * 0.4);
+                    unwrapLines += 1;
+                  }
+                }
+                if (merged.length === 1 && merged[0].w >= contentW - 1.5) {
+                  widenPx = Math.max(widenPx, Math.max(8, fontPx * 0.85));
+                }
+                return { widenPx: Math.round(widenPx), unwrapLines };
+              };
               for (const el of elements) {
                 if (nodes.length >= 500) break;
                 const firstNode = nodes.length;
@@ -1566,7 +1612,16 @@ export function registerSlidesIpc(): void {
                 const weight = Number(s.fontWeight) || (s.fontWeight === 'bold' ? 700 : 400);
                 const align = s.textAlign === 'center' ? 'center' : (s.textAlign === 'right' || s.textAlign === 'end' ? 'right' : 'left');
                 const valign = s.display.includes('flex') && s.alignItems === 'center' ? 'middle' : 'top';
-                nodes.push({ kind:'text', x, y, w, h, text:el.tagName === 'LI' && !text.startsWith('•') ? '• ' + text : text, color:color?.hex, fontFace:s.fontFamily.split(',')[0].replace(/["']/g, '').trim(), fontSize:parseFloat(s.fontSize) || 18, bold:weight >= 600, italic:s.fontStyle === 'italic', underline:s.textDecorationLine.includes('underline'), align, valign, lineHeight:parseFloat(s.lineHeight) || undefined, charSpacing:parseFloat(s.letterSpacing) || undefined, opacity:Number(s.opacity) || 1 });
+                const fontPx = parseFloat(s.fontSize) || 18;
+                const padL = parseFloat(s.paddingLeft) || 0;
+                const padR = parseFloat(s.paddingRight) || 0;
+                const contentLeft = r.left + (parseFloat(s.borderLeftWidth) || 0) + padL;
+                const contentRight = r.right - (parseFloat(s.borderRightWidth) || 0) - padR;
+                const wrap = measureWrap(el, fontPx, contentLeft, contentRight);
+                const textNode = { kind:'text', x, y, w, h, text:el.tagName === 'LI' && !text.startsWith('•') ? '• ' + text : text, color:color?.hex, fontFace:s.fontFamily.split(',')[0].replace(/["']/g, '').trim(), fontSize:fontPx, bold:weight >= 600, italic:s.fontStyle === 'italic', underline:s.textDecorationLine.includes('underline'), align, valign, lineHeight:parseFloat(s.lineHeight) || undefined, charSpacing:parseFloat(s.letterSpacing) || undefined, opacity:Number(s.opacity) || 1 };
+                if (wrap.widenPx > 0) textNode.widenPx = wrap.widenPx;
+                if (wrap.unwrapLines > 0) textNode.unwrapLines = wrap.unwrapLines;
+                nodes.push(textNode);
                 nodes[nodes.length - 1].zIndex = s.zIndex === 'auto' ? undefined : Number(s.zIndex);
               }
               return { width: innerWidth, height: innerHeight, background: (bg && bg.transparency < 100 ? bg.hex : htmlBg?.hex) || 'FFFFFF', nodes };
