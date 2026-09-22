@@ -136,6 +136,17 @@ $$
     expect(html).not.toContain('$$')
   })
 
+  it('renders nested and adjacent parenthesized formulas returned by review AI', () => {
+    const html = renderToStaticMarkup(
+      <Markdown
+        text={String.raw`从 (N_q\times N_q\times C) 到 (G\in\mathbb{R}^{N_q\times d})，损失为 (\mathcal F(\hat b_t,b_t^{gt}))，权重为 (\lambda_1,\lambda_2)。`}
+      />,
+    )
+    expect(html.match(/class="katex"/g)?.length).toBe(4)
+    expect(html).toContain('class="mord mathcal"')
+    expect(html).toContain('<mi>λ</mi>')
+  })
+
   it('does not normalize Markdown or bare LaTeX inside code', () => {
     const markdown =
       '行内：`**raw** (R\\in\\mathbb{R})`\n\n' + '```md\n**raw ** (R\\in\\mathbb{R})\n```'
@@ -149,7 +160,7 @@ $$
       <Markdown text={'- \\*\\*第一项 \\*\\*正文\n- **第\u200B二项**正文'} />,
     )
     expect(html).toContain('<strong>第一项</strong> 正文')
-    expect(html).toContain('<strong>第二项</strong>正文')
+    expect(html).toContain('<strong>第二项</strong> 正文')
     expect(html).not.toContain('\\*')
     expect(html).not.toContain('\u200B')
   })

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { execSync } from 'node:child_process'
-import { mkdtemp, readdir } from 'node:fs/promises'
+import { mkdtemp, readdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { launchShell, closeAndSaveVideo, waitForPageWithUrl, screenshotPath } from './helpers'
@@ -13,13 +13,21 @@ import { launchShell, closeAndSaveVideo, waitForPageWithUrl, screenshotPath } fr
 test.describe('sheets: new blank workbook', () => {
   test('quick-create writes a backing file and saves the first edit', async () => {
     const scratch = await mkdtemp(join(tmpdir(), 'genoffice-sheets-blank-'))
-    const launched = await launchShell({ onboardingSeen: true, videoDir: 'sheets-new-blank' })
+    const saveDir = join(scratch, 'GenOffice')
+    // Seed the setting before Electron starts. app.setPath('documents', ...)
+    // is not guaranteed to affect modules that have already resolved their
+    // save location on Linux, which made this test write outside its scratch
+    // directory and fail even though the workbook was created successfully.
+    await writeFile(
+      join(scratch, 'app-settings.json'),
+      JSON.stringify({ onboardingSeen: true, defaultSaveDir: saveDir }),
+    )
+    const launched = await launchShell({
+      userDataDir: scratch,
+      videoDir: 'sheets-new-blank',
+    })
     try {
       const { app, page } = launched
-      // keep the auto-created workbook out of the real ~/Documents/GenOffice
-      await app.evaluate(({ app: electronApp }, dir) => {
-        electronApp.setPath('documents', dir)
-      }, scratch)
 
       await expect(page.locator('.quick-card').nth(1)).toContainText('AI Sheets')
       await page.locator('.quick-card').nth(1).click()
@@ -31,7 +39,6 @@ test.describe('sheets: new blank workbook', () => {
       await sheets.waitForTimeout(1_500)
 
       // the backing file exists before any edit
-      const saveDir = join(scratch, 'GenOffice')
       const created = (await readdir(saveDir)).filter((f) => f.endsWith('.xlsx'))
       expect(created).toHaveLength(1)
       const workbook = join(saveDir, created[0])

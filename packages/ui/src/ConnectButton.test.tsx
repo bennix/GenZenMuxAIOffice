@@ -33,4 +33,12 @@ describe('ConnectButton labelled action', () => {
     expect(html).toContain('complete-report')
     expect(html).toContain('↗<span>发送完整报告</span></button>')
   })
+
+  it('uses the application language instead of the operating-system language', () => {
+    const html = renderToStaticMarkup(
+      <ConnectButton api={{} as ConnectApi} text="reply" language="ja" />,
+    )
+    expect(html).toContain('aria-label="別のエディターに送信"')
+    expect(html).not.toContain('发送到其他编辑器')
+  })
 })

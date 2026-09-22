@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">ZenOffice mark</title>
+  <desc id="desc">A luminous circular workspace crossed by a precise Z-shaped path.</desc>
+  <defs>
+    <linearGradient id="surface" x1="128" y1="96" x2="896" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10262A"/>
+      <stop offset="0.52" stop-color="#091519"/>
+      <stop offset="1" stop-color="#05090B"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="242" y1="214" x2="796" y2="824" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#81F5D0"/>
+      <stop offset="1" stop-color="#22B99B"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="224" fill="url(#surface)"/>
+  <circle cx="512" cy="512" r="278" fill="none" stroke="#4BE0B7" stroke-opacity=".13" stroke-width="62" filter="url(#soft)"/>
+  <circle cx="512" cy="512" r="264" fill="none" stroke="url(#ring)" stroke-width="56"/>
+  <path d="M312 326H722L302 698H712" fill="none" stroke="#F6F2E8" stroke-width="104" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="748" cy="724" r="34" fill="#F3B65B"/>
+</svg>

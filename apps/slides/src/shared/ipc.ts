@@ -15,6 +15,8 @@ import type {
   AiSettings,
   AiStreamChunk,
   AiStreamRequest,
+  SystemOneQuestion,
+  SystemOneResponse,
 } from '@genoffice/ai-provider'
 import type { ConnectApi } from '@genoffice/electron-utils/connect'
 import type { Lang } from '@genoffice/i18n'
@@ -1321,6 +1323,11 @@ export interface SlidesApi extends ConnectApi {
   getAiSettings: () => Promise<AiSettings>
   setAiSettings: (settings: AiSettings) => Promise<void>
   aiChat: (request: AiChatRequest) => Promise<AiChatResponse>
+  /** Jev layout judgement via ZenMux System One. Uses the saved key and jev model. */
+  systemOne: (body: {
+    state: string
+    questions: Record<string, SystemOneQuestion>
+  }) => Promise<SystemOneResponse>
   aiStream: (request: AiStreamRequest) => Promise<void>
   aiStreamCancel: (requestId: string) => Promise<void>
   webSearch: (

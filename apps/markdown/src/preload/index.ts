@@ -10,8 +10,17 @@ import { AI_CHANNELS, MARKDOWN_CHANNELS } from '../shared/ipc'
 import type { ExportFormat, MarkdownApi, SaveMode, UiTheme } from '../shared/ipc'
 
 const api: MarkdownApi = {
+  onMcpRequest: (handler) => {
+    const listener = (_e: Electron.IpcRendererEvent, request: Parameters<typeof handler>[0]) =>
+      handler(request)
+    ipcRenderer.on(MARKDOWN_CHANNELS.mcpRequest, listener)
+    return () => ipcRenderer.removeListener(MARKDOWN_CHANNELS.mcpRequest, listener)
+  },
+  sendMcpResult: (result) => ipcRenderer.send(MARKDOWN_CHANNELS.mcpResult, result),
+  ...imageShareBridge(ipcRenderer),
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
+  listOpenFiles: () => ipcRenderer.invoke('tabs:open-files'),
   onConnectReceive: (handler) => {
     const listener = (_e: Electron.IpcRendererEvent, payload: Parameters<typeof handler>[0]) =>
       handler(payload)
@@ -50,6 +59,7 @@ const api: MarkdownApi = {
   },
   exportDocx: (request) => ipcRenderer.invoke(MARKDOWN_CHANNELS.exportDocx, request),
   exportPdf: (request) => ipcRenderer.invoke(MARKDOWN_CHANNELS.exportPdf, request),
+  print: (request) => ipcRenderer.invoke(MARKDOWN_CHANNELS.print, request),
   getLanguage: () => ipcRenderer.invoke(MARKDOWN_CHANNELS.getLanguage),
   onLanguageChanged: (handler) => {
     const listener = (_e: Electron.IpcRendererEvent, lang: Lang) => handler(lang)
@@ -100,3 +110,4 @@ installDocumentDropBridge({
   getPathForFile: (file) => webUtils.getPathForFile(file),
   openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
 })
+import { imageShareBridge } from '@genoffice/electron-utils/connect'

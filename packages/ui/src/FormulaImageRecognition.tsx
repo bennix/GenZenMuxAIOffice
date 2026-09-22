@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import { formulaImageLocale, type UiFeatureLanguage } from './feature-i18n'
 
 export interface FormulaImageData {
   base64: string
   mime: string
 }
 
-async function imageData(file: File): Promise<FormulaImageData> {
-  if (!file.type.startsWith('image/')) throw new Error('Please choose an image file.')
+async function imageData(file: File, invalidImageMessage: string): Promise<FormulaImageData> {
+  if (!file.type.startsWith('image/')) throw new Error(invalidImageMessage)
   const bytes = new Uint8Array(await file.arrayBuffer())
   let binary = ''
   for (let offset = 0; offset < bytes.length; offset += 0x8000) {
@@ -21,21 +22,23 @@ function pastedImage(data: DataTransfer | null): File | null {
 
 /** Shared clipboard/file image input used by every editor's equation dialog. */
 export function FormulaImageRecognition({
+  language = 'en',
   onRecognize,
 }: {
+  language?: UiFeatureLanguage | undefined
   onRecognize: (image: FormulaImageData) => Promise<void>
 }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
-  const zh = typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('zh')
+  const text = formulaImageLocale(language)
 
   const recognize = async (file: File) => {
     if (busy) return
     setBusy(true)
     setError('')
     try {
-      await onRecognize(await imageData(file))
+      await onRecognize(await imageData(file, text.invalidImage))
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
     } finally {
@@ -55,8 +58,7 @@ export function FormulaImageRecognition({
   })
 
   const readClipboard = async () => {
-    if (!navigator.clipboard?.read)
-      throw new Error(zh ? '剪贴板中没有可读取的图片' : 'No readable image in the clipboard.')
+    if (!navigator.clipboard?.read) throw new Error(text.noReadableClipboard)
     const items = await navigator.clipboard.read()
     for (const item of items) {
       const type = item.types.find((candidate) => candidate.startsWith('image/'))
@@ -65,7 +67,7 @@ export function FormulaImageRecognition({
         return
       }
     }
-    throw new Error(zh ? '剪贴板中没有图片' : 'The clipboard contains no image.')
+    throw new Error(text.noClipboardImage)
   }
 
   return (
@@ -76,10 +78,10 @@ export function FormulaImageRecognition({
           disabled={busy}
           onClick={() => void readClipboard().catch((e) => setError(String(e)))}
         >
-          {busy ? (zh ? '正在识别…' : 'Recognizing…') : zh ? '从剪贴板识别' : 'Recognize clipboard'}
+          {busy ? text.recognizing : text.recognizeClipboard}
         </button>
         <button type="button" disabled={busy} onClick={() => inputRef.current?.click()}>
-          {zh ? '选择公式图片' : 'Choose formula image'}
+          {text.chooseImage}
         </button>
         <input
           ref={inputRef}
@@ -93,11 +95,7 @@ export function FormulaImageRecognition({
           }}
         />
       </div>
-      <small className="formula-image-hint">
-        {zh
-          ? '也可直接粘贴公式截图。识别通过 ZenMux，可能受网络影响。'
-          : 'You can also paste a formula screenshot. Recognition uses ZenMux and depends on the network.'}
-      </small>
+      <small className="formula-image-hint">{text.hint}</small>
       {error && <div className="formula-image-error">{error}</div>}
     </div>
   )

@@ -7,7 +7,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { RenderSlide, RenderNode, ShapeRenderNode, PlacedBox } from '@genoffice/pptx-render'
 import { runLayoutScript, type LayoutScriptElement } from '../src/renderer/ai/layout-script'
-import { createSlidesSkill, type DeckAccess } from '../src/renderer/ai/slides-skill'
+import {
+  auditPageHtml,
+  createSlidesSkill,
+  renderedPxToPt,
+  typographyLockFromSlides,
+  type DeckAccess,
+} from '../src/renderer/ai/slides-skill'
 
 const box = (x: number, y: number, w: number, h: number, rot = 0): PlacedBox => ({
   x,
@@ -66,6 +72,78 @@ const slideOf = (nodes: RenderNode[], w = 1280, h = 720): RenderSlide => ({
   scale: 1,
   background: { kind: 'solid', color: '#FFFFFF' },
   nodes,
+})
+
+describe('AI-generated slide typography', () => {
+  it('instructs the agent to use projection-readable body text', () => {
+    const skill = createSlidesSkill({
+      getSlides: () => [],
+      getCurrent: () => 0,
+      getSelectedIds: () => [],
+      applySlide: () => {},
+      applyDeck: () => {},
+      fitWidthPx: 1280,
+    })
+    expect(skill.systemPrompt).toContain('body 21–28')
+    expect(skill.systemPrompt).toContain('3–5 concise points')
+    expect(skill.systemPrompt).toContain('Do not shrink ordinary body copy below 20pt')
+  })
+
+  it('flags pages whose declared typography is generally too small', () => {
+    const html = `<html><body>
+      <h1 style="font-size:36px">Readable title</h1>
+      <p style="font-size:18px">First detailed point</p>
+      <p style="font-size:18px">Second detailed point</p>
+      <p style="font-size:20px">Third detailed point</p>
+    </body></html>`
+    expect(auditPageHtml(html)).toContain('generally undersized text')
+  })
+
+  it('does not treat autofit-shrunk display px as the designed point size', () => {
+    expect(renderedPxToPt(24, 0.75)).toBe(24)
+    expect(renderedPxToPt(24, 1)).toBe(18)
+  })
+
+  it('locks regenerate typography to the open deck instead of shrinking', () => {
+    const title = textNode('t1', box(40, 40, 400, 80), 'Title')
+    title.text = {
+      ...title.text!,
+      fontScale: 0.75,
+      lines: [
+        {
+          ...title.text!.lines[0]!,
+          runs: [{ ...title.text!.lines[0]!.runs[0]!, fontSizePx: 32 }],
+        },
+      ],
+    }
+    const lock = typographyLockFromSlides([slideOf([title])])
+    expect(lock).toContain('typical body 32pt')
+    expect(lock).toContain('largest title 36pt')
+    expect(lock).not.toContain('24pt')
+    expect(lock).toContain('never shrink')
+  })
+
+  it('detects a single inherited small size and sizes written in points', () => {
+    expect(
+      auditPageHtml(
+        '<body style="font-size:16px"><p>All content inherits this tiny body size.</p></body>',
+      ),
+    ).toContain('undersized')
+    expect(
+      auditPageHtml('<p style="font-size:12pt">This body paragraph is too small.</p>'),
+    ).toContain('undersized')
+    expect(typographyLockFromSlides([])).toContain('at least 32px')
+  })
+
+  it('allows small captions when the ordinary text scale is readable', () => {
+    const html = `<html><body>
+      <h1 style="font-size:52px">Readable title</h1>
+      <p style="font-size:30px">First concise point</p>
+      <p style="font-size:28px">Second concise point</p>
+      <small style="font-size:18px">Source note</small>
+    </body></html>`
+    expect(auditPageHtml(html)).toBeNull()
+  })
 })
 
 // ── New sandbox primitives ─────────────────────────────────────
@@ -451,9 +529,9 @@ describe('execute_slide_script tool', () => {
       text: 'Title',
       color: '#1a73e8',
       bold: true,
-      fontSize: 18, // original 24px -> 18pt kept
       fontFamily: 'Arial', // non-overridden fields kept
     })
+    expect(styleCall.paragraphs[0].runs[0].fontSize).toBeUndefined()
     expect(api.editFill).toHaveBeenCalledWith({ slideIndex: 0, sourceId: 't2', fill: '#f8fafc' })
     expect(api.editStroke).toHaveBeenCalledWith({
       slideIndex: 0,

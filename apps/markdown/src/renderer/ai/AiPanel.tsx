@@ -656,7 +656,7 @@ export function AiPanel({
               {hasTools && <ToolChipList tools={entry.tools!} />}
               {showToolbar && (
                 <div className="ai-msg-toolbar">
-                  <ConnectButton api={window.markdownApi} text={entry.text} />
+                  <ConnectButton api={window.markdownApi} text={entry.text} language={lang} />
                   <button
                     className="ai-msg-tool-btn"
                     onClick={() => void copyMessage(entry.text, `c-${i}`)}
@@ -811,6 +811,11 @@ export function AiPanel({
           sendIconDisabled={<img src={sendEnterOff} alt="" aria-hidden />}
           stopIcon={<img src={sendStop} alt="" aria-hidden />}
           textareaRef={inputRef}
+          language={lang}
+          listOpenFiles={() => window.markdownApi.listOpenFiles()}
+          onMentionFile={(file) => {
+            void window.markdownApi.addAttachmentPaths([file.filePath]).then(mergeAttachments)
+          }}
           onChange={(value) => {
             const command = removeConnectCommand(value)
             setPrompt(command.text)
@@ -823,6 +828,7 @@ export function AiPanel({
             <>
               <ConnectButton
                 api={window.markdownApi}
+                language={lang}
                 text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
                 triggerNonce={connectNonce}
               />

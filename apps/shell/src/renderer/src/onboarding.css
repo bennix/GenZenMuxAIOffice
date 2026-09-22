@@ -2,7 +2,7 @@
  * Layout follows the design spec: 540×420 white
  * card, left-aligned content column, slide-2 credits offer panel, and a
  * dots-left / Skip-Back-Next-right footer. ZenMux tokens: black pill primary,
- * gray ramp, brand blue #0f7fff only on the credits line. */
+ * gray ramp, ZenOffice green only on the credits line. */
 
 .onb-overlay {
   /* ZenMux tokens, scoped to the overlay (home.css keeps its own --accent) */
@@ -12,7 +12,7 @@
   --onb-btn-primary: #232425;
   --onb-btn-primary-hover: #393a3b;
   --onb-btn-primary-text: #fff;
-  --onb-brand: #0f7fff;
+  --onb-brand: #0f806c;
   --onb-text-primary: #232425;
   --onb-text-secondary: #606366;
   --onb-text-tertiary: #909499;

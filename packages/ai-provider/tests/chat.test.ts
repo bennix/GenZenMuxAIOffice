@@ -76,7 +76,7 @@ describe('chatForProvider', () => {
     )
   })
 
-  it('zenmux uses the fixed OpenAI-compatible endpoint', async () => {
+  it('zenmux defaults to the ZenMux OpenAI-compatible endpoint', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValue(jsonResponse({ choices: [{ message: { content: 'ok' } }] }))
@@ -86,13 +86,35 @@ describe('chatForProvider', () => {
       {
         apiKey: 'zen-key',
         model: 'openai/gpt-5.4',
-        baseUrl: 'https://ignored.example.com/v1',
       },
       'sys',
       'hi',
     )
     expect(fetchMock).toHaveBeenCalledWith(
       'https://zenmux.ai/api/v1/chat/completions',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer zen-key' }),
+      }),
+    )
+  })
+
+  it('zenmux uses a user-supplied Base URL when set', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ choices: [{ message: { content: 'ok' } }] }))
+    vi.stubGlobal('fetch', fetchMock)
+    await chatForProvider(
+      'zenmux',
+      {
+        apiKey: 'zen-key',
+        model: 'openai/gpt-5.4',
+        baseUrl: 'https://my-gateway.example.com/v1/',
+      },
+      'sys',
+      'hi',
+    )
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://my-gateway.example.com/v1/chat/completions',
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: 'Bearer zen-key' }),
       }),

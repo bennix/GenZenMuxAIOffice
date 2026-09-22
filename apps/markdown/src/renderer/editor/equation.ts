@@ -1,12 +1,10 @@
 import { Node, mergeAttributes, type MarkdownToken } from '@tiptap/core'
 import type { DOMOutputSpec } from '@tiptap/pm/model'
-import { latexToOmml, ommlToMathML } from '@genoffice/docx-engine'
-import { stripNestedMathDelimiters } from '@genoffice/ui'
+import { renderLatexToHtml, stripNestedMathDelimiters } from '@genoffice/ui'
 
-function mathml(latex: string): string {
+function renderedEquation(latex: string, displayMode: boolean): string {
   try {
-    const omml = latexToOmml(stripNestedMathDelimiters(latex))
-    return ommlToMathML(`<m:oMath>${omml}</m:oMath>`)
+    return renderLatexToHtml(latex, displayMode)
   } catch {
     return ''
   }
@@ -57,7 +55,7 @@ export const InlineEquation = Node.create({
       const host = document.createElement('span')
       host.className = 'md-equation md-equation-inline'
       host.title = latex
-      host.innerHTML = mathml(latex) || latex
+      host.innerHTML = renderedEquation(latex, false) || latex
       Object.entries(HTMLAttributes).forEach(([key, value]) =>
         host.setAttribute(key, String(value)),
       )
@@ -96,7 +94,7 @@ export const BlockEquation = Node.create({
       const host = document.createElement('div')
       host.className = 'md-equation md-equation-block'
       host.title = latex
-      host.innerHTML = mathml(latex) || latex
+      host.innerHTML = renderedEquation(latex, true) || latex
       Object.entries(HTMLAttributes).forEach(([key, value]) =>
         host.setAttribute(key, String(value)),
       )

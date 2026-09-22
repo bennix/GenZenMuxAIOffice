@@ -504,7 +504,7 @@ export async function saveDocx(
       `<w:p>${pPr}<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">` +
       `<wp:extent cx="${cx}" cy="${cy}"/>` +
       `<wp:effectExtent l="${eeX}" t="${eeY}" r="${eeX}" b="${eeY}"/>` +
-      `<wp:docPr id="${docPrId}" name="Picture ${docPrId}"/>` +
+      `<wp:docPr id="${docPrId}" name="Picture ${docPrId}"${image.description ? ` descr="${escapeXmlAttr(image.description)}"` : ''}/>` +
       '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' +
       '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
       '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +

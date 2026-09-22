@@ -3,7 +3,11 @@ import { launchShell, closeAndSaveVideo, screenshotPath } from './helpers'
 
 test.describe('home screen', () => {
   test('shows hero, quick-create cards and tab bar', async () => {
-    const launched = await launchShell({ onboardingSeen: true, videoDir: 'home-basics' })
+    const launched = await launchShell({
+      onboardingSeen: true,
+      recordVideo: false,
+      videoDir: 'home-basics',
+    })
     const { page } = launched
     try {
       await expect(page.locator('.home-hero')).toBeVisible()
@@ -25,6 +29,7 @@ test.describe('home screen', () => {
     const launched = await launchShell({
       onboardingSeen: true,
       lang: 'zh-CN',
+      recordVideo: false,
       videoDir: 'home-zh-cn',
     })
     const { page } = launched
@@ -33,6 +38,34 @@ test.describe('home screen', () => {
       await page.screenshot({ path: screenshotPath('home-zh-cn') })
     } finally {
       await closeAndSaveVideo(launched, 'home-zh-cn')
+    }
+  })
+
+  test('checks for updates automatically when About is opened', async () => {
+    const launched = await launchShell({
+      onboardingSeen: true,
+      lang: 'zh-CN',
+      recordVideo: false,
+      videoDir: 'about-update-check',
+    })
+    const { app, page } = launched
+    try {
+      await app.evaluate(({ ipcMain }) => {
+        ipcMain.removeHandler('home:check-for-updates')
+        ipcMain.handle('home:check-for-updates', () => ({
+          status: 'current',
+          currentVersion: '0.6.82',
+          latestVersion: '0.6.82',
+        }))
+      })
+      await page.locator('.account-btn').click()
+      await page.getByRole('button', { name: '关于', exact: true }).click()
+      await expect(page.getByRole('status')).toContainText('当前已是最新版本')
+      await expect(page.getByRole('status')).toContainText('稳定版')
+      await expect(page.getByRole('button', { name: '重新检查', exact: true })).toBeVisible()
+      await page.screenshot({ path: screenshotPath('about-update-check') })
+    } finally {
+      await closeAndSaveVideo(launched, 'about-update-check')
     }
   })
 })

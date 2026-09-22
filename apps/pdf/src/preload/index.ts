@@ -10,8 +10,10 @@ import { AI_CHANNELS, PDF_CHANNELS } from '../shared/ipc'
 import type { PdfApi, UiTheme } from '../shared/ipc'
 
 const api: PdfApi = {
+  ...imageShareBridge(ipcRenderer),
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
+  listOpenFiles: () => ipcRenderer.invoke('tabs:open-files'),
   onConnectReceive: (handler) => {
     const listener = (_e: Electron.IpcRendererEvent, payload: Parameters<typeof handler>[0]) =>
       handler(payload)
@@ -51,6 +53,11 @@ const api: PdfApi = {
     const listener = (_e: Electron.IpcRendererEvent, inFlight: boolean) => handler(inFlight)
     ipcRenderer.on(PDF_CHANNELS.saveAsFlow, listener)
     return () => ipcRenderer.removeListener(PDF_CHANNELS.saveAsFlow, listener)
+  },
+  onPrintRequest: (handler) => {
+    const listener = () => handler()
+    ipcRenderer.on(PDF_CHANNELS.printRequest, listener)
+    return () => ipcRenderer.removeListener(PDF_CHANNELS.printRequest, listener)
   },
   getLanguage: () => ipcRenderer.invoke(PDF_CHANNELS.getLanguage),
   onLanguageChanged: (handler) => {
@@ -101,3 +108,4 @@ installDocumentDropBridge({
   getPathForFile: (file) => webUtils.getPathForFile(file),
   openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
 })
+import { imageShareBridge } from '@genoffice/electron-utils/connect'

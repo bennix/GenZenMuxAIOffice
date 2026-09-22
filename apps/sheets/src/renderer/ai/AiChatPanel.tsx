@@ -240,7 +240,7 @@ export function AiChatPanel({
   /** The cells that will be supplied to AI as its default context and edit target. */
   readonly selectionRangeA1: string
 }): React.JSX.Element {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const chatRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const stickToBottomRef = useRef(true)
@@ -499,6 +499,9 @@ export function AiChatPanel({
                 {entry.text && <Markdown text={entry.text} />}
                 {entry.text && (
                   <div className="ai-msg-toolbar">
+                    {entry.role === 'assistant' && (
+                      <ConnectButton api={window.desktopApi} text={entry.text} language={lang} />
+                    )}
                     <button
                       className="ai-msg-tool-btn"
                       onClick={() => void copyMessage(entry.text, `h-${i}`)}
@@ -591,7 +594,7 @@ export function AiChatPanel({
                 )}
                 {entry.text && !entry.streaming && (
                   <div className="ai-msg-toolbar">
-                    <ConnectButton api={window.desktopApi} text={entry.text} />
+                    <ConnectButton api={window.desktopApi} text={entry.text} language={lang} />
                     <button
                       className="ai-msg-tool-btn"
                       onClick={() => void copyMessage(entry.text, `c-${index}`)}
@@ -758,6 +761,7 @@ export function AiChatPanel({
             <>
               <ConnectButton
                 api={window.desktopApi}
+                language={lang}
                 text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
                 triggerNonce={connectNonce}
               />
@@ -772,6 +776,9 @@ export function AiChatPanel({
             </>
           }
           textareaRef={inputRef}
+          language={lang}
+          listOpenFiles={() => window.desktopApi.listOpenFiles()}
+          onMentionFile={(file) => onAddAttachmentPaths([file.filePath])}
           onChange={(value) => {
             const command = removeConnectCommand(value)
             onPromptChange(command.text)

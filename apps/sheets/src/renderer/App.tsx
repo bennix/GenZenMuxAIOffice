@@ -1,4 +1,13 @@
 import {
+  decodeInfographicMetadata,
+  INFOGRAPHIC_AI_SYSTEM,
+  InfographicStudio,
+  infographicSyntaxFromRows,
+} from '@genoffice/ui'
+import { VisualizationStudio } from './VisualizationStudio'
+import { VisualizationRangePicker } from './VisualizationGuide'
+import { validateTable, type DataTable } from '@genoffice/visualization'
+import {
   absRangeRef,
   activateFormulaClosure,
   applyAiConditionalFormat,
@@ -27,6 +36,7 @@ import {
   queueSparklineInstall,
   RECALC_MAX_FAILURES,
   queueVisualInstall,
+  readVisualizationRange,
   sheetOutline,
   syncUniver,
   univerDefinedNames,
@@ -207,6 +217,7 @@ import {
   buildAiChartEdit as buildAiChartEditImpl,
   handleInsertChart as handleInsertChartImpl,
   handleInsertEquation as handleInsertEquationImpl,
+  handleInsertInfographic as handleInsertInfographicImpl,
   handleInsertIcon as handleInsertIconImpl,
   handleInsertScreenshot,
   handleRecommendedCharts as handleRecommendedChartsImpl,
@@ -252,6 +263,7 @@ import {
 import {
   handleApplyHeaderFooter as handleApplyHeaderFooterImpl,
   handleExportPdf as handleExportPdfImpl,
+  handlePrint as handlePrintImpl,
   handlePageLayoutCommand as handlePageLayoutCommandImpl,
   type PageLayoutContext,
 } from './page-layout-actions'
@@ -290,7 +302,7 @@ import {
   recordSparklineAdd,
 } from './edit-journal'
 import { shiftPinnedCells } from './formula-closure'
-import { getLang, t, aiLangDirective } from './i18n/locale'
+import { getLang, t, aiLangDirective, useI18n } from './i18n/locale'
 import { planStillMatches } from './lazy-plan'
 import { netAxisDelta, screenToFile } from './view-transform'
 import { selectionFormatEquals, toSelectionFormat, type SelectionFormat } from './selection-format'
@@ -335,6 +347,7 @@ import { loadStoredSchema } from './sql/sql-schema'
 let pendingCopySource: string | undefined
 
 export function App(): React.JSX.Element {
+  const { lang } = useI18n()
   const adapterRef = useRef(new InMemoryWorkbookAdapter(initialSnapshot))
   const univerRef = useRef<UniverRuntime | null>(null)
   const lazyWorkbookRef = useRef<LazyWorkbookState | null>(null)
@@ -466,6 +479,25 @@ export function App(): React.JSX.Element {
   const [screenshotDialogOpen, setScreenshotDialogOpen] = useState(false)
   const [iconsDialogOpen, setIconsDialogOpen] = useState(false)
   const [equationDialogOpen, setEquationDialogOpen] = useState(false)
+  const [infographicOpen, setInfographicOpen] = useState(false)
+  const [visualizationTable, setVisualizationTable] = useState<DataTable | null>(null)
+  const [visualizationRangePrompt, setVisualizationRangePrompt] = useState<string | null>(null)
+  const [infographicSyntax, setInfographicSyntax] = useState<string | undefined>()
+  const [infographicEditTarget, setInfographicEditTarget] = useState<WorkbookVisualObject | null>(
+    null,
+  )
+  useEffect(() => {
+    const openEditor = (event: Event) => {
+      const visual = (event as CustomEvent<{ visual?: WorkbookVisualObject }>).detail?.visual
+      const syntax = decodeInfographicMetadata(visual?.description)
+      if (!visual || !syntax) return
+      setInfographicEditTarget(visual)
+      setInfographicSyntax(syntax)
+      setInfographicOpen(true)
+    }
+    document.addEventListener('zenoffice:edit-sheet-infographic', openEditor)
+    return () => document.removeEventListener('zenoffice:edit-sheet-infographic', openEditor)
+  }, [])
   const [sqlWorkspaceOpen, setSqlWorkspaceOpen] = useState(false)
   const sqlEngineRef = useRef(new WorkbookSqlBridge())
   const sqlSchemaRef = useRef<WorkbookDatabaseSchema | null>(null)
@@ -2758,6 +2790,19 @@ export function App(): React.JSX.Element {
       setScreenshotDialogOpen,
       setIconsDialogOpen,
       setEquationDialogOpen,
+      openInfographic: () => {
+        setInfographicEditTarget(null)
+        const workbook = univerRef.current?.univerAPI.getActiveWorkbook()
+        const worksheet = workbook?.getActiveSheet()
+        const range = workbook?.getActiveRange()
+        const values = range?.getValues() as unknown[][] | undefined
+        setInfographicSyntax(
+          values?.length
+            ? infographicSyntaxFromRows(values, worksheet?.getSheetName(), lang)
+            : undefined,
+        )
+        setInfographicOpen(true)
+      },
       openRecommendedCharts: () => {
         void handleRecommendedChartsImpl(visualContext()).then((result) => {
           if (result) setRecommendedCharts(result)
@@ -2772,7 +2817,81 @@ export function App(): React.JSX.Element {
     }
   }
 
+  function visualizationRangeRef(bounds: IRange): string {
+    return (
+      `${columnLabel(bounds.startColumn)}${bounds.startRow + 1}:` +
+      `${columnLabel(bounds.endColumn)}${bounds.endRow + 1}`
+    )
+  }
+
+  function suggestedVisualizationRange(sheetId: string | undefined, bounds?: IRange): string {
+    if (bounds && bounds.endRow > bounds.startRow && bounds.endColumn >= bounds.startColumn) {
+      return visualizationRangeRef(bounds)
+    }
+    const sheet = lazyWorkbookRef.current?.file.sheets.find((candidate) => candidate.id === sheetId)
+    if (sheet && sheet.rowCount >= 2 && sheet.columnCount >= 1) {
+      const width = Math.min(sheet.columnCount, 256)
+      const height = Math.min(sheet.rowCount, Math.max(2, Math.floor(200000 / width)))
+      return `A1:${columnLabel(width - 1)}${height}`
+    }
+    if (bounds) {
+      const width = 4
+      const height = 20
+      return (
+        `${columnLabel(bounds.startColumn)}${bounds.startRow + 1}:` +
+        `${columnLabel(bounds.startColumn + width - 1)}${bounds.startRow + height}`
+      )
+    }
+    return 'A1:D20'
+  }
+
+  function promptVisualizationRange(sheetId: string | undefined, bounds?: IRange): void {
+    setVisualizationRangePrompt(suggestedVisualizationRange(sheetId, bounds))
+  }
+
+  async function openVisualization(reference?: string): Promise<void> {
+    const runtime = univerRef.current
+    const state = lazyWorkbookRef.current
+    const workbook = runtime?.univerAPI.getActiveWorkbook()
+    const worksheet = workbook?.getActiveSheet()
+    const sheetId = worksheet?.getSheetId()
+    if (!runtime || !workbook || !worksheet || !sheetId) {
+      if (reference) throw new Error('请先打开工作表。')
+      promptVisualizationRange(undefined)
+      return
+    }
+    const range = reference ? worksheet.getRange(reference) : workbook.getActiveRange()
+    if (!range || range.getHeight() < 2) {
+      if (reference) throw new Error('范围需要包含列名和至少一行数据。')
+      promptVisualizationRange(sheetId, range?.getRange())
+      return
+    }
+    if (range.getHeight() * range.getWidth() > 200000)
+      throw new Error('可视化选区不能超过 200000 个单元格。')
+    const values = await readVisualizationRange(state, runtime, sheetId, range.getRange())
+    if (
+      univerRef.current !== runtime ||
+      lazyWorkbookRef.current !== state ||
+      runtime.univerAPI.getActiveWorkbook()?.getId() !== workbook.getId() ||
+      runtime.univerAPI.getActiveWorkbook()?.getActiveSheet()?.getSheetId() !== sheetId
+    )
+      return
+    setVisualizationTable(
+      validateTable({
+        columns: values[0]!.map((value) => String(value ?? '')),
+        rows: values.slice(1).map((row) => row.map((value) => value ?? null)),
+      }),
+    )
+    setVisualizationRangePrompt(null)
+  }
+
   function handleRibbonCommand(command: string): void {
+    if (command === 'visualization-open') {
+      void openVisualization().catch((error) => {
+        setMessage(error instanceof Error ? error.message : String(error))
+      })
+      return
+    }
     if (command === 'sql-database-open') {
       setSqlWorkspaceOpen(true)
       return
@@ -3138,6 +3257,8 @@ export function App(): React.JSX.Element {
       void handleInspectWorkbook()
     } else if (action === 'export-pdf') {
       void handleExportPdfImpl(pageLayoutContext())
+    } else if (action === 'print' || action === 'print-preview') {
+      void handlePrintImpl(pageLayoutContext(), action === 'print' ? 'print' : 'preview')
     } else if (action === 'undo' || action === 'redo') {
       // The shell's own text fields (AI prompt, dialog inputs) keep native
       // text undo; everywhere else ⌘Z means workbook history.
@@ -3381,6 +3502,48 @@ export function App(): React.JSX.Element {
           onClose={() => setEquationDialogOpen(false)}
         />
       )}
+      {visualizationTable && (
+        <VisualizationStudio
+          table={visualizationTable}
+          onClose={() => setVisualizationTable(null)}
+        />
+      )}
+      {visualizationRangePrompt !== null && (
+        <VisualizationRangePicker
+          initialRange={visualizationRangePrompt}
+          onLoad={openVisualization}
+          onClose={() => setVisualizationRangePrompt(null)}
+        />
+      )}
+      <InfographicStudio
+        open={infographicOpen}
+        language={lang}
+        initialSyntax={infographicSyntax}
+        onClose={() => {
+          setInfographicOpen(false)
+          setInfographicEditTarget(null)
+        }}
+        onInsert={(asset) =>
+          handleInsertInfographicImpl(
+            visualContext(),
+            asset.dataUrl,
+            asset.width,
+            asset.height,
+            asset.syntax,
+            infographicEditTarget,
+          )
+        }
+        onAiGenerate={async (prompt, currentSyntax) => {
+          const settings = await window.desktopApi.getAiSettings()
+          const response = await window.desktopApi.aiChat({
+            settings,
+            system: INFOGRAPHIC_AI_SYSTEM,
+            user: `Instruction:\n${prompt}\n\nThe current syntax already contains the selected Excel data. Preserve its real labels and values.\n\nCurrent infographic syntax:\n${currentSyntax}`,
+          })
+          if (!response.ok) throw new Error(response.error || 'ZenMux infographic request failed')
+          return response.content ?? ''
+        }}
+      />
       {sqlWorkspaceOpen && (
         <SqlWorkspace
           file={workbookFile}

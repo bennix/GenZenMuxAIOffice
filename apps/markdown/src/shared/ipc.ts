@@ -9,6 +9,8 @@ import type {
 import type { ConnectApi } from '@genoffice/electron-utils/connect'
 
 export const MARKDOWN_CHANNELS = {
+  mcpRequest: 'markdown:mcp-request',
+  mcpResult: 'markdown:mcp-result',
   consumePending: 'markdown:consume-pending',
   readFile: 'markdown:read-file',
   readBibliography: 'markdown:read-bibliography',
@@ -25,6 +27,7 @@ export const MARKDOWN_CHANNELS = {
   exportRequest: 'markdown:export-request',
   exportDocx: 'markdown:export-docx',
   exportPdf: 'markdown:export-pdf',
+  print: 'markdown:print',
   getLanguage: 'app:get-language',
   languageChanged: 'app:language-changed',
   getTheme: 'app:get-theme',
@@ -32,6 +35,23 @@ export const MARKDOWN_CHANNELS = {
 } as const
 
 export type UiTheme = 'light' | 'dark' | 'system'
+
+export interface MarkdownMcpRequest {
+  requestId: string
+  action: 'read' | 'replace' | 'save' | 'ai_context'
+  text?: string
+  expectedText?: string
+}
+export type MarkdownMcpResult = {
+  requestId: string
+  data?: {
+    text: string
+    path: string | null
+    dirty: boolean
+    images?: { mime: string; base64: string }[]
+  }
+  error?: string
+}
 
 export type SaveMode = 'save' | 'saveAs'
 
@@ -66,7 +86,7 @@ export interface WebSearchResult {
   results: Array<{ title: string; url: string; snippet: string; publishedAt?: string }>
 }
 
-export type ExportFormat = 'pdf' | 'docx' | 'docs'
+export type ExportFormat = 'pdf' | 'docx' | 'docs' | 'print' | 'print-preview'
 
 export interface ExportDocxRequest {
   /** .docx bytes, base64 */
@@ -81,6 +101,10 @@ export interface ExportPdfRequest {
   /** self-contained print HTML */
   html: string
   suggestedName: string
+}
+
+export interface PrintMarkdownRequest extends ExportPdfRequest {
+  mode: 'print' | 'preview'
 }
 
 export type ExportResult =
@@ -112,6 +136,8 @@ export interface AttachmentImageResult {
 
 /** API exposed by preload to the renderer (window.markdownApi) */
 export interface MarkdownApi extends ConnectApi {
+  onMcpRequest(handler: (request: MarkdownMcpRequest) => void): () => void
+  sendMcpResult(result: MarkdownMcpResult): void
   /** Take the md path pending for this view (queued at tab creation); null = new untitled document */
   consumePending(): Promise<string | null>
   /** Read the file as UTF-8 text. Only paths granted to this view are allowed */
@@ -155,6 +181,7 @@ export interface MarkdownApi extends ConnectApi {
   onExportRequest(handler: (format: ExportFormat) => void): () => void
   exportDocx(request: ExportDocxRequest): Promise<ExportResult>
   exportPdf(request: ExportPdfRequest): Promise<ExportResult>
+  print(request: PrintMarkdownRequest): Promise<{ ok: boolean; error?: string }>
   getLanguage(): Promise<Lang>
   onLanguageChanged(handler: (lang: Lang) => void): () => void
   getTheme(): Promise<UiTheme>

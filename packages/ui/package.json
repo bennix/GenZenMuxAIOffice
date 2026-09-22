@@ -25,8 +25,12 @@
     "vitest": "^4.1.0"
   },
   "dependencies": {
+    "@antv/infographic": "^0.2.20",
+    "@genoffice/ai-provider": "*",
     "@genoffice/electron-utils": "*",
     "@genoffice/pptx-render": "*",
+    "@tiptap/core": "^3.28.0",
+    "@tiptap/pm": "^3.28.0",
     "katex": "^0.16.47"
   }
 }

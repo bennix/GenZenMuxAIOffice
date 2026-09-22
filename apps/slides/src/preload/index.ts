@@ -84,8 +84,10 @@ import type {
 } from '../shared/ipc'
 
 const api: SlidesApi = {
+  ...imageShareBridge(ipcRenderer),
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
+  listOpenFiles: () => ipcRenderer.invoke('tabs:open-files'),
   onConnectReceive: (handler) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: Parameters<typeof handler>[0]) =>
       handler(payload)
@@ -285,6 +287,7 @@ const api: SlidesApi = {
   getAiSettings: () => ipcRenderer.invoke('ai:get-settings'),
   setAiSettings: (settings: AiSettings) => ipcRenderer.invoke('ai:set-settings', settings),
   aiChat: (request) => ipcRenderer.invoke('ai:chat', request),
+  systemOne: (body) => ipcRenderer.invoke('ai:systemone', body),
   aiStream: (request: AiStreamRequest) => ipcRenderer.invoke('ai:stream', request),
   aiStreamCancel: (requestId: string) => ipcRenderer.invoke('ai:stream-cancel', requestId),
   webSearch: (query: string, maxResults?: number) =>
@@ -393,3 +396,4 @@ installDocumentDropBridge({
   getPathForFile: (file) => webUtils.getPathForFile(file),
   openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
 })
+import { imageShareBridge } from '@genoffice/electron-utils/connect'

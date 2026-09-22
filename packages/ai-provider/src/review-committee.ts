@@ -8,15 +8,22 @@ export interface ReviewProfile {
   id: string
   labelZh: string
   labelEn: string
+  category: 'academic' | 'proposal' | 'bid' | 'composition'
   criteria: string
   verdictScale: string
-  members: Array<{ roleZh: string; roleEn: string; focus: string }>
+  members: Array<{
+    roleZh: string
+    roleEn: string
+    focus: string
+    literatureReviewer?: boolean
+  }>
 }
 
 const academicMembers = [
   {
     roleZh: '创新性与影响力委员',
     roleEn: 'Novelty & Impact Reviewer',
+    literatureReviewer: true,
     focus:
       'novelty, significance, positioning against prior work, and whether the claims meet the venue bar',
   },
@@ -94,11 +101,33 @@ const bidMembers = [
   },
 ]
 
+const compositionMembers = [
+  {
+    roleZh: '立意与内容评委',
+    roleEn: 'Ideas & Content Assessor',
+    focus:
+      'task fulfilment, originality, depth of ideas, relevance, evidence, audience awareness, and factual consistency',
+  },
+  {
+    roleZh: '结构与逻辑评委',
+    roleEn: 'Structure & Reasoning Assessor',
+    focus:
+      'organization, paragraph progression, coherence, transitions, argument development, pacing, and conclusion quality',
+  },
+  {
+    roleZh: '语言与文风评委',
+    roleEn: 'Language & Style Assessor',
+    focus:
+      'grammar, vocabulary, sentence variety, idiomatic expression, register, rhetoric, mechanics, and authentic authorial voice',
+  },
+]
+
 export const REVIEW_PROFILES: ReviewProfile[] = [
   {
     id: 'science',
     labelZh: 'Science 级期刊',
     labelEn: 'Science-level Journal',
+    category: 'academic',
     criteria:
       'broad scientific importance, conceptual breakthrough, exceptional evidence, and cross-disciplinary interest',
     verdictScale:
@@ -109,6 +138,7 @@ export const REVIEW_PROFILES: ReviewProfile[] = [
     id: 'nature',
     labelZh: 'Nature 级期刊',
     labelEn: 'Nature-level Journal',
+    category: 'academic',
     criteria:
       'outstanding novelty, fundamental importance, broad readership, decisive evidence, and editorial priority',
     verdictScale:
@@ -119,6 +149,7 @@ export const REVIEW_PROFILES: ReviewProfile[] = [
     id: 'cell',
     labelZh: 'Cell 级期刊',
     labelEn: 'Cell-level Journal',
+    category: 'academic',
     criteria:
       'transformative biological insight, mechanistic depth, completeness, general interest, and rigorous validation',
     verdictScale:
@@ -129,6 +160,7 @@ export const REVIEW_PROFILES: ReviewProfile[] = [
     id: 'elsevier',
     labelZh: 'Elsevier 期刊',
     labelEn: 'Elsevier Journal',
+    category: 'academic',
     criteria:
       'journal fit, sound novelty, methodological rigor, complete reporting, research integrity, and publishable presentation',
     verdictScale: 'Reject / Major revision / Minor revision / Accept',
@@ -138,6 +170,7 @@ export const REVIEW_PROFILES: ReviewProfile[] = [
     id: 'ieee-top-journal',
     labelZh: 'IEEE 顶刊',
     labelEn: 'Top IEEE Journal',
+    category: 'academic',
     criteria:
       'substantial technical contribution, archival depth, rigorous theory and experiments, reproducibility, and field impact',
     verdictScale: 'Reject / Major revision / Minor revision / Accept',
@@ -147,6 +180,7 @@ export const REVIEW_PROFILES: ReviewProfile[] = [
     id: 'ieee-top-conference',
     labelZh: 'IEEE 顶级会议',
     labelEn: 'Top IEEE Conference',
+    category: 'academic',
     criteria:
       'clear novelty, technical correctness, strong empirical evidence, timeliness, concise presentation, and competitive significance',
     verdictScale: 'Strong reject / Reject / Borderline / Accept / Strong accept',
@@ -156,6 +190,7 @@ export const REVIEW_PROFILES: ReviewProfile[] = [
     id: 'ieee-conference',
     labelZh: 'IEEE 一般会议',
     labelEn: 'General IEEE Conference',
+    category: 'academic',
     criteria:
       'technical soundness, adequate novelty, relevant experiments, clear presentation, and conference scope fit',
     verdictScale: 'Reject / Weak reject / Weak accept / Accept',
@@ -165,6 +200,7 @@ export const REVIEW_PROFILES: ReviewProfile[] = [
     id: 'nsfc',
     labelZh: '国家自然科学基金标书',
     labelEn: 'NSFC Proposal',
+    category: 'proposal',
     criteria:
       'scientific question, originality, research basis, feasible technical route, annual plan, expected outputs, and funding justification',
     verdictScale: 'Not recommended / Revise substantially / Competitive / Highly recommended',
@@ -174,6 +210,7 @@ export const REVIEW_PROFILES: ReviewProfile[] = [
     id: '863',
     labelZh: '863 项目标书',
     labelEn: '863 Program Proposal',
+    category: 'proposal',
     criteria:
       'national strategic relevance, key technology breakthroughs, engineering feasibility, milestones, industrialization path, and risk control',
     verdictScale: 'Not recommended / Revise substantially / Competitive / Highly recommended',
@@ -183,6 +220,7 @@ export const REVIEW_PROFILES: ReviewProfile[] = [
     id: 'technology-proposal',
     labelZh: '科技项目标书',
     labelEn: 'Technology Project Proposal',
+    category: 'proposal',
     criteria:
       'policy fit, innovation, technical feasibility, quantified targets, implementation plan, budget, benefits, and acceptance evidence',
     verdictScale: 'Not recommended / Revise substantially / Competitive / Highly recommended',
@@ -192,12 +230,136 @@ export const REVIEW_PROFILES: ReviewProfile[] = [
     id: 'commercial-bid',
     labelZh: '商业标书',
     labelEn: 'Commercial Bid',
+    category: 'bid',
     criteria:
       'buyer requirement coverage, persuasive value proposition, delivery credibility, pricing, contractual risk, and competitive differentiation',
     verdictScale: 'Non-compliant / Weak / Competitive / Strongly recommended',
     members: bidMembers,
   },
+  {
+    id: 'zhongkao-composition',
+    labelZh: '中考中文作文',
+    labelEn: 'Chinese High-school Entrance Essay',
+    category: 'composition',
+    criteria:
+      'Chinese high-school entrance examination rubric: accurate task response, clear central idea, concrete content, coherent structure, fluent standard Chinese, and age-appropriate authentic expression',
+    verdictScale: 'Needs major work / Developing / Good / Excellent',
+    members: compositionMembers,
+  },
+  {
+    id: 'gaokao-composition',
+    labelZh: '高考中文作文',
+    labelEn: 'Chinese College-entrance Essay',
+    category: 'composition',
+    criteria:
+      'Chinese college entrance examination rubric: precise interpretation of the prompt, intellectual depth, rich and credible material, rigorous structure, expressive language, and stylistic maturity',
+    verdictScale: 'Below standard / Pass / Strong / Outstanding',
+    members: compositionMembers,
+  },
+  {
+    id: 'chinese-competition-composition',
+    labelZh: '中文作文竞赛',
+    labelEn: 'Chinese Writing Competition',
+    category: 'composition',
+    criteria:
+      'competition-level originality, insight, narrative or argumentative control, memorable imagery, linguistic distinction, structural ambition, and a coherent personal voice',
+    verdictScale: 'Not competitive / Promising / Finalist quality / Award quality',
+    members: compositionMembers,
+  },
+  {
+    id: 'university-chinese-composition',
+    labelZh: '大学中文写作',
+    labelEn: 'University Chinese Writing',
+    category: 'composition',
+    criteria:
+      'university-level critical thinking, evidence and reasoning, disciplinary awareness, coherent academic or creative structure, precise Chinese, and responsible citation where applicable',
+    verdictScale: 'Needs major work / Pass / Good / Excellent',
+    members: compositionMembers,
+  },
+  {
+    id: 'middle-school-english-composition',
+    labelZh: '初中英语作文',
+    labelEn: 'Middle-school English Essay',
+    category: 'composition',
+    criteria:
+      'age-appropriate task completion, clear basic organization, correct core grammar, usable vocabulary, sentence clarity, spelling, and communicative effectiveness',
+    verdictScale: 'Needs major work / Developing / Good / Excellent',
+    members: compositionMembers,
+  },
+  {
+    id: 'high-school-english-composition',
+    labelZh: '高中英语作文',
+    labelEn: 'High-school English Essay',
+    category: 'composition',
+    criteria:
+      'task achievement, logical organization, grammatical range and accuracy, lexical variety, cohesion, appropriate register, and natural English at upper-secondary level',
+    verdictScale: 'Needs major work / Developing / Good / Excellent',
+    members: compositionMembers,
+  },
+  {
+    id: 'cet4-writing',
+    labelZh: 'CET4 英语作文',
+    labelEn: 'CET-4 Writing',
+    category: 'composition',
+    criteria:
+      'CET-4 task fulfilment, relevance, organization, grammatical control, practical vocabulary, cohesion, and clarity under examination conditions',
+    verdictScale: 'Below pass / Pass / Good / Excellent',
+    members: compositionMembers,
+  },
+  {
+    id: 'cet6-writing',
+    labelZh: 'CET6 英语作文',
+    labelEn: 'CET-6 Writing',
+    category: 'composition',
+    criteria:
+      'CET-6 task fulfilment, analytical depth, coherent argument, grammatical range and accuracy, lexical sophistication, cohesion, and concise academic register',
+    verdictScale: 'Below pass / Pass / Good / Excellent',
+    members: compositionMembers,
+  },
+  {
+    id: 'toefl-writing',
+    labelZh: '托福写作',
+    labelEn: 'TOEFL Writing',
+    category: 'composition',
+    criteria:
+      'current TOEFL writing expectations: task completion, accurate source integration when supplied, idea development, organization, language use, grammatical accuracy, and concise academic expression',
+    verdictScale: 'TOEFL 0-5 analytical score with an estimated performance band',
+    members: compositionMembers,
+  },
+  {
+    id: 'ielts-writing',
+    labelZh: '雅思写作',
+    labelEn: 'IELTS Writing',
+    category: 'composition',
+    criteria:
+      'IELTS criteria: task achievement or response, coherence and cohesion, lexical resource, grammatical range and accuracy; distinguish Task 1 from Task 2 when the prompt is available',
+    verdictScale: 'IELTS band 0-9 with half-band precision',
+    members: compositionMembers,
+  },
+  {
+    id: 'gre-writing',
+    labelZh: 'GRE Analytical Writing',
+    labelEn: 'GRE Analytical Writing',
+    category: 'composition',
+    criteria:
+      'GRE analytical writing expectations: clear position, cogent reasons, relevant evidence, logical development, organization, command of standard written English, and nuanced engagement with the issue',
+    verdictScale: 'GRE Analytical Writing 0-6 with half-point precision',
+    members: compositionMembers,
+  },
 ]
+
+export function isCompositionProfile(profile: ReviewProfile): boolean {
+  return profile.category === 'composition'
+}
+
+export function supportsLiteratureReview(profile: ReviewProfile): boolean {
+  return profile.category === 'academic'
+}
+
+export function noveltyQuerySystemPrompt(language: ReviewLanguage): string {
+  const outputLanguage = languageEnglishName(language)
+  return `You prepare scholarly database queries for a novelty reviewer. From the supplied manuscript, identify its central claimed contribution, method, task/domain, and closest likely prior-work concepts. Return JSON only in the form {"queries":["...","...","..."]}. Produce 2-3 concise, discriminating search queries suitable for OpenAlex, Crossref, Semantic Scholar, PubMed, and arXiv. Queries may use English technical terms even when the report language is ${outputLanguage}. Do not assess novelty and do not invent a title, method, result, DOI, or citation.`
+}
 
 export function availableReviewModels(settings: AiSettings): string[] {
   const config = settings.providers.zenmux
@@ -232,10 +394,39 @@ export function reviewerSystemPrompt(
   language: ReviewLanguage,
 ): string {
   const outputLanguage = languageEnglishName(language)
-  return `You are the ${member.roleEn} on a strict ${profile.labelEn} review committee. Your assigned focus is ${member.focus}. The venue-specific bar is: ${profile.criteria}.\n\nReview only the supplied document. Inspect its text, Markdown structure, LaTeX formulas, tables, images, charts, diagrams, and Mermaid source/rendering evidence. Explicitly disclose anything you could not assess. Do not invent experiments, citations, requirements, or facts. Separate fatal flaws from fixable issues and cite the relevant section, claim, table, figure, diagram, or equation whenever possible. Be demanding, specific, and constructive; do not rewrite the document.\n\nWrite entirely in ${outputLanguage}, using Markdown with exactly these sections:\n1. Summary and contribution\n2. Strengths\n3. Critical concerns\n4. Major revisions required\n5. Minor comments\n6. Questions for the authors/applicant\n7. Independent verdict (${profile.verdictScale}) and confidence (1-5)`
+  if (isCompositionProfile(profile)) {
+    return `You are the ${member.roleEn} on a demanding ${profile.labelEn} writing assessment panel. Your assigned focus is ${member.focus}. Apply this rubric: ${profile.criteria}.
+
+Assess only the supplied essay and prompt, if present. Never invent a missing prompt, source, fact, or author intention. Quote short, exact excerpts when diagnosing problems. Calibrate expectations to the selected learner/exam level; do not penalize age-appropriate language for lacking postgraduate sophistication. Be rigorous, encouraging, and actionable.
+
+Write commentary entirely in ${outputLanguage}; quoted excerpts and suggested corrections must remain in the essay's original language. Use Markdown with exactly these sections:
+1. Task understanding and overall assessment
+2. What works well
+3. Priority problems with quoted evidence
+4. Structure and reasoning
+5. Language corrections (original -> suggested -> reason)
+6. Revision plan
+7. Independent score (${profile.verdictScale}) and confidence (1-5)`
+  }
+  const literatureInstruction = member.literatureReviewer
+    ? '\n\nWhen LIVE SCHOLARLY METADATA EVIDENCE is supplied, use it to test positioning and innovation claims. Compare only what titles/abstracts/metadata support; cite DOI or stable URL for every external comparison, distinguish preprints, and report search gaps. Absence from the search results is not evidence of novelty. If no live evidence is supplied, explicitly say that external novelty was not verified.'
+    : ''
+  return `You are the ${member.roleEn} on a strict ${profile.labelEn} review committee. Your assigned focus is ${member.focus}. The venue-specific bar is: ${profile.criteria}.\n\nReview only the supplied document. Inspect its text, Markdown structure, LaTeX formulas, tables, images, charts, diagrams, and Mermaid source/rendering evidence. Explicitly disclose anything you could not assess. Do not invent experiments, citations, requirements, or facts. Separate fatal flaws from fixable issues and cite the relevant section, claim, table, figure, diagram, or equation whenever possible. Be demanding, specific, and constructive; do not rewrite the document.${literatureInstruction}\n\nWrite entirely in ${outputLanguage}, using Markdown with exactly these sections:\n1. Summary and contribution\n2. Strengths\n3. Critical concerns\n4. Major revisions required\n5. Minor comments\n6. Questions for the authors/applicant\n7. Independent verdict (${profile.verdictScale}) and confidence (1-5)`
 }
 
 export function chairSystemPrompt(profile: ReviewProfile, language: ReviewLanguage): string {
   const outputLanguage = languageEnglishName(language)
+  if (isCompositionProfile(profile)) {
+    return `You are the chair of a ${profile.labelEn} writing assessment panel. Reconcile the three independent assessments and produce a fair, level-calibrated final result. Do not invent a prompt, sources, facts, or personal experiences. Preserve the author's intended meaning and authentic voice in the revision.
+
+Write commentary entirely in ${outputLanguage}, but write the polished essay in the same language as the original essay. Use Markdown with exactly these sections:
+1. Final score (${profile.verdictScale})
+2. One-paragraph examiner assessment
+3. Score breakdown by content, structure, and language
+4. Top three improvements
+5. Sentence-level correction table
+6. Polished version (complete essay, preserving meaning and appropriate length)
+7. Next-practice checklist`
+  }
   return `You are the chair of a strict ${profile.labelEn} review committee. Synthesize the independent reviews without hiding disagreement. Do not add claims that are absent from the document or reviews.\n\nWrite entirely in ${outputLanguage}, using Markdown with these sections:\n1. Committee decision (${profile.verdictScale})\n2. Executive assessment\n3. Consensus strengths\n4. Blocking issues\n5. Prioritized revision checklist\n6. Reviewer disagreements and chair resolution\n7. Readiness score (0-100) with a one-sentence justification`
 }

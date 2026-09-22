@@ -26,10 +26,18 @@ describe('filterSlashItems', () => {
     expect(hits.map((i) => i.id)).toContain('task')
   })
 
-  it('image item only appears when an insert handler is provided', () => {
-    expect(items.map((i) => i.id)).not.toContain('image')
-    const withImage = buildSlashItems({ insertImage: () => {} })
-    expect(withImage.map((i) => i.id)).toContain('image')
+  it('matches editorial diagram by keyword', () => {
+    const withMermaid = buildSlashItems({ insertMermaid: () => {} })
+    expect(filterSlashItems(withMermaid, 'editorial').map((i) => i.id)).toContain(
+      'editorial-diagram',
+    )
+    expect(filterSlashItems(withMermaid, 'pretty').map((i) => i.id)).toContain('mermaid')
+  })
+
+  it('matches wechat typesetting by keyword', () => {
+    const withWechat = buildSlashItems({ openWechat: () => {} })
+    expect(filterSlashItems(withWechat, '公众号').map((i) => i.id)).toContain('wechat')
+    expect(filterSlashItems(withWechat, 'mars').map((i) => i.id)).toContain('wechat')
   })
 })
 

@@ -47,7 +47,9 @@ export async function fileToCanvas(
   file: File,
   maxDim: number = MAX_IMG,
 ): Promise<HTMLCanvasElement | null> {
-  const url = URL.createObjectURL(file)
+  // Some macOS file associations provide an empty or generic MIME type for SVG.
+  const source = /\.svg$/i.test(file.name) ? new Blob([file], { type: 'image/svg+xml' }) : file
+  const url = URL.createObjectURL(source)
   try {
     const img = new Image()
     await new Promise<void>((resolve, reject) => {

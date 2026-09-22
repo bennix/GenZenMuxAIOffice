@@ -89,6 +89,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
   const [index, setIndex] = useState(0)
   const [aiSettings, setAiSettings] = useState<AiSettings | null>(null)
   const [apiKey, setApiKey] = useState('')
+  const [baseUrl, setBaseUrl] = useState(ZENMUX_BASE_URL)
   const [model, setModel] = useState<string>(ZENMUX_MODELS[0])
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(false)
@@ -106,6 +107,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
         if (!alive) return
         setAiSettings(settings)
         setApiKey(settings.providers.zenmux.apiKey)
+        setBaseUrl(settings.providers.zenmux.baseUrl?.trim() || ZENMUX_BASE_URL)
         setModel(settings.providers.zenmux.model || ZENMUX_MODELS[0])
       })
       .catch(() => {
@@ -117,14 +119,17 @@ export function Onboarding({ onDone }: OnboardingProps) {
   }, [])
 
   const saveZenMuxSettings = async (): Promise<boolean> => {
-    if (!apiKey.trim()) return true
     if (!aiSettings) {
       setSaveError(true)
       return false
     }
+    const current = aiSettings.providers.zenmux
+    const nextBase = baseUrl.trim().replace(/\/+$/, '') || ZENMUX_BASE_URL
+    if (!apiKey.trim() && nextBase === (current.baseUrl?.replace(/\/+$/, '') || ZENMUX_BASE_URL)) {
+      return true
+    }
     setSaving(true)
     setSaveError(false)
-    const current = aiSettings.providers.zenmux
     const nextSettings: AiSettings = {
       ...aiSettings,
       provider: 'zenmux',
@@ -133,7 +138,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
         zenmux: {
           ...current,
           apiKey: apiKey.trim(),
-          baseUrl: ZENMUX_BASE_URL,
+          baseUrl: baseUrl.trim().replace(/\/+$/, '') || ZENMUX_BASE_URL,
           model,
           models: [...new Set([...(current.models ?? []), ...ZENMUX_MODELS, model])],
           imageModel: current.imageModel || ZENMUX_IMAGE_MODELS[0],
@@ -271,6 +276,37 @@ export function Onboarding({ onDone }: OnboardingProps) {
                       }}
                     />
                   </label>
+                  <label className="onb-field" htmlFor="onb-zenmux-url">
+                    <span>Base URL</span>
+                    <input
+                      id="onb-zenmux-url"
+                      type="url"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={baseUrl}
+                      placeholder={ZENMUX_BASE_URL}
+                      onChange={(event) => {
+                        setBaseUrl(event.target.value)
+                        setSaveError(false)
+                      }}
+                    />
+                  </label>
+                  <div className="onb-zenmux-help">
+                    <span>
+                      {isChinese
+                        ? '默认为 ZenMux；可改为 OpenAI 兼容网关。'
+                        : 'Defaults to ZenMux; any OpenAI-compatible gateway works.'}
+                    </span>
+                    {baseUrl.trim().replace(/\/+$/, '') !== ZENMUX_BASE_URL && (
+                      <button
+                        type="button"
+                        className="onb-invite"
+                        onClick={() => setBaseUrl(ZENMUX_BASE_URL)}
+                      >
+                        {isChinese ? '恢复默认' : 'Reset default'}
+                      </button>
+                    )}
+                  </div>
                   <label className="onb-field" htmlFor="onb-zenmux-model">
                     <span>{isChinese ? '默认模型' : 'Default model'}</span>
                     <select

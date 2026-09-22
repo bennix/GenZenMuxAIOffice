@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import type { Editor, JSONContent } from '@tiptap/core'
-import { ShapePreview, SHAPE_GALLERY_GROUPS, type WordArtPreset } from '@genoffice/ui'
+import {
+  ShapePreview,
+  SHAPE_GALLERY_GROUPS,
+  officeFeatureLocale,
+  type WordArtPreset,
+} from '@genoffice/ui'
 import {
   buildLineParagraphXml,
   buildShapeParagraphXml,
@@ -144,6 +149,7 @@ export async function insertImageFromDataUrl(
   editor: Editor,
   dataUrl: string,
   label = t('ribbonPicture'),
+  infographicSyntax?: string,
 ): Promise<boolean> {
   const m = /^data:([^;]+);base64,(.*)$/s.exec(dataUrl)
   if (!m) return false
@@ -162,6 +168,7 @@ export async function insertImageFromDataUrl(
           blockType: 'image',
           label,
           imageDataUrl: dataUrl,
+          infographicSyntax: infographicSyntax ?? null,
           imageWidthPx: Math.round(natural.width * scale),
           imageHeightPx: Math.round(natural.height * scale),
           genImage: {
@@ -169,6 +176,9 @@ export async function insertImageFromDataUrl(
             mime,
             widthPx: Math.round(natural.width * scale),
             heightPx: Math.round(natural.height * scale),
+            ...(infographicSyntax
+              ? { description: `zenoffice-infographic:${encodeURIComponent(infographicSyntax)}` }
+              : {}),
           },
         },
       })
@@ -499,6 +509,7 @@ export type RevisionDisplayMode = 'all' | 'none' | 'original'
 interface ReviewTabProps extends TabProps {
   onAiPreset: (instruction: string) => void
   onAiReview: () => void
+  onEssayReview?: () => void
   commentCount: number
   onShowComments: () => void
   /** create a comment on the current selection (disabled when selection is empty) */
@@ -524,6 +535,7 @@ export function ReviewTab({
   setDropdown,
   onAiPreset,
   onAiReview,
+  onEssayReview,
   commentCount,
   onShowComments,
   canComment,
@@ -540,7 +552,7 @@ export function ReviewTab({
   onToggleProtection,
   onCompare,
 }: ReviewTabProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   // One-time acknowledgement before whole-document AI rewrites:
   // Editor / Translate send the full document to the agent, consume credits and
   // may rewrite everything — say so once before the first run.
@@ -580,6 +592,17 @@ export function ReviewTab({
               AI
             </span>
             <span>AI {t('ribbonTabReview')}</span>
+          </button>
+          <button
+            className="rb-big essay-review-entry"
+            disabled={!hasDoc}
+            title="中考、高考、作文竞赛、CET4/6、TOEFL、IELTS、GRE"
+            onClick={onEssayReview}
+          >
+            <span className="rb-big-icon essay-review-ribbon-icon" aria-hidden="true">
+              文
+            </span>
+            <span>{officeFeatureLocale(lang).essayCoach}</span>
           </button>
         </div>
         <div className="ribbon-group-label">{t('ribbonGroupProofing')}</div>
@@ -1151,7 +1174,7 @@ export function ViewTab({
                     }}
                   >
                     {w.focused ? '✓ ' : ''}
-                    {w.title || 'GenOffice Docs'}
+                    {w.title || 'ZenOffice Docs'}
                   </button>
                 ))}
               </div>

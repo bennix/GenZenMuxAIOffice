@@ -13,11 +13,15 @@ export type {
   AiImageGenerateOptions,
   AiImageReference,
 } from './types'
+export { runDocumentReview } from './review-runner'
+export type { ReviewResult } from './review-runner'
 export {
   AI_PROVIDERS,
   ZENMUX_BASE_URL,
+  resolveZenmuxBaseUrl,
   ZENMUX_INVITE_URL,
   ZENMUX_DEFAULT_IMAGE_MODEL,
+  ZENMUX_DEFAULT_JEV_MODEL,
   ZENMUX_IMAGE_MODELS,
   ZENMUX_MODELS,
   defaultAiSettings,
@@ -25,6 +29,16 @@ export {
 } from './providers'
 export { generateZenMuxImage } from './images'
 export { chatForProvider, chatZenMux } from './chat'
+export { askSystemOne } from './systemone'
+export type {
+  ChoiceAnswer,
+  NoulAnswer,
+  ScoreAnswer,
+  SystemOneAnswer,
+  SystemOneCall,
+  SystemOneQuestion,
+  SystemOneResponse,
+} from './systemone'
 export {
   ZENMUX_FORMULA_MODEL,
   FORMULA_RECOGNITION_SYSTEM,
@@ -50,5 +64,8 @@ export {
   settingsForReviewModel,
   reviewerSystemPrompt,
   chairSystemPrompt,
+  isCompositionProfile,
+  supportsLiteratureReview,
+  noveltyQuerySystemPrompt,
 } from './review-committee'
 export type { ReviewLanguage, ReviewProfile } from './review-committee'

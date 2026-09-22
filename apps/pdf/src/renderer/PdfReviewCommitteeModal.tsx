@@ -6,12 +6,15 @@ import {
   assignReviewModels,
   availableReviewModels,
   chairSystemPrompt,
+  noveltyQuerySystemPrompt,
   reviewerSystemPrompt,
   settingsForReviewModel,
+  supportsLiteratureReview,
   type AiSettings,
   type ReviewLanguage,
 } from '@genoffice/ai-provider'
 import { LANGUAGE_OPTIONS, type Lang } from '@genoffice/i18n'
+import { parseNoveltyQueries, searchNoveltyEvidence } from '@genoffice/citations'
 import type { SearchIndex } from './search'
 
 interface ReviewResult {
@@ -24,6 +27,7 @@ interface ReviewResult {
 
 const MAX_DOCUMENT_CHARS = 120_000
 const MAX_VISUAL_PAGES = 5
+const PDF_REVIEW_PROFILES = REVIEW_PROFILES.filter((profile) => profile.category !== 'composition')
 
 function representativePageNumbers(pageCount: number): number[] {
   if (pageCount <= MAX_VISUAL_PAGES)
@@ -91,9 +95,11 @@ export function PdfReviewCommitteeModal({
   const [preparing, setPreparing] = useState(false)
   const [reportCopyStatus, setReportCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [reportSendStatus, setReportSendStatus] = useState<'idle' | 'sent' | 'failed'>('idle')
+  const [literatureEnabled, setLiteratureEnabled] = useState(true)
+  const [literatureStatus, setLiteratureStatus] = useState('')
   const runRef = useRef(0)
   const profile = useMemo(
-    () => REVIEW_PROFILES.find((item) => item.id === profileId) ?? REVIEW_PROFILES[0]!,
+    () => PDF_REVIEW_PROFILES.find((item) => item.id === profileId) ?? PDF_REVIEW_PROFILES[0]!,
     [profileId],
   )
 
@@ -108,6 +114,7 @@ export function PdfReviewCommitteeModal({
     setPreparing(true)
     setChair(null)
     setMembers([])
+    setLiteratureStatus('')
     const runId = ++runRef.current
     try {
       const indexPromise = getSearchIndex()
@@ -141,6 +148,47 @@ export function PdfReviewCommitteeModal({
         status: 'pending' as const,
       }))
       setMembers(initial)
+      let noveltyEvidence = ''
+      if (literatureEnabled && supportsLiteratureReview(profile)) {
+        try {
+          setLiteratureStatus(
+            chinese ? '创新性委员正在提取检索式…' : 'Novelty reviewer is preparing search queries…',
+          )
+          const queryResponse = await window.pdfApi.aiChat({
+            settings: settingsForReviewModel(settings, assignments[0]!),
+            system: noveltyQuerySystemPrompt(language),
+            user: material.slice(0, 30_000),
+          })
+          if (queryResponse.ok) {
+            const queries = parseNoveltyQueries(queryResponse.content ?? '', material.slice(0, 240))
+            setLiteratureStatus(
+              chinese
+                ? `正在检索 OpenAlex、Crossref、Semantic Scholar、PubMed 与 arXiv（${queries.length} 组）…`
+                : `Searching scholarly sources (${queries.length} queries)…`,
+            )
+            noveltyEvidence = (await searchNoveltyEvidence(queries)).evidence
+            setLiteratureStatus(
+              chinese
+                ? '文献证据已交给创新性委员'
+                : 'Literature evidence supplied to the novelty reviewer',
+            )
+          } else {
+            noveltyEvidence = `LIVE SCHOLARLY SEARCH FAILED: ${queryResponse.error ?? 'query generation failed'}. External novelty was not verified.`
+            setLiteratureStatus(
+              chinese
+                ? '文献检索未完成，将披露限制'
+                : 'Literature search incomplete; limitation will be disclosed',
+            )
+          }
+        } catch (error) {
+          noveltyEvidence = `LIVE SCHOLARLY SEARCH FAILED: ${error instanceof Error ? error.message : String(error)}. External novelty was not verified.`
+          setLiteratureStatus(
+            chinese
+              ? '文献检索未完成，将披露限制'
+              : 'Literature search incomplete; limitation will be disclosed',
+          )
+        }
+      }
       setPreparing(false)
       setRunning(true)
       const reviews = await Promise.all(
@@ -153,7 +201,7 @@ export function PdfReviewCommitteeModal({
             const response = await window.pdfApi.aiChat({
               settings: settingsForReviewModel(settings, assignments[index]!),
               system: reviewerSystemPrompt(profile, member, language),
-              user: userMaterial,
+              user: `${userMaterial}${member.literatureReviewer && noveltyEvidence ? `\n\n${noveltyEvidence}` : ''}`,
               images: preview.images,
             })
             result = response.ok
@@ -274,13 +322,24 @@ export function PdfReviewCommitteeModal({
               disabled={busy}
               onChange={(event) => setProfileId(event.target.value)}
             >
-              {REVIEW_PROFILES.map((item) => (
+              {PDF_REVIEW_PROFILES.map((item) => (
                 <option key={item.id} value={item.id}>
                   {chinese ? item.labelZh : item.labelEn}
                 </option>
               ))}
             </select>
           </label>
+          {supportsLiteratureReview(profile) && (
+            <label className="pdf-review-literature-toggle">
+              <input
+                type="checkbox"
+                checked={literatureEnabled}
+                disabled={busy}
+                onChange={(event) => setLiteratureEnabled(event.target.checked)}
+              />
+              <span>{chinese ? '文献核验创新性' : 'Verify novelty with literature'}</span>
+            </label>
+          )}
           <label>
             {chinese ? '意见语言' : 'Language'}
             <select
@@ -316,6 +375,7 @@ export function PdfReviewCommitteeModal({
               <ConnectButton
                 api={window.pdfApi}
                 text={report}
+                language={uiLanguage}
                 className="pdf-review-connect-report"
                 label={<span>{reportSendLabel}</span>}
                 onSendResult={(ok) => {
@@ -326,6 +386,7 @@ export function PdfReviewCommitteeModal({
             </>
           )}
         </div>
+        {literatureStatus && <div className="pdf-review-literature-status">{literatureStatus}</div>}
         {keyMissing && (
           <div className="pdf-review-error">
             {chinese
@@ -334,9 +395,9 @@ export function PdfReviewCommitteeModal({
           </div>
         )}
         <div className="pdf-review-results">
-          {chair && <ReviewCard result={chair} featured />}
+          {chair && <ReviewCard result={chair} language={uiLanguage} featured />}
           {members.map((result, index) => (
-            <ReviewCard key={`${result.role}-${index}`} result={result} />
+            <ReviewCard key={`${result.role}-${index}`} result={result} language={uiLanguage} />
           ))}
           {!members.length && (
             <div className="pdf-review-empty">
@@ -351,7 +412,15 @@ export function PdfReviewCommitteeModal({
   )
 }
 
-function ReviewCard({ result, featured = false }: { result: ReviewResult; featured?: boolean }) {
+function ReviewCard({
+  result,
+  language,
+  featured = false,
+}: {
+  result: ReviewResult
+  language: Lang
+  featured?: boolean
+}) {
   const [copied, setCopied] = useState(false)
 
   const copyReply = async (): Promise<void> => {
@@ -370,7 +439,7 @@ function ReviewCard({ result, featured = false }: { result: ReviewResult; featur
       {result.content && <Markdown text={result.content} />}
       {result.content && result.status === 'done' && (
         <div className="ai-msg-toolbar pdf-review-reply-actions">
-          <ConnectButton api={window.pdfApi} text={result.content} />
+          <ConnectButton api={window.pdfApi} text={result.content} language={language} />
           <button
             type="button"
             className="ai-msg-tool-btn"

@@ -9,6 +9,12 @@ import type {
   PictureRenderNode,
   TableRenderNode,
 } from '@genoffice/pptx-render'
+import {
+  decodeInfographicMetadata,
+  encodeInfographicMetadata,
+  INFOGRAPHIC_AI_SYSTEM,
+  InfographicStudio,
+} from '@genoffice/ui'
 import type {
   AiSettings,
   AnimEffectKind,
@@ -280,6 +286,11 @@ function collectAligns(node: RenderNode, out: Set<ParaAlign>) {
 
 export function App() {
   const [citationsOpen, setCitationsOpen] = useState(false)
+  const [infographicOpen, setInfographicOpen] = useState(false)
+  const [infographicEditTarget, setInfographicEditTarget] = useState<{
+    sourceId: string
+    syntax: string
+  } | null>(null)
   const { lang } = useI18n()
   const [slides, setSlides] = useState<RenderSlide[]>([])
   const [path, setPath] = useState<string | null>(null)
@@ -402,6 +413,7 @@ export function App() {
     displayText?: string
     attachments?: AttachmentMeta[]
     slideShot?: boolean
+    beautify?: boolean
   } | null>(null)
   const [_recent, setRecent] = useState<string[]>([])
   const consumePendingRef = useRef<ReturnType<typeof window.slidesApi.consumePendingOpen> | null>(
@@ -952,6 +964,7 @@ export function App() {
       displayText?: string,
       attachments?: AttachmentMeta[],
       slideShot?: boolean,
+      beautify?: boolean,
     ) => {
       setShowAi(() => {
         localStorage.setItem('ai-slides-show-ai', '1')
@@ -964,6 +977,7 @@ export function App() {
         displayText,
         ...(attachments && attachments.length > 0 ? { attachments } : {}),
         ...(slideShot ? { slideShot } : {}),
+        ...(beautify ? { beautify } : {}),
       })
     },
     [],
@@ -996,6 +1010,40 @@ export function App() {
     if (kind) void insertActions.insertShapeAt(ctxRef.current, kind, rect)
   }, [])
   const insertImage = useCallback(() => insertActions.insertImage(ctxRef.current), [])
+  useEffect(
+    () =>
+      window.slidesApi.onSharedImage(async (dataUrl) => {
+        const ctx = ctxRef.current
+        if (!ctx.slide) throw new Error('请先打开演示文稿。')
+        const image = new Image()
+        image.src = dataUrl
+        await image.decode()
+        if (ctxRef.current.slide !== ctx.slide) throw new Error('幻灯片已切换，请重新分享。')
+        const scale = Math.min(
+          1,
+          (ctx.slide.widthPx * 0.76) / image.naturalWidth,
+          (ctx.slide.heightPx * 0.68) / image.naturalHeight,
+        )
+        const width = Math.max(1, Math.round(image.naturalWidth * scale))
+        const height = Math.max(1, Math.round(image.naturalHeight * scale))
+        const result = await window.slidesApi.addImageBytes({
+          slideIndex: ctx.current,
+          base64: dataUrl.split(',')[1]!,
+          ext: dataUrl.startsWith('data:image/png;') ? 'png' : 'jpg',
+          xPx: Math.round((ctx.slide.widthPx - width) / 2),
+          yPx: Math.round((ctx.slide.heightPx - height) / 2),
+          wPx: width,
+          hPx: height,
+          fitWidthPx: FIT_WIDTH,
+          name: 'ArtFlow 图片',
+        })
+        if (!result || 'error' in result) throw new Error('PPT 图片插入失败。')
+        ctx.applySlide(ctx.current, result.slide)
+        ctx.setSelectedIds([result.sourceId])
+        ctx.setDirty(true)
+      }),
+    [],
+  )
 
   const onBackground = useCallback(
     (color: string, allSlides: boolean) =>
@@ -2471,11 +2519,17 @@ export function App() {
         onToggleThumbs={() => setShowThumbs((v) => !v)}
         aiOpen={showAi}
         onToggleAi={toggleAi}
-        onAiPreset={(text, opts) => pushAiPreset(text, true, undefined, undefined, opts?.slideShot)}
+        onAiPreset={(text, opts) =>
+          pushAiPreset(text, true, undefined, undefined, opts?.slideShot, opts?.beautify)
+        }
         onOpenCitations={() => setCitationsOpen(true)}
         onInsert={(kind) => void insertElement(kind)}
         onPickShape={pickShape}
         onInsertImage={() => void insertImage()}
+        onInsertInfographic={() => {
+          setInfographicEditTarget(null)
+          setInfographicOpen(true)
+        }}
         onBackground={(color, all) => void onBackground(color, all)}
         onApplyTheme={(preset) => void applyThemePreset(preset)}
         onAddSlide={() => void addSlide()}
@@ -2659,6 +2713,51 @@ export function App() {
         onArrange={(op) => void alignSelected(op)}
         onFlip={(axis) => void flipSelected(axis)}
         canDistribute={selectedIds.length >= 3}
+      />
+      <InfographicStudio
+        open={infographicOpen}
+        language={lang}
+        initialSyntax={infographicEditTarget?.syntax}
+        onClose={() => {
+          setInfographicOpen(false)
+          setInfographicEditTarget(null)
+        }}
+        onInsert={async (asset) => {
+          if (!infographicEditTarget) {
+            await insertActions.insertInfographic(
+              ctxRef.current,
+              asset.dataUrl,
+              asset.width,
+              asset.height,
+              asset.syntax,
+            )
+            return
+          }
+          const base64 = asset.dataUrl.replace(/^data:image\/png;base64,/, '')
+          const updated = await window.slidesApi.replacePictureBytes({
+            slideIndex: current,
+            sourceId: infographicEditTarget.sourceId,
+            base64,
+            ext: 'png',
+            descr: encodeInfographicMetadata(asset.syntax),
+          })
+          if (updated && !('error' in updated)) {
+            applySlide(current, updated)
+            setSelectedIds([infographicEditTarget.sourceId])
+            setDirty(true)
+          }
+        }}
+        onAiGenerate={async (prompt, currentSyntax) => {
+          const settings = await window.slidesApi.getAiSettings()
+          const context = JSON.stringify(slides[current] ?? {}).slice(0, 12_000)
+          const response = await window.slidesApi.aiChat({
+            settings,
+            system: INFOGRAPHIC_AI_SYSTEM,
+            user: `Instruction:\n${prompt}\n\nCurrent slide object context:\n${context}\n\nCurrent infographic syntax:\n${currentSyntax}`,
+          })
+          if (!response.ok) throw new Error(response.error || 'ZenMux infographic request failed')
+          return response.content ?? ''
+        }}
       />
 
       <div className="app-main">
@@ -2961,6 +3060,7 @@ export function App() {
                                   undefined,
                                   undefined,
                                   true,
+                                  true,
                                 )
                               }
                             >
@@ -3095,6 +3195,18 @@ export function App() {
                                 if (!latex) return
                                 setEqEditTarget({ sourceId: id, latex })
                                 setEqDialogOpen(true)
+                              }}
+                              onEditInfographic={(id) => {
+                                const node = slide.nodes.find(
+                                  (candidate) => candidate.sourceId === id,
+                                )
+                                const syntax =
+                                  node?.type === 'picture'
+                                    ? decodeInfographicMetadata((node as PictureRenderNode).descr)
+                                    : null
+                                if (!syntax) return
+                                setInfographicEditTarget({ sourceId: id, syntax })
+                                setInfographicOpen(true)
                               }}
                               onContextMenu={onCanvasContextMenu}
                               onMarqueeSelect={setSelectedIds}
@@ -3590,6 +3702,7 @@ export function App() {
       )}
       {citationsOpen && (
         <CitationManager
+          language={lang === 'zh' || lang === 'zh-TW' ? 'zh' : 'en'}
           onClose={() => setCitationsOpen(false)}
           onInsertCitation={async (_record, rendered) => {
             if (editing && restoreEditSelection()) {
@@ -3628,7 +3741,7 @@ export function App() {
                 {
                   runs: [
                     {
-                      text: navigator.language.startsWith('zh') ? '参考文献' : 'References',
+                      text: lang === 'zh' || lang === 'zh-TW' ? '参考文献' : 'References',
                       bold: true,
                       fontSize: 22,
                     },

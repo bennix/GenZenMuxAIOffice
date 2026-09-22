@@ -212,7 +212,7 @@ export interface ClarifyQuestion {
   multi?: boolean
 }
 
-const AGENT_SYSTEM_PROMPT = `You are the AI assistant inside GenOffice Slides (a slide editor), helping users improve and generate presentations.
+const AGENT_SYSTEM_PROMPT = `You are the AI assistant inside ZenOffice Slides (a slide editor), helping users improve and generate presentations.
 
 ## Most important tool-selection principles (judge the scenario before acting)
 - **Creating a whole new deck (from scratch)** → first gather material (web_search) and images (image_search), then call **generate_deck**. With many pages, prefer **passing topic + approx_pages + context (the real material you found)** and let the system plan internally + generate page by page + display page by page (**you don't hand-write dozens of pages, and no pages get missed / arguments truncated**). For few pages where you already know each page, you may pass core_hook+style+pages directly.
@@ -231,7 +231,7 @@ Rules:
 - Page numbers are shown to the user starting at 1; the slideIndex tool argument is 0-based.
 - **The user's "page N" always means the current order in this turn's latest <deck outline> (row N is page N)**. The user may add/remove/move/swap pages at any time; page order from history or earlier turns may be stale — locate pages only by this turn's latest outline, never by generation order, content semantics, or old conversation.
 - Canvas coordinate system: pixels, origin top-left, width 1280, height in the outline's first line (720 for 16:9). All element positions/sizes use it.
-- Font size unit is pt: large titles 36–44, subtitles 20–26, body 14–18. Colors are #RRGGBB.
+- Font size unit is pt. Use a projection-readable scale for newly generated content: cover title 44–54, page title 34–42, subtitle 24–30, body 21–28, chart/table labels and captions 15–18. Footers and page numbers may be 11–14. Colors are #RRGGBB. Do not shrink ordinary body copy below 20pt to make an overcrowded page fit. Do not leave only the last 1–4 characters of a line on the next line, and do not let text hang outside its card, pill, or banner.
 - Element colors are readable: the outline shows each page's main fills; read_slide and script els expose per-element fill/textColor/strokeColor (hex, read-only — change them with setFill/setStyle/setStroke or set_element_fill/stroke). Picture/chart colors are not readable; don't guess them.
 - For editing existing elements (position/size/text/style/fill/stroke) prefer execute_slide_script; set_element_text/style/transform/fill/stroke are only shortcuts for "one element, one property". Multi-property/multi-element/relative nudges/align-distribute always use a script.
 
@@ -256,6 +256,7 @@ Step 0 Questionnaire (mandatory when creating a whole new deck): first call ask_
 Step A Research: when the topic involves facts/attractions/data, run web_search 1–2 times first for real content. **Use real data and facts in the design; no "XX%" or placeholder names**.
 Step B Image strategy: with generate_deck you **don't need image_search in advance** — the system auto-searches internally per page from the planned image_queries keywords and fills real URLs back (each keyword searched once, deduped across pages). **Travel/product/people/brand decks get images by default without the user asking; never fake images with CSS placeholders — slots needing images must be filled with real ones**. Only when redoing a page via regenerate_slide or adding images to existing pages via insert_web_image do you image_search yourself first (English keywords describing a concrete scene like "summer palace kunming lake", not generic words like "park").
 Step C Unified style: first define one design system for the whole deck — primary/secondary colors, title and body font-size scale, content margins, card/corner style (e.g. "teal primary + cream background + sans-serif fresh look"). **Every page's HTML strictly follows the same system; style must be consistent across pages**.
+Typography and density are part of that system: use the projection-readable scale above, normally keep a content page to 3–5 concise points, and give text generous line spacing. During planning, split dense material across more pages instead of reducing the font size. Never use tiny type to force all source material onto one page.
 Step D Generate (call generate_deck): with many pages pass topic + approx_pages + context (feed in the real material from Step A) and let the system plan internally; with few pages you may pass core_hook+style+pages directly (image_queries takes English image-search keywords; **the system auto-searches internally and fills real URLs back**, no image_search needed in advance). The system writes HTML page by page and lands pages as they generate; you don't hand-write HTML.
 Step E Vary layouts per page (avoid sameness): 3 parallel points→three-column cards; a key number→big-number hero; comparison→two columns; sequence→timeline; image+text→left-text-right-image / full-image with text overlay. **Content pages of one deck must not all use the same layout**.
 
@@ -1204,9 +1205,20 @@ function targetError(target: EditTarget | null, sourceId: string, pageNo: number
 }
 
 /**
+ * Convert a laid-out run's px back to the model pt. fontSizePx already includes autofit
+ * fontScale, so dividing it out is required — otherwise every style write-back bakes the
+ * shrunk display size in as the new designed size.
+ */
+export function renderedPxToPt(fontSizePx: number, fontScale = 1): number {
+  const scale = fontScale > 0 ? fontScale : 1
+  return Math.round(((fontSizePx / scale) * 72) / 96)
+}
+
+/**
  * Restore a render node's current text into EditParagraph[] (aggregate runs by line, keeping
  * each run's existing formatting). Used by set_element_style: change formatting while keeping
- * the text. fontSize is converted back from px to pt.
+ * the text. Font size is omitted so an unrequested style edit cannot ratchet autofit shrink
+ * into the model; pass fontSize only through the style patch.
  */
 function nodeToParagraphs(node: ShapeRenderNode): EditParagraph[] {
   const lines = node.text?.lines ?? []
@@ -1216,7 +1228,6 @@ function nodeToParagraphs(node: ShapeRenderNode): EditParagraph[] {
       ...(r.bold ? { bold: true } : {}),
       ...(r.italic ? { italic: true } : {}),
       ...(r.underline ? { underline: true } : {}),
-      ...(r.fontSizePx ? { fontSize: Math.round((r.fontSizePx * 72) / 96) } : {}),
       ...(r.fontFamily ? { fontFamily: r.fontFamily } : {}),
       ...(r.color ? { color: r.color } : {}),
     })),
@@ -1235,7 +1246,11 @@ function mergeStyleIntoParagraphs(cur: EditParagraph[], ov: SlideStylePatch): Ed
       bold: ov.bold ?? r.bold,
       italic: ov.italic ?? r.italic,
       underline: ov.underline ?? r.underline,
-      fontSize: typeof ov.fontSize === 'number' ? ov.fontSize : r.fontSize,
+      ...(typeof ov.fontSize === 'number'
+        ? { fontSize: ov.fontSize }
+        : r.fontSize != null
+          ? { fontSize: r.fontSize }
+          : {}),
       fontFamily: ov.fontFamily ?? r.fontFamily,
       color: ov.color ?? r.color,
     })),
@@ -1272,11 +1287,36 @@ function nodeText(n: RenderNode): string {
 /** Max font size of the text (pt, converted back from px); returns undefined when there is no text. */
 function nodeMaxFontPt(n: RenderNode): number | undefined {
   if (n.type !== 'shape' && n.type !== 'text') return undefined
+  const node = n as ShapeRenderNode
   let maxPx = 0
-  for (const line of (n as ShapeRenderNode).text?.lines ?? []) {
+  for (const line of node.text?.lines ?? []) {
     for (const r of line.runs) if (r.fontSizePx > maxPx) maxPx = r.fontSizePx
   }
-  return maxPx > 0 ? Math.round((maxPx * 72) / 96) : undefined
+  return maxPx > 0 ? renderedPxToPt(maxPx, node.text?.fontScale ?? 1) : undefined
+}
+
+/** Keep regenerate/edit from inventing a smaller type scale than the open deck. */
+export function typographyLockFromSlides(slides: RenderSlide[]): string {
+  const sizes: number[] = []
+  for (const slide of slides) {
+    for (const node of slide.nodes) {
+      const pt = nodeMaxFontPt(node)
+      if (pt != null && pt > 0) sizes.push(pt)
+    }
+  }
+  if (!sizes.length) {
+    return (
+      'Typography lock: page title 36-42pt, body 24-28pt. Never shrink ordinary body below 24pt. ' +
+      'In HTML, ordinary body text must be at least 32px.'
+    )
+  }
+  sizes.sort((a, b) => a - b)
+  const body = Math.max(24, sizes[Math.floor(sizes.length / 2)]!)
+  const title = Math.max(36, sizes[sizes.length - 1]!)
+  return (
+    `Typography lock from the current deck (keep or enlarge, never shrink): typical body ${body}pt, largest title ${title}pt. ` +
+    `In HTML, ordinary body text must be at least ${Math.round((body * 96) / 72)}px and titles at least ${Math.round((title * 96) / 72)}px.`
+  )
 }
 
 /** Normalize a render color to #RRGGBB (strips alpha); undefined when not a hex color. */
@@ -1642,6 +1682,22 @@ export function auditPageHtml(html: string): string | null {
     if (m) return `contains template placeholder text "${m[0]}"`
   }
   if (text.length < 10) return 'has almost no text content'
+  // The HTML renderer converts CSS px to PowerPoint points at 0.75pt/px. A deck whose
+  // median declared size is below 27px therefore lands at under ~20pt and is difficult
+  // to read on a projector. Use the median (rather than rejecting every small label) so
+  // captions, footers and page numbers remain legitimate.
+  const declaredFontSizes = Array.from(
+    html.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)(px|pt)\b/gi),
+    (match) => Number(match[1]) * (match[2]!.toLowerCase() === 'pt' ? 4 / 3 : 1),
+  )
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b)
+  if (declaredFontSizes.length >= 1) {
+    const median = declaredFontSizes[Math.floor(declaredFontSizes.length / 2)]!
+    if (median < 27) {
+      return `uses generally undersized text (median ${median}px / ${Math.round(median * 0.75 * 10) / 10}pt); ordinary body copy should be at least 28px`
+    }
+  }
   return null
 }
 
@@ -2349,16 +2405,21 @@ async function executeTool(
           pageIndex: idx + 1,
           totalPages: slides.length,
           coreHook: '',
-          style: state?.lastStyleSkill ?? '',
+          style: [state?.lastStyleSkill, typographyLockFromSlides(slides)]
+            .filter((part) => part && part.trim())
+            .join('\n\n'),
           title: String(call.input.title ?? ''),
-          brief,
+          brief: attempt > 0 ? `${brief}\nFix the previous attempt: ${lastErr}` : brief,
           layout: String(call.input.layout ?? ''),
           images: regenImages,
           canvasW: 1280,
           canvasH: 720,
         })
-        if (res.ok && res.marker) marker = res.marker
-        else lastErr = res.error ?? t('aiErrUnknown')
+        if (res.ok && res.marker) {
+          const audit = auditPageHtml(res.marker)
+          if (audit) lastErr = `Readability/content audit: ${audit}`
+          else marker = res.marker
+        } else lastErr = res.error ?? t('aiErrUnknown')
       }
       if (!marker)
         return fail(

@@ -12,6 +12,7 @@ import type { AiSettings, AttachmentAddResult, AttachmentMeta } from '../../shar
 import { ATTACHMENT_IMAGE_EXTS } from '../../shared/ipc'
 import {
   createSlidesSkill,
+  formatSlideDump,
   type DeckAccess,
   type ClarifyQuestion,
   type DeckProgressEvent,
@@ -19,12 +20,21 @@ import {
 } from './slides-skill'
 import { extractJsonObject, parseOutlineJson } from './outline-json'
 import { extractSlideHtml } from './slide-html'
+import { BeautifySuggestions } from './BeautifySuggestions'
 import { createFilesSkill } from './files-skill'
 import { createElectronTransport } from './transport'
 import { renderSlidesToPngBase64 } from '../export-render'
 import { isQcEnabled, mergeQcPages, qcSlidePage, QC_MAX_PAGES } from './slide-qc'
+import { auditSlideLayout } from './layout-audit'
+import { judgeGeneratedLayout } from './slide-jev'
 import { useI18n, t as tGlobal, aiLangDirective, type TFunc } from '../i18n/locale'
-import { ConnectButton, copyTextToClipboard, Markdown } from '@genoffice/ui'
+import {
+  ConnectButton,
+  copyTextToClipboard,
+  FileMentionMenu,
+  Markdown,
+  useFileMention,
+} from '@genoffice/ui'
 import { removeConnectCommand } from '@genoffice/electron-utils/connect'
 import { appendLocalMemoryContext } from '@genoffice/project-store/knowledge-context'
 import { ZenMuxMark } from '../components/icons'
@@ -275,6 +285,7 @@ interface AiPanelProps {
     displayText?: string
     attachments?: AttachmentMeta[]
     slideShot?: boolean
+    beautify?: boolean
   } | null
   /** false shows only the collapsed rail; the component stays mounted so panel state survives */
   open?: boolean
@@ -366,8 +377,9 @@ export function AiPanel({
   onDeckProgress,
   currentFilePath,
 }: AiPanelProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [input, setInput] = useState('')
+  const [showBeautify, setShowBeautify] = useState(false)
   const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
   const [chat, setChat] = useState<ChatEntry[]>([])
@@ -451,6 +463,7 @@ export function AiPanel({
   >([])
   const logRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const mergeAttachmentsRef = useRef<(result: AttachmentAddResult | null) => void>(() => {})
   /** Stop following once the user scrolls up; re-attach when near the bottom */
   const stickToBottomRef = useRef(true)
   /** Current chat's projectId/chatId, set after resolve succeeds */
@@ -624,6 +637,23 @@ export function AiPanel({
   const runStartedAtRef = useRef(0)
   const historyBatchActiveRef = useRef(false)
   const inputEditedSinceRunRef = useRef(false)
+  const mention = useFileMention({
+    value: input,
+    onChange: (next) => {
+      inputEditedSinceRunRef.current = true
+      const command = removeConnectCommand(next)
+      setInput(command.text)
+      if (command.matched) setConnectNonce((nonce) => nonce + 1)
+    },
+    textareaRef: inputRef,
+    listOpenFiles: () => window.slidesApi.listOpenFiles(),
+    onMentionFile: (file) => {
+      void window.desktop.addAttachmentPaths([file.filePath]).then((result) => {
+        mergeAttachmentsRef.current(result)
+      })
+    },
+    language: lang,
+  })
   /** This run's rollback batch — carried onto the QC entry when a QC pass
       follows (mid-turn segments never show the action toolbar) */
   const runSnapshotIdRef = useRef<number | null>(null)
@@ -937,7 +967,9 @@ export function AiPanel({
           'Use data-pptx-kind="text" for each title, paragraph, label, number, and table cell; "shape" for cards, lines, bars, and decorative blocks; and "image" only on actual <img> elements. ' +
           'Use absolute pixel positioning. Do not use CSS transforms, gradients, filters, pseudo-elements, canvas, JavaScript, SVG, iframes, forms, external CSS, icon libraries, CSS background images, or CSS-generated placeholder illustrations. ' +
           'Use only system fonts. Keep text separate from its background card so both remain independently editable. ' +
-          'Keep every visible element inside the canvas. Make text concise and readable: title 42-64px, body at least 18px, strong contrast, generous spacing. ' +
+          'Paint back to front: emit background blocks and cards before their contents, then images/diagrams, then labels and text. Never place a large filled shape over smaller content. Use explicit z-index for intentional overlays; keep all marked elements as direct children of body so their layers share one stacking context. ' +
+          'Keep every visible element inside the canvas. Size each text box so a soft wrap never leaves only the last 1–4 characters on their own line; widen the box (and its card, pill, or banner) or shorten the copy instead. Every text run must sit fully inside its decorative shape, including the last line, with at least 16px of padding — a line must not hang out under the shape. Use a projection-readable type scale: cover title 56-72px, page title 46-58px, subtitle 32-40px, ordinary body 28-36px, and chart/table labels or captions 20-24px. Only footers and page numbers may be 15-18px. ' +
+          'Never make ordinary body text smaller than 28px to make content fit. Prefer 3-5 concise points per content slide with generous line spacing; if the brief is dense, preserve its facts with tighter wording and a clearer hierarchy instead of tiny type. Use strong contrast. ' +
           'Use the supplied image URLs exactly when useful; use object-fit:cover and a graceful CSS color block when an image cannot load. ' +
           'Preserve all supplied facts, names, and figures; never invent precise data.'
         const user = [
@@ -948,6 +980,7 @@ export function AiPanel({
           `Content brief: ${args.brief}`,
           args.layout ? `Layout intent: ${args.layout}` : '',
           `Design system:\n${args.style}`,
+          'Honor the typography lock in the design system. Do not shrink title or body text below the locked sizes, even if the brief is dense.',
           args.context
             ? `Reference material (source of truth):\n${args.context.slice(0, 4000)}`
             : '',
@@ -1285,6 +1318,12 @@ export function AiPanel({
       attachmentsRef.current = merged
       setAttachments(merged)
     }
+    if (preset.beautify) {
+      setShowBeautify(true)
+      logRef.current?.scrollTo({ top: 0 })
+      return
+    }
+    setShowBeautify(false)
     if (preset.autoRun)
       runWith(preset.text, preset.displayText, { slideShot: preset.slideShot ?? false })
     else {
@@ -1372,6 +1411,7 @@ export function AiPanel({
     // qcRunningRef: the post-generation QC pass edits the deck outside the main loop — no concurrent runs
     if (!instruction || !loop || loop.busy || runStartingRef.current || qcRunningRef.current) return
     runStartingRef.current = true
+    setShowBeautify(false)
     setInput('')
     // The message consumes the composer attachments: they ride along (echoed on the
     // bubble, images multimodal, files via the files skill) and the composer clears.
@@ -1479,6 +1519,24 @@ export function AiPanel({
           if (slidesRef.current[page]) lines.push(tGlobal('aiQcPageSkipped', { n: page + 1 }))
           continue
         }
+        const slide = access.getSlides()[page]
+        const issues = slide ? auditSlideLayout(slide) : []
+        const judged = slide
+          ? await judgeGeneratedLayout(issues, formatSlideDump(slide), (state, questions) =>
+              window.slidesApi.systemOne({ state, questions }),
+            )
+          : { status: 'unavailable' as const }
+        if (controller.signal.aborted) break
+        if (judged.status === 'skip') {
+          lines.push(tGlobal('aiQcJevSkip', { n: page + 1 }))
+          patchLastAssistant({ text: renderEntry() })
+          continue
+        }
+        if (judged.status === 'rejected') {
+          lines.push(tGlobal('aiQcJevRejected', { n: page + 1 }))
+          patchLastAssistant({ text: renderEntry() })
+          continue
+        }
         const batchOpened = await window.slidesApi.beginHistoryBatch()
         const result = await qcSlidePage({
           access,
@@ -1487,6 +1545,7 @@ export function AiPanel({
           screenshot: shot,
           systemSuffix: aiLangDirective,
           signal: controller.signal,
+          ...(judged.status === 'apply' ? { approvedPlan: judged.plan } : {}),
         })
         const batchId = batchOpened ? await window.slidesApi.endHistoryBatch() : null
         if (controller.signal.aborted) break
@@ -1587,6 +1646,7 @@ export function AiPanel({
       window.setTimeout(() => setAttachNotice(null), 5000)
     }
   }
+  mergeAttachmentsRef.current = mergeAttachments
 
   const pickAttachments = async () => mergeAttachments(await window.desktop.pickAttachments())
 
@@ -1725,6 +1785,16 @@ export function AiPanel({
       </div>
 
       <div ref={logRef} className="ai-chat" onScroll={onLogScroll}>
+        {showBeautify && (
+          <BeautifySuggestions
+            page={current + 1}
+            busy={busy}
+            onCancel={() => setShowBeautify(false)}
+            onApply={(instruction, label) => {
+              void runWith(instruction, label, { slideShot: true })
+            }}
+          />
+        )}
         {/* Past conversation (read-only transcript, not fed to the model), displayed continuously with the current turn */}
         {historicChat.length > 0 && (
           <>
@@ -1756,7 +1826,7 @@ export function AiPanel({
             <div className="ai-history-sep">{t('aiHistorySep')}</div>
           </>
         )}
-        {chat.length === 0 && historicChat.length === 0 && (
+        {!showBeautify && chat.length === 0 && historicChat.length === 0 && (
           <div className="ai-chat-empty">
             <div className="ai-chat-empty-title">
               {t(deckEmpty ? 'aiEmptyGenTitle' : 'aiEmptyTitle')}
@@ -1844,7 +1914,9 @@ export function AiPanel({
               {entry.deckProgress && <DeckProgressCard progress={entry.deckProgress} />}
               {showToolbar && (
                 <div className="ai-msg-toolbar">
-                  {entry.text && <ConnectButton api={window.slidesApi} text={entry.text} />}
+                  {entry.text && (
+                    <ConnectButton api={window.slidesApi} text={entry.text} language={lang} />
+                  )}
                   {entry.text && (
                     <button
                       className="ai-msg-tool-btn"
@@ -2033,13 +2105,12 @@ export function AiPanel({
               data-slides-ai-input="true"
               data-deck-undo-ready={!busy && !inputEditedSinceRunRef.current ? 'true' : 'false'}
               placeholder={t(deckEmpty ? 'aiInputPlaceholderGen' : 'aiInputPlaceholder')}
-              onChange={(e) => {
-                inputEditedSinceRunRef.current = true
-                const command = removeConnectCommand(e.target.value)
-                setInput(command.text)
-                if (command.matched) setConnectNonce((nonce) => nonce + 1)
-              }}
+              onChange={(e) => mention.handleChange(e.target.value)}
+              onSelect={mention.syncCursor}
+              onClick={mention.syncCursor}
+              onKeyUp={mention.syncCursor}
               onKeyDown={(e) => {
+                if (mention.handleKeyDown(e)) return
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault()
                   run()
@@ -2056,9 +2127,21 @@ export function AiPanel({
               }}
               rows={1}
             />
+            {mention.open && (
+              <FileMentionMenu
+                files={mention.files}
+                highlighted={mention.highlighted}
+                notice={mention.notice}
+                label={mention.label}
+                anchor={inputRef.current?.getBoundingClientRect() ?? null}
+                onHighlight={mention.setHighlighted}
+                onSelect={mention.handleSelect}
+              />
+            )}
             <div className="ai-input-footer">
               <ConnectButton
                 api={window.slidesApi}
+                language={lang}
                 text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
                 triggerNonce={connectNonce}
               />

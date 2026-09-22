@@ -1,3 +1,5 @@
+import type { OpenFileRef } from './open-files'
+
 export type ConnectEditorKind = 'docs' | 'sheets' | 'slides' | 'markdown'
 
 export interface ConnectTarget {
@@ -17,10 +19,54 @@ export interface ConnectResult {
   error?: 'invalid-target' | 'invalid-payload' | 'too-large' | 'unavailable'
 }
 
-export interface ConnectApi {
+export interface ImageShareTarget {
+  id: string
+  kind: 'docs' | 'slides' | 'markdown' | 'pdf'
+  title: string
+}
+export interface ImageShareApi {
+  listImageShareTargets(): Promise<ImageShareTarget[]>
+  shareImage(targetId: string, dataUrl: string): Promise<{ ok: boolean; error?: string }>
+  onSharedImage(handler: (dataUrl: string) => Promise<void>): () => void
+}
+
+/** Preload-only adapter: acknowledge actual insertion rather than IPC delivery. */
+export function imageShareBridge(ipc: {
+  invoke(channel: string, ...args: unknown[]): Promise<any>
+  on(channel: string, listener: (...args: any[]) => void): unknown
+  removeListener(channel: string, listener: (...args: any[]) => void): unknown
+  send(channel: string, ...args: unknown[]): void
+}): ImageShareApi {
+  return {
+    listImageShareTargets: () => ipc.invoke('image-share:targets'),
+    shareImage: (targetId, dataUrl) => ipc.invoke('image-share:send', targetId, dataUrl),
+    onSharedImage: (handler) => {
+      const listener = (_event: unknown, request: { id: string; dataUrl: string }) => {
+        void Promise.resolve()
+          .then(() => handler(request.dataUrl))
+          .then(
+            () => ipc.send('image-share:ack', request.id, { ok: true }),
+            (error) =>
+              ipc.send('image-share:ack', request.id, {
+                ok: false,
+                error: error instanceof Error ? error.message : String(error),
+              }),
+          )
+      }
+      ipc.on('image-share:receive', listener)
+      return () => {
+        ipc.removeListener('image-share:receive', listener)
+      }
+    },
+  }
+}
+
+export interface ConnectApi extends ImageShareApi {
   listConnectTargets(): Promise<ConnectTarget[]>
   sendConnect(targetId: string, text: string): Promise<ConnectResult>
   onConnectReceive(handler: (payload: ConnectPayload) => void): () => void
+  /** Open saved tabs the current AI composer can attach as @-mention context. */
+  listOpenFiles(): Promise<OpenFileRef[]>
 }
 
 export const CONNECT_CHANNELS = {

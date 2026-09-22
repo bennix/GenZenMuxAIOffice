@@ -42,6 +42,7 @@ export {
   type FetchWithSsrfGuardOptions,
 } from './safe-remote-url'
 export { fetchRemoteImage, remoteImageHeaders } from './remote-image'
+export { normalizeAiMarkdownText } from './markdown-normalize'
 export {
   CONNECT_CHANNELS,
   CONNECT_MAX_TEXT_BYTES,
@@ -53,3 +54,12 @@ export {
   type ConnectResult,
   type ConnectTarget,
 } from './connect'
+export {
+  OPEN_FILES_CHANNEL,
+  applyFileMention,
+  atMentionQuery,
+  filterOpenFiles,
+  isOpenFileKind,
+  type OpenFileKind,
+  type OpenFileRef,
+} from './open-files'

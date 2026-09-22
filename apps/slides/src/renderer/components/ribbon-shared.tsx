@@ -298,7 +298,7 @@ export interface Props {
   onToggleAi: () => void
   /** Push a preset instruction to the AI panel and expand it (autoRun executes immediately) */
   /** slideShot: attach the current slide's rendering so the model sees the page (AI Beautify) */
-  onAiPreset: (text: string, opts?: { slideShot?: boolean }) => void
+  onAiPreset: (text: string, opts?: { slideShot?: boolean; beautify?: boolean }) => void
   onOpenCitations: () => void
   /** Insert an element on the current page */
   onInsert: (kind: InsertKind) => void
@@ -461,6 +461,8 @@ export interface Props {
   onInsertIcon: (def: IconDef, color: string) => void
   /** Insert a chart (sample data, writes a chart part) */
   onInsertChart: (kind: ChartPresetDef['kind']) => void
+  /** Open the AntV infographic studio. */
+  onInsertInfographic: () => void
   /** Insert SmartArt (simplified shape combination) */
   onInsertSmartArt: (def: SmartArtDef) => void
   /** Insert WordArt (preset-styled text box) */
@@ -582,6 +584,7 @@ export interface RibbonTabCtx extends Pick<
   | 'onInsert'
   | 'onPickShape'
   | 'onInsertChart'
+  | 'onInsertInfographic'
   | 'onInsertField'
   | 'onInsertIcon'
   | 'onInsertImage'

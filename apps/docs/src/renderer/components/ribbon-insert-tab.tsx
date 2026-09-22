@@ -1,7 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { Editor } from '@tiptap/core'
-import { ShapePreview, WORDART_PRESETS, wordArtStrokePx } from '@genoffice/ui'
+import {
+  INFOGRAPHIC_AI_SYSTEM,
+  InfographicStudio,
+  infographicLocale,
+  encodeInfographicMetadata,
+  ShapePreview,
+  WORDART_PRESETS,
+  wordArtStrokePx,
+} from '@genoffice/ui'
 import type { ChartDisplay, HeaderFooter, NewChart } from '@genoffice/docx-engine'
 import { hfHasPageField, hfWithoutPageMarks } from '../editor/hf-dom'
 import { EquationGallery, EquationModal } from './EquationModal'
@@ -40,6 +48,7 @@ import {
   DOC_SHAPE_GROUPS,
   insertBlankPageAt,
   insertImageViaDialog,
+  insertImageFromDataUrl,
   insertPageBreakAt,
   insertShapeAt,
   insertTableAt,
@@ -571,13 +580,38 @@ export function InsertTab({
   commentCount,
   onShowComments,
 }: InsertTabProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [grid, setGrid] = useState<{ r: number; c: number }>({ r: 0, c: 0 })
   const [linkOpen, setLinkOpen] = useState(false)
   const [equationOpen, setEquationOpen] = useState(false)
   const [bookmarkOpen, setBookmarkOpen] = useState(false)
   const [crossRefOpen, setCrossRefOpen] = useState(false)
   const [chartOpen, setChartOpen] = useState(false)
+  const [infographicOpen, setInfographicOpen] = useState(false)
+  const [infographicEditTarget, setInfographicEditTarget] = useState<{
+    pos: number
+    syntax: string
+  } | null>(null)
+  useEffect(() => {
+    const documentWithPending = document as Document & {
+      __zenOfficeInfographicEdit?: { pos: number; syntax: string }
+    }
+    const openEditor = (event: Event) => {
+      const detail = (event as CustomEvent<{ pos?: unknown; syntax?: unknown }>).detail
+      if (typeof detail?.pos !== 'number' || typeof detail.syntax !== 'string') return
+      delete documentWithPending.__zenOfficeInfographicEdit
+      setInfographicEditTarget({ pos: detail.pos, syntax: detail.syntax })
+      setInfographicOpen(true)
+    }
+    const pending = documentWithPending.__zenOfficeInfographicEdit
+    if (pending) {
+      delete documentWithPending.__zenOfficeInfographicEdit
+      setInfographicEditTarget(pending)
+      setInfographicOpen(true)
+    }
+    document.addEventListener('zenoffice:edit-infographic', openEditor)
+    return () => document.removeEventListener('zenoffice:edit-infographic', openEditor)
+  }, [])
 
   const insertTable = (rows: number, cols: number) => {
     insertTableAt(editor, rows, cols)
@@ -715,6 +749,31 @@ export function InsertTab({
               <IconChart size={BIG} />
             </span>
             <span>{t('ribbonChart')}</span>
+          </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="ArtFlow AI 生图与图片编辑"
+            onClick={() => document.dispatchEvent(new Event('zenoffice:open-loveart'))}
+          >
+            <span className="rb-big-icon">
+              <IconPicture size={BIG} />
+            </span>
+            <span>AI 生图</span>
+          </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="AntV 可编辑信息图 / Editable infographic"
+            onClick={() => {
+              setInfographicEditTarget(null)
+              setInfographicOpen(true)
+            }}
+          >
+            <span className="rb-big-icon">
+              <IconChart size={BIG} />
+            </span>
+            <span>{infographicLocale(lang).title}</span>
           </button>
           <div className="rb-split-wrap">
             <button
@@ -1166,6 +1225,63 @@ export function InsertTab({
       {bookmarkOpen && <BookmarkModal editor={editor} onClose={() => setBookmarkOpen(false)} />}
       {crossRefOpen && <CrossRefModal editor={editor} onClose={() => setCrossRefOpen(false)} />}
       {chartOpen && <ChartInsertModal editor={editor} onClose={() => setChartOpen(false)} />}
+      <InfographicStudio
+        open={infographicOpen}
+        language={lang}
+        initialSyntax={infographicEditTarget?.syntax}
+        onClose={() => {
+          setInfographicOpen(false)
+          setInfographicEditTarget(null)
+        }}
+        onInsert={async (asset) => {
+          if (!infographicEditTarget) {
+            const inserted = await insertImageFromDataUrl(
+              editor,
+              asset.dataUrl,
+              'ZenOffice Infographic',
+              asset.syntax,
+            )
+            if (!inserted) return
+            return
+          }
+          const current = editor.state.doc.nodeAt(infographicEditTarget.pos)
+          const match = /^data:([^;]+);base64,(.*)$/s.exec(asset.dataUrl)
+          if (!current || current.type.name !== 'docProtected' || !match) return
+          editor.view.dispatch(
+            editor.state.tr.setNodeMarkup(infographicEditTarget.pos, undefined, {
+              ...current.attrs,
+              imageDataUrl: asset.dataUrl,
+              infographicSyntax: asset.syntax,
+              genImage: {
+                ...(current.attrs.genImage ?? {}),
+                base64: match[2],
+                mime: match[1],
+                widthPx: current.attrs.imageWidthPx ?? asset.width,
+                heightPx: current.attrs.imageHeightPx ?? asset.height,
+                description: encodeInfographicMetadata(asset.syntax),
+              },
+            }),
+          )
+        }}
+        onAiGenerate={async (prompt, currentSyntax) => {
+          const settings = await window.desktop.getAiSettings()
+          const selection = editor.state.selection
+          const context = editor.state.doc
+            .textBetween(
+              selection.empty ? 0 : selection.from,
+              selection.empty ? editor.state.doc.content.size : selection.to,
+              '\n',
+            )
+            .slice(0, 12_000)
+          const response = await window.desktop.aiChat({
+            settings,
+            system: INFOGRAPHIC_AI_SYSTEM,
+            user: `Instruction:\n${prompt}\n\nDocument context:\n${context}\n\nCurrent infographic syntax:\n${currentSyntax}`,
+          })
+          if (!response.ok) throw new Error(response.error || 'ZenMux infographic request failed')
+          return response.content ?? ''
+        }}
+      />
     </>
   )
 }

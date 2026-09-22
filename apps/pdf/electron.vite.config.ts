@@ -21,7 +21,7 @@ export default defineConfig({
     ],
   },
   preload: {
-    plugins: [externalizeDepsPlugin({ exclude: ['@genoffice/i18n'] })],
+    plugins: [externalizeDepsPlugin({ exclude: ['@genoffice/i18n', '@genoffice/electron-utils'] })],
   },
   renderer: {
     plugins: [

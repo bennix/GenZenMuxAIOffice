@@ -1,6 +1,12 @@
 import type { AiProviderId, AiProviderMeta, AiSettings, LegacyAiSettings } from './types'
 
 export const ZENMUX_BASE_URL = 'https://zenmux.ai/api/v1'
+
+/** OpenAI-compatible chat endpoint for ZenMux, or a user-supplied compatible Base URL. */
+export function resolveZenmuxBaseUrl(config?: { baseUrl?: string | undefined } | null): string {
+  const url = config?.baseUrl?.trim().replace(/\/+$/, '')
+  return url || ZENMUX_BASE_URL
+}
 export const ZENMUX_INVITE_URL = 'https://zenmux.ai/invite/GBQMC5'
 export const ZENMUX_MODELS = [
   'anthropic/claude-sonnet-4.6',
@@ -16,6 +22,8 @@ export const ZENMUX_IMAGE_MODELS = [
   'z-ai/glm-image',
 ] as const
 export const ZENMUX_DEFAULT_IMAGE_MODEL = ZENMUX_IMAGE_MODELS[0]
+/** TypeSafe Jev on ZenMux. Judges layout; it does not write slide copy. */
+export const ZENMUX_DEFAULT_JEV_MODEL = 'typesafe/jev-1.13'
 
 /**
  * Genspark server-side LLM proxy endpoints. All three protocols share the
@@ -29,7 +37,7 @@ export const GENSPARK_LLM_BASE_URLS = {
 } as const
 
 /**
- * Splits GenOffice usage out of the proxy's default "Claw" billing bucket
+ * Splits ZenOffice usage out of the proxy's default "Claw" billing bucket
  * (the backend attributes gsk-key traffic by X-Agent-Type). Only sent to the
  * Genspark proxy — never to direct vendor APIs.
  */
@@ -116,6 +124,7 @@ export function defaultAiSettings(
   }
   providers.zenmux.baseUrl = ZENMUX_BASE_URL
   providers.zenmux.imageModel = ZENMUX_DEFAULT_IMAGE_MODEL
+  providers.zenmux.jevModel = ZENMUX_DEFAULT_JEV_MODEL
   return { provider: 'zenmux', providers }
 }
 
@@ -139,5 +148,8 @@ export function resolveAiSettings(
     providers: { ...defaults.providers, ...stored.providers },
   }
   resolved.providers.zenmux.imageModel ??= ZENMUX_DEFAULT_IMAGE_MODEL
+  resolved.providers.zenmux.jevModel =
+    resolved.providers.zenmux.jevModel?.trim() || ZENMUX_DEFAULT_JEV_MODEL
+  resolved.providers.zenmux.baseUrl = resolveZenmuxBaseUrl(resolved.providers.zenmux)
   return resolved
 }

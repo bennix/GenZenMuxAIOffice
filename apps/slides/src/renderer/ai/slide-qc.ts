@@ -76,6 +76,8 @@ const QC_SYSTEM_PROMPT = `You are a slide layout QA fixer. Each request gives yo
 
 Look at the screenshot for OBJECTIVE layout defects only:
 - text overflowing its box, colliding with a neighbor, or clipped by the canvas edge
+- a line whose last few characters sit alone on the next line, or text hanging outside the card, pill, or banner behind it
+- when an approved fix is given, do only that fix
 - elements overlapping unintentionally (a text block over another text block; content under an image)
 - unreadable contrast (text color too close to what it sits on)
 - obviously ragged alignment or wildly uneven spacing among sibling items (cards, bullets, columns)
@@ -108,6 +110,8 @@ export interface QcPageOptions {
   screenshot: AgentImage | null
   systemSuffix?: () => string
   signal?: AbortSignal
+  /** Jev-approved geometry fix. The vision pass may do only this. */
+  approvedPlan?: string
 }
 
 /** Wrap createSlidesSkill with the QC system prompt and the two-tool allowlist (executor shared) */
@@ -121,7 +125,12 @@ export function createSlideFixSkill(access: DeckAccess): AgentSkill {
   }
 }
 
-function buildQcInstruction(pageIndex: number, dump: string, issues: string[]): string {
+function buildQcInstruction(
+  pageIndex: number,
+  dump: string,
+  issues: string[],
+  approvedPlan?: string,
+): string {
   const auditStr = issues.length
     ? `Deterministic geometry audit already flags:\n${issues.map((s) => `- ${s}`).join('\n')}\n(These are hints — the screenshot is the ground truth; it may show more or reveal a flagged item is fine.)`
     : 'The deterministic geometry audit found nothing — trust the screenshot for visual defects it cannot measure (contrast, alignment, crowding).'
@@ -132,28 +141,37 @@ ${dump}
 
 ${auditStr}
 
-Inspect the screenshot and fix objective layout defects now.`
+Inspect the screenshot and fix objective layout defects now.${
+    approvedPlan
+      ? `\n\nApproved fix — do only this, then stop:\n${approvedPlan}`
+      : ''
+  }`
 }
 
 /**
  * One page, one focused QC run. The caller owns history batching (rollback via
  * aiSnapshotRestore) and deciding what to do with the result.
  */
-export function qcSlidePage(opts: QcPageOptions): Promise<QcPageResult> {
-  const { access, transport, pageIndex, screenshot, systemSuffix, signal } = opts
+export async function qcSlidePage(opts: QcPageOptions): Promise<QcPageResult> {
+  const { access, transport, pageIndex, screenshot, systemSuffix, signal, approvedPlan } = opts
   const slide = access.getSlides()[pageIndex]
   if (!slide) {
-    return Promise.resolve({
+    return {
       ok: false,
       edited: false,
       reply: '',
       preIssues: 0,
       postIssues: 0,
       error: `slideIndex ${pageIndex} out of range`,
-    })
+    }
   }
   const preIssues = auditSlideLayout(slide)
-  const instruction = buildQcInstruction(pageIndex, formatSlideDump(slide), preIssues)
+  const instruction = buildQcInstruction(
+    pageIndex,
+    formatSlideDump(slide),
+    preIssues,
+    approvedPlan,
+  )
 
   return new Promise((resolve) => {
     let edited = false

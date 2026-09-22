@@ -28,7 +28,7 @@ const updaterState = {
   channel: null as string | null,
   allowDowngrade: false,
 }
-const checkForUpdates = vi.fn(() => Promise.resolve(null))
+const checkForUpdates = vi.fn<() => Promise<unknown>>(() => Promise.resolve(null))
 const downloadUpdate = vi.fn<() => Promise<unknown>>(() => Promise.resolve([]))
 const quitAndInstall = vi.fn()
 
@@ -77,11 +77,13 @@ const showUpdateWindow =
   vi.fn<(parent: unknown, state: UpdateUiState, actions: UpdateActions) => void>()
 const pushUpdateState = vi.fn<(patch: Partial<UpdateUiState>) => void>()
 const closeUpdateWindow = vi.fn()
+const isUpdateWindowOpen = vi.fn(() => false)
 
 vi.mock('../src/main/update-window', () => ({
   showUpdateWindow: (...args: [unknown, UpdateUiState, UpdateActions]) => showUpdateWindow(...args),
   pushUpdateState: (patch: Partial<UpdateUiState>) => pushUpdateState(patch),
   closeUpdateWindow: () => closeUpdateWindow(),
+  isUpdateWindowOpen: () => isUpdateWindowOpen(),
 }))
 
 const FIRST_CHECK_DELAY_MS = 15_000
@@ -125,13 +127,15 @@ beforeEach(() => {
   updaterState.disableDifferentialDownload = false
   updaterState.channel = null
   updaterState.allowDowngrade = false
-  checkForUpdates.mockClear()
+  checkForUpdates.mockReset()
+  checkForUpdates.mockImplementation(() => Promise.resolve(null))
   downloadUpdate.mockReset()
   downloadUpdate.mockImplementation(() => Promise.resolve([]))
   quitAndInstall.mockClear()
   showUpdateWindow.mockClear()
   pushUpdateState.mockClear()
   closeUpdateWindow.mockClear()
+  isUpdateWindowOpen.mockReset().mockReturnValue(false)
   setPlatform('darwin')
 })
 
@@ -143,6 +147,47 @@ afterEach(() => {
 })
 
 describe('initAutoUpdater', () => {
+  it('About reopens a dismissed update and downloads once across repeated clicks', async () => {
+    const { initAutoUpdater, checkForUpdatesNow } = await loadUpdater()
+    initAutoUpdater(() => null)
+    updaterState.listeners.get('update-available')!({ version: '0.2.0' })
+    lastShownActions().onLater()
+    checkForUpdates.mockImplementation(async () => {
+      updaterState.listeners.get('update-available')!({ version: '0.2.0' })
+      return { updateInfo: { version: '0.2.0' } }
+    })
+    const first = checkForUpdatesNow('stable')
+    const second = checkForUpdatesNow('stable')
+    expect(first).toBe(second)
+    await first
+    expect(checkForUpdates).toHaveBeenCalledTimes(1)
+    expect(downloadUpdate).toHaveBeenCalledTimes(1)
+    expect(showUpdateWindow).toHaveBeenCalledTimes(2)
+    isUpdateWindowOpen.mockReturnValue(true)
+    await checkForUpdatesNow('stable')
+    expect(downloadUpdate).toHaveBeenCalledTimes(1)
+    updaterState.listeners.get('update-downloaded')!({ version: '0.2.0' })
+    lastShownActions().onLater()
+    isUpdateWindowOpen.mockReturnValue(false)
+    await checkForUpdatesNow('stable')
+    expect(lastShownState().phase).toBe('downloaded')
+    expect(downloadUpdate).toHaveBeenCalledTimes(1)
+    expect(quitAndInstall).not.toHaveBeenCalled()
+  })
+
+  it('About starts downloading an already open available update', async () => {
+    const { initAutoUpdater, checkForUpdatesNow } = await loadUpdater()
+    initAutoUpdater(() => null)
+    updaterState.listeners.get('update-available')!({ version: '0.2.0' })
+    isUpdateWindowOpen.mockReturnValue(true)
+    checkForUpdates.mockImplementation(async () => {
+      updaterState.listeners.get('update-available')!({ version: '0.2.0' })
+      return { updateInfo: { version: '0.2.0' } }
+    })
+    await checkForUpdatesNow('stable')
+    expect(downloadUpdate).toHaveBeenCalledTimes(1)
+    expect(showUpdateWindow).toHaveBeenCalledTimes(1)
+  })
   it('does nothing in unpacked (dev) runs without the fake-update env', async () => {
     appState.isPackaged = false
     const { initAutoUpdater } = await loadUpdater()
@@ -204,6 +249,26 @@ describe('initAutoUpdater', () => {
     // strings are localized main-side and pushed into the window state
     expect(state.strings.title.length).toBeGreaterThan(0)
     expect(state.strings.install.length).toBeGreaterThan(0)
+  })
+
+  it('performs an immediate user-initiated check for the About page', async () => {
+    checkForUpdates.mockResolvedValue({ updateInfo: { version: '0.2.0' } })
+    const { checkForUpdatesNow, initAutoUpdater } = await loadUpdater()
+    initAutoUpdater(() => null)
+
+    await expect(checkForUpdatesNow('stable')).resolves.toEqual({
+      status: 'available',
+      currentVersion: '0.1.0',
+      latestVersion: '0.2.0',
+    })
+    expect(checkForUpdates).toHaveBeenCalledTimes(1)
+  })
+
+  it('compares release versions numerically', async () => {
+    const { isNewerVersion } = await loadUpdater()
+    expect(isNewerVersion('v0.6.82', '0.6.81')).toBe(true)
+    expect(isNewerVersion('0.6.9', '0.6.81')).toBe(false)
+    expect(isNewerVersion('0.6.81', '0.6.81')).toBe(false)
   })
 
   it('starts the download and pushes progress when the user clicks download', async () => {

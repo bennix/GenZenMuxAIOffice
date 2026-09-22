@@ -263,6 +263,8 @@ interface Props {
   onPlayMedia?: (sourceId: string) => void
   /** Double-click an editor-created LaTeX picture: reopen its source editor. */
   onEditEquation?: (sourceId: string) => void
+  /** Double-click a ZenOffice infographic picture to reopen editable AntV source. */
+  onEditInfographic?: (sourceId: string) => void
   /** Right-click: hit element gives sourceId, blank area gives null; table hits include cell model coordinates */
   onContextMenu: (
     sourceId: string | null,
@@ -405,6 +407,7 @@ export function SlideCanvas({
   onTableRowResize,
   onPlayMedia,
   onEditEquation,
+  onEditInfographic,
   onContextMenu,
   images,
   editingText,
@@ -784,6 +787,7 @@ export function SlideCanvas({
             onEditTableCell={onEditTableCell}
             onPlayMedia={onPlayMedia}
             onEditEquation={onEditEquation}
+            onEditInfographic={onEditInfographic}
             onDragGuides={(g, sp) => {
               setGuides(g)
               setSpacing(sp ?? [])
@@ -1300,6 +1304,7 @@ interface NodeProps {
   onEditTableCell: Props['onEditTableCell']
   onPlayMedia?: Props['onPlayMedia']
   onEditEquation?: Props['onEditEquation']
+  onEditInfographic?: Props['onEditInfographic']
   onDragGuides: (g: Guide[], spacing?: SpacingIndicator[]) => void
   snapTargets: (excludeIds: string[]) => SnapTarget[]
   /** Neighbor boxes for equal-spacing snapping (excluding the dragged selection) */
@@ -1342,6 +1347,7 @@ function NodeView({
   onEditTableCell,
   onPlayMedia,
   onEditEquation,
+  onEditInfographic,
   onDragGuides,
   snapTargets,
   spacingBoxes,
@@ -1597,6 +1603,7 @@ function NodeView({
               onEditTableCell={onEditTableCell}
               onPlayMedia={onPlayMedia}
               onEditEquation={onEditEquation}
+              onEditInfographic={onEditInfographic}
               onDragGuides={onDragGuides}
               snapTargets={snapTargets}
               images={images}
@@ -1656,6 +1663,10 @@ function NodeView({
     node.type === 'picture' &&
     !!(node as PictureRenderNode).descr?.startsWith('genoffice-latex:') &&
     !!onEditEquation
+  const isInfographic =
+    node.type === 'picture' &&
+    !!(node as PictureRenderNode).descr?.startsWith('zenoffice-infographic:') &&
+    !!onEditInfographic
   // Empty placeholder: canvas draws a gray click hint (edit canvas only, not in thumbnails/export)
   const phPrompt = (() => {
     if (node.type !== 'shape' && node.type !== 'text') return null
@@ -1691,12 +1702,17 @@ function NodeView({
                   onDblClick: () => onPlayMedia!(node.sourceId),
                   onDblTap: () => onPlayMedia!(node.sourceId),
                 }
-              : isLatexEquation && !insideGroupId
+              : isInfographic && !insideGroupId
                 ? {
-                    onDblClick: () => onEditEquation!(node.sourceId),
-                    onDblTap: () => onEditEquation!(node.sourceId),
+                    onDblClick: () => onEditInfographic!(node.sourceId),
+                    onDblTap: () => onEditInfographic!(node.sourceId),
                   }
-                : {})}
+                : isLatexEquation && !insideGroupId
+                  ? {
+                      onDblClick: () => onEditEquation!(node.sourceId),
+                      onDblTap: () => onEditEquation!(node.sourceId),
+                    }
+                  : {})}
     >
       {/* group children don't take hits (listening=false); add a transparent hit area so the whole group can be selected/dragged */}
       {node.type === 'group' && <Rect width={box.w} height={box.h} fill="transparent" />}

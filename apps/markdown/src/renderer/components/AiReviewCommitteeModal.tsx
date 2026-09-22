@@ -1,15 +1,12 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Editor, JSONContent } from '@tiptap/core'
 import { Markdown } from '@genoffice/ui'
 import { LANGUAGE_OPTIONS } from '@genoffice/i18n'
+import { parseNoveltyQueries, searchNoveltyEvidence } from '@genoffice/citations'
 import {
   REVIEW_PROFILES,
-  assignReviewModels,
-  availableReviewModels,
-  chairSystemPrompt,
-  reviewerSystemPrompt,
-  settingsForReviewModel,
-  type AiSettings,
+  runDocumentReview,
+  supportsLiteratureReview,
   type ReviewLanguage,
 } from '@genoffice/ai-provider'
 import { useI18n } from '../i18n/locale'
@@ -32,7 +29,7 @@ function selectedMarkdown(editor: Editor): string {
   )
 }
 
-async function documentImages(editor: Editor): Promise<{ mime: string; base64: string }[]> {
+export async function documentImages(editor: Editor): Promise<{ mime: string; base64: string }[]> {
   const sources: string[] = []
   const visit = (node: JSONContent): void => {
     if (node.type === 'image' && typeof node.attrs?.src === 'string') sources.push(node.attrs.src)
@@ -50,104 +47,81 @@ async function documentImages(editor: Editor): Promise<{ mime: string; base64: s
 
 export function AiReviewCommitteeModal({
   editor,
+  mode = 'review',
   onClose,
 }: {
   editor: Editor
+  mode?: 'review' | 'composition'
   onClose: () => void
 }) {
   const { lang: uiLanguage } = useI18n()
   const chinese = uiLanguage === 'zh' || uiLanguage === 'zh-TW'
-  const [profileId, setProfileId] = useState('science')
+  const profileOptions = useMemo(
+    () =>
+      REVIEW_PROFILES.filter(
+        (item) => (mode === 'composition') === (item.category === 'composition'),
+      ),
+    [mode],
+  )
+  const [profileId, setProfileId] = useState(
+    mode === 'composition' ? 'zhongkao-composition' : 'science',
+  )
   const [language, setLanguage] = useState<ReviewLanguage>(uiLanguage)
   const [members, setMembers] = useState<Result[]>([])
   const [chair, setChair] = useState<Result | null>(null)
   const [running, setRunning] = useState(false)
   const [keyMissing, setKeyMissing] = useState(false)
-  const runRef = useRef(0)
+  const [literatureEnabled, setLiteratureEnabled] = useState(true)
+  const [literatureStatus, setLiteratureStatus] = useState('')
+  useEffect(() => {
+    setMembers([])
+    setChair(null)
+    setLiteratureStatus('')
+  }, [profileId, language, literatureEnabled])
   const profile = useMemo(
-    () => REVIEW_PROFILES.find((p) => p.id === profileId) ?? REVIEW_PROFILES[0]!,
-    [profileId],
+    () => profileOptions.find((p) => p.id === profileId) ?? profileOptions[0]!,
+    [profileId, profileOptions],
   )
 
   const start = async () => {
     if (running) return
-    const settings: AiSettings = await window.markdownApi.getAiSettings()
-    if (!settings.providers.zenmux.apiKey) {
-      setKeyMissing(true)
-      return
-    }
-    setKeyMissing(false)
     setRunning(true)
+    setMembers([])
     setChair(null)
-    const runId = ++runRef.current
-    const assignments = assignReviewModels(
-      availableReviewModels(settings),
-      profile.members.length + 1,
-    )
-    const initial = profile.members.map((member, i) => ({
-      role: language === 'zh' || language === 'zh-TW' ? member.roleZh : member.roleEn,
-      model: assignments[i]!,
-      status: 'pending' as const,
-    }))
-    setMembers(initial)
-    const { from, to } = editor.state.selection
-    const selected = from !== to
-    const document = selectedMarkdown(editor)
-    const images = await documentImages(editor)
-    const material = document.slice(0, 120_000)
-    const limit =
-      document.length > 120_000
-        ? '\n[Content was truncated at 120,000 characters; disclose this limitation.]'
-        : ''
+    setLiteratureStatus('')
     try {
-      const reviews = await Promise.all(
-        profile.members.map(async (member, index): Promise<Result> => {
-          setMembers((old) =>
-            old.map((item, i) => (i === index ? { ...item, status: 'running' } : item)),
-          )
-          let result: Result
-          try {
-            const response = await window.markdownApi.aiChat({
-              settings: settingsForReviewModel(settings, assignments[index]!),
-              system: reviewerSystemPrompt(profile, member, language),
-              user: `${selected ? 'SELECTED MARKDOWN' : 'MARKDOWN DOCUMENT'}:\n\n${material}${limit}`,
-              images,
-            })
-            result = response.ok
-              ? { ...initial[index]!, status: 'done', content: response.content ?? '' }
-              : { ...initial[index]!, status: 'error', error: response.error ?? 'Unknown error' }
-          } catch (error) {
-            result = {
-              ...initial[index]!,
-              status: 'error',
-              error: error instanceof Error ? error.message : String(error),
-            }
-          }
-          if (runRef.current === runId)
-            setMembers((old) => old.map((item, i) => (i === index ? result : item)))
-          return result
-        }),
-      )
-      const successful = reviews.filter((r) => r.content)
-      if (!successful.length || runRef.current !== runId) return
-      const model = assignments.at(-1)!
-      const role = language === 'zh' || language === 'zh-TW' ? '委员会主席' : 'Committee Chair'
-      setChair({ role, model, status: 'running' })
-      const response = await window.markdownApi.aiChat({
-        settings: settingsForReviewModel(settings, model),
-        system: chairSystemPrompt(profile, language),
-        user: successful
-          .map((r, i) => `## Reviewer ${i + 1}: ${r.role}\n${r.content}`)
-          .join('\n\n'),
+      const settings = await window.markdownApi.getAiSettings()
+      setKeyMissing(!settings.providers.zenmux.apiKey)
+      if (!settings.providers.zenmux.apiKey) return
+      const source = selectedMarkdown(editor)
+      const text =
+        source.slice(0, 120000) +
+        (source.length > 120000 ? '\n[Document truncated; disclose this limitation.]' : '') +
+        '\n[At most five readable document images supplied; other images were not inspected.]'
+      const images = await documentImages(editor)
+      await runDocumentReview({
+        settings,
+        profileId,
+        language,
+        text,
+        images,
+        literature: literatureEnabled,
+        chat: (request) => window.markdownApi.aiChat(request),
+        searchEvidence: async (raw, fallback) =>
+          (await searchNoveltyEvidence(parseNoveltyQueries(raw, fallback))).evidence,
+        onMember: (index, result) =>
+          setMembers((current) => {
+            const next = [...current]
+            next[index] = result
+            return next
+          }),
+        onChair: setChair,
+        onLiterature: setLiteratureStatus,
       })
-      if (runRef.current === runId)
-        setChair(
-          response.ok
-            ? { role, model, status: 'done', content: response.content ?? '' }
-            : { role, model, status: 'error', error: response.error ?? 'Unknown error' },
-        )
+    } catch (error) {
+      setLiteratureStatus(error instanceof Error ? error.message : String(error))
     } finally {
-      if (runRef.current === runId) setRunning(false)
+      setRunning(false)
     }
   }
 
@@ -160,35 +134,67 @@ export function AiReviewCommitteeModal({
       className="md-modal-backdrop"
       onMouseDown={(e) => e.target === e.currentTarget && !running && onClose()}
     >
-      <div className="md-review-dialog">
+      <div className="md-review-dialog" role="dialog" aria-modal="true" aria-label="AI 审稿工作台">
         <header>
           <div>
-            <h2>{chinese ? 'AI 审稿委员会' : 'AI Review Committee'}</h2>
+            <h2>
+              {mode === 'composition'
+                ? chinese
+                  ? '作文评价与润色'
+                  : 'Essay Assessment & Polishing'
+                : chinese
+                  ? 'AI 审稿委员会'
+                  : 'AI Review Committee'}
+            </h2>
             <p>
               {chinese
-                ? '3 名独立委员 + 1 名主席；模型随机分配，全部通过 ZenMux。AI 功能可能受网络或代理状态影响。'
+                ? mode === 'composition'
+                  ? '3 名分项评委 + 1 名主席，按指定考试或竞赛标准评分，并给出保留原意的完整润色稿。'
+                  : '3 名独立委员 + 1 名主席；学术类可检索真实文献核验创新性。全部通过 ZenMux，网络可能影响结果。'
                 : '3 independent reviewers + 1 chair; models are randomly assigned, all through ZenMux. Network or proxy conditions may affect AI.'}
             </p>
           </div>
-          <button disabled={running} onClick={onClose}>
+          <button aria-label={chinese ? '关闭' : 'Close'} disabled={running} onClick={onClose}>
             ×
           </button>
         </header>
         <div className="md-review-options">
+          <p>
+            {chinese
+              ? '确认当前选区或全文 → 选择审稿标准 → 审阅报告。不会自动改写正文。'
+              : 'Confirm selection or document → choose criteria → review report. The source is not rewritten automatically.'}
+          </p>
           <label>
-            {chinese ? '审稿类型' : 'Review type'}
+            {chinese
+              ? mode === 'composition'
+                ? '作文标准'
+                : '审稿类型'
+              : mode === 'composition'
+                ? 'Writing standard'
+                : 'Review type'}
             <select
               value={profileId}
               disabled={running}
               onChange={(e) => setProfileId(e.target.value)}
             >
-              {REVIEW_PROFILES.map((p) => (
+              {profileOptions.map((p) => (
                 <option key={p.id} value={p.id}>
                   {chinese ? p.labelZh : p.labelEn}
                 </option>
               ))}
             </select>
           </label>
+          {mode === 'review' && supportsLiteratureReview(profile) && (
+            <label className="md-review-literature-toggle">
+              <input
+                type="checkbox"
+                checked={literatureEnabled}
+                disabled={running}
+                onChange={(event) => setLiteratureEnabled(event.target.checked)}
+              />
+              <span>{chinese ? '文献核验创新性' : 'Verify novelty with literature'}</span>
+            </label>
+          )}
           <label>
             {chinese ? '意见语言' : 'Language'}
             <select
@@ -209,7 +215,9 @@ export function AiReviewCommitteeModal({
                 ? '审阅中…'
                 : 'Reviewing…'
               : chinese
-                ? '开始严格审稿'
+                ? mode === 'composition'
+                  ? '开始评价与润色'
+                  : '开始严格审稿'
                 : 'Start strict review'}
           </button>
           {report && (
@@ -218,6 +226,7 @@ export function AiReviewCommitteeModal({
             </button>
           )}
         </div>
+        {literatureStatus && <div className="md-review-literature-status">{literatureStatus}</div>}
         {keyMissing && (
           <div className="md-mermaid-error">
             {chinese

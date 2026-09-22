@@ -1,4 +1,14 @@
 import { execSync, spawn } from 'node:child_process'
+import { ToolRegistry } from '@genoffice/mcp-server'
+import { registerApplicationTools } from '@genoffice/mcp-server/application-tools'
+import { registerProjectTools } from '@genoffice/mcp-server/project-tools'
+import { registerAiTools } from '@genoffice/mcp-server/ai-tools'
+import { registerDocumentAi } from './mcp-writing'
+import { registerMarkdownTools } from '@genoffice/mcp-server/markdown-tools'
+import { registerWordTools } from '@genoffice/mcp-server/word-tools'
+import { registerKnowledgeTools } from '@genoffice/mcp-server/knowledge-tools'
+import { registerImageTools } from '@genoffice/mcp-server/image-tools'
+import { startApplicationBridge } from '@genoffice/mcp-server/application-bridge'
 import {
   copyFileSync,
   cpSync,
@@ -22,6 +32,13 @@ import {
   shell,
   webContents,
 } from 'electron'
+
+// Electron 43's V8 JIT reservation can trap during startup on macOS 27.
+// Keep JIT enabled on other systems; macOS 27 uses the supported fallback
+// to avoid the CodeRange reservation failure reported by the OS crash log.
+if (process.platform === 'darwin' && Number(process.getSystemVersion().split('.')[0]) >= 26) {
+  app.commandLine.appendSwitch('js-flags', '--jitless')
+}
 import type { MenuItemConstructorOptions, NativeImage } from 'electron'
 import menuDocxIcon1x from './assets/menu-docx.png?asset'
 import menuDocxIcon2x from './assets/menu-docx@2x.png?asset'
@@ -40,6 +57,8 @@ import { ZENMUX_INVITE_URL } from '@genoffice/ai-provider'
 import {
   DOCUMENT_DROP_CHANNEL,
   DEFAULT_SAVE_DIR_KEY,
+  OPEN_FILES_CHANNEL,
+  isOpenFileKind,
   appMenuLabels,
   contextMenuLabels,
   editMenuTemplate,
@@ -51,13 +70,14 @@ import {
   windowMenuTemplate,
 } from '@genoffice/electron-utils'
 import { readAppSettings, writeAppSetting } from './app-settings'
+import { installLibreOfficeWithProgress } from './libreoffice-install-progress'
 import {
   cloudProjectExternalUrl,
   readCloudProjectsStore,
   syncCloudProjects,
 } from './cloud-projects'
 import { ProjectStore } from '@genoffice/project-store'
-import { importLegacyDoc } from './legacy-doc-import'
+import { LegacyDocFidelityError, importLegacyDoc, sniffWordContainer } from './legacy-doc-import'
 
 import {
   buildDocsMenu,
@@ -71,7 +91,10 @@ import {
   removeRecentFiles,
   replaceRecentFile,
   registerAiIpc,
+  readAiSettings,
+  runAiChat,
   registerProjectIpc,
+  getProjectStore,
   toggleStarredFile,
   registerDocsIpc,
   setDocsExtraFileMenuItems,
@@ -138,11 +161,11 @@ import { TABS_CHANNELS } from '../shared/tabs-api'
 import { showErrorDialog } from './error-dialog'
 import { normalizeRecentQuery, pageRecentPaths, statExistingPaths } from './recent-files'
 import { TabManager } from './tab-manager'
-import { applyUpdateChannel, initAutoUpdater } from './updater'
+import { applyUpdateChannel, checkForUpdatesNow, initAutoUpdater } from './updater'
 import { isUpdateChannel, type UpdateChannel } from '../shared/update-api'
 
 /**
- * GenOffice unified shell: ONE Electron app, ONE BrowserWindow, hosting the
+ * ZenOffice unified shell: ONE Electron app, ONE BrowserWindow, hosting the
  * docs and sheets modules as WebContentsView tabs behind a WPS-style tab
  * strip. The shell owns the lifecycle — single-instance lock, file-
  * association routing by extension, and per-active-tab menu switching.
@@ -152,21 +175,29 @@ import { isUpdateChannel, type UpdateChannel } from '../shared/update-api'
 
 // ANY unpacked run (`npm run shell`, `npm run dev`, `npx electron .`) must not
 // share the installed app's userData or single-instance lock — otherwise a dev
-// run silently quits and forwards its argv to the running installed GenOffice.
+// run silently quits and forwards its argv to the running installed ZenOffice.
 // GENOFFICE_USER_DATA: test drivers point this at a scratch dir so an
 // automated instance can run alongside the dev instance (separate lock).
 if (!app.isPackaged)
   app.setPath(
     'userData',
-    process.env.GENOFFICE_USER_DATA ?? join(app.getPath('appData'), 'GenOffice Dev'),
+    process.env.GENOFFICE_USER_DATA ?? join(app.getPath('appData'), 'ZenOffice Dev'),
   )
 
-// The product rename from "AI Office" to GenOffice changed the userData path; migrate old user data once
+// Preserve settings and per-document AI history across both historical product names.
+// `app.getPath('userData')` now resolves to ZenOffice, while appId stays stable so
+// installed updates keep the same application identity.
 if (app.isPackaged) {
-  const oldDir = join(app.getPath('appData'), 'AI Office')
   const newDir = app.getPath('userData')
   const newEmpty = !existsSync(newDir) || readdirSync(newDir).length === 0
-  if (newEmpty && existsSync(oldDir)) cpSync(oldDir, newDir, { recursive: true })
+  if (newEmpty) {
+    for (const legacyName of ['GenOffice', 'AI Office']) {
+      const oldDir = join(app.getPath('appData'), legacyName)
+      if (oldDir === newDir || !existsSync(oldDir)) continue
+      cpSync(oldDir, newDir, { recursive: true })
+      break
+    }
+  }
 }
 
 // module build outputs: packaged builds carry them as extraResources
@@ -1415,7 +1446,7 @@ function createShellWindow(): void {
     height: 900,
     minWidth: 980,
     minHeight: 600,
-    title: 'GenOffice',
+    title: 'ZenOffice',
     // vibrancy: editor modules punch translucent regions (e.g. the slides
     // thumbnail pane) through to the desktop
     ...(process.platform === 'darwin'
@@ -1627,8 +1658,40 @@ function openLegacyDoc(filePath: string): void {
     activeLegacyDocImports.set(filePath, pending)
   }
   void pending
+    .catch(async (error: unknown) => {
+      if (!(error instanceof LegacyDocFidelityError)) throw error
+      activeLegacyDocImports.delete(filePath)
+      const chinese = currentLang() === 'zh' || currentLang() === 'zh-TW'
+      const options = {
+        type: 'warning' as const,
+        title: chinese ? '保真转换不可用' : 'Layout-preserving conversion unavailable',
+        message: chinese
+          ? '无法在不改变格式的情况下打开这个旧版 Word 文档。'
+          : 'This legacy Word document cannot be opened without changing its formatting.',
+        detail: chinese
+          ? '仅恢复文字会丢失原字体、字号、粗细、颜色、段落间距、表格和分页。建议安装 LibreOffice 后重新打开；只有在您明确接受格式丢失时，才继续恢复文字。'
+          : 'Text-only recovery loses fonts, sizes, weights, colors, paragraph spacing, tables, and pagination. Install LibreOffice and reopen for best fidelity, or explicitly continue with text-only recovery.',
+        buttons: chinese
+          ? ['仅恢复文字', '安装或获取 LibreOffice', '取消']
+          : ['Recover text only', 'Install or get LibreOffice', 'Cancel'],
+        defaultId: 1,
+        cancelId: 2,
+        noLink: true,
+      }
+      const result = shellWindow
+        ? await dialog.showMessageBox(shellWindow, options)
+        : await dialog.showMessageBox(options)
+      if (result.response === 1) {
+        if (!(await installLibreOfficeWithProgress(shellWindow ?? undefined, chinese))) return null
+        return importLegacyDoc(filePath, defaultSaveDir()).then((converted) => converted.path)
+      }
+      if (result.response !== 0) return null
+      return importLegacyDoc(filePath, defaultSaveDir(), { allowTextRecovery: true }).then(
+        (recovered) => recovered.path,
+      )
+    })
     .then((convertedPath) => {
-      if (!existsSync(convertedPath)) {
+      if (!convertedPath || !existsSync(convertedPath)) {
         activeLegacyDocImports.delete(filePath)
         return
       }
@@ -1639,7 +1702,10 @@ function openLegacyDoc(filePath: string): void {
       const detail = error instanceof Error ? error.message : String(error)
       const options = {
         type: 'error' as const,
-        message: tm('errUnsupportedExt', { ext: 'doc' }),
+        message:
+          currentLang() === 'zh' || currentLang() === 'zh-TW'
+            ? '旧版 Word 文档转换失败'
+            : 'Could not convert the legacy Word document',
         detail,
       }
       if (shellWindow) void dialog.showMessageBox(shellWindow, options)
@@ -1650,7 +1716,10 @@ function openLegacyDoc(filePath: string): void {
 /** the single router: extension decides which module owns the file; false = nothing opened */
 function openDocumentPath(filePath: string): boolean {
   if (!existsSync(filePath) || !tabManager) return false
-  if (DOC_RE.test(filePath)) {
+  if (
+    DOC_RE.test(filePath) ||
+    (DOCX_RE.test(filePath) && sniffWordContainer(filePath) !== 'ooxml')
+  ) {
     openLegacyDoc(filePath)
     return true
   }
@@ -1981,6 +2050,8 @@ function registerHomeIpc(): void {
     applyUpdateChannel(channel)
   })
 
+  ipcMain.handle(HOME_CHANNELS.checkForUpdates, () => checkForUpdatesNow(currentUpdateChannel()))
+
   ipcMain.handle(
     HOME_CHANNELS.onboardingSeen,
     (): boolean => readAppSettings(APP_SETTINGS_PATH()).onboardingSeen === true,
@@ -2171,7 +2242,75 @@ function registerTabsIpc(): void {
   })
 }
 
+let shareMcpImage:
+  ((targetId: string, dataUrl: string) => Promise<{ ok: boolean; error?: string }>) | undefined
+
 function registerConnectIpc(): void {
+  let nextImageId = 0
+  const pendingImages = new Map<
+    string,
+    { receiver: number; finish: (result: { ok: boolean; error?: string }) => void }
+  >()
+  ipcMain.handle(
+    'image-share:targets',
+    (event) => tabManager?.imageShareTargets(event.sender.id) ?? [],
+  )
+  ipcMain.on('image-share:ack', (event, id: unknown, result: unknown) => {
+    if (typeof id !== 'string') return
+    const pending = pendingImages.get(id)
+    if (!pending || pending.receiver !== event.sender.id || !result || typeof result !== 'object')
+      return
+    const value = result as { ok?: unknown; error?: unknown }
+    pending.finish({
+      ok: value.ok === true,
+      ...(typeof value.error === 'string' ? { error: value.error.slice(0, 500) } : {}),
+    })
+  })
+  const sendImage = async (source: number | null, targetId: unknown, dataUrl: unknown) => {
+    if (
+      (source !== null && !tabManager?.ownsWebContents(source)) ||
+      typeof targetId !== 'string' ||
+      typeof dataUrl !== 'string'
+    )
+      return { ok: false, error: '无法分享图片。' }
+    if (dataUrl.length > 20 * 1024 * 1024)
+      return { ok: false, error: '图片超过 20 MB，请缩小后重试。' }
+    const svgForPdf =
+      dataUrl.startsWith('data:image/svg+xml;base64,') &&
+      tabManager
+        ?.imageShareTargets(source)
+        .some((target) => target.id === targetId && target.kind === 'pdf')
+    if (
+      !/^data:image\/(png|jpeg|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(dataUrl) ||
+      (dataUrl.startsWith('data:image/svg+xml;') && !svgForPdf)
+    )
+      return { ok: false, error: '请选择 PNG 或 JPEG 图片；SVG 可直接插入 PDF。' }
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      const id = `image-${++nextImageId}`
+      const timer = setTimeout(() => {
+        pendingImages.delete(id)
+        resolve({ ok: false, error: '目标文件未确认插入，请检查目标文件后再重试。' })
+      }, 30000)
+      const receiver = tabManager?.sendSharedImage(source, targetId, { id, dataUrl })
+      if (receiver == null) {
+        clearTimeout(timer)
+        resolve({ ok: false, error: '目标文件已关闭或不可用。' })
+        return
+      }
+      pendingImages.set(id, {
+        receiver,
+        finish: (result) => {
+          clearTimeout(timer)
+          pendingImages.delete(id)
+          resolve(result)
+        },
+      })
+    })
+  }
+  shareMcpImage = (targetId, dataUrl) => sendImage(null, targetId, dataUrl)
+  ipcMain.handle('image-share:send', (event, targetId: unknown, dataUrl: unknown) =>
+    sendImage(event.sender.id, targetId, dataUrl),
+  )
   ipcMain.handle(
     'connect:list-targets',
     (event) => tabManager?.connectTargets(event.sender.id) ?? [],
@@ -2190,6 +2329,24 @@ function registerConnectIpc(): void {
         sentAt: new Date().toISOString(),
       }) ?? false
     return ok ? { ok: true } : { ok: false, error: 'invalid-target' }
+  })
+}
+
+function registerOpenFilesIpc(): void {
+  ipcMain.handle(OPEN_FILES_CHANNEL, (event) => {
+    if (!tabManager?.ownsWebContents(event.sender.id)) return []
+    return tabManager.list().flatMap((tab) => {
+      if (!tab.filePath || !isOpenFileKind(tab.kind)) return []
+      return [
+        {
+          id: tab.id,
+          kind: tab.kind,
+          title: tab.title,
+          filePath: tab.filePath,
+          active: tab.active,
+        },
+      ]
+    })
   })
 }
 
@@ -2281,6 +2438,8 @@ function buildHomeMenu(): void {
 
 function buildPdfMenu(): void {
   const isMac = process.platform === 'darwin'
+  const printLabel = currentLang() === 'zh' ? '打印…' : 'Print…'
+  const previewLabel = currentLang() === 'zh' ? '打印预览…' : 'Print Preview…'
   const template: MenuItemConstructorOptions[] = [
     ...(isMac ? [{ role: 'appMenu' as const }] : []),
     {
@@ -2313,6 +2472,16 @@ function buildPdfMenu(): void {
         },
         { type: 'separator' },
         {
+          label: previewLabel,
+          click: () => tabManager?.activePdfTab()?.webContents.send('pdf:print-request'),
+        },
+        {
+          label: printLabel,
+          accelerator: 'CmdOrCtrl+P',
+          click: () => tabManager?.activePdfTab()?.webContents.send('pdf:print-request'),
+        },
+        { type: 'separator' },
+        {
           label: tm('menuClose'),
           accelerator: 'CmdOrCtrl+W',
           click: () => tabManager?.closeActiveTab(),
@@ -2334,6 +2503,8 @@ function buildPdfMenu(): void {
 
 function buildMarkdownMenu(): void {
   const isMac = process.platform === 'darwin'
+  const printLabel = currentLang() === 'zh' ? '打印…' : 'Print…'
+  const previewLabel = currentLang() === 'zh' ? '打印预览…' : 'Print Preview…'
   const template: MenuItemConstructorOptions[] = [
     ...(isMac ? [{ role: 'appMenu' as const }] : []),
     {
@@ -2387,6 +2558,22 @@ function buildMarkdownMenu(): void {
           click: () => {
             const tab = tabManager?.activeMarkdownTab()
             if (tab) sendMarkdownExportRequest(tab.webContents, 'docs')
+          },
+        },
+        { type: 'separator' },
+        {
+          label: previewLabel,
+          click: () => {
+            const tab = tabManager?.activeMarkdownTab()
+            if (tab) sendMarkdownExportRequest(tab.webContents, 'print-preview')
+          },
+        },
+        {
+          label: printLabel,
+          accelerator: 'CmdOrCtrl+P',
+          click: () => {
+            const tab = tabManager?.activeMarkdownTab()
+            if (tab) sendMarkdownExportRequest(tab.webContents, 'print')
           },
         },
         { type: 'separator' },
@@ -2566,6 +2753,7 @@ registerDocsIpc()
 registerHomeIpc()
 registerTabsIpc()
 registerConnectIpc()
+registerOpenFilesIpc()
 registerDocumentDropIpc()
 
 // sheets' project:resolveChat goes through the handler registered by docs-main; the sessionId reverse lookup hooks in here
@@ -2573,6 +2761,156 @@ setSessionPathResolver(resolveSheetsSessionPath)
 
 /** Dev-only pid marker for the takeover below; scoped to userData like the lock itself. */
 const devPidFile = () => join(app.getPath('userData'), 'dev-instance.pid')
+
+let closeMcpBridge: (() => Promise<void>) | undefined
+async function startMcpBridge(): Promise<void> {
+  const token = process.env.ZENOFFICE_MCP_TOKEN
+  if (!token) return
+  const port = Number(process.env.ZENOFFICE_MCP_PORT)
+  if (!Number.isInteger(port) || port < 1 || port > 65535)
+    throw new Error('ZENOFFICE_MCP_PORT must be between 1 and 65535')
+  const registry = new ToolRegistry()
+  registerMarkdownTools(registry, (id, request) => {
+    if (!tabManager) throw new Error('应用尚未就绪')
+    return tabManager.requestMarkdown(id, request)
+  })
+  registerWordTools(registry, (id, request) => {
+    if (!tabManager) throw new Error('应用尚未就绪')
+    return tabManager.requestWord(id, request)
+  })
+  registerAiTools(registry, {
+    status: () => {
+      const config = readAiSettings().providers?.zenmux
+      return {
+        provider: 'zenmux',
+        model: config?.model ?? '',
+        configured: Boolean(config?.apiKey && config?.model),
+      }
+    },
+    chat: async (system, user, signal) => {
+      const result = await runAiChat({ settings: readAiSettings(), system, user }, signal)
+      if (!result.ok) throw new Error(result.error ?? 'AI 生成失败')
+      return { content: result.content }
+    },
+  })
+  if (tabManager) registerDocumentAi(registry, tabManager, readAiSettings, runAiChat)
+  registerApplicationTools(registry, {
+    status: () => ({ version: app.getVersion(), name: app.getName() }),
+    listTabs: () => tabManager?.list() ?? [],
+    activateTab: (id) => {
+      if (!tabManager?.list().some((tab) => tab.id === id)) throw new Error('标签不存在')
+      tabManager.activateTab(id)
+      return { id, active: true }
+    },
+    openFile: (path) => {
+      if (!isAbsolute(path) || !existsSync(path) || !statSync(path).isFile())
+        throw new Error('文件不存在或路径不是绝对路径')
+      if (!openDocumentPath(path)) throw new Error('无法打开此文件类型')
+      return { opened: true, path }
+    },
+    createDocument: async (kind) => {
+      revealShellWindow()
+      const existing = new Set(tabManager?.list().map((tab) => tab.id) ?? [])
+      if (kind === 'word') newDocTab()
+      else if (kind === 'excel') await newSheetTab()
+      else if (kind === 'ppt') newSlideTab()
+      else newMarkdownTab()
+      const tab = tabManager?.list().find((item) => !existing.has(item.id))
+      if (!tab) throw new Error('未能创建编辑标签')
+      return { tab, saved: Boolean(tab.filePath) }
+    },
+  })
+  const store = getProjectStore()
+  store.ensureDefaultProject()
+  const requireProject = (id: string) => {
+    const project = store.getProject(id)
+    if (!project) throw new Error('项目不存在')
+    return project
+  }
+  registerProjectTools(registry, {
+    chats: (id) => {
+      requireProject(id)
+      return store.listChats(id)
+    },
+    chat: (id, chatId, limit) => {
+      requireProject(id)
+      if (!store.listChats(id).some((chat) => chat.chatId === chatId)) throw new Error('对话不存在')
+      return store.loadChat(id, chatId, limit)
+    },
+    list: () => store.listProjectsSummary(),
+    create: (name) => store.createProject(name),
+    rename: (id, name) => {
+      requireProject(id)
+      store.renameProject(id, name)
+      return requireProject(id)
+    },
+    files: (id) => {
+      requireProject(id)
+      return store.listProjectFiles(id)
+    },
+    moveFile: (path, id) => {
+      requireProject(id)
+      if (!isAbsolute(path) || !existsSync(path) || !statSync(path).isFile())
+        throw new Error('需要已有文件的绝对路径')
+      store.resolveProjectForFile(path)
+      store.moveFileToProject(path, id)
+      return { path, projectId: id }
+    },
+    timeline: (id, limit) => {
+      requireProject(id)
+      return store.getProjectTimeline(id, limit)
+    },
+  })
+  registerKnowledgeTools(registry, {
+    list: (query, limit) => store.listKnowledge(query, limit),
+    search: ({ query, projectId, sourceFile, limit }) => {
+      if (projectId) requireProject(projectId)
+      return store.searchKnowledge(query, {
+        ...(projectId === undefined ? {} : { projectId }),
+        ...(sourceFile === undefined ? {} : { sourceFile }),
+        ...(limit === undefined ? {} : { limit }),
+      })
+    },
+    delete: (id) => {
+      store.deleteKnowledge(id)
+      return { id, deleted: true }
+    },
+    clear: () => {
+      store.clearKnowledge()
+      return { cleared: true }
+    },
+    getSettings: () => store.getKnowledgeSettings(),
+    setSettings: (settings) => store.setKnowledgeSettings(settings),
+  })
+  registerImageTools(registry, {
+    targets: () => tabManager?.imageShareTargets(null) ?? [],
+    insert: async (targetId, path) => {
+      if (!shareMcpImage) throw new Error('图片共享尚未就绪')
+      if (!isAbsolute(path) || !existsSync(path) || !statSync(path).isFile())
+        throw new Error('需要已有图片的绝对路径')
+      if (statSync(path).size > 15 * 1024 * 1024) throw new Error('图片文件不能超过 15 MB')
+      const bytes = readFileSync(path)
+      const png = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+      const jpeg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
+      const svg = /\.svg$/i.test(path) && /<svg(?:\s|>)/i.test(bytes.toString('utf8'))
+      if (!png && !jpeg && !svg) throw new Error('仅支持 PNG、JPEG 或 SVG 图片')
+      if (
+        svg &&
+        !tabManager
+          ?.imageShareTargets(null)
+          .some((target) => target.id === targetId && target.kind === 'pdf')
+      )
+        throw new Error('SVG 图片目前仅支持插入 PDF；其他模块请使用 PNG 或 JPEG')
+      const result = await shareMcpImage(
+        targetId,
+        `data:image/${png ? 'png' : jpeg ? 'jpeg' : 'svg+xml'};base64,${bytes.toString('base64')}`,
+      )
+      if (!result.ok) throw new Error(result.error ?? '图片插入失败')
+      return { inserted: true, targetId, saved: false }
+    },
+  })
+  closeMcpBridge = (await startApplicationBridge(registry, token, port)).close
+}
 
 app.whenReady().then(async () => {
   const lockData = () => (pendingLaunchPath ? { launchPath: pendingLaunchPath } : {})
@@ -2631,6 +2969,15 @@ app.whenReady().then(async () => {
   if (!pendingLaunchPath || !openDocumentPath(pendingLaunchPath)) tabManager?.openHomeTab()
   pendingLaunchPath = null
 
+  try {
+    await startMcpBridge()
+  } catch (error) {
+    console.error(
+      '[mcp] Failed to start local application bridge:',
+      error instanceof Error ? error.message : String(error),
+    )
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createShellWindow()
   })
@@ -2641,6 +2988,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  void closeMcpBridge?.()
   // No close prompt may fall through to "Save" during shutdown
   markSheetsShuttingDown()
   stopSheetsSidecar()

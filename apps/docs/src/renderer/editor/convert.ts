@@ -208,6 +208,7 @@ function blockToPmNode(block: Block, rowCapTwips: number | null = null): PmNode 
           label: block.label ?? block.type,
           previewText: block.previewText ?? '',
           imageDataUrl: block.imageDataUrl ?? null,
+          infographicSyntax: block.infographicSyntax ?? null,
           oleProgId: block.oleProgId ?? null,
           imageWidthPx: block.imageWidthPx ?? null,
           imageHeightPx: block.imageHeightPx ?? null,
@@ -951,6 +952,12 @@ export function pmDocToSavePlan(doc: PmNode, originalBlocks: Block[]): SavePlan 
           let xml = imagePatch
             ? patchImageParagraphXml(original.originalXml, imagePatch)
             : original.originalXml
+          if (replacementImage?.description) {
+            xml = xml.replace(/<wp:docPr\b([^>]*)\/>/, (_tag, attrs: string) => {
+              const withoutDescr = attrs.replace(/\sdescr="[^"]*"/g, '')
+              return `<wp:docPr${withoutDescr} descr="${replacementImage.description}"/>`
+            })
+          }
           if (imagePatch?.wrap !== undefined) {
             const posOffset =
               imagePatch.posOffsetX !== undefined && imagePatch.posOffsetY !== undefined
@@ -1090,6 +1097,9 @@ export function pmDocToSavePlan(doc: PmNode, originalBlocks: Block[]): SavePlan 
       } else if (node.attrs?.genImage) {
         changedCount++
         const image = { ...(node.attrs.genImage as NewImage) }
+        if (node.attrs.infographicSyntax) {
+          image.description = `zenoffice-infographic:${encodeURIComponent(String(node.attrs.infographicSyntax))}`
+        }
         if (node.attrs.imageWidthPx) image.widthPx = Number(node.attrs.imageWidthPx)
         if (node.attrs.imageHeightPx) image.heightPx = Number(node.attrs.imageHeightPx)
         const align = node.attrs.imageAlign as NewImage['align'] | null

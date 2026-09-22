@@ -9,6 +9,7 @@ describe('findDocxPath', () => {
     expect(findDocxPath(['GenOffice Docs.exe', 'C:\\Users\\Me\\REPORT.DOCX'])).toBe(
       'C:\\Users\\Me\\REPORT.DOCX',
     )
+    expect(findDocxPath(['ZenOffice', '/tmp/旧版课程大纲.doc'])).toBe('/tmp/旧版课程大纲.doc')
   })
 
   it('ignores Electron switches and unrelated files', () => {

@@ -24,13 +24,16 @@ import { SlashMenu, type SlashMenuHandle } from './components/SlashMenu'
 import { TableMenu } from './components/TableMenu'
 import { EquationDialog, type MarkdownEquationTarget } from './components/EquationDialog'
 import { MermaidDialog } from './components/MermaidDialog'
-import { AiReviewCommitteeModal } from './components/AiReviewCommitteeModal'
+import { ScreenwritingStudio, LessAiToneStudio, screenplayParagraphs } from '@genoffice/ui'
+import { WechatExportDialog } from './components/WechatExportDialog'
+import { AiReviewCommitteeModal, documentImages } from './components/AiReviewCommitteeModal'
 import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
 import { DOCX_MAX_IMAGE_PX, exportDocxBytes } from './export/docxExport'
 import { buildPrintHtml } from './export/printHtml'
 import { resolveImageSrc } from './editor/localImage'
 import { citationToken, syncBibliography } from './markdown/citations'
 import type { ExportFormat, SaveMode } from '../shared/ipc'
+import { INFOGRAPHIC_AI_SYSTEM, InfographicStudio } from '@genoffice/ui'
 
 type LoadStatus = 'loading' | 'ready' | 'error'
 type SaveState = 'idle' | 'saving' | 'saved' | 'failed'
@@ -81,7 +84,7 @@ export function deriveAutoFileName(editor: Editor): string {
 }
 
 export default function App() {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [status, setStatus] = useState<LoadStatus>('loading')
   const [filePath, setFilePath] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
@@ -95,7 +98,13 @@ export default function App() {
   const [equationOpen, setEquationOpen] = useState(false)
   const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
   const [mermaidOpen, setMermaidOpen] = useState(false)
+  const [screenwritingOpen, setScreenwritingOpen] = useState(false)
+  const [lessAiToneOpen, setLessAiToneOpen] = useState(false)
+  const [infographicOpen, setInfographicOpen] = useState(false)
+  const [mermaidTab, setMermaidTab] = useState<'pretty' | 'editorial' | 'wechat'>('pretty')
+  const [wechatOpen, setWechatOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [essayReviewOpen, setEssayReviewOpen] = useState(false)
   const citationRecordsRef = useRef(new Map<string, CitationRecord>())
   const citationStyleRef = useRef<CitationStyle>('gb7714')
 
@@ -141,7 +150,11 @@ export default function App() {
       slashItems: () =>
         buildSlashItems({
           insertImage,
-          insertMermaid: () => setMermaidOpen(true),
+          insertMermaid: () => {
+            setMermaidTab('pretty')
+            setMermaidOpen(true)
+          },
+          openWechat: () => setWechatOpen(true),
           openCitations: () => {
             setCitationInitialTab('library')
             setCitationsOpen(true)
@@ -177,6 +190,27 @@ export default function App() {
   })
   editorRef.current = editor
   filePathRef.current = filePath
+  useEffect(
+    () =>
+      window.markdownApi.onSharedImage(async (dataUrl) => {
+        const current = editorRef.current
+        const originalPath = filePathRef.current
+        if (!current || current.isDestroyed || !current.isEditable)
+          throw new Error('Markdown 文件当前不可编辑。')
+        const path = originalPath
+          ? await window.markdownApi.saveImage({
+              base64: dataUrl.split(',')[1]!,
+              ext: dataUrl.startsWith('data:image/png;') ? 'png' : 'jpg',
+            })
+          : dataUrl
+        if (!path || editorRef.current !== current || filePathRef.current !== originalPath)
+          throw new Error('Markdown 文件已切换或图片保存失败。')
+        if (!current.chain().focus().setImage({ src: path }).run())
+          throw new Error('Markdown 图片插入失败。')
+        markDirty()
+      }),
+    [markDirty],
+  )
 
   useEffect(
     () =>
@@ -263,7 +297,7 @@ export default function App() {
     try {
       // edits landing while the write is in flight (AI streaming, fast typing)
       // must keep the document dirty — compare doc identity after the await
-      const language = navigator.language.startsWith('zh') ? 'zh' : 'en'
+      const language = lang === 'zh' || lang === 'zh-TW' ? 'zh' : 'en'
       const synced = syncBibliography(
         current.getMarkdown(),
         citationRecordsRef.current,
@@ -323,6 +357,57 @@ export default function App() {
   }, [])
   saveUntitledRef.current = () => doSave('save')
 
+  useEffect(
+    () =>
+      window.markdownApi.onMcpRequest((request) => {
+        void (async () => {
+          try {
+            const current = editorRef.current
+            if (
+              !current ||
+              statusRef.current !== 'ready' ||
+              savingRef.current ||
+              current.view.composing
+            )
+              throw new Error('编辑器正在加载、保存或输入，请稍后重试')
+            if (request.action === 'replace') {
+              if (current.getMarkdown() !== request.expectedText)
+                throw new Error('正文已变化，请重新读取后再修改')
+              if (typeof request.text !== 'string' || request.text.length > 200_000)
+                throw new Error('正文超出限制')
+              current.chain().setContent(request.text, { contentType: 'markdown' }).run()
+              markDirty()
+            } else if (request.action === 'save') {
+              if (!filePathRef.current) throw new Error('请先在界面保存未命名文档')
+              if (!(await doSave('save'))) throw new Error('保存未完成')
+            }
+            const text = current.getMarkdown()
+            if (text.length > 200_000) throw new Error('正文超过 MCP 读取限制（200000 字符）')
+            const snapshot = current.state.doc
+            const images =
+              request.action === 'ai_context' ? await documentImages(current) : undefined
+            if (images && (editorRef.current !== current || current.state.doc !== snapshot))
+              throw new Error('文档已变化，请重新读取 AI 上下文')
+            window.markdownApi.sendMcpResult({
+              requestId: request.requestId,
+              data: {
+                text,
+                path: filePathRef.current,
+                dirty: dirtyRef.current,
+                ...(images ? { images } : {}),
+              },
+            })
+          } catch (error) {
+            window.markdownApi.sendMcpResult({
+              requestId: request.requestId,
+              error: error instanceof Error ? error.message : String(error),
+            })
+          }
+        })()
+      }),
+    [doSave, markDirty],
+  )
+
   const runExport = useCallback(async (format: ExportFormat) => {
     const current = editorRef.current
     if (!current || statusRef.current !== 'ready') return
@@ -331,8 +416,17 @@ export default function App() {
         ? filePathRef.current.replace(/^.*[/\\]/, '').replace(/\.(md|markdown)$/i, '')
         : deriveAutoFileName(current)) || 'Untitled'
     try {
-      if (format === 'pdf') {
+      if (format === 'pdf' || format === 'print' || format === 'print-preview') {
         const html = buildPrintHtml(current.view.dom, suggestedName)
+        if (format !== 'pdf') {
+          const result = await window.markdownApi.print({
+            html,
+            suggestedName,
+            mode: format === 'print' ? 'print' : 'preview',
+          })
+          if (!result.ok) console.error('[markdown] print failed:', result.error)
+          return
+        }
         const result = await window.markdownApi.exportPdf({ html, suggestedName })
         if (!result.ok) console.error('[markdown] pdf export failed:', result.error)
         return
@@ -465,12 +559,20 @@ export default function App() {
           setEquationTarget(undefined)
           setEquationOpen(true)
         }}
-        onInsertMermaid={() => setMermaidOpen(true)}
+        onInsertMermaid={() => {
+          setMermaidTab('pretty')
+          setMermaidOpen(true)
+        }}
+        onInsertInfographic={() => setInfographicOpen(true)}
+        onOpenWechat={() => setWechatOpen(true)}
         onOpenCitations={() => {
           setCitationInitialTab('search')
           setCitationsOpen(true)
         }}
         onReview={() => setReviewOpen(true)}
+        onEssayReview={() => setEssayReviewOpen(true)}
+        onScreenwriting={() => setScreenwritingOpen(true)}
+        onLessAiTone={() => setLessAiToneOpen(true)}
         onTranslate={(language) => {
           const selection = editor && editor.state.selection.from !== editor.state.selection.to
           const target = language === 'zh' ? '简体中文' : 'English'
@@ -486,6 +588,45 @@ export default function App() {
         onAiPreset={(text) => {
           setAiOpen(true)
           setAiPreset((prev) => ({ text, nonce: (prev?.nonce ?? 0) + 1 }))
+        }}
+      />
+      <InfographicStudio
+        open={infographicOpen}
+        language={lang}
+        onClose={() => setInfographicOpen(false)}
+        onInsert={(asset) => {
+          const current = editorRef.current
+          if (!current) return
+          current
+            .chain()
+            .focus()
+            .insertContent({
+              type: 'codeBlock',
+              attrs: { language: 'infographic' },
+              content: [{ type: 'text', text: asset.syntax }],
+            })
+            .run()
+        }}
+        onAiGenerate={async (prompt, currentSyntax) => {
+          const settings = await window.markdownApi.getAiSettings()
+          const current = editorRef.current
+          const selection = current?.state.selection
+          const context = current
+            ? current.state.doc
+                .textBetween(
+                  selection?.empty ? 0 : (selection?.from ?? 0),
+                  selection?.empty ? current.state.doc.content.size : (selection?.to ?? 0),
+                  '\n',
+                )
+                .slice(0, 12_000)
+            : ''
+          const response = await window.markdownApi.aiChat({
+            settings,
+            system: INFOGRAPHIC_AI_SYSTEM,
+            user: `Instruction:\n${prompt}\n\nMarkdown context:\n${context}\n\nCurrent infographic syntax:\n${currentSyntax}`,
+          })
+          if (!response.ok) throw new Error(response.error || 'ZenMux infographic request failed')
+          return response.content ?? ''
         }}
       />
       {status === 'loading' && <div className="center-note">{t('loading')}</div>}
@@ -542,13 +683,61 @@ export default function App() {
         />
       )}
       {mermaidOpen && editor && (
-        <MermaidDialog editor={editor} onClose={() => setMermaidOpen(false)} />
+        <MermaidDialog
+          editor={editor}
+          initialTab={mermaidTab}
+          onClose={() => setMermaidOpen(false)}
+        />
+      )}
+      {screenwritingOpen && editor && (
+        <ScreenwritingStudio
+          getDocumentVersion={() => editor.state.doc}
+          initialSource={editor.getText({ blockSeparator: '\n\n' })}
+          onClose={() => setScreenwritingOpen(false)}
+          onInsert={(text) =>
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(editor.state.doc.content.size, screenplayParagraphs(text))
+              .run()
+          }
+          generate={async (prompt) => {
+            const settings = await window.markdownApi.getAiSettings()
+            const response = await window.markdownApi.aiChat({ settings, ...prompt })
+            if (!response.ok) throw new Error(response.error || 'AI 生成失败。')
+            return response.content || ''
+          }}
+        />
+      )}
+      {lessAiToneOpen && editor && (
+        <LessAiToneStudio
+          editor={editor}
+          onClose={() => setLessAiToneOpen(false)}
+          generate={async (prompt) => {
+            const settings = await window.markdownApi.getAiSettings()
+            const response = await window.markdownApi.aiChat({ settings, ...prompt })
+            if (!response.ok)
+              throw new Error(response.error || 'AI 处理失败。请检查 AI 设置后重试。')
+            return response.content || ''
+          }}
+        />
+      )}
+      {wechatOpen && editor && (
+        <WechatExportDialog editorRoot={editor.view.dom} onClose={() => setWechatOpen(false)} />
       )}
       {reviewOpen && editor && (
         <AiReviewCommitteeModal editor={editor} onClose={() => setReviewOpen(false)} />
       )}
+      {essayReviewOpen && editor && (
+        <AiReviewCommitteeModal
+          editor={editor}
+          mode="composition"
+          onClose={() => setEssayReviewOpen(false)}
+        />
+      )}
       {citationsOpen && editor && (
         <CitationManager
+          language={lang === 'zh' || lang === 'zh-TW' ? 'zh' : 'en'}
           initialTab={citationInitialTab}
           onClose={() => setCitationsOpen(false)}
           onInsertCitation={(record: CitationRecord, _rendered, style) => {
@@ -559,7 +748,7 @@ export default function App() {
               editor.getMarkdown(),
               citationRecordsRef.current,
               citationStyleRef.current,
-              navigator.language.startsWith('zh') ? 'zh' : 'en',
+              lang === 'zh' || lang === 'zh-TW' ? 'zh' : 'en',
             )
             editor
               .chain()
@@ -576,7 +765,7 @@ export default function App() {
             })
           }}
           onInsertBibliography={(_records, rendered) => {
-            const markdown = `\n\n## ${navigator.language.startsWith('zh') ? '参考文献' : 'References'}\n\n${rendered.map((line) => `- ${line}`).join('\n')}\n`
+            const markdown = `\n\n## ${lang === 'zh' || lang === 'zh-TW' ? '参考文献' : 'References'}\n\n${rendered.map((line) => `- ${line}`).join('\n')}\n`
             editor.chain().focus().insertContent(markdown, { contentType: 'markdown' }).run()
             markDirty()
           }}

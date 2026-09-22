@@ -1,5 +1,8 @@
 import { basename } from 'node:path'
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
+import { randomUUID } from 'node:crypto'
+import { MARKDOWN_CHANNELS, type MarkdownMcpRequest } from '../../../markdown/src/shared/ipc'
+import { WORD_MCP_CHANNELS, type WordMcpRequest } from '../../../docs/src/shared/ipc'
 import type { Rectangle, WebContents, WebContentsView } from 'electron'
 
 import {
@@ -53,7 +56,7 @@ const HOME_ID = 'home'
  */
 export class TabManager {
   private readonly tabs: TabRecord[] = [
-    { id: HOME_ID, kind: 'home', view: null, title: 'GenOffice' },
+    { id: HOME_ID, kind: 'home', view: null, title: 'ZenOffice' },
   ]
   private activeId: string = HOME_ID
   private nextId = 1
@@ -123,11 +126,69 @@ export class TabManager {
       title: t.title,
       closable: t.id !== HOME_ID,
       active: t.id === this.activeId,
+      ...(t.filePath ? { filePath: t.filePath } : {}),
     }))
   }
 
   ownsWebContents(webContentsId: number): boolean {
     return this.tabs.some((tab) => tab.view?.webContents.id === webContentsId)
+  }
+
+  requestMarkdown(id: string, request: Omit<MarkdownMcpRequest, 'requestId'>): Promise<unknown> {
+    return this.requestEditor(
+      id,
+      'markdown',
+      { request: MARKDOWN_CHANNELS.mcpRequest, result: MARKDOWN_CHANNELS.mcpResult },
+      request,
+    )
+  }
+
+  requestWord(id: string, request: Omit<WordMcpRequest, 'requestId'>): Promise<unknown> {
+    return this.requestEditor(id, 'docs', WORD_MCP_CHANNELS, request)
+  }
+
+  private requestEditor(
+    id: string,
+    kind: 'docs' | 'markdown',
+    channels: { request: string; result: string },
+    request: object,
+  ): Promise<unknown> {
+    const target = this.tabs.find((tab) => tab.id === id && tab.kind === kind)?.view?.webContents
+    if (!target || target.isDestroyed())
+      return Promise.reject(new Error('编辑标签不存在或类型不匹配'))
+    const requestId = randomUUID()
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer)
+        ipcMain.removeListener(channels.result, listener)
+        target.removeListener('destroyed', onDestroyed)
+      }
+      const listener = (
+        event: Electron.IpcMainEvent,
+        result: { requestId: string; error?: string; data?: unknown },
+      ) => {
+        if (
+          event.sender !== target ||
+          event.senderFrame !== target.mainFrame ||
+          result?.requestId !== requestId
+        )
+          return
+        cleanup()
+        if (result.error) reject(new Error(result.error))
+        else resolve(result.data)
+      }
+      const onDestroyed = () => {
+        cleanup()
+        reject(new Error('编辑标签已关闭'))
+      }
+      const timer = setTimeout(() => {
+        cleanup()
+        reject(new Error('编辑器响应超时；请读取当前状态后再重试修改'))
+      }, 25_000)
+      ipcMain.on(channels.result, listener)
+      target.once('destroyed', onDestroyed)
+      target.send(channels.request, { ...request, requestId })
+    })
   }
 
   connectTargets(sourceWebContentsId: number): ConnectTarget[] {
@@ -141,6 +202,30 @@ export class TabManager {
       }
       return [{ id: tab.id, kind: tab.kind as ConnectTarget['kind'], title: tab.title }]
     })
+  }
+
+  imageShareTargets(sourceWebContentsId: number | null) {
+    if (sourceWebContentsId !== null && !this.ownsWebContents(sourceWebContentsId)) return []
+    return this.tabs.flatMap((tab) =>
+      tab.view &&
+      tab.view.webContents.id !== sourceWebContentsId &&
+      ['docs', 'slides', 'markdown', 'pdf'].includes(tab.kind)
+        ? [{ id: tab.id, kind: tab.kind, title: tab.title }]
+        : [],
+    )
+  }
+
+  sendSharedImage(
+    sourceWebContentsId: number | null,
+    targetId: string,
+    payload: { id: string; dataUrl: string },
+  ): number | null {
+    if (!this.imageShareTargets(sourceWebContentsId).some((tab) => tab.id === targetId)) return null
+    const target = this.tabs.find((tab) => tab.id === targetId)!
+    if (!target.view || target.view.webContents.isDestroyed()) return null
+    target.view.webContents.send('image-share:receive', payload)
+    this.activateTab(target.id)
+    return target.view.webContents.id
   }
 
   sendConnect(sourceWebContentsId: number, targetId: string, payload: ConnectPayload): boolean {
@@ -172,7 +257,7 @@ export class TabManager {
       id,
       kind: 'docs',
       view,
-      title: openPath ? basename(openPath) : this.untitled('docs', 'GenOffice Docs'),
+      title: openPath ? basename(openPath) : this.untitled('docs', 'ZenOffice Docs'),
       filePath: openPath,
     })
     this.activateTab(id)

@@ -205,7 +205,7 @@ interface EquationDialogProps {
 }
 
 export function EquationDialog({ onInsert, onClose, initialLatex = '' }: EquationDialogProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [latex, setLatex] = useState(initialLatex)
   const preview = useMemo(() => {
     if (!latex.trim()) return null
@@ -269,7 +269,7 @@ export function EquationDialog({ onInsert, onClose, initialLatex = '' }: Equatio
             <span dangerouslySetInnerHTML={{ __html: preview.mathml }} />
           )}
         </div>
-        <FormulaImageRecognition onRecognize={recognizeImage} />
+        <FormulaImageRecognition language={lang} onRecognize={recognizeImage} />
         <div className="modal-actions">
           <button onClick={onClose}>{t('ribbonCancel')}</button>
           <button className="primary" disabled={!valid} onClick={() => onInsert(latex.trim())}>

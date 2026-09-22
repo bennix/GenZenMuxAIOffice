@@ -1,5 +1,5 @@
 /**
- * GenOffice Slides main process — pptx parsing/render-tree building/edit application/saving all live
+ * ZenOffice Slides main process — pptx parsing/render-tree building/edit application/saving all live
  * here (Node side). The renderer only gets plain-data RenderSlide; edit intents are sent back
  * here to apply. Structure mirrors apps/docs: exports embeddable configure/register/start for
  * future shell reuse.
@@ -20,6 +20,7 @@ import {
 } from 'electron'
 import type { WebContents } from 'electron'
 import { execFile } from 'node:child_process'
+import { loadPrintHtml } from './print-html'
 import { copyFile, readFile, writeFile, rm, stat, mkdir, open } from 'node:fs/promises'
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
@@ -153,7 +154,12 @@ import {
 } from '@genoffice/pptx-engine'
 import { buildRenderSlide, EMU_PER_PX_96, type RenderSlide } from '@genoffice/pptx-render'
 import { refineComplexWidths, shapedMetricsReady } from './shaped-metrics'
-import { applyEditParagraphs, collectParagraphFormatPatches, levelsChanged } from './edit-text'
+import {
+  applyEditParagraphs,
+  collectParagraphFormatPatches,
+  hasExplicitFontSizeChange,
+  levelsChanged,
+} from './edit-text'
 import { cfbKind, isCfbHeader } from './cfb-sniff'
 import { unplayableAudioCodec } from './mp4-audio-sniff'
 import { buildEditableSlidePptx, type EditableHtmlPage } from './html-to-editable-pptx'
@@ -465,7 +471,7 @@ const AUTOSAVE_BACKOFF_TICKS = 10
 let autosaveRunning = false
 
 /**
- * Recovery drafts for never-saved decks (wcId → visible path in <Documents>/GenOffice):
+ * Recovery drafts for never-saved decks (wcId → visible path in <Documents>/ZenOffice):
  * the sha1-keyed recovery copy needs session.path, so before the first save a freeze or
  * crash used to lose everything. Removed on save, explicit discard, or clean close.
  */
@@ -691,7 +697,7 @@ async function openAndBuild(
   }
 }
 
-/** Directory where AI-generated drafts are saved: the configurable default save folder (falls back to <Documents>/GenOffice) */
+/** Directory where AI-generated drafts are saved: the configurable default save folder (falls back to <Documents>/ZenOffice) */
 function getDraftsDir(): string {
   return configuredDefaultSaveDir(app)
 }
@@ -734,7 +740,7 @@ function pickDraftPath(draftsDir: string, deckName?: string): string {
 }
 
 /**
- * Auto-save the draft to <Documents>/GenOffice/<name>.pptx after AI generation completes.
+ * Auto-save the draft to <Documents>/ZenOffice/<name>.pptx after AI generation completes.
  * Append mode reuses the session's existing draft path (overwrite); replace mode generates a
  * new filename. On successful write, update session.path, pushRecent, slidesOpenedHook.
  * On write failure, degrade silently (console.warn) without blocking the in-memory session.
@@ -1020,10 +1026,10 @@ export function registerSlidesIpc(): void {
       const parent = BrowserWindow.fromWebContents(event.sender)
       const options = {
         type: 'warning' as const,
-        title: 'GenOffice 麦克风权限',
-        message: 'GenOffice 尚未获得麦克风权限',
+        title: 'ZenOffice 麦克风权限',
+        message: 'ZenOffice 尚未获得麦克风权限',
         detail:
-          '请在“系统设置 → 隐私与安全性 → 麦克风”中允许 GenOffice 使用麦克风，然后重新启动应用。',
+          '请在“系统设置 → 隐私与安全性 → 麦克风”中允许 ZenOffice 使用麦克风，然后重新启动应用。',
         buttons: ['打开系统设置', '取消'],
         defaultId: 0,
         cancelId: 1,
@@ -1178,7 +1184,17 @@ export function registerSlidesIpc(): void {
     pushHistory(session)
     // Run-level rich-text rebuild: srcPara/srcRun back-tracing + preserving unedited fields, see applyEditParagraphs
     const levelDirty = levelsChanged(el.text.paragraphs, op.paragraphs)
+    const sizeDirty = hasExplicitFontSizeChange(el.text.paragraphs, op.paragraphs)
     el.text.paragraphs = applyEditParagraphs(el.text.paragraphs, op.paragraphs)
+    if (sizeDirty && el.text.autofit === 'shrink') {
+      el.text.autofit = 'none'
+      delete el.text.fontScale
+      delete el.text.lnSpcReduction
+      el.anchor.originalXml = el.anchor.originalXml.replace(
+        /<a:normAutofit\b[^>]*?(?:\/>|>\s*<\/a:normAutofit>)/,
+        '<a:noAutofit/>',
+      )
+    }
     ensureRunLinkRels(session.opened, op.slideIndex, el.text.paragraphs)
     el.dirty = true
     // Per-paragraph bullets/spacing marked on the editor selection
@@ -1520,8 +1536,55 @@ export function registerSlidesIpc(): void {
               const elements = Array.from(document.body.querySelectorAll('*')).filter(visible);
               const semanticText = new Set(['H1','H2','H3','H4','H5','H6','P','LI','TD','TH','BLOCKQUOTE','FIGCAPTION','LABEL','SPAN','STRONG','EM','SMALL']);
               const nodes = [];
+              const measureWrap = (el, fontPx, contentLeft, contentRight) => {
+                let range;
+                try {
+                  range = document.createRange();
+                  range.selectNodeContents(el);
+                } catch (err) {
+                  return { widenPx: 0, unwrapLines: 0 };
+                }
+                const merged = [];
+                for (const rect of range.getClientRects()) {
+                  if (rect.width < 0.5 || rect.height < 0.5) continue;
+                  let hit = null;
+                  for (const line of merged) {
+                    const mid = rect.top + rect.height / 2;
+                    if (Math.abs(line.top + line.h / 2 - mid) < Math.max(2, rect.height * 0.45)) {
+                      hit = line;
+                      break;
+                    }
+                  }
+                  if (hit) {
+                    hit.left = Math.min(hit.left, rect.left);
+                    hit.right = Math.max(hit.right, rect.right);
+                    hit.w = hit.right - hit.left;
+                    hit.h = Math.max(hit.h, rect.height);
+                  } else {
+                    merged.push({ top: rect.top, left: rect.left, right: rect.right, w: rect.width, h: rect.height });
+                  }
+                }
+                const contentW = Math.max(1, contentRight - contentLeft);
+                let widenPx = 0;
+                let unwrapLines = 0;
+                for (let i = 1; i < merged.length; i++) {
+                  const prev = merged[i - 1];
+                  const cur = merged[i];
+                  const prevFilled = prev.right >= contentRight - fontPx * 1.15;
+                  const shortTail = cur.w <= fontPx * 4.5 && cur.w < prev.w * 0.5;
+                  if (prevFilled && shortTail) {
+                    widenPx = Math.max(widenPx, cur.w + fontPx * 0.4);
+                    unwrapLines += 1;
+                  }
+                }
+                if (merged.length === 1 && merged[0].w >= contentW - 1.5) {
+                  widenPx = Math.max(widenPx, Math.max(8, fontPx * 0.85));
+                }
+                return { widenPx: Math.round(widenPx), unwrapLines };
+              };
               for (const el of elements) {
                 if (nodes.length >= 500) break;
+                const firstNode = nodes.length;
                 const s = getComputedStyle(el);
                 const r = el.getBoundingClientRect();
                 const kind = el.getAttribute('data-pptx-kind');
@@ -1537,17 +1600,29 @@ export function registerSlidesIpc(): void {
                 if (shouldShape) nodes.push({ kind:'shape', x, y, w, h, fill:fill?.hex, fillTransparency:fill?.transparency, lineColor:line?.hex, lineTransparency:line?.transparency, lineWidth, radius:parseFloat(s.borderTopLeftRadius) || 0, opacity:Number(s.opacity) || 1 });
                 if ((kind === 'image' || !kind) && el.tagName === 'IMG') {
                   nodes.push({ kind:'image', x, y, w, h, src:el.currentSrc || el.src, objectFit:['cover','contain','fill'].includes(s.objectFit) ? s.objectFit : 'fill', opacity:Number(s.opacity) || 1 });
+                  for (let i = firstNode; i < nodes.length; i++) nodes[i].zIndex = s.zIndex === 'auto' ? undefined : Number(s.zIndex);
                   continue;
                 }
                 const text = String(el.innerText || '').replace(/\\s+\\n/g, '\\n').trim();
                 const hasSemanticChild = Array.from(el.children).some((child) => semanticText.has(child.tagName) && String(child.innerText || '').trim());
                 const shouldText = kind === 'text' || (!kind && text && (semanticText.has(el.tagName) || el.children.length === 0) && !hasSemanticChild);
+                for (let i = firstNode; i < nodes.length; i++) nodes[i].zIndex = s.zIndex === 'auto' ? undefined : Number(s.zIndex);
                 if (!shouldText || !text) continue;
                 const color = parseColor(s.color);
                 const weight = Number(s.fontWeight) || (s.fontWeight === 'bold' ? 700 : 400);
                 const align = s.textAlign === 'center' ? 'center' : (s.textAlign === 'right' || s.textAlign === 'end' ? 'right' : 'left');
                 const valign = s.display.includes('flex') && s.alignItems === 'center' ? 'middle' : 'top';
-                nodes.push({ kind:'text', x, y, w, h, text:el.tagName === 'LI' && !text.startsWith('•') ? '• ' + text : text, color:color?.hex, fontFace:s.fontFamily.split(',')[0].replace(/["']/g, '').trim(), fontSize:parseFloat(s.fontSize) || 18, bold:weight >= 600, italic:s.fontStyle === 'italic', underline:s.textDecorationLine.includes('underline'), align, valign, lineHeight:parseFloat(s.lineHeight) || undefined, charSpacing:parseFloat(s.letterSpacing) || undefined, opacity:Number(s.opacity) || 1 });
+                const fontPx = parseFloat(s.fontSize) || 18;
+                const padL = parseFloat(s.paddingLeft) || 0;
+                const padR = parseFloat(s.paddingRight) || 0;
+                const contentLeft = r.left + (parseFloat(s.borderLeftWidth) || 0) + padL;
+                const contentRight = r.right - (parseFloat(s.borderRightWidth) || 0) - padR;
+                const wrap = measureWrap(el, fontPx, contentLeft, contentRight);
+                const textNode = { kind:'text', x, y, w, h, text:el.tagName === 'LI' && !text.startsWith('•') ? '• ' + text : text, color:color?.hex, fontFace:s.fontFamily.split(',')[0].replace(/["']/g, '').trim(), fontSize:fontPx, bold:weight >= 600, italic:s.fontStyle === 'italic', underline:s.textDecorationLine.includes('underline'), align, valign, lineHeight:parseFloat(s.lineHeight) || undefined, charSpacing:parseFloat(s.letterSpacing) || undefined, opacity:Number(s.opacity) || 1 };
+                if (wrap.widenPx > 0) textNode.widenPx = wrap.widenPx;
+                if (wrap.unwrapLines > 0) textNode.unwrapLines = wrap.unwrapLines;
+                nodes.push(textNode);
+                nodes[nodes.length - 1].zIndex = s.zIndex === 'auto' ? undefined : Number(s.zIndex);
               }
               return { width: innerWidth, height: innerHeight, background: (bg && bg.transparency < 100 ? bg.hex : htmlBg?.hex) || 'FFFFFF', nodes };
             })()`,
@@ -3815,8 +3890,9 @@ html, body { margin: 0; padding: 0; }
       .map((b64) => `<div class="page"><img src="data:image/png;base64,${b64}"></div>`)
       .join('')}</body></html>`
     const win = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+    let cleanupPrintHtml: (() => Promise<void>) | undefined
     try {
-      await win.loadURL('data:text/html;base64,' + Buffer.from(html, 'utf8').toString('base64'))
+      cleanupPrintHtml = await loadPrintHtml(win, html)
       // Wait for fonts and all images to decode before printing, avoiding blank pages
       await win.webContents.executeJavaScript(
         'Promise.all([document.fonts.ready, ...Array.from(document.images).map((i) => i.decode().catch(() => {}))])',
@@ -3834,7 +3910,8 @@ html, body { margin: 0; padding: 0; }
     } catch (err) {
       return { ok: false, error: String(err) }
     } finally {
-      win.destroy()
+      if (!win.isDestroyed()) win.destroy()
+      await cleanupPrintHtml?.()
     }
   })
 
@@ -3921,8 +3998,9 @@ html, body { margin: 0; padding: 0; font-family: -apple-system, 'Segoe UI', sans
           : {}),
         webPreferences: { sandbox: true },
       })
+      let cleanupPrintHtml: (() => Promise<void>) | undefined
       try {
-        await win.loadURL('data:text/html;base64,' + Buffer.from(html, 'utf8').toString('base64'))
+        cleanupPrintHtml = await loadPrintHtml(win, html)
         await win.webContents.executeJavaScript(
           'Promise.all([document.fonts.ready, ...Array.from(document.images).map((i) => i.decode().catch(() => {}))])',
           true,
@@ -3948,6 +4026,7 @@ html, body { margin: 0; padding: 0; font-family: -apple-system, 'Segoe UI', sans
         return { ok: false, error: String(err) }
       } finally {
         if (!win.isDestroyed()) win.destroy()
+        await cleanupPrintHtml?.()
       }
     },
   )
@@ -4066,7 +4145,7 @@ export function createSlidesWindow(openPath?: string | null): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 840,
-    title: 'GenOffice Slides',
+    title: 'ZenOffice Slides',
     ...(process.platform === 'darwin'
       ? { titleBarStyle: 'hiddenInset' as const }
       : {
@@ -4187,6 +4266,10 @@ export function buildSlidesMenu(): Menu {
         // to export or print at all
         { label: tm('menuExportPdf'), click: () => send('export-pdf') },
         { label: tm('menuExportImages'), click: () => send('export-images') },
+        {
+          label: getUiLang() === 'zh' ? '打印预览…' : 'Print Preview…',
+          click: () => send('print'),
+        },
         { label: tm('menuPrint'), accelerator: 'CmdOrCtrl+P', click: () => send('print') },
         { type: 'separator' },
         closeActiveTabHook

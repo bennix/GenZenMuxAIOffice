@@ -10,16 +10,19 @@ import { join } from 'node:path'
 import {
   AiCreditsError,
   AiTimeoutError,
+  askSystemOne,
   chatZenMux,
   defaultAiSettings,
   generateZenMuxImage,
   resolveAiSettings,
   streamZenMux,
+  ZENMUX_DEFAULT_JEV_MODEL,
   type AiSettings,
   type AiChatRequest,
   type AiStreamChunk,
   type AiStreamRequest,
   type LegacyAiSettings,
+  type SystemOneQuestion,
 } from '@genoffice/ai-provider'
 import {
   fetchRemoteImage,
@@ -82,6 +85,29 @@ export function registerAiIpc(): void {
       return { ok: false, error: error instanceof Error ? error.message : String(error) }
     }
   })
+
+  ipcMain.handle(
+    'ai:systemone',
+    async (
+      _event,
+      body: { state: string; questions: Record<string, SystemOneQuestion> },
+    ) => {
+      const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(AI_SETTINGS_PATH(), {})
+      const settings = resolveAiSettings(
+        restoreAiSettingsFromDisk(stored, safeStorage).settings,
+        defaultAiSettings(),
+      )
+      const config = settings.providers.zenmux
+      if (!config?.apiKey) return { ok: false, error: tm('errNoApiKey', { provider: 'ZenMux' }) }
+      return askSystemOne({
+        apiKey: config.apiKey,
+        baseUrl: config.baseUrl,
+        model: config.jevModel?.trim() || ZENMUX_DEFAULT_JEV_MODEL,
+        state: body.state,
+        questions: body.questions,
+      })
+    },
+  )
 
   ipcMain.handle('ai:stream', async (event, request: AiStreamRequest) => {
     const { requestId, settings, system, messages } = request

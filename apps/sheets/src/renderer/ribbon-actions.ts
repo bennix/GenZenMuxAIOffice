@@ -102,6 +102,7 @@ export interface RibbonCommandContext {
   setScreenshotDialogOpen: (open: boolean) => void
   setIconsDialogOpen: (open: boolean) => void
   setEquationDialogOpen: (open: boolean) => void
+  openInfographic: () => void
   openRecommendedCharts: () => void
   setPendingEdits: (count: number) => void
   visualContext: () => VisualActionContext
@@ -425,6 +426,9 @@ export function handleRibbonCommand(ctx: RibbonCommandContext, command: string):
       return
     case 'insert-equation':
       ctx.setEquationDialogOpen(true)
+      return
+    case 'insert-infographic':
+      ctx.openInfographic()
       return
     case 'import-csv':
       handleImportCsv(ctx.dataToolsContext())

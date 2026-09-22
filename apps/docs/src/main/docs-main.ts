@@ -1,3 +1,4 @@
+import { generateGongwen, type GongwenRequest } from '@genoffice/gongwen'
 import { createHash } from 'node:crypto'
 import {
   existsSync,
@@ -74,6 +75,13 @@ import { findDocxPath } from '../shared/open-file'
 import { atomicWriteFile, looksLikeZip } from './atomic-write'
 import { isExternallyModified, type DiskFileState } from './external-change'
 import { initDocsAutoUpdater } from './updater'
+import { installLibreOfficeWithProgress } from '../../../shell/src/main/libreoffice-install-progress'
+import {
+  LegacyDocFidelityError,
+  docxToLegacyDoc,
+  importLegacyDoc,
+  sniffWordContainer,
+} from '../../../shell/src/main/legacy-doc-import'
 
 /**
  * Docs main-process logic as an embeddable module: no top-level side effects.
@@ -175,7 +183,7 @@ const tMain = createI18n({
     menuMacros: '宏',
     menuWindow: '窗口',
     menuHelp: '帮助',
-    menuDocsHelp: 'GenOffice Docs 帮助',
+    menuDocsHelp: 'ZenOffice Docs 帮助',
   },
   en: {
     dlgOpenDoc: 'Open Document',
@@ -269,7 +277,7 @@ const tMain = createI18n({
     menuMacros: 'Macros',
     menuWindow: 'Window',
     menuHelp: 'Help',
-    menuDocsHelp: 'GenOffice Docs Help',
+    menuDocsHelp: 'ZenOffice Docs Help',
   },
   ja: {
     dlgOpenDoc: '文書を開く',
@@ -363,7 +371,7 @@ const tMain = createI18n({
     menuMacros: 'マクロ',
     menuWindow: 'ウィンドウ',
     menuHelp: 'ヘルプ',
-    menuDocsHelp: 'GenOffice Docs ヘルプ',
+    menuDocsHelp: 'ZenOffice Docs ヘルプ',
   },
   ko: {
     dlgOpenDoc: '문서 열기',
@@ -458,7 +466,7 @@ const tMain = createI18n({
     menuMacros: '매크로',
     menuWindow: '창',
     menuHelp: '도움말',
-    menuDocsHelp: 'GenOffice Docs 도움말',
+    menuDocsHelp: 'ZenOffice Docs 도움말',
   },
   fr: {
     dlgOpenDoc: 'Ouvrir un document',
@@ -554,7 +562,7 @@ const tMain = createI18n({
     menuMacros: 'Macros',
     menuWindow: 'Fenêtre',
     menuHelp: 'Aide',
-    menuDocsHelp: 'Aide GenOffice Docs',
+    menuDocsHelp: 'Aide ZenOffice Docs',
   },
   de: {
     dlgOpenDoc: 'Dokument öffnen',
@@ -650,7 +658,7 @@ const tMain = createI18n({
     menuMacros: 'Makros',
     menuWindow: 'Fenster',
     menuHelp: 'Hilfe',
-    menuDocsHelp: 'GenOffice Docs-Hilfe',
+    menuDocsHelp: 'ZenOffice Docs-Hilfe',
   },
   es: {
     dlgOpenDoc: 'Abrir documento',
@@ -745,7 +753,7 @@ const tMain = createI18n({
     menuMacros: 'Macros',
     menuWindow: 'Ventana',
     menuHelp: 'Ayuda',
-    menuDocsHelp: 'Ayuda de GenOffice Docs',
+    menuDocsHelp: 'Ayuda de ZenOffice Docs',
   },
   th: {
     dlgOpenDoc: 'เปิดเอกสาร',
@@ -839,7 +847,7 @@ const tMain = createI18n({
     menuMacros: 'แมโคร',
     menuWindow: 'หน้าต่าง',
     menuHelp: 'วิธีใช้',
-    menuDocsHelp: 'วิธีใช้ GenOffice Docs',
+    menuDocsHelp: 'วิธีใช้ ZenOffice Docs',
   },
   id: {
     dlgOpenDoc: 'Buka Dokumen',
@@ -933,7 +941,7 @@ const tMain = createI18n({
     menuMacros: 'Makro',
     menuWindow: 'Jendela',
     menuHelp: 'Bantuan',
-    menuDocsHelp: 'Bantuan GenOffice Docs',
+    menuDocsHelp: 'Bantuan ZenOffice Docs',
   },
   ru: {
     dlgOpenDoc: 'Открыть документ',
@@ -1028,7 +1036,7 @@ const tMain = createI18n({
     menuMacros: 'Макросы',
     menuWindow: 'Окно',
     menuHelp: 'Справка',
-    menuDocsHelp: 'Справка GenOffice Docs',
+    menuDocsHelp: 'Справка ZenOffice Docs',
   },
   ar: {
     dlgOpenDoc: 'فتح مستند',
@@ -1123,7 +1131,7 @@ const tMain = createI18n({
     menuMacros: 'وحدات الماكرو',
     menuWindow: 'نافذة',
     menuHelp: 'تعليمات',
-    menuDocsHelp: 'تعليمات GenOffice Docs',
+    menuDocsHelp: 'تعليمات ZenOffice Docs',
   },
   pt: {
     dlgOpenDoc: 'Abrir Documento',
@@ -1218,7 +1226,7 @@ const tMain = createI18n({
     menuMacros: 'Macros',
     menuWindow: 'Janela',
     menuHelp: 'Ajuda',
-    menuDocsHelp: 'Ajuda do GenOffice Docs',
+    menuDocsHelp: 'Ajuda do ZenOffice Docs',
   },
   it: {
     dlgOpenDoc: 'Apri documento',
@@ -1313,7 +1321,7 @@ const tMain = createI18n({
     menuMacros: 'Macro',
     menuWindow: 'Finestra',
     menuHelp: 'Aiuto',
-    menuDocsHelp: 'Guida di GenOffice Docs',
+    menuDocsHelp: 'Guida di ZenOffice Docs',
   },
   pl: {
     dlgOpenDoc: 'Otwórz dokument',
@@ -1408,7 +1416,7 @@ const tMain = createI18n({
     menuMacros: 'Makra',
     menuWindow: 'Okno',
     menuHelp: 'Pomoc',
-    menuDocsHelp: 'Pomoc GenOffice Docs',
+    menuDocsHelp: 'Pomoc ZenOffice Docs',
   },
   nl: {
     dlgOpenDoc: 'Document openen',
@@ -1503,7 +1511,7 @@ const tMain = createI18n({
     menuMacros: "Macro's",
     menuWindow: 'Venster',
     menuHelp: 'Help',
-    menuDocsHelp: 'GenOffice Docs Help',
+    menuDocsHelp: 'ZenOffice Docs Help',
   },
   ms: {
     dlgOpenDoc: 'Buka Dokumen',
@@ -1598,7 +1606,7 @@ const tMain = createI18n({
     menuMacros: 'Makro',
     menuWindow: 'Tetingkap',
     menuHelp: 'Bantuan',
-    menuDocsHelp: 'Bantuan GenOffice Docs',
+    menuDocsHelp: 'Bantuan ZenOffice Docs',
   },
   he: {
     dlgOpenDoc: 'פתיחת מסמך',
@@ -1691,7 +1699,7 @@ const tMain = createI18n({
     menuMacros: 'פקודות מאקרו',
     menuWindow: 'חלון',
     menuHelp: 'עזרה',
-    menuDocsHelp: 'עזרה של GenOffice Docs',
+    menuDocsHelp: 'עזרה של ZenOffice Docs',
   },
   hi: {
     dlgOpenDoc: 'दस्तावेज़ खोलें',
@@ -1786,7 +1794,7 @@ const tMain = createI18n({
     menuMacros: 'मैक्रो',
     menuWindow: 'विंडो',
     menuHelp: 'सहायता',
-    menuDocsHelp: 'GenOffice Docs सहायता',
+    menuDocsHelp: 'ZenOffice Docs सहायता',
   },
   'zh-TW': {
     dlgOpenDoc: '開啟文件',
@@ -1878,7 +1886,7 @@ const tMain = createI18n({
     menuMacros: '巨集',
     menuWindow: '視窗',
     menuHelp: '說明',
-    menuDocsHelp: 'GenOffice Docs 說明',
+    menuDocsHelp: 'ZenOffice Docs 說明',
   },
 })
 const tm = (key: Parameters<typeof tMain>[1], params?: Parameters<typeof tMain>[2]) =>
@@ -1955,9 +1963,92 @@ async function saveDialog(event: IpcMainInvokeEvent, options: SaveDialogOptions)
   return showSaveDialogWithMemory(dialog, dialogParent(event), options, defaultSaveDir())
 }
 
-/** default folder where new files land on their first (silent) save; shared with the other editors via shell. User-configurable (app-settings.json), falls back to <Documents>/GenOffice. */
+/** default folder where new files land on their first (silent) save; shared with the other editors via shell. User-configurable (app-settings.json), falls back to <Documents>/ZenOffice. */
 export function defaultSaveDir(): string {
   return configuredDefaultSaveDir(app)
+}
+
+const activeLegacyDocImports = new Map<string, Promise<string>>()
+
+/**
+ * Normalize every Word open entry point to OOXML. The suffix is not trusted:
+ * real-world WPS/Word files may contain OLE or HTML despite being named .docx.
+ * Legacy sources remain read-only and open as a separate converted DOCX copy.
+ */
+class LegacyDocImportCancelledError extends Error {
+  constructor() {
+    super('Legacy Word import was cancelled.')
+    this.name = 'LegacyDocImportCancelledError'
+  }
+}
+
+type LegacyImportChoice = 'recover-text' | 'install' | 'cancel'
+
+async function confirmLegacyImport(parent?: BrowserWindow): Promise<LegacyImportChoice> {
+  const chinese = getUiLang() === 'zh' || getUiLang() === 'zh-TW'
+  const options = {
+    type: 'warning' as const,
+    title: chinese ? '保真转换不可用' : 'Layout-preserving conversion unavailable',
+    message: chinese
+      ? '无法在不改变格式的情况下打开这个旧版 Word 文档。'
+      : 'This legacy Word document cannot be opened without changing its formatting.',
+    detail: chinese
+      ? '仅恢复文字会丢失原字体、字号、粗细、颜色、段落间距、表格和分页。建议安装 LibreOffice 后重新打开；只有在您明确接受格式丢失时，才继续恢复文字。'
+      : 'Text-only recovery loses fonts, sizes, weights, colors, paragraph spacing, tables, and pagination. Install LibreOffice and reopen for best fidelity, or explicitly continue with text-only recovery.',
+    buttons: chinese
+      ? ['仅恢复文字', '安装或获取 LibreOffice', '取消']
+      : ['Recover text only', 'Install or get LibreOffice', 'Cancel'],
+    defaultId: 1,
+    cancelId: 2,
+    noLink: true,
+  }
+  const result = parent
+    ? await dialog.showMessageBox(parent, options)
+    : await dialog.showMessageBox(options)
+  if (result.response === 0) return 'recover-text'
+  if (result.response === 1) return 'install'
+  return 'cancel'
+}
+
+async function editableWordPath(filePath: string, parent?: BrowserWindow): Promise<string> {
+  if (!/\.docx?$/i.test(filePath)) throw new Error(tm('errUnsupportedExt', { ext: 'doc' }))
+  if (/\.docx$/i.test(filePath) && sniffWordContainer(filePath) === 'ooxml') return filePath
+  let pending = activeLegacyDocImports.get(filePath)
+  if (!pending) {
+    pending = importLegacyDoc(filePath, defaultSaveDir()).then((result) => result.path)
+    activeLegacyDocImports.set(filePath, pending)
+  }
+  try {
+    return await pending
+  } catch (error) {
+    if (!(error instanceof LegacyDocFidelityError)) throw error
+    const choice = await confirmLegacyImport(parent)
+    if (choice === 'cancel') throw new LegacyDocImportCancelledError()
+    if (choice === 'install') {
+      if (!(await installLibreOfficeWithProgress(parent, getUiLang().startsWith('zh')))) {
+        throw new LegacyDocImportCancelledError()
+      }
+      return (await importLegacyDoc(filePath, defaultSaveDir())).path
+    }
+    return (await importLegacyDoc(filePath, defaultSaveDir(), { allowTextRecovery: true })).path
+  } finally {
+    activeLegacyDocImports.delete(filePath)
+  }
+}
+
+function legacyImportError(error: unknown): Error {
+  const detail = error instanceof Error ? error.message : String(error)
+  const message =
+    getUiLang() === 'zh' || getUiLang() === 'zh-TW'
+      ? '旧版 Word 文档转换失败'
+      : 'Could not convert the legacy Word document'
+  return new Error(`${message}: ${detail}`)
+}
+
+async function wordBytesForPath(filePath: string, docxBytes: Uint8Array): Promise<Buffer> {
+  if (/\.doc$/i.test(filePath)) return Buffer.from(await docxToLegacyDoc(docxBytes))
+  if (/\.docx$/i.test(filePath)) return Buffer.from(docxBytes)
+  throw new Error('Word documents must be saved as .docx or .doc.')
 }
 
 /** first free path for fileName inside dir: name.ext, name-2.ext, name-3.ext… */
@@ -1971,13 +2062,14 @@ export function uniquePathIn(dir: string, fileName: string): string {
 }
 
 export function openExternalDocx(filePath: string | null): void {
-  if (!filePath || !/\.docx$/i.test(filePath)) return
+  if (!filePath || !/\.docx?$/i.test(filePath)) return
   const win = BrowserWindow.getFocusedWindow() ?? mainWindow
   if (!rendererReady || !win) {
     pendingOpenPath = filePath
     return
   }
-  void loadDocx(filePath, win.webContents.id)
+  void editableWordPath(filePath, win)
+    .then((editablePath) => loadDocx(editablePath, win.webContents.id))
     .then((result) => {
       if (!result || win.isDestroyed()) return
       if (win.isMinimized()) win.restore()
@@ -1985,7 +2077,10 @@ export function openExternalDocx(filePath: string | null): void {
       win.focus()
       win.webContents.send('docs:opened', result)
     })
-    .catch((err) => dialog.showErrorBox(tm('dlgOpenDoc'), String(err)))
+    .catch((err) => {
+      if (err instanceof LegacyDocImportCancelledError) return
+      dialog.showErrorBox(tm('dlgOpenDoc'), legacyImportError(err).message)
+    })
 }
 
 function userDataPath(...parts: string[]): string {
@@ -2485,18 +2580,32 @@ const activeAiStreams = new Map<string, AbortController>()
  * register them exactly once for all window types (docs, sheets, home) —
  * sheets' standalone AI handlers use the same channel names.
  */
+export function readAiSettings(): AiSettings {
+  const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
+  const restored = restoreAiSettingsFromDisk(stored, safeStorage)
+  const settings = resolveAiSettings(restored.settings, defaultAiSettings())
+  // Text AI is served exclusively through ZenMux's OpenAI-compatible endpoint.
+  settings.provider = 'zenmux'
+  if (restored.needsMigration) {
+    writeJson(SETTINGS_PATH(), protectAiSettingsForDisk(settings, safeStorage))
+  }
+  return settings
+}
+
+export async function runAiChat(request: AiChatRequest, signal?: AbortSignal) {
+  const { settings, system, user, images } = request
+  const config = settings.providers?.zenmux
+  if (!config?.apiKey) return { ok: false, error: tm('errNoApiKey', { provider: 'ZenMux' }) }
+  if (!config.model) return { ok: false, error: tm('errNoModel') }
+  try {
+    return await chatZenMux(config, system, user, images, signal)
+  } catch (err) {
+    return { ok: false, error: String(err) }
+  }
+}
+
 export function registerAiIpc(): void {
-  ipcMain.handle('ai:get-settings', (): AiSettings => {
-    const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
-    const restored = restoreAiSettingsFromDisk(stored, safeStorage)
-    const settings = resolveAiSettings(restored.settings, defaultAiSettings())
-    // Text AI is served exclusively through ZenMux's OpenAI-compatible endpoint.
-    settings.provider = 'zenmux'
-    if (restored.needsMigration) {
-      writeJson(SETTINGS_PATH(), protectAiSettingsForDisk(settings, safeStorage))
-    }
-    return settings
-  })
+  ipcMain.handle('ai:get-settings', () => readAiSettings())
 
   ipcMain.handle('ai:set-settings', (_event, settings: AiSettings) => {
     writeJson(
@@ -2690,22 +2799,7 @@ export function registerAiIpc(): void {
     },
   )
 
-  ipcMain.handle('ai:chat', async (_event, request: AiChatRequest) => {
-    const { settings, system, user, images } = request
-    const config = settings.providers?.zenmux
-    if (!config?.apiKey) {
-      return {
-        ok: false,
-        error: tm('errNoApiKey', { provider: 'ZenMux' }),
-      }
-    }
-    if (!config.model) return { ok: false, error: tm('errNoModel') }
-    try {
-      return await chatZenMux(config, system, user, images)
-    } catch (err) {
-      return { ok: false, error: String(err) }
-    }
-  })
+  ipcMain.handle('ai:chat', (_event, request: AiChatRequest) => runAiChat(request))
 }
 
 // ── project-store IPC (shared across docs / slides / sheets) ──────────────
@@ -2713,7 +2807,7 @@ export function registerAiIpc(): void {
 let projectStore: ProjectStore | null = null
 let projectIpcRegistered = false
 
-function getProjectStore(): ProjectStore {
+export function getProjectStore(): ProjectStore {
   if (!projectStore) projectStore = new ProjectStore(app.getPath('userData'))
   return projectStore
 }
@@ -2918,6 +3012,31 @@ export function registerProjectIpc(): void {
 
 /** document/attachment/window IPC (everything except the AI proxy above) */
 export function registerDocsIpc(): void {
+  ipcMain.handle('docs:generate-gongwen', async (event, request: GongwenRequest) => {
+    try {
+      if (
+        !request ||
+        typeof request.markdown !== 'string' ||
+        !request.options ||
+        typeof request.options !== 'object'
+      )
+        throw new Error('无效的公文请求。')
+      const generated = await generateGongwen(request.markdown, request.options)
+      const result = await saveDialog(event, {
+        title: '保存公文 DOCX',
+        defaultPath: '公文.docx',
+        filters: [{ name: 'Word', extensions: ['docx'] }],
+      })
+      if (result.canceled || !result.filePath) return { canceled: true }
+      await import('node:fs/promises').then(({ writeFile }) =>
+        writeFile(result.filePath!, generated.bytes),
+      )
+      return { path: result.filePath, warnings: generated.warnings }
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : String(error) }
+    }
+  })
+
   // shared with the other editor modules — last (identical) registration wins
   ipcMain.removeHandler('app:get-language')
   ipcMain.handle('app:get-language', () => getUiLang())
@@ -2925,26 +3044,48 @@ export function registerDocsIpc(): void {
   ipcMain.handle('docs:open', async (event) => {
     const result = await openDialog(event, {
       title: tm('dlgOpenDoc'),
-      filters: [{ name: tm('filterWord'), extensions: ['docx'] }],
+      filters: [{ name: tm('filterWord'), extensions: ['docx', 'doc'] }],
       properties: ['openFile'],
     })
     if (result.canceled || result.filePaths.length === 0) return null
-    return loadDocx(result.filePaths[0], event.sender.id)
+    try {
+      return loadDocx(
+        await editableWordPath(result.filePaths[0], dialogParent(event)),
+        event.sender.id,
+      )
+    } catch (error) {
+      if (error instanceof LegacyDocImportCancelledError) return null
+      throw legacyImportError(error)
+    }
   })
 
-  ipcMain.handle('docs:open-path', (event, filePath: string) => loadDocx(filePath, event.sender.id))
+  ipcMain.handle('docs:open-path', async (event, filePath: string) => {
+    try {
+      return loadDocx(await editableWordPath(filePath, dialogParent(event)), event.sender.id)
+    } catch (error) {
+      if (error instanceof LegacyDocImportCancelledError) return null
+      throw legacyImportError(error)
+    }
+  })
 
-  ipcMain.handle('docs:consume-pending-open', (event) => {
+  ipcMain.handle('docs:consume-pending-open', async (event) => {
     rendererReady = true
     // a tab spawned via New Tab loads the document queued for it specifically
     const queued = pendingWindowOpens.get(event.sender.id)
-    if (queued) {
-      pendingWindowOpens.delete(event.sender.id)
-      return loadDocx(queued, event.sender.id)
+    try {
+      if (queued) {
+        pendingWindowOpens.delete(event.sender.id)
+        return loadDocx(await editableWordPath(queued, dialogParent(event)), event.sender.id)
+      }
+      const filePath = pendingOpenPath
+      pendingOpenPath = null
+      return filePath
+        ? loadDocx(await editableWordPath(filePath, dialogParent(event)), event.sender.id)
+        : null
+    } catch (error) {
+      if (error instanceof LegacyDocImportCancelledError) return null
+      throw legacyImportError(error)
     }
-    const filePath = pendingOpenPath
-    pendingOpenPath = null
-    return filePath ? loadDocx(filePath, event.sender.id) : null
   })
 
   /** returns true when this tab was opened via "New Document" and should start blank */
@@ -2991,7 +3132,7 @@ export function registerDocsIpc(): void {
         if (tornDownWcIds.has(event.sender.id) || !canDocWrite(event.sender.id, filePath)) {
           return { ok: false, error: 'save target is not an opened document' }
         }
-        const bytes = Buffer.from(data)
+        const bytes = await wordBytesForPath(filePath, Buffer.from(data))
         await atomicWriteFile(filePath, bytes)
         await rememberDiskState(event.sender.id, filePath, bytes)
         clearRecoveryCopy(filePath)
@@ -3038,14 +3179,17 @@ export function registerDocsIpc(): void {
     const result = await saveDialog(event, {
       title: tm('dlgSaveAs'),
       defaultPath: defaultName,
-      filters: [{ name: tm('filterWord'), extensions: ['docx'] }],
+      filters: [
+        { name: `${tm('filterWord')} (.docx)`, extensions: ['docx'] },
+        { name: `${tm('filterWord')} 97-2003 (.doc)`, extensions: ['doc'] },
+      ],
     })
     if (result.canceled || !result.filePath) return { ok: false }
     // the tab may have been closed while the dialog was open; checked before the
     // write because Save As may overwrite an existing file (no safe rollback)
     if (tornDownWcIds.has(event.sender.id)) return { ok: false }
     try {
-      const bytes = Buffer.from(data)
+      const bytes = await wordBytesForPath(result.filePath, Buffer.from(data))
       await atomicWriteFile(result.filePath, bytes)
       allowDocWrite(event.sender.id, result.filePath)
       await rememberDiskState(event.sender.id, result.filePath, bytes)
@@ -3090,7 +3234,7 @@ export function registerDocsIpc(): void {
       return { ok: false, error: 'bibliography target is not an opened document' }
     }
     try {
-      const bibPath = filePath.replace(/\.docx$/i, '') + '.bib'
+      const bibPath = filePath.replace(/\.docx?$/i, '') + '.bib'
       await atomicWriteFile(bibPath, Buffer.from(bibText, 'utf8'))
       return { ok: true }
     } catch (error) {
@@ -3100,7 +3244,7 @@ export function registerDocsIpc(): void {
 
   ipcMain.handle('docs:export-markdown', async (event, defaultName: string, text: string) => {
     if (tornDownWcIds.has(event.sender.id) || typeof text !== 'string') return { ok: false }
-    const baseName = String(defaultName || 'document').replace(/\.docx$/i, '')
+    const baseName = String(defaultName || 'document').replace(/\.docx?$/i, '')
     const result = await saveDialog(event, {
       title: 'Export Markdown',
       defaultPath: `${baseName}.md`,
@@ -3212,9 +3356,27 @@ export function registerDocsIpc(): void {
     },
   )
 
-  ipcMain.handle('docs:print', (event) => {
-    // print the calling tab's own content; zero margins — the docx page padding provides them
-    event.sender.print({ margins: { marginType: 'none' } })
+  ipcMain.handle('docs:print', async (event, pageWidthTwips: number, pageHeightTwips: number) => {
+    if (
+      ![pageWidthTwips, pageHeightTwips].every((n) => Number.isFinite(n) && n >= 144 && n <= 144000)
+    )
+      return { ok: false, error: 'Invalid document paper size.' }
+    // Print the renderer's pagination snapshot at physical size. Native print uses microns,
+    // unlike printToPDF (inches); document page padding already contains its margins.
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      event.sender.print(
+        {
+          printBackground: true,
+          scaleFactor: 100,
+          margins: { marginType: 'none' },
+          pageSize: {
+            width: Math.round((pageWidthTwips / TWIPS_PER_INCH) * 25400),
+            height: Math.round((pageHeightTwips / TWIPS_PER_INCH) * 25400),
+          },
+        },
+        (ok, error) => resolve({ ok, ...(error ? { error } : {}) }),
+      )
+    })
   })
 
   ipcMain.handle(
@@ -3234,7 +3396,7 @@ export function registerDocsIpc(): void {
       if (!filePath) {
         const result = await saveDialog(event, {
           title: tm('dlgExportPdf'),
-          defaultPath: defaultName.replace(/\.docx$/i, '') + '.pdf',
+          defaultPath: defaultName.replace(/\.docx?$/i, '') + '.pdf',
           filters: [{ name: 'PDF', extensions: ['pdf'] }],
         })
         if (result.canceled || !result.filePath) return { ok: false }
@@ -3292,7 +3454,7 @@ export function registerDocsIpc(): void {
       if (!filePath) {
         const result = await saveDialog(event, {
           title: tm('dlgExportPdf'),
-          defaultPath: defaultName.replace(/\.docx$/i, '') + '.pdf',
+          defaultPath: defaultName.replace(/\.docx?$/i, '') + '.pdf',
           filters: [{ name: 'PDF', extensions: ['pdf'] }],
         })
         if (result.canceled || !result.filePath) return { ok: false }
@@ -3477,9 +3639,13 @@ export function buildDocsMenu(): void {
         { label: tm('menuExportPdf'), click: () => sendCommand('export-pdf') },
         { label: 'Export Markdown…', click: () => sendCommand('export-markdown') },
         {
+          label: getUiLang() === 'zh' ? '打印预览…' : 'Print Preview…',
+          click: () => sendCommand('print-preview'),
+        },
+        {
           label: tm('menuPrint'),
           accelerator: 'CmdOrCtrl+P',
-          click: () => activeDocsWebContents()?.print({}),
+          click: () => sendCommand('print-preview'),
         },
       ],
     },
@@ -3625,7 +3791,7 @@ export function createDocsWindow(openPath?: string): BrowserWindow {
     height: 900,
     minWidth: 980,
     minHeight: 600,
-    title: 'GenOffice Docs',
+    title: 'ZenOffice Docs',
     // Word-like custom title bar (document name centered, quick-access buttons)
     ...(process.platform === 'darwin'
       ? { titleBarStyle: 'hiddenInset' as const }
@@ -3916,8 +4082,8 @@ export function startDocsStandalone(): void {
   installContextMenu(app, () => contextMenuLabels(getUiLang()))
   // dev runs must not share the packaged app's userData (recent files, AI settings)
   // or its single-instance lock — otherwise `npm run dev` silently quits whenever
-  // the installed GenOffice Docs is open and forwards its argv there instead.
-  if (isDev) app.setPath('userData', join(app.getPath('appData'), 'GenOffice Docs Dev'))
+  // the installed ZenOffice Docs is open and forwards its argv there instead.
+  if (isDev) app.setPath('userData', join(app.getPath('appData'), 'ZenOffice Docs Dev'))
 
   const hasSingleInstanceLock = app.requestSingleInstanceLock()
   if (!hasSingleInstanceLock) {

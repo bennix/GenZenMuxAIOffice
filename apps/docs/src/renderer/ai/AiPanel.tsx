@@ -291,7 +291,7 @@ export function AiPanel({
   onCollapse,
   filePath,
 }: AiPanelProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [input, setInput] = useState('')
   const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -986,6 +986,9 @@ export function AiPanel({
                 {entry.text && <Markdown text={entry.text} />}
                 {entry.text && (
                   <div className="ai-msg-toolbar">
+                    {entry.role === 'assistant' && (
+                      <ConnectButton api={window.desktop} text={entry.text} language={lang} />
+                    )}
                     <button
                       className="ai-msg-tool-btn"
                       onClick={() => void copyMessage(entry.text, `h-${i}`)}
@@ -1092,7 +1095,9 @@ export function AiPanel({
               )}
               {showToolbar && (
                 <div className="ai-msg-toolbar">
-                  {entry.text && <ConnectButton api={window.desktop} text={entry.text} />}
+                  {entry.text && (
+                    <ConnectButton api={window.desktop} text={entry.text} language={lang} />
+                  )}
                   {entry.text && (
                     <button
                       className="ai-msg-tool-btn"
@@ -1262,6 +1267,11 @@ export function AiPanel({
           sendIconDisabled={<img src={sendEnterOff} alt="" aria-hidden />}
           stopIcon={<img src={sendStop} alt="" aria-hidden />}
           textareaRef={inputRef}
+          language={lang}
+          listOpenFiles={() => window.desktop.listOpenFiles()}
+          onMentionFile={(file) => {
+            void window.desktop.addAttachmentPaths([file.filePath]).then(mergeAttachments)
+          }}
           onChange={(value) => {
             const command = removeConnectCommand(value)
             setInput(command.text)
@@ -1274,6 +1284,7 @@ export function AiPanel({
             <>
               <ConnectButton
                 api={window.desktop}
+                language={lang}
                 text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
                 triggerNonce={connectNonce}
               />

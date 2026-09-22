@@ -67,7 +67,7 @@ export function CitationManager({
   onInsertCitation,
   onInsertBibliography,
   aiAssist,
-  language = navigator.language.startsWith('zh') ? 'zh' : 'en',
+  language = 'en',
   initialTab = 'search',
 }: CitationManagerProps) {
   const zh = language === 'zh'

@@ -7,6 +7,35 @@ export interface OpenFileResult {
   hash: string
 }
 
+export const WORD_MCP_CHANNELS = { request: 'docs:mcp-request', result: 'docs:mcp-result' } as const
+export interface WordMcpRequest {
+  requestId: string
+  action: 'read' | 'insert' | 'save' | 'ai_context'
+  offset?: number
+  maxChars?: number
+  text?: string
+  position?: 'start' | 'end'
+  expectedRevision?: string
+}
+export interface WordMcpResult {
+  requestId: string
+  error?: string
+  data?: {
+    revision: string
+    path: string | null
+    dirty: boolean
+    text?: string
+    totalChars?: number
+    offset?: number
+    insertedParagraphs?: number
+    reviewMaterial?: {
+      text: string
+      images: { mime: string; base64: string }[]
+      omittedImageCount: number
+    }
+  }
+}
+
 export interface PickImageResult {
   /** raw image bytes, base64 encoded */
   base64: string
@@ -129,12 +158,20 @@ export type MenuCommand =
   | 'find'
   | 'print'
   | 'export-pdf'
+  | 'print-preview'
   | 'export-markdown'
   | 'word-count'
 
 export type UiTheme = 'light' | 'dark' | 'system'
 
 export interface DesktopApi extends ConnectApi {
+  onMcpRequest(handler: (request: WordMcpRequest) => void): () => void
+  sendMcpResult(result: WordMcpResult): void
+  generateGongwen(request: {
+    markdown: string
+    options: Record<string, string | boolean>
+  }): Promise<{ path?: string; warnings?: string[]; error?: string; canceled?: boolean }>
+
   /** current UI language (persisted by the shell in app-settings.json) */
   getLanguage(): Promise<Lang>
   /** language switched from the shell home page */
@@ -181,7 +218,7 @@ export interface DesktopApi extends ConnectApi {
   getAiSettings(): Promise<AiSettings>
   setAiSettings(settings: AiSettings): Promise<void>
   /** system print dialog for the current window */
-  print(): Promise<void>
+  print(pageWidthTwips: number, pageHeightTwips: number): Promise<{ ok: boolean; error?: string }>
   /** render the document to PDF and ask where to save; size in twips.
    *  outPath is only honored when a previous export dialog chose that exact path */
   exportPdf(

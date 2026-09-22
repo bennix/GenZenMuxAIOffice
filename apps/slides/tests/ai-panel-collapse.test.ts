@@ -121,3 +121,29 @@ describe('AiPanel collapse (slides)', () => {
     cleanup()
   })
 })
+
+describe('beautify suggestions', () => {
+  it('opens style choices without running AI or changing the deck', () => {
+    const applySlide = vi.fn()
+    const applyDeck = vi.fn()
+    const view = mount(
+      createElement(
+        AiPanel,
+        panelProps({
+          applySlide,
+          applyDeck,
+          preset: { text: 'Beautify', nonce: 1, autoRun: true, slideShot: true, beautify: true },
+        }),
+      ),
+    )
+    expect(view.container.querySelectorAll('.beautify-option')).toHaveLength(3)
+    expect(view.container.querySelectorAll('.ai-msg-user')).toHaveLength(0)
+    const options = view.container.querySelectorAll<HTMLButtonElement>('.beautify-option')
+    act(() => options[2]!.click())
+    expect(options[2]!.getAttribute('aria-pressed')).toBe('true')
+    expect(options[0]!.getAttribute('aria-pressed')).toBe('false')
+    expect(applySlide).not.toHaveBeenCalled()
+    expect(applyDeck).not.toHaveBeenCalled()
+    view.cleanup()
+  })
+})

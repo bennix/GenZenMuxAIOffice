@@ -1003,7 +1003,7 @@ export const FORMULA_REFERENCE_PATTERN = new RegExp(
 
 /// Shifts A1 references in a formula, preserving `$` markers and other
 /// sheets' qualified references. String literals are left untouched. A
-/// reference fully inside a deleted range aborts (Excel would emit #REF!).
+/// reference fully inside a deleted range becomes #REF!, as in Excel.
 /// With qualifiedOnly, only references explicitly qualified with sheetName
 /// shift — the mode for rewriting OTHER sheets' formulas.
 export function shiftFormulaText(
@@ -1038,12 +1038,7 @@ function shiftFormulaSegment(
       if (qualifier === undefined && qualifiedOnly) return full
       if (qualifier !== undefined && !qualifierMatches(qualifier, sheetName)) return full
       const shifted = shiftReferenceToken(token, shift, axis)
-      if (shifted === null) {
-        throw new StructuralShiftError(
-          `A formula references the deleted range (${token}) — deletion aborted.`,
-        )
-      }
-      return `${lead}${qualifier === undefined ? '' : `${qualifier}!`}${shifted}`
+      return `${lead}${qualifier === undefined ? '' : `${qualifier}!`}${shifted ?? '#REF!'}`
     },
   )
 }

@@ -26,6 +26,13 @@ export type UiLanguage =
 /** UI theme preference */
 export type UiTheme = 'light' | 'dark' | 'system'
 
+export interface UpdateCheckResult {
+  status: 'current' | 'available' | 'unsupported' | 'error'
+  currentVersion: string
+  latestVersion?: string
+  error?: string
+}
+
 /** a recent file entry shown on the home screen; type derives from the extension */
 export interface RecentEntry {
   path: string
@@ -101,6 +108,8 @@ export interface HomeApi {
   getUpdateChannel(): Promise<UpdateChannel>
   /** switch + persist the update channel; triggers an immediate update check */
   setUpdateChannel(channel: UpdateChannel): Promise<void>
+  /** user-initiated update check from Settings → About */
+  checkForUpdates(): Promise<UpdateCheckResult>
   /** ZenMux account status (gsk login state; to be upgraded to a signup/account system later) */
   accountStatus(): Promise<AccountStatus>
   /** start ZenMux login (opens the browser; accountStatus flips to logged-in on completion); returns whether the launch succeeded */
@@ -121,7 +130,7 @@ export interface HomeApi {
   getTheme(): Promise<UiTheme>
   /** switch + persist the UI theme; broadcasts 'app:theme-changed' to all web contents */
   setTheme(theme: UiTheme): Promise<void>
-  /** effective default save folder for new/untitled files (configured in userData/app-settings.json, falls back to <Documents>/GenOffice) */
+  /** effective default save folder for new/untitled files (configured in userData/app-settings.json, falls back to <Documents>/ZenOffice) */
   getDefaultSaveDir(): Promise<string>
   /** directory picker to change the default save folder; resolves to the new folder, or null when canceled or the pick was unusable */
   pickDefaultSaveDir(): Promise<string | null>
@@ -279,6 +288,7 @@ export const HOME_CHANNELS = {
   setLanguage: 'home:set-language',
   getUpdateChannel: 'home:get-update-channel',
   setUpdateChannel: 'home:set-update-channel',
+  checkForUpdates: 'home:check-for-updates',
   accountStatus: 'home:account-status',
   accountLogin: 'home:account-login',
   accountLoginEvent: 'home:account-login-event',

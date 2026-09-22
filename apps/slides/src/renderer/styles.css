@@ -7119,3 +7119,118 @@ body.vib .slide-list {
   flex: 1;
   min-width: 0;
 }
+
+.beautify-suggestions {
+  padding: 4px 0 16px;
+  color: var(--text);
+}
+.beautify-heading,
+.beautify-option-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.beautify-heading > button {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  font-size: 22px;
+  cursor: pointer;
+}
+.beautify-suggestions p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 8px 0 12px;
+}
+.beautify-options {
+  display: grid;
+  gap: 10px;
+}
+.beautify-option {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  text-align: start;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.beautify-option[aria-pressed='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.beautify-option:focus-visible,
+.beautify-apply:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.beautify-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  padding: 18px;
+  min-height: 110px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.beautify-preview > strong {
+  font-size: 20px;
+  line-height: 1.3;
+}
+.beautify-preview > span:not(.beautify-preview-rule):not(.beautify-swatches) {
+  font-size: 13px;
+}
+.beautify-preview-rule {
+  height: 3px;
+  width: 28px;
+}
+.beautify-swatches {
+  display: flex;
+  gap: 5px;
+}
+.beautify-swatches i {
+  width: 13px;
+  height: 13px;
+  border: 1px solid;
+  border-radius: 50%;
+}
+.beautify-option-label {
+  font-size: 13px;
+  margin-top: 2px;
+}
+.beautify-option small {
+  font-size: 11px;
+}
+.beautify-large {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+  font-size: 13px;
+}
+.beautify-large input {
+  accent-color: var(--accent);
+}
+.beautify-apply {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 10px;
+  background: var(--accent);
+  color: var(--slides-on-accent);
+  cursor: pointer;
+  font-weight: 600;
+}
+.beautify-apply:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

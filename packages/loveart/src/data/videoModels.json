@@ -1,0 +1,1444 @@
+{
+  "checkedAt": "2026-09-10",
+  "source": "https://zenmux.ai/api/frontend/model/available/list",
+  "models": [
+    {
+      "id": "minimax/minimax-h3-max",
+      "name": "MiniMax: MiniMax H3 Max",
+      "protocols": ["videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "21:9",
+            "value": "21:9"
+          },
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "480p",
+            "value": "480P"
+          },
+          {
+            "key": "768p",
+            "value": "768P"
+          }
+        ],
+        "durations": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "pollingInterval": 3000
+      },
+      "source": "https://zenmux.ai/minimax/minimax-h3-max",
+      "description": "MiniMax H3 Max is a video generation model jointly released by MiniMax and fal.ai, post-trained by fal.ai on MiniMax H3 and optimized for high-speed generation. It delivers mainstream 480P and 768P output and generates faster than MiniMax H3. It currently supports Text-to-Video and Image-to-Video, with Reference Generation coming soon.",
+      "frontend": {},
+      "parameters": {
+        "videos": ["callback_url", "content", "duration", "ratio", "resolution", "watermark"]
+      }
+    },
+    {
+      "id": "google/gemini-omni-1.1-flash-preview",
+      "name": "Google: Gemini Omni 1.1 Flash Preview",
+      "protocols": ["interactions"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration",
+            "requires": ["prompt"]
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [],
+        "durations": [3, 4, 5, 6, 7, 8, 9, 10],
+        "supportsAudio": false,
+        "maxReferenceImages": 10
+      },
+      "source": "https://zenmux.ai/google/gemini-omni-1.1-flash-preview",
+      "description": "Gemini Omni 1.1 Flash (Preview) is a multimodal model designed for video, image, and text tasks. It is optimized for video generation, offering video output alongside text responses in a single model.",
+      "frontend": {},
+      "parameters": {
+        "interactions": [
+          "input",
+          "system_instruction",
+          "tools",
+          "response_format",
+          "stream",
+          "store",
+          "background",
+          "generation_config",
+          "cached_content",
+          "environment",
+          "previous_interaction_id",
+          "response_modalities",
+          "service_tier",
+          "webhook_config"
+        ]
+      }
+    },
+    {
+      "id": "alibaba/wan3.0-video",
+      "name": "Alibaba: Wan3.0-Video",
+      "protocols": ["videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "adaptive",
+            "value": "adaptive"
+          },
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "480p",
+            "value": "480p"
+          },
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          }
+        ],
+        "durations": [
+          2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+          26, 27, 28, 29, 30
+        ],
+        "supportsAudio": true,
+        "maxReferenceImages": 10
+      },
+      "source": "https://zenmux.ai/alibaba/wan3.0-video",
+      "description": "Wan3.0 is an All-in-One reference-based video generation model that supports Text-to-Video, Image-to-Video (first frame/first-last frame), and Reference-based Video Generation. It can generate videos up to 30 seconds long at 30fps.",
+      "frontend": {},
+      "parameters": {
+        "videos": [
+          "content",
+          "duration",
+          "generate_audio",
+          "ratio",
+          "resolution",
+          "seed",
+          "watermark",
+          "model"
+        ]
+      }
+    },
+    {
+      "id": "alibaba/wan3.0-video-prime",
+      "name": "Alibaba: Wan3.0-Video-Prime",
+      "protocols": ["videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "adaptive",
+            "value": "adaptive"
+          },
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "480p",
+            "value": "480p"
+          },
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          }
+        ],
+        "durations": [
+          2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+          26, 27, 28, 29, 30
+        ],
+        "supportsAudio": true,
+        "maxReferenceImages": 10
+      },
+      "source": "https://zenmux.ai/alibaba/wan3.0-video-prime",
+      "description": "Wan3.0-Video-Prime is the high-speed version of Wan3.0’s video generation model. It matches the capabilities of the standard Wan3.0-Video model, supports comprehensive reference inputs across four modalities, generates videos up to 30 seconds long, and delivers immersive audiovisual experiences with significantly faster end-to-end performance.",
+      "frontend": {},
+      "parameters": {
+        "videos": [
+          "content",
+          "duration",
+          "generate_audio",
+          "ratio",
+          "resolution",
+          "seed",
+          "watermark",
+          "model"
+        ]
+      }
+    },
+    {
+      "id": "pixverse/c1",
+      "name": "PixVerse: C1",
+      "protocols": ["videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "21:9",
+            "value": "21:9"
+          },
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "360p",
+            "value": "360p"
+          },
+          {
+            "key": "540p",
+            "value": "540p"
+          },
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          }
+        ],
+        "durations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "supportsAudio": true
+      },
+      "source": "https://zenmux.ai/pixverse/c1",
+      "description": "PixVerse C1 is a cinematic-quality video generation model with realistic character motion, strong action-scene performance, synchronized audio, and support for text, image, start/end frame, and reference-based generation up to 1080p and 15 seconds.",
+      "frontend": {},
+      "parameters": {
+        "videos": ["content", "duration", "generate_audio", "ratio", "resolution", "seed", "model"]
+      }
+    },
+    {
+      "id": "pixverse/v6",
+      "name": "PixVerse: V6",
+      "protocols": ["videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "21:9",
+            "value": "21:9"
+          },
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "360p",
+            "value": "360p"
+          },
+          {
+            "key": "540p",
+            "value": "540p"
+          },
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          }
+        ],
+        "durations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "supportsAudio": true
+      },
+      "source": "https://zenmux.ai/pixverse/v6",
+      "description": "PixVerse V6 is a versatile video generation model supporting text-to-video, image-to-video, first/last-frame transitions, reference-based Fusion, and video extension. It delivers up to 1080p, 15-second videos with optional synchronized audio and multi-clip generation.",
+      "frontend": {},
+      "parameters": {
+        "videos": [
+          "content",
+          "duration",
+          "generate_audio",
+          "generate_multi_clip_switch",
+          "ratio",
+          "reference_mode",
+          "resolution",
+          "seed"
+        ]
+      }
+    },
+    {
+      "id": "bytedance/doubao-seedance-2.5",
+      "name": "ByteDance: Doubao-Seedance-2.5",
+      "protocols": ["videos", "veo"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "21:9",
+            "value": "21:9"
+          },
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          },
+          {
+            "key": "smart",
+            "value": "smart"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "480p",
+            "value": "480p"
+          },
+          {
+            "key": "720p",
+            "value": "720p"
+          }
+        ],
+        "durations": [
+          4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+          28, 29, 30
+        ],
+        "supportsAudio": true
+      },
+      "source": "https://zenmux.ai/bytedance/doubao-seedance-2.5",
+      "description": "Seedance 2.5 is a new-generation multimodal video creation model developed by the Doubao foundation model team. It marks an industrial-grade step forward in long-form storytelling, reference consistency, precise editing, and multilingual video generation.",
+      "frontend": {},
+      "parameters": {
+        "videos": [
+          "callback_url",
+          "content",
+          "duration",
+          "frames",
+          "generate_audio",
+          "ratio",
+          "resolution",
+          "return_last_frame",
+          "seed",
+          "tools",
+          "watermark"
+        ],
+        "veo": [
+          "seed",
+          "durationSeconds",
+          "aspectRatio",
+          "generateAudio",
+          "referenceImages",
+          "lastFrame",
+          "resolution"
+        ]
+      }
+    },
+    {
+      "id": "bfl/flux-3-video",
+      "name": "Black Forest Labs: FLUX.3 Video",
+      "protocols": ["videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "21:9",
+            "value": "21:9"
+          },
+          {
+            "key": "2:1",
+            "value": "2:1"
+          },
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          },
+          {
+            "key": "smart",
+            "value": "smart"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "hd",
+            "value": "hd"
+          },
+          {
+            "key": "fhd",
+            "value": "fhd"
+          }
+        ],
+        "durations": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+        "supportsAudio": true
+      },
+      "source": "https://zenmux.ai/bfl/flux-3-video",
+      "description": "FLUX.3 Video is a video generation model from Black Forest Labs. It supports text-to-video, image-guided generation with opening and closing keyframes, and video continuation workflows, making it suited for controlled creative production, scene animation, and extending existing clips. It can generate synchronized audio alongside the video.",
+      "frontend": {},
+      "parameters": {
+        "videos": ["content", "duration", "generate_audio", "ratio", "resolution"]
+      }
+    },
+    {
+      "id": "klingai/kling-3.0",
+      "name": "KlingAI: Kling-3.0",
+      "protocols": ["videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          },
+          {
+            "key": "smart",
+            "value": "smart"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          },
+          {
+            "key": "4k",
+            "value": "4k"
+          }
+        ],
+        "durations": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+      },
+      "source": "https://zenmux.ai/klingai/kling-3.0",
+      "description": "Kling 3.0 is the flagship video generation model in the Kling series, built on a deeply integrated unified multimodal training framework. It supports text-to-video and image-to-video generation, producing clips of up to 15 seconds",
+      "frontend": {},
+      "parameters": {
+        "videos": ["content", "duration", "ratio", "resolution", "watermark", "model"]
+      }
+    },
+    {
+      "id": "klingai/kling-3.0-omni",
+      "name": "KlingAI: Kling-3.0-Omni",
+      "protocols": ["videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          },
+          {
+            "key": "smart",
+            "value": "smart"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          },
+          {
+            "key": "4k",
+            "value": "4k"
+          }
+        ],
+        "durations": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+      },
+      "source": "https://zenmux.ai/klingai/kling-3.0-omni",
+      "description": "Kling 3.0 Omni is the All-in-One multimodal model of the series, representing the most powerful integration of capabilities. It breaks down the barriers between text, image, audio, and video, treating all inputs as prompts to enable native audio-visual output.",
+      "frontend": {},
+      "parameters": {
+        "videos": ["content", "duration", "ratio", "resolution", "watermark", "model"]
+      }
+    },
+    {
+      "id": "klingai/kling-3.0-turbo",
+      "name": "KlingAI: Kling-3.0-Turbo",
+      "protocols": ["videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          },
+          {
+            "key": "smart",
+            "value": "smart"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          }
+        ],
+        "durations": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+      },
+      "source": "https://zenmux.ai/klingai/kling-3.0-turbo",
+      "description": "Kling 3.0 Turbo is the speed-optimized and cost-efficient model within the Kling 3.0 series. It is designed for creators who need rapid iteration, prompt exploration, or draft generation. Supporting both text-to-video and image-to-video, it produces 3 to 15-second clips at 720p or 1080p with native audio.",
+      "frontend": {},
+      "parameters": {
+        "videos": [
+          "content",
+          "duration",
+          "generate_audio",
+          "ratio",
+          "resolution",
+          "watermark",
+          "model"
+        ]
+      }
+    },
+    {
+      "id": "minimax/minimax-h3",
+      "name": "MiniMax: MiniMax H3",
+      "protocols": ["videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "21:9",
+            "value": "21:9"
+          },
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "2k",
+            "value": "2K"
+          }
+        ],
+        "durations": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "supportsAudio": true
+      },
+      "source": "https://zenmux.ai/minimax/minimax-h3",
+      "description": "MiniMax H3 is a lightweight, open-weights video generation model from MiniMax. It is designed for precise multimodal editing and controlled content generation, including instruction-guided edits, text and brand rendering, and video-to-video motion transfer.\n\nThe model is suited for commercial creative workflows across advertising, e-commerce, gaming, and interface design, with native audiovisual output for reference-driven generation.",
+      "frontend": {
+        "output": "audio_and_video"
+      },
+      "parameters": {
+        "videos": ["callback_url", "content", "duration", "ratio", "resolution", "watermark"]
+      }
+    },
+    {
+      "id": "google/gemini-omni-flash-preview",
+      "name": "Google: Gemini Omni Flash Preview",
+      "protocols": ["interactions"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration",
+            "requires": ["prompt"]
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [],
+        "durations": [3, 4, 5, 6, 7, 8, 9, 10],
+        "supportsAudio": false,
+        "maxReferenceImages": 10
+      },
+      "source": "https://zenmux.ai/google/gemini-omni-flash-preview",
+      "description": "Gemini Omni Flash (Preview) is a multimodal model designed for video, image, and text tasks. It is optimized for video generation, offering video output alongside text responses in a single model",
+      "frontend": {},
+      "parameters": {
+        "interactions": [
+          "input",
+          "system_instruction",
+          "tools",
+          "response_format",
+          "stream",
+          "store",
+          "background",
+          "generation_config",
+          "cached_content",
+          "environment",
+          "previous_interaction_id",
+          "response_modalities",
+          "service_tier",
+          "webhook_config"
+        ]
+      }
+    },
+    {
+      "id": "sapiens-ai/agnes-video-v2.0",
+      "name": "Sapiens AI: Agnes-Video-V2.0",
+      "protocols": ["veo"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "firstLastFrame"
+          },
+          {
+            "name": "referenceGeneration"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "1k",
+            "value": "1k"
+          },
+          {
+            "key": "2k",
+            "value": "2k"
+          }
+        ],
+        "durations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+        "_conditions": [
+          {
+            "when": {
+              "field": "mode",
+              "op": "eq",
+              "value": "referenceGeneration"
+            },
+            "override": {
+              "maxReferenceImages": 2
+            }
+          }
+        ]
+      },
+      "source": "https://zenmux.ai/sapiens-ai/agnes-video-v2.0",
+      "description": "Agnes-Video-V2.0 is a next-generation cinematic video generation model designed for high-quality text-to-video, image-to-video, multi-image video generation, and keyframe animation workflows.\nIt generates high-fidelity videos with strong motion consistency, scene coherence, and visual realism, enabling users to create production-ready video content from text prompts, reference images, or multiple keyframes.\nAgnes-Video-V2.0 is suitable for storytelling, marketing videos, product demos, social media content, immersive visual production, and AI-powered creative workflows.",
+      "frontend": {
+        "output": "audio_and_video"
+      },
+      "parameters": {
+        "veo": [
+          "durationSeconds",
+          "aspectRatio",
+          "seed",
+          "referenceImages",
+          "lastFrame",
+          "fps",
+          "resolution"
+        ]
+      }
+    },
+    {
+      "id": "alibaba/happyhorse-1.0",
+      "name": "Alibaba: HappyHorse 1.0",
+      "protocols": ["veo"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "firstLastFrame"
+          },
+          {
+            "name": "referenceGeneration"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          }
+        ],
+        "durations": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+      },
+      "source": "https://zenmux.ai/alibaba/happyhorse-1.0",
+      "description": "Happy Horse 1.0 is described as an open-source state-of-the-art AI video generator with native joint audio-video generation — meaning the Happy Horse AI video model produces video frames and the corresponding audio track (dialogue, ambient sound, Foley) together in a single forward pass, rather than generating silent video and dubbing it afterward.\nAccording to community-compiled architecture notes, the model is built around a 15-billion-parameter unified self-attention Transformer that processes text, image, video, and audio tokens within a single token sequence. It is reportedly built without dedicated cross-attention branches and without a separate audio module. Combined with DMD-2 distillation, the distilled variant is reported to generate 1080p video in roughly 38 seconds on an NVIDIA H100, using only 8 denoising steps without classifier-free guidance.",
+      "frontend": {
+        "output": "audio_and_video"
+      },
+      "parameters": {
+        "veo": ["durationSeconds", "aspectRatio", "seed", "referenceImages", "resolution"]
+      }
+    },
+    {
+      "id": "skyreels/skyreels-v4",
+      "name": "SkyReels: V4",
+      "protocols": ["veo"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "firstLastFrame"
+          },
+          {
+            "name": "referenceGeneration"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          }
+        ],
+        "durations": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+      },
+      "source": "https://zenmux.ai/skyreels/skyreels-v4",
+      "description": "SkyReels V4 is a unified multimodal video foundation model that generates, edits, and inpaints video and audio simultaneously using a dual-stream architecture with shared text encoding and efficient high-resolution processing.",
+      "frontend": {
+        "output": "audio_and_video"
+      },
+      "parameters": {
+        "veo": [
+          "durationSeconds",
+          "aspectRatio",
+          "generateAudio",
+          "referenceImages",
+          "lastFrame",
+          "enhancePrompt",
+          "compressionQuality"
+        ]
+      }
+    },
+    {
+      "id": "bytedance/doubao-seedance-2.0",
+      "name": "ByteDance: Doubao-Seedance-2.0",
+      "protocols": ["veo", "videos"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "referenceGeneration"
+          },
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "21:9",
+            "value": "21:9"
+          },
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          },
+          {
+            "key": "smart",
+            "value": "smart"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "480p",
+            "value": "480p"
+          },
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          },
+          {
+            "key": "4k",
+            "value": "4k"
+          }
+        ],
+        "durations": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "supportsAudio": true
+      },
+      "source": "https://zenmux.ai/bytedance/doubao-seedance-2.0",
+      "description": "Seedance 2.0 delivers ultra-realistic, highly stable audiovisual output: with outstanding motion stability and fine visual detail, it produces imagery with a live-action-quality look and an almost indistinguishable blend of real and virtual visual impact. It can handle complex scenes with ease—vividly recreating everything from subtle micro-expressions and intense physical confrontations to dynamic, high-energy song-and-dance performances. It also comes with professional camera movement, multi-shot storytelling, and text-to-video generation capabilities, enhancing narrative tension.\nAudio and visuals are generated natively in sync, accurately matching the visuals with rich sound effects. It supports performances in multiple languages, accents, and dialects, giving videos exceptional completeness and immersion.\nSeedance 2.0 is deeply optimized for three key scenarios: commercial advertising, film/TV production, and social media marketing. With industrial-grade generation quality, the hit rate for successful generations is significantly improved, lowering the barrier and cost of producing high-quality content, streamlining the workflow from idea to final cut, and delivering substantial efficiency gains for the industry.",
+      "frontend": {
+        "output": "audio_and_video"
+      },
+      "parameters": {
+        "veo": [
+          "seed",
+          "durationSeconds",
+          "aspectRatio",
+          "generateAudio",
+          "referenceImages",
+          "lastFrame",
+          "resolution"
+        ],
+        "videos": [
+          "callback_url",
+          "content",
+          "duration",
+          "frames",
+          "generate_audio",
+          "ratio",
+          "resolution",
+          "return_last_frame",
+          "seed",
+          "tools",
+          "watermark"
+        ]
+      }
+    },
+    {
+      "id": "google/veo-3.1-fast-generate-001",
+      "name": "Google: Veo 3.1 Fast",
+      "protocols": ["veo"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "firstLastFrame"
+          },
+          {
+            "name": "referenceGeneration"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          },
+          {
+            "key": "4k",
+            "value": "4k"
+          }
+        ],
+        "durations": [4, 6, 8],
+        "supportsAudio": true,
+        "_conditions": [
+          {
+            "when": {
+              "field": "mode",
+              "op": "eq",
+              "value": "referenceGeneration"
+            },
+            "override": {
+              "maxReferenceImages": 3
+            }
+          },
+          {
+            "when": {
+              "or": [
+                {
+                  "field": "referenceImages.length",
+                  "op": "gt",
+                  "value": 0
+                }
+              ]
+            },
+            "override": {
+              "durations": [8]
+            }
+          }
+        ]
+      },
+      "source": "https://zenmux.ai/google/veo-3.1-fast-generate-001",
+      "description": "Veo 3.1 Fast is a speed-optimized variant of Google DeepMind's flagship video generation model. It is designed to generate high-quality video significantly faster and at a lower cost than the standard Veo 3.1 Quality model, making it ideal for rapid prototyping and high-volume content creation.",
+      "frontend": {
+        "output": "audio_and_video"
+      },
+      "parameters": {
+        "veo": [
+          "durationSeconds",
+          "resolution",
+          "compressionQuality",
+          "enhancePrompt",
+          "seed",
+          "referenceImages",
+          "lastFrame",
+          "fps",
+          "aspectRatio",
+          "negativePrompt",
+          "generateAudio",
+          "personGeneration",
+          "mask"
+        ]
+      }
+    },
+    {
+      "id": "google/veo-3.1-lite-generate-001",
+      "name": "Google: Veo 3.1 Lite",
+      "protocols": ["veo"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "firstLastFrame"
+          },
+          {
+            "name": "referenceGeneration"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          },
+          {
+            "key": "4k",
+            "value": "4k"
+          }
+        ],
+        "durations": [4, 6, 8],
+        "supportsAudio": true,
+        "_conditions": [
+          {
+            "when": {
+              "field": "mode",
+              "op": "eq",
+              "value": "referenceGeneration"
+            },
+            "override": {
+              "maxReferenceImages": 3
+            }
+          },
+          {
+            "when": {
+              "or": [
+                {
+                  "field": "referenceImages.length",
+                  "op": "gt",
+                  "value": 0
+                }
+              ]
+            },
+            "override": {
+              "durations": [8]
+            }
+          }
+        ]
+      },
+      "source": "https://zenmux.ai/google/veo-3.1-lite-generate-001",
+      "description": "Veo 3.1 Lite is Google DeepMind's most cost-efficient AI video generation model, released on March 31, 2026. It is designed to provide professional-grade video capabilities at a significantly lower price point, making it ideal for developers and content teams who need to scale high-volume video production",
+      "frontend": {
+        "output": "audio_and_video"
+      },
+      "parameters": {
+        "veo": [
+          "durationSeconds",
+          "resolution",
+          "compressionQuality",
+          "enhancePrompt",
+          "seed",
+          "referenceImages",
+          "lastFrame",
+          "fps",
+          "aspectRatio",
+          "negativePrompt",
+          "generateAudio",
+          "personGeneration",
+          "mask"
+        ]
+      }
+    },
+    {
+      "id": "google/veo-3.1-generate-001",
+      "name": "Google: Veo 3.1",
+      "protocols": ["veo"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "firstLastFrame"
+          },
+          {
+            "name": "referenceGeneration"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          },
+          {
+            "key": "4k",
+            "value": "4k"
+          }
+        ],
+        "durations": [4, 6, 8],
+        "supportsAudio": true,
+        "_conditions": [
+          {
+            "when": {
+              "field": "mode",
+              "op": "eq",
+              "value": "referenceGeneration"
+            },
+            "override": {
+              "maxReferenceImages": 3
+            }
+          },
+          {
+            "when": {
+              "or": [
+                {
+                  "field": "referenceImages.length",
+                  "op": "gt",
+                  "value": 0
+                }
+              ]
+            },
+            "override": {
+              "durations": [8]
+            }
+          }
+        ]
+      },
+      "source": "https://zenmux.ai/google/veo-3.1-generate-001",
+      "description": "Veo 3.1 is Google's state-of-the-art model for generating high-fidelity, 8-second 720p, 1080p or 4k videos featuring stunning realism and natively generated audio. You can access this model programmatically using the Gemini API. To learn more about the available Veo model variants, see the Model Versions section.",
+      "frontend": {
+        "output": "audio_and_video"
+      },
+      "parameters": {
+        "veo": [
+          "durationSeconds",
+          "resolution",
+          "compressionQuality",
+          "enhancePrompt",
+          "seed",
+          "referenceImages",
+          "lastFrame",
+          "fps",
+          "aspectRatio",
+          "negativePrompt",
+          "generateAudio",
+          "personGeneration",
+          "mask"
+        ]
+      }
+    },
+    {
+      "id": "bytedance/doubao-seedance-1.5-pro",
+      "name": "ByteDance: Doubao-Seedance-1.5-pro",
+      "protocols": ["veo"],
+      "capabilities": {
+        "modes": [
+          {
+            "name": "firstLastFrame"
+          }
+        ],
+        "ratios": [
+          {
+            "key": "16:9",
+            "value": "16:9"
+          },
+          {
+            "key": "4:3",
+            "value": "4:3"
+          },
+          {
+            "key": "1:1",
+            "value": "1:1"
+          },
+          {
+            "key": "3:4",
+            "value": "3:4"
+          },
+          {
+            "key": "9:16",
+            "value": "9:16"
+          },
+          {
+            "key": "21:9",
+            "value": "21:9"
+          },
+          {
+            "key": "smart",
+            "value": "smart"
+          }
+        ],
+        "resolutions": [
+          {
+            "key": "480p",
+            "value": "480p"
+          },
+          {
+            "key": "720p",
+            "value": "720p"
+          },
+          {
+            "key": "1080p",
+            "value": "1080p"
+          }
+        ],
+        "durations": [4, 5, 6, 7, 8, 9, 10, 11, 12],
+        "supportsAudio": true
+      },
+      "source": "https://zenmux.ai/bytedance/doubao-seedance-1.5-pro",
+      "description": "Seedance 1.5 Pro is a new-generation professional-grade audio-visual co-generation video model released by the Doubao large-model team. Building on its predecessor’s multi-shot storytelling and high-definition generation capabilities, it natively supports integrated audio-and-video output, aiming to deliver an end-to-end synchronized creation experience across visuals, voice, music, and sound effects. The model also includes a built-in first-and-last-frame feature: creators only need to set the opening and ending frames of a video to precisely lock in its style, composition, and characters, which then drives the model to generate smooth, natural motion between frames. By combining audio-visual co-generation with first/last-frame control, Seedance 1.5 Pro significantly improves the efficiency, controllability, and artistic expressiveness of professional video creation.",
+      "frontend": {
+        "output": "audio_and_video",
+        "offline": "2026/09/24"
+      },
+      "parameters": {
+        "veo": ["seed", "durationSeconds", "aspectRatio", "generateAudio", "resolution"]
+      }
+    }
+  ]
+}

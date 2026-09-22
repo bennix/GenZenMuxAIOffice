@@ -2013,6 +2013,13 @@ body {
   overflow: auto;
   text-align: center;
 }
+
+.md-infographic-preview {
+  width: 100%;
+  min-height: 360px;
+  overflow: auto;
+  background: #fff;
+}
 .md-mermaid-preview svg {
   max-width: 100%;
   height: auto;
@@ -2025,8 +2032,104 @@ body {
 .md-mermaid-empty {
   opacity: 0.55;
 }
+.md-mermaid-dialog {
+  width: min(920px, calc(100vw - 40px));
+}
 .md-mermaid-dialog textarea {
-  min-height: 180px;
+  min-height: 140px;
+}
+.md-mermaid-mode-row {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+.md-mermaid-mode-row button {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.md-mermaid-mode-row button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft, var(--hover));
+}
+.md-studio-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.md-studio-tabs button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.md-studio-tabs button strong {
+  font-size: 14px;
+}
+.md-studio-tabs button span {
+  color: var(--text-secondary);
+  font-size: 11.5px;
+}
+.md-studio-tabs button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft, var(--hover));
+}
+.md-studio-tabs button:hover {
+  background: var(--hover);
+}
+.md-mermaid-mode-hint {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.md-mermaid-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.md-mermaid-chips button {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.md-mermaid-chips button:hover {
+  background: var(--hover);
+}
+.md-wechat-dialog {
+  width: min(780px, calc(100vw - 40px));
+}
+.md-wechat-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+.md-wechat-preview {
+  max-height: min(420px, 48vh);
+  overflow: auto;
+  margin: 0 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 .md-mermaid-ai-box {
   margin: 12px 0;
@@ -2127,6 +2230,38 @@ body {
 .md-review-options select {
   min-width: 180px;
   padding: 7px;
+}
+.md-review-options .md-review-literature-toggle {
+  min-height: 34px;
+  padding: 6px 10px;
+  display: inline-flex;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-weight: 650;
+}
+.md-review-literature-toggle input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+.md-review-literature-status {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.essay-review-icon {
+  color: #9a580d;
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 21px;
+  font-weight: 800;
 }
 .md-review-results {
   display: grid;

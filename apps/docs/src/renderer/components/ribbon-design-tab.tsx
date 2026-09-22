@@ -248,6 +248,45 @@ export function DesignTab({
     <>
       <div className="ribbon-group">
         <div className="ribbon-group-items">
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="GB/T 9704-2012 公文排版与 AI 起草"
+            onClick={() => document.dispatchEvent(new Event('zenoffice:open-gongwen'))}
+          >
+            <span className="rb-big-icon">
+              <IconTheme size={BIG} />
+            </span>
+            <span>公文排版</span>
+          </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="Screenwriting Skills · AI 编剧工作台"
+            onClick={() => document.dispatchEvent(new Event('zenoffice:open-screenwriting'))}
+          >
+            <span className="rb-big-icon">
+              <IconTheme size={BIG} />
+            </span>
+            <span>AI 编剧</span>
+          </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="检测 AI 写作痕迹，审阅并应用局部修改"
+            onClick={() => document.dispatchEvent(new Event('zenoffice:open-less-ai-tone'))}
+          >
+            <span className="rb-big-icon">
+              <IconTheme size={BIG} />
+            </span>
+            <span>去 AI 味</span>
+          </button>
+        </div>
+        <div className="ribbon-group-label">专业写作</div>
+      </div>
+      <div className="ribbon-sep" />
+      <div className="ribbon-group">
+        <div className="ribbon-group-items">
           <div className="rb-split-wrap">
             <button
               className="rb-big"

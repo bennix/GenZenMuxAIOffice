@@ -91,8 +91,8 @@ export function PresentationRecordingDialog({
         </label>
         <p className="recording-permission-note">
           {zh
-            ? '开始后，请允许麦克风和屏幕录制权限。macOS 会录制 GenOffice 幻灯片内播放的媒体声音；Windows 还可录制系统声音。'
-            : 'Allow microphone and screen-recording access. macOS records media played inside GenOffice; Windows can also record system audio.'}
+            ? '开始后，请允许麦克风和屏幕录制权限。macOS 会录制 ZenOffice 幻灯片内播放的媒体声音；Windows 还可录制系统声音。'
+            : 'Allow microphone and screen-recording access. macOS records media played inside ZenOffice; Windows can also record system audio.'}
         </p>
         <div className="modal-actions">
           <button disabled={starting} onClick={onClose}>

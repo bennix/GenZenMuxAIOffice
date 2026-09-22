@@ -1,6 +1,6 @@
 {
   "name": "@genoffice/pdf",
-  "productName": "GenOffice PDF",
+  "productName": "ZenOffice PDF",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "private": true,
@@ -11,13 +11,15 @@
     "dev:renderer": "vite --config vite.renderer.config.ts",
     "build": "electron-vite build",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "fonts:fetch": "node scripts/fetch-edit-fonts.mjs"
   },
   "devDependencies": {
     "@embedpdf/pdfium": "^2.15.0",
     "@genoffice/agent-core": "*",
     "@genoffice/ai-provider": "*",
     "@genoffice/ai-search": "*",
+    "@genoffice/citations": "*",
     "@genoffice/docx-engine": "*",
     "@genoffice/electron-utils": "*",
     "@genoffice/file-parse": "*",
@@ -40,7 +42,7 @@
     "vite-plugin-static-copy": "^3.0.0",
     "vitest": "^4.1.10"
   },
-  "author": "GenOffice",
+  "author": "ZenOffice",
   "dependencies": {
     "pdf-lib-plus-encrypt": "^1.1.0"
   }

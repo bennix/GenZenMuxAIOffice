@@ -486,6 +486,50 @@ button {
   background: var(--hover);
 }
 
+.rb-icon.active {
+  background: var(--active-bg);
+}
+
+.rb-icon:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rb-icon-italic {
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+}
+
+.rb-font-group {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  justify-content: center;
+}
+
+.rb-select {
+  height: 26px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  font-size: 12px;
+  padding: 0 4px;
+  color: var(--text);
+}
+
+.rb-select:disabled {
+  opacity: 0.55;
+}
+
+.rb-font-family {
+  width: 148px;
+}
+
+.rb-font-size {
+  width: 48px;
+}
+
 .tb-page-input {
   width: 40px;
   height: 24px;
@@ -3373,6 +3417,35 @@ button {
   gap: 5px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.pdf-review-options .pdf-review-literature-toggle {
+  min-height: 34px;
+  padding: 6px 10px;
+  display: inline-flex;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.pdf-review-literature-toggle input {
+  margin: 0;
+  accent-color: var(--color-btn-primary);
+}
+
+.pdf-review-literature-status {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-left: 3px solid var(--color-btn-primary);
+  border-radius: 5px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .pdf-review-options select,

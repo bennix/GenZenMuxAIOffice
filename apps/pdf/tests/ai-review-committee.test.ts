@@ -14,7 +14,8 @@ describe('PDF AI review committee', () => {
     expect(modal).toContain('assignReviewModels')
     expect(modal).toContain('availableReviewModels')
     expect(modal).toContain('profile.members.length + 1')
-    expect(modal.match(/window\.pdfApi\.aiChat/g)).toHaveLength(2)
+    expect(modal.match(/window\.pdfApi\.aiChat/g)).toHaveLength(3)
+    expect(modal).toContain('searchNoveltyEvidence')
     expect(modal).toContain('settings.providers.zenmux.apiKey')
   })
 
@@ -35,7 +36,9 @@ describe('PDF AI review committee', () => {
 
   it('reuses the AI reply copy and Connect delivery paths for every report', () => {
     expect(modal).toContain('copyTextToClipboard')
-    expect(modal).toContain('<ConnectButton api={window.pdfApi} text={result.content} />')
+    expect(modal).toContain(
+      '<ConnectButton api={window.pdfApi} text={result.content} language={language} />',
+    )
     expect(modal).toContain('className="pdf-review-connect-report"')
     expect(modal).toContain('label={<span>{reportSendLabel}</span>}')
     expect(modal).toContain('onSendResult={(ok) =>')

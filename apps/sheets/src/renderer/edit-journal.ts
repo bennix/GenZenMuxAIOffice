@@ -709,7 +709,11 @@ export function toSaveVisualAdds(journal: EditJournal): WorkbookVisualAdd[] {
       additions.push({
         sheetId: visual.sheetId,
         anchor: visual.anchor,
-        image: { mediaType, base64 },
+        image: {
+          mediaType,
+          base64,
+          ...(visual.description ? { description: visual.description } : {}),
+        },
       })
       continue
     }

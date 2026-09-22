@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Editor } from '@tiptap/core'
+import { officeFeatureLocale } from '@genoffice/ui'
 import {
   bibliographyEntry,
   CitationManager,
@@ -362,7 +363,7 @@ export function ReferencesTab({
   onAddSource,
   headingPages,
 }: ReferencesTabProps) {
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
   const [captionOpen, setCaptionOpen] = useState(false)
   const [sourceOpen, setSourceOpen] = useState(false)
   const [researchOpen, setResearchOpen] = useState(false)
@@ -576,11 +577,7 @@ export function ReferencesTab({
           <button
             className="rb-big"
             disabled={!hasDoc}
-            title={
-              navigator.language.startsWith('zh')
-                ? 'AI 辅助检索、导入和引用科研文献'
-                : 'AI-assisted scholarly search, import, and citation'
-            }
+            title={officeFeatureLocale(lang).researchTip}
             onClick={() => {
               setResearchInitialTab('search')
               setResearchOpen(true)
@@ -589,7 +586,7 @@ export function ReferencesTab({
             <span className="rb-big-icon">
               <IconBook size={BIG} />
             </span>
-            <span>{navigator.language.startsWith('zh') ? '科研文献' : 'Research'}</span>
+            <span>{officeFeatureLocale(lang).research}</span>
           </button>
           <button
             className="rb-big"
@@ -750,6 +747,7 @@ export function ReferencesTab({
       )}
       {researchOpen && (
         <CitationManager
+          language={lang === 'zh' || lang === 'zh-TW' ? 'zh' : 'en'}
           initialTab={researchInitialTab}
           onClose={() => setResearchOpen(false)}
           onInsertCitation={insertResearchCitation}

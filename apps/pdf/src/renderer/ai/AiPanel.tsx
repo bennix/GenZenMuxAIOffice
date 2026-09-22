@@ -609,6 +609,9 @@ export function AiPanel({
                   (entry.role === 'assistant' ? <Markdown text={entry.text} /> : entry.text)}
                 {entry.text && (
                   <div className="ai-msg-toolbar">
+                    {entry.role === 'assistant' && (
+                      <ConnectButton api={window.pdfApi} text={entry.text} language={lang} />
+                    )}
                     <button
                       className="ai-msg-tool-btn"
                       onClick={() => void copyMessage(entry.text, `historic-${index}`)}
@@ -698,7 +701,7 @@ export function AiPanel({
               {entry.text && <Markdown text={entry.text} />}
               {showConnect && (
                 <div className="ai-msg-toolbar">
-                  <ConnectButton api={window.pdfApi} text={entry.text} />
+                  <ConnectButton api={window.pdfApi} text={entry.text} language={lang} />
                   <button
                     className="ai-msg-tool-btn"
                     onClick={() => void copyMessage(entry.text, `current-${i}`)}
@@ -786,6 +789,11 @@ export function AiPanel({
           sendIconEnabled={<img src={sendEnterOn} alt="" aria-hidden />}
           sendIconDisabled={<img src={sendEnterOff} alt="" aria-hidden />}
           stopIcon={<img src={sendStop} alt="" aria-hidden />}
+          language={lang}
+          listOpenFiles={() => window.pdfApi.listOpenFiles()}
+          onMentionFile={(file) => {
+            void window.pdfApi.addAttachmentPaths([file.filePath]).then(mergeAttachments)
+          }}
           onChange={(value) => {
             const command = removeConnectCommand(value)
             setPrompt(command.text)
@@ -798,6 +806,7 @@ export function AiPanel({
             <>
               <ConnectButton
                 api={window.pdfApi}
+                language={lang}
                 text={[...chat].reverse().find((entry) => entry.role === 'assistant')?.text ?? ''}
                 triggerNonce={connectNonce}
               />

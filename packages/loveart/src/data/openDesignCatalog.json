@@ -1,0 +1,353 @@
+{
+  "source": {
+    "repo": "https://github.com/nexu-io/open-design",
+    "commit": "d0d9c02763922e0564bb56ec75fa3849eccf899a",
+    "license": "Apache-2.0",
+    "importedAt": "2026-06-05"
+  },
+  "designSystems": [
+    {
+      "id": "default",
+      "name": "Neutral Modern",
+      "category": "Starter",
+      "summary": "Clean product baseline for B2B tools, dashboards, and utility pages.",
+      "designPrompt": "Calm, functional, content-first product UI. Use off-white backgrounds, white surfaces, cobalt accent #2F6FEB, Inter or system sans, 8-12px radii, quiet borders, sparse shadows, 12-column grid, and generous whitespace. Avoid decorative gradients, glassmorphism, heavy shadows, and oversized type.",
+      "tokensExcerpt": "#FAFAFA background, #111111 foreground, #2F6FEB accent, #E5E5E5 border, #FFFFFF surface.",
+      "localized": {
+        "zh": {
+          "name": "中性现代",
+          "category": "入门基线",
+          "summary": "适合 B2B 工具、仪表盘和功能页的清爽产品设计基线。",
+          "designPrompt": "冷静、功能性、内容优先的产品 UI。使用暖白背景、白色表面、钴蓝强调色 #2F6FEB、Inter 或系统无衬线字体、8-12px 圆角、安静边框、克制阴影、12 栏网格和充足留白。避免装饰性渐变、玻璃拟态、厚重阴影和过大的标题字。",
+          "tokensExcerpt": "#FAFAFA 背景、#111111 前景、#2F6FEB 强调色、#E5E5E5 边框、#FFFFFF 表面。"
+        }
+      },
+      "source": {
+        "repo": "https://github.com/nexu-io/open-design",
+        "path": "design-systems/default/DESIGN.md",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "notion",
+      "name": "Notion",
+      "category": "Productivity and SaaS",
+      "summary": "Warm minimalism, paper-like surfaces, serif-friendly headings, and whisper borders.",
+      "designPrompt": "Warm minimalism with a blank-canvas feel. Use pure white and warm off-white surfaces, charcoal ink #37352F, #F7F6F3 sidebars, Notion-like Inter typography, ultra-thin hairline borders, restrained blue #0075DE or #2EAADC accents, gentle shadows, pill badges, database-table structures, and seeded-data honesty labels. Avoid glass, gradients, heavy card shadows, saturated hero effects, and claims of live sync unless real data exists.",
+      "tokensExcerpt": "#FFFFFF canvas, #F7F6F3 warm sidebar, #37352F ink, #ECECEA hairline, #2EAADC accent.",
+      "localized": {
+        "zh": {
+          "name": "Notion",
+          "category": "效率工具与 SaaS",
+          "summary": "温暖极简、纸张质感表面、适合衬线标题，并用极细边框保持安静。",
+          "designPrompt": "带有空白画布感的温暖极简。使用纯白与暖白表面、炭黑墨色 #37352F、#F7F6F3 侧栏、类似 Notion 的 Inter 字体、极细发丝线边框、克制蓝色 #0075DE 或 #2EAADC 强调、轻柔阴影、胶囊标签、数据库表格结构，以及清楚标明示例数据的提示。避免玻璃质感、渐变、厚重卡片阴影、高饱和英雄区效果；除非确有真实数据，不要声称实时同步。",
+          "tokensExcerpt": "#FFFFFF 画布、#F7F6F3 暖色侧栏、#37352F 墨色、#ECECEA 发丝线、#2EAADC 强调色。"
+        }
+      },
+      "source": {
+        "repo": "https://github.com/nexu-io/open-design",
+        "path": "design-systems/notion/DESIGN.md",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "stripe",
+      "name": "Stripe",
+      "category": "Fintech and Crypto",
+      "summary": "Premium fintech precision with light-weight typography and violet/navy accents.",
+      "designPrompt": "Premium technical fintech design. Use white surfaces, deep navy #061B31 headings, saturated violet #533AFD as the primary accent, ruby or magenta accent sparks, blue-tinted layered shadows, precise product grids, code and data panels, conservative 4-8px radii, light display weights, and tabular financial details. Avoid pill-heavy casual UI, noisy gradients, and generic purple decoration.",
+      "tokensExcerpt": "#FFFFFF surface, #061B31 heading, #533AFD purple, #64748D body, #E5EDF5 border.",
+      "localized": {
+        "zh": {
+          "name": "Stripe",
+          "category": "金融科技与加密",
+          "summary": "高级金融科技的精密感，轻字重排版，搭配紫色与海军蓝强调。",
+          "designPrompt": "高级、技术型金融科技设计。使用白色表面、深海军蓝 #061B31 标题、饱和紫 #533AFD 作为主强调色、少量红宝石或洋红强调火花、偏蓝的层叠阴影、精准产品网格、代码与数据面板、保守的 4-8px 圆角、轻量展示字重，以及表格化金融细节。避免大量胶囊式休闲 UI、嘈杂渐变和泛泛的紫色装饰。",
+          "tokensExcerpt": "#FFFFFF 表面、#061B31 标题、#533AFD 紫色、#64748D 正文、#E5EDF5 边框。"
+        }
+      },
+      "source": {
+        "repo": "https://github.com/nexu-io/open-design",
+        "path": "design-systems/stripe/DESIGN.md",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "category": "AI and LLM",
+      "summary": "Calm near-monochrome research-lab restraint with teal accent and editorial typography.",
+      "designPrompt": "Research-lab calm and editorial restraint. Use true white, mist #FAFAFA, deep ink #0D0D0D, soft black #1A1A1A, hairline #E5E5E5 borders, OpenAI teal #10A37F as the lone accent, Sohne-like or Inter UI text, optional serif editorial display, soft 8-12px radii, generous line-height, and whitespace-first layout. Avoid gradients, loud AI neon, over-bold weights, and excessive ornament.",
+      "tokensExcerpt": "#FFFFFF canvas, #0D0D0D ink, #10A37F teal, #E5E5E5 border, #FAFAFA mist.",
+      "localized": {
+        "zh": {
+          "name": "OpenAI",
+          "category": "AI 与大语言模型",
+          "summary": "近似单色的研究实验室克制感，以青绿色强调和编辑式排版组织内容。",
+          "designPrompt": "研究实验室般的冷静与编辑式克制。使用纯白、雾白 #FAFAFA、深墨色 #0D0D0D、柔黑 #1A1A1A、#E5E5E5 发丝线边框、OpenAI 青绿色 #10A37F 作为唯一强调色、类似 Sohne 或 Inter 的 UI 字体，可选衬线编辑标题、柔和 8-12px 圆角、舒展行高，以及以留白优先的布局。避免渐变、刺眼 AI 霓虹、过粗字重和过度装饰。",
+          "tokensExcerpt": "#FFFFFF 画布、#0D0D0D 墨色、#10A37F 青绿色、#E5E5E5 边框、#FAFAFA 雾白。"
+        }
+      },
+      "source": {
+        "repo": "https://github.com/nexu-io/open-design",
+        "path": "design-systems/openai/DESIGN.md",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "linear-app",
+      "name": "Linear",
+      "category": "Productivity and SaaS",
+      "summary": "dark-mode-native precision, near-black surfaces, sparse indigo-violet accent.",
+      "designPrompt": "dark-mode-native product precision. Use #08090A or #010102 canvas, #0F1011 panels, #191A1B elevated surfaces, near-white #F7F8F8 text, subtle rgba white borders, Inter Variable-like typography with compressed display spacing, and sparse indigo-violet #5E6AD2 or #7170FF accents. Use luminous hierarchy, precise grids, command-center calm, and minimal chrome. Avoid colorful decoration and light-theme assumptions.",
+      "tokensExcerpt": "#08090A canvas, #0F1011 panel, #F7F8F8 text, #7170FF accent, rgba(255,255,255,0.08) border.",
+      "localized": {
+        "zh": {
+          "name": "Linear",
+          "category": "效率工具与 SaaS",
+          "summary": "原生深色模式的精准产品感，近黑表面，稀疏的靛紫强调。",
+          "designPrompt": "原生深色模式的产品精密感。使用 #08090A 或 #010102 画布、#0F1011 面板、#191A1B 抬升表面、近白 #F7F8F8 文本、细微 rgba 白色边框、类似 Inter Variable 的字体与紧凑展示字距，以及少量靛紫 #5E6AD2 或 #7170FF 强调。强调发光层级、精准网格、指挥中心般冷静和极少界面装饰。避免彩色装饰和浅色主题假设。",
+          "tokensExcerpt": "#08090A 画布、#0F1011 面板、#F7F8F8 文本、#7170FF 强调色、rgba(255,255,255,0.08) 边框。"
+        }
+      },
+      "source": {
+        "repo": "https://github.com/nexu-io/open-design",
+        "path": "design-systems/linear-app/DESIGN.md",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "atelier-zero",
+      "name": "Atelier Zero",
+      "category": "Editorial and Studio",
+      "summary": "Magazine-grade warm-paper collage system with coral accent and editorial annotations.",
+      "designPrompt": "High-craft editorial studio language. Use warm paper #EFE7D2, bone #F7F1DE surfaces, ink #15140F text, single coral #ED6F5C accent, mustard or olive only as tiny supporting marks, oversized mixed display type, Roman numeral section markers, hairline rules, asymmetric top-biased layouts, collage imagery, coordinate annotations, and print-like texture. Avoid neon, pure white page backgrounds, pure black, and multi-accent clutter.",
+      "tokensExcerpt": "#EFE7D2 paper, #15140F ink, #ED6F5C coral, #E9B94A mustard, #6E7448 olive.",
+      "localized": {
+        "zh": {
+          "name": "Atelier Zero",
+          "category": "编辑视觉与工作室",
+          "summary": "杂志级暖纸拼贴系统，以珊瑚色强调并加入编辑式标注。",
+          "designPrompt": "高工艺感的编辑工作室语言。使用暖纸色 #EFE7D2、骨白 #F7F1DE 表面、墨色 #15140F 文本、单一珊瑚色 #ED6F5C 强调，芥末黄或橄榄色只作为极小辅助标记；使用超大混合展示字体、罗马数字章节标记、发丝线、顶部偏重的不对称布局、拼贴图像、坐标标注和印刷质感。避免霓虹、纯白页面背景、纯黑以及多强调色混乱。",
+          "tokensExcerpt": "#EFE7D2 纸张、#15140F 墨色、#ED6F5C 珊瑚、#E9B94A 芥末黄、#6E7448 橄榄。"
+        }
+      },
+      "source": {
+        "repo": "https://github.com/nexu-io/open-design",
+        "path": "design-systems/atelier-zero/DESIGN.md",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "kami",
+      "name": "Kami",
+      "category": "Editorial and Print",
+      "summary": "Warm parchment, ink-blue accent, serif-led hierarchy, print-stable restraint.",
+      "designPrompt": "Printed document restraint. Use parchment #F5F4ED, ivory #FAF9F5 cards, ink-blue #1B365D as the only chromatic accent, warm neutral text, serif-led hierarchy at medium weight, tight print rhythm, tabular numerals, 1px rings, and whisper shadows. Keep accents under 5% of the surface. Avoid pure white backgrounds, pure black, cool grays, second saturated accent colors, hard shadows, bold or italic excess, and hero gradients.",
+      "tokensExcerpt": "#F5F4ED parchment, #FAF9F5 ivory, #1B365D ink-blue, #141413 text, #E8E6DC border.",
+      "localized": {
+        "zh": {
+          "name": "Kami",
+          "category": "编辑视觉与印刷",
+          "summary": "暖羊皮纸、墨蓝强调、衬线主导层级，以及适合印刷的克制感。",
+          "designPrompt": "印刷文档式克制。使用羊皮纸色 #F5F4ED、象牙白 #FAF9F5 卡片、墨蓝 #1B365D 作为唯一彩色强调、暖中性文本、中等字重的衬线层级、紧密印刷节奏、表格数字、1px 描边环和轻到几乎听不见的阴影。强调色面积保持在表面 5% 以下。避免纯白背景、纯黑、冷灰、第二种饱和强调色、硬阴影、过度粗体或斜体，以及英雄区渐变。",
+          "tokensExcerpt": "#F5F4ED 羊皮纸、#FAF9F5 象牙白、#1B365D 墨蓝、#141413 文本、#E8E6DC 边框。"
+        }
+      },
+      "source": {
+        "repo": "https://github.com/nexu-io/open-design",
+        "path": "design-systems/kami/DESIGN.md",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "id": "hud",
+      "name": "HUD",
+      "category": "Themed and Unique",
+      "summary": "Fighter-jet head-up-display overlays with phosphor green telemetry and angular geometry.",
+      "designPrompt": "Combat aircraft HUD aesthetic. Use near-black #0A0A0A canvas, surface #111316, phosphor green #00FF41 primary data, chartreuse #7FFF00 secondary readouts, muted green grid lines, amber warnings, red alerts, monospaced telemetry, uppercase compact labels, angular geometry, target reticles, and tick marks. Every element should feel readable at speed. Avoid light mode, soft lifestyle styling, and ambiguous ornament.",
+      "tokensExcerpt": "#0A0A0A background, #111316 surface, #00FF41 primary, #7FFF00 secondary, #FFB800 warning.",
+      "localized": {
+        "zh": {
+          "name": "HUD",
+          "category": "主题化与独特风格",
+          "summary": "战机抬头显示器覆盖层，以荧光绿遥测数据和锐角几何构成画面。",
+          "designPrompt": "战斗机 HUD 美学。使用近黑 #0A0A0A 画布、#111316 表面、荧光绿 #00FF41 作为主数据色、黄绿色 #7FFF00 作为次级读数、低饱和绿色网格线、琥珀警告、红色警报、等宽遥测字体、大写紧凑标签、锐角几何、目标准星和刻度线。每个元素都应像高速中也能读懂。避免浅色模式、柔软生活方式视觉和含混装饰。",
+          "tokensExcerpt": "#0A0A0A 背景、#111316 表面、#00FF41 主色、#7FFF00 次级色、#FFB800 警告色。"
+        }
+      },
+      "source": {
+        "repo": "https://github.com/nexu-io/open-design",
+        "path": "design-systems/hud/DESIGN.md",
+        "license": "Apache-2.0"
+      }
+    }
+  ],
+  "promptTemplates": [
+    {
+      "id": "notion-team-dashboard-live-artifact",
+      "surface": "image",
+      "title": "Notion-style Team Dashboard",
+      "summary": "Single-screen Notion-native team dashboard mockup with KPI grid, sparkline, activity feed, and linked-database table.",
+      "category": "Live Artifact",
+      "tags": ["app-showcase", "chart", "dashboard"],
+      "localized": {
+        "zh": {
+          "title": "Notion 风格团队仪表盘",
+          "summary": "单屏 Notion 原生团队仪表盘样稿，包含 KPI 网格、迷你趋势线、动态流和关联数据库表格。",
+          "category": "实时作品样稿",
+          "tags": ["应用展示", "图表", "仪表盘"],
+          "prompt": "为 {USER_BRIEF} 创建一张 Notion 原生团队仪表盘样稿。使用暖白页面、温暖侧栏、炭黑墨色、发丝线网格、克制蓝色强调、KPI 网格、7 天迷你趋势线、最近动态流和关联数据库任务表。加入清晰可见的示例数据说明，避免暗示真实实时连接。保持字体清爽、布局密集但冷静；不要渐变、卡片阴影或玻璃拟态。"
+        }
+      },
+      "model": "gpt-image-2",
+      "aspect": "4:3",
+      "prompt": "Create a Notion-native team dashboard mockup for {USER_BRIEF}. Use an off-white page, warm sidebar, charcoal ink, hairline grid, restrained blue accent, KPI grid, 7-day sparkline, recent activity feed, and linked-database task table. Include a visible seeded-sample-data note so the image does not imply a real live connector. Keep typography clean, layout dense but calm, no gradients, no card shadows, no glassmorphism.",
+      "previewImageUrl": "https://raw.githubusercontent.com/nexu-io/open-design/main/prompt-templates/image/notion-team-dashboard-live-artifact.preview.png",
+      "source": {
+        "repo": "https://github.com/nexu-io/open-design",
+        "path": "prompt-templates/image/notion-team-dashboard-live-artifact.json",
+        "license": "Apache-2.0",
+        "url": "https://github.com/nexu-io/open-design"
+      }
+    },
+    {
+      "id": "illustrated-city-food-map",
+      "surface": "image",
+      "title": "Illustrated City Food Map",
+      "summary": "Hand-drawn tourist food map with local specialties, landmarks, legend, and playful editorial details.",
+      "category": "Illustration",
+      "tags": ["food", "map", "editorial"],
+      "localized": {
+        "zh": {
+          "title": "手绘城市美食地图",
+          "summary": "手绘旅游美食地图，包含地方特色、地标、图例和有趣的编辑式细节。",
+          "category": "插画",
+          "tags": ["美食", "地图", "编辑视觉"],
+          "prompt": "为 {USER_BRIEF} 创建一张插画地图信息图。使用复古羊皮纸上的水彩与墨线、装饰边框、编号地标、美食图标、图例、手写标题、俏皮吉祥物、清晰可读标签、蜿蜒道路、河流、公园，以及温暖旅行海报气质。城市、食物、地标和标题都要根据用户需求原创。"
+        }
+      },
+      "model": "gpt-image-2",
+      "aspect": "1:1",
+      "prompt": "Create an illustrated map infographic for {USER_BRIEF}. Use watercolor and ink on vintage parchment, decorative border, numbered landmarks, food icons, legend, hand-lettered title, playful mascot, readable labels, winding roads, rivers, parks, and warm travel-poster charm. Make the city, foods, landmarks, and title original to the user's brief.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1776662673014_nf0taw_HGRMNDybsAAGG88.jpg",
+      "source": {
+        "repo": "https://github.com/YouMind-OpenLab/awesome-gpt-image-2",
+        "path": "prompt-templates/image/illustrated-city-food-map.json",
+        "license": "CC-BY-4.0",
+        "url": "https://github.com/YouMind-OpenLab/awesome-gpt-image-2"
+      }
+    },
+    {
+      "id": "vr-headset-exploded-view-poster",
+      "surface": "image",
+      "title": "VR Headset Exploded View Poster",
+      "summary": "High-tech exploded-view product diagram with component callouts and promotional poster typography.",
+      "category": "Product Poster",
+      "tags": ["3d-render", "product", "diagram"],
+      "localized": {
+        "zh": {
+          "title": "VR 头显爆炸图海报",
+          "summary": "高科技产品爆炸图，带组件标注和宣传海报式排版。",
+          "category": "产品海报",
+          "tags": ["3D 渲染", "产品", "结构图"],
+          "prompt": "为 {USER_BRIEF} 创建一张干净、高科技的产品爆炸图海报。将产品拆分成精准层级，加入组件标注、发光强调、棚拍灯光、微妙渐变或技术背景、利落字体、宣传副标题、编号标签，以及精修 3D 渲染质感。除非用户明确要求，否则避免真实品牌 logo。"
+        }
+      },
+      "model": "gpt-image-2",
+      "aspect": "1:1",
+      "prompt": "Create a clean high-tech exploded-view product diagram poster for {USER_BRIEF}. Show the product separated into precise layers with component callouts, glowing accents, studio lighting, subtle gradient or technical background, crisp typography, promotional subtitle, numbered labels, and polished 3D render finish. Avoid real brand logos unless the user explicitly asks for one.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1776658772018_lukyfw_HGSUfldbIAEiMWZ.jpg",
+      "source": {
+        "repo": "https://github.com/YouMind-OpenLab/awesome-gpt-image-2",
+        "path": "prompt-templates/image/vr-headset-exploded-view-poster.json",
+        "license": "CC-BY-4.0",
+        "url": "https://github.com/YouMind-OpenLab/awesome-gpt-image-2"
+      }
+    },
+    {
+      "id": "hyperframes-product-reveal-minimal",
+      "surface": "video",
+      "title": "Minimal Product Reveal",
+      "summary": "Five-second premium product reveal with restrained motion, dark canvas, single accent, and kinetic title card.",
+      "category": "Cinematic",
+      "tags": ["product", "minimal", "title-card"],
+      "localized": {
+        "zh": {
+          "title": "极简产品揭幕",
+          "summary": "8 秒高级产品揭幕视频，使用克制动效、深色画布、单一强调色和动态标题卡。",
+          "category": "电影感",
+          "tags": ["产品", "极简", "标题卡"],
+          "prompt": "为 {USER_BRIEF} 生成一个 8 秒极简产品揭幕视频提示词。使用深色画布、一个暖色强调、米白字体、一条发丝线、缓慢推进镜头、克制的动态标题、轻微光晕脉冲、高级编辑式字体，以及最后停留的产品英雄帧。动效只做入场，保持不拥挤并以产品为中心。"
+        }
+      },
+      "model": "hyperframes-html",
+      "aspect": "16:9",
+      "prompt": "Generate an 8-second minimal product reveal video prompt for {USER_BRIEF}. Use dark canvas, one warm accent color, off-white type, a single hairline rule, slow push-in, restrained kinetic title, subtle glow pulse, premium editorial typography, and a final held hero frame. Keep motion entrance-only, uncluttered, and product-centered.",
+      "previewImageUrl": "https://static.heygen.ai/hyperframes-oss/docs/images/catalog/blocks/logo-outro.png",
+      "previewVideoUrl": "https://static.heygen.ai/hyperframes-oss/docs/images/catalog/blocks/logo-outro.mp4",
+      "source": {
+        "repo": "https://github.com/heygen-com/hyperframes",
+        "path": "prompt-templates/video/hyperframes-product-reveal-minimal.json",
+        "license": "Apache-2.0",
+        "url": "https://github.com/heygen-com/hyperframes"
+      }
+    },
+    {
+      "id": "seedance-romance-short-film",
+      "surface": "video",
+      "title": "Cinematic Romance Short Film",
+      "summary": "Warm 15-second multi-scene cinematic short-film prompt with subtle emotion and consistent characters.",
+      "category": "Cinematic",
+      "tags": ["cinematic", "romance", "short-film"],
+      "localized": {
+        "zh": {
+          "title": "电影感浪漫短片",
+          "summary": "温暖的 15 秒多场景电影短片提示词，强调细腻情绪和角色一致性。",
+          "category": "电影感",
+          "tags": ["电影感", "浪漫", "短片"],
+          "prompt": "为 {USER_BRIEF} 创建一个 15 秒电影短片视频提示词。使用温暖金色光线、浅景深、细微呼吸与眼神张力、保持一致的人脸和服装、胶片颗粒、自然微动作，并安排三段式镜头推进：建立氛围、亲密特写、克制情绪反应。保持画面得体、不利用化。"
+        }
+      },
+      "model": "seedance-2.0",
+      "aspect": "16:9",
+      "prompt": "Create a 15-second cinematic short-film video prompt for {USER_BRIEF}. Use warm golden light, shallow depth of field, subtle breathing and eye tension, consistent faces and clothing, film grain, natural micro-movements, and a three-beat shot progression: establishing atmosphere, intimate close-up, restrained emotional reaction. Keep the scene tasteful and non-exploitative.",
+      "previewImageUrl": "https://customer-qs6wnyfuv0gcybzj.cloudflarestream.com/7f63ad253175a9ad1dac53de490efac8/thumbnails/thumbnail.jpg",
+      "previewVideoUrl": "https://github.com/YouMind-OpenLab/awesome-seedance-2-prompts/releases/download/videos/1402.mp4",
+      "source": {
+        "repo": "https://github.com/YouMind-OpenLab/awesome-seedance-2-prompts",
+        "path": "prompt-templates/video/seedance-2-0-15-second-cinematic-japanese-romance-short-film.json",
+        "license": "CC-BY-4.0",
+        "url": "https://github.com/YouMind-OpenLab/awesome-seedance-2-prompts"
+      }
+    },
+    {
+      "id": "cinematic-street-racing-sequence",
+      "surface": "video",
+      "title": "Cinematic Street Racing Sequence",
+      "summary": "Night racing video prompt with interior focus, neon reflections, speed ramps, whip pans, and multi-angle acceleration.",
+      "category": "Cinematic",
+      "tags": ["cinematic", "cyberpunk", "action"],
+      "localized": {
+        "zh": {
+          "title": "电影感街头竞速片段",
+          "summary": "夜间竞速视频提示词，突出车内专注、霓虹反射、速度变奏、甩镜和多角度加速。",
+          "category": "电影感",
+          "tags": ["电影感", "赛博朋克", "动作"],
+          "prompt": "为 {USER_BRIEF} 创建一个电影感夜间街头竞速视频提示词。使用驾驶者高度专注、仪表盘辉光、霓虹城市反射、车内特写、越肩道路视角、外部跟拍、低机位地面镜头、速度变奏转场、甩镜、运动模糊、引擎震动和爆发式加速。保持片段风格化且虚构。"
+        }
+      },
+      "model": "seedance-2.0",
+      "aspect": "16:9",
+      "prompt": "Create a cinematic night street-racing video prompt for {USER_BRIEF}. Use intense driver focus, dashboard glow, neon city reflections, interior close-up, over-the-shoulder road view, exterior tracking, low ground shots, speed-ramp transitions, whip pans, motion blur, engine vibration, and explosive acceleration. Keep the sequence stylized and fictional.",
+      "previewImageUrl": "https://customer-qs6wnyfuv0gcybzj.cloudflarestream.com/3a7fb0a6d706b9f568479bb720ce1ad4/thumbnails/thumbnail.jpg",
+      "previewVideoUrl": "https://customer-qs6wnyfuv0gcybzj.cloudflarestream.com/3a7fb0a6d706b9f568479bb720ce1ad4/downloads/default.mp4",
+      "source": {
+        "repo": "https://github.com/YouMind-OpenLab/awesome-seedance-2-prompts",
+        "path": "prompt-templates/video/cinematic-street-racing-sequence-for-seedance-2.json",
+        "license": "CC-BY-4.0",
+        "url": "https://github.com/YouMind-OpenLab/awesome-seedance-2-prompts"
+      }
+    }
+  ]
+}

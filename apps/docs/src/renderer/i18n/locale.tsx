@@ -56,6 +56,8 @@ const LocaleContext = createContext<Lang>('zh')
 
 export function LocaleProvider({ initial, children }: { initial: Lang; children: ReactNode }) {
   const [lang, setLang] = useState<Lang>(initial)
+  // Keep non-React helpers correct on the very first render as well as after IPC changes.
+  moduleLang = lang
   useEffect(
     () =>
       window.desktop.onLanguageChanged((next) => {

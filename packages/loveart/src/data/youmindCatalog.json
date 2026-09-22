@@ -1,0 +1,583 @@
+{
+  "source": {
+    "id": "youmind-gpt-image-2",
+    "name": "YouMind GPT Image 2",
+    "url": "https://youmind.com/zh-CN/gpt-image-2-prompts",
+    "licenseNote": "Linked source metadata and remote previews only. Local templates are original ArtFlow templates inspired by public category taxonomy; bulk prompt/image import requires authorization.",
+    "model": "gpt-image-2",
+    "importedAt": "2026-06-14"
+  },
+  "categories": [
+    {
+      "id": "product-marketing",
+      "title": "Product Marketing",
+      "summary": "Commercial product visuals that communicate benefit, surface material, context, and campaign message.",
+      "tags": ["product", "campaign", "commercial"],
+      "sourceUrl": "https://youmind.com/zh-CN/prompts/image/product-marketing",
+      "sourceCountLabel": "8169 prompts visible from source metadata",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427842978_o5z6fz_HKvPlaWbwAANebH.jpg",
+      "guidance": "Use case: product marketing. Ask for one clear hero product, concrete benefit, staged environment, readable short headline, premium lighting, material detail, and avoid watermarks, real brand marks, copied packaging, and illegible text.",
+      "localized": {
+        "zh": {
+          "title": "产品营销",
+          "summary": "突出商品卖点、材质、使用场景和活动信息的商业产品视觉。",
+          "tags": ["产品", "营销", "商业"],
+          "guidance": "使用场景: 产品营销。提示词要包含清晰主产品、具体卖点、陈列环境、可读短标题、高级布光、材质细节，并避免水印、真实品牌标、复制包装和不可读文字。"
+        }
+      }
+    },
+    {
+      "id": "ecommerce-main-image",
+      "title": "Ecommerce Main Image",
+      "summary": "Clean marketplace-ready product images with simple composition and legible selling points.",
+      "tags": ["ecommerce", "product", "listing"],
+      "sourceUrl": "https://youmind.com/zh-CN/prompts/image/ecommerce-main-image",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781424063952_jn3ozy_HKtLwQIXUAAy1iK.jpg",
+      "guidance": "Use case: ecommerce listing. Keep the product dominant, background simple, edges crisp, props minimal, and text sparse; avoid marketplace UI chrome, fake badges, QR codes, and clutter.",
+      "localized": {
+        "zh": {
+          "title": "电商主图",
+          "summary": "适合商品列表的清爽主图，强调主体、卖点和干净构图。",
+          "tags": ["电商", "产品", "主图"],
+          "guidance": "使用场景: 电商主图。产品应占主导，背景简单，边缘清晰，道具克制，文字稀少；避免平台 UI、虚假角标、二维码和杂乱信息。"
+        }
+      }
+    },
+    {
+      "id": "poster-flyer",
+      "title": "Poster / Flyer",
+      "summary": "Event posters, campaign flyers, and graphic layouts where message hierarchy matters.",
+      "tags": ["poster", "flyer", "typography"],
+      "sourceUrl": "https://youmind.com/zh-CN/prompts/image/poster-flyer",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427861287_16d7oy_HKs9YrXaQAAFeyY.jpg",
+      "guidance": "Use case: event posters. Define headline, subhead, optional date-like microcopy, strong composition, readable text, and explicit hierarchy; avoid too many words and copied event identities.",
+      "localized": {
+        "zh": {
+          "title": "海报 / 传单",
+          "summary": "适合活动海报、传播传单和强调信息层级的图形版式。",
+          "tags": ["海报", "传单", "文字排版"],
+          "guidance": "使用场景: 活动海报。明确主标题、副标题、必要的日期式小字、强构图、可读文字和清晰层级；避免文字过多和复制现有活动身份。"
+        }
+      }
+    },
+    {
+      "id": "social-media-post",
+      "title": "Social Media Post",
+      "summary": "Square or vertical posts designed for fast scanning, readable text, and memorable hooks.",
+      "tags": ["social", "post", "readable text"],
+      "sourceUrl": "https://youmind.com/zh-CN/prompts/image/social-media-post",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427850695_o9shxs_HKs2YxBbUAE6DEG.jpg",
+      "guidance": "Use case: social media. Prioritize one hook, one visual focal point, high contrast, clean safe margins, and readable text at small sizes; avoid dense paragraphs and platform UI.",
+      "localized": {
+        "zh": {
+          "title": "社交媒体帖子",
+          "summary": "适合快速浏览的方图或竖图，强调钩子、可读文字和记忆点。",
+          "tags": ["社媒", "帖子", "可读文字"],
+          "guidance": "使用场景: 社交媒体。优先一个钩子、一个视觉焦点、高对比、干净安全边距和小尺寸可读文字；避免长段文字和平台 UI。"
+        }
+      }
+    },
+    {
+      "id": "infographic-edu-visual",
+      "title": "Infographic / Educational Visual",
+      "summary": "Structured explanatory images with labeled sections, diagrams, and concise data storytelling.",
+      "tags": ["infographic", "education", "diagram"],
+      "sourceUrl": "https://youmind.com/zh-CN/prompts/image/infographic-edu-visual",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427840951_2zuy5o_HKs61zGbkAAumXu.jpg",
+      "guidance": "Use case: infographic. Ask for a clear title, 3-5 labeled sections, simple icons or diagrams, restrained palette, and readable labels; avoid fabricated exact statistics unless the user supplies them.",
+      "localized": {
+        "zh": {
+          "title": "信息图 / 教育视觉图",
+          "summary": "带标签分区、图解结构和简洁叙事的解释性图片。",
+          "tags": ["信息图", "教育", "图解"],
+          "guidance": "使用场景: 信息图。要求清晰标题、3-5 个标签分区、简单图标或图解、克制配色和可读标签；除非用户提供数据，否则避免编造精确统计。"
+        }
+      }
+    },
+    {
+      "id": "youtube-thumbnail",
+      "title": "YouTube Thumbnail",
+      "summary": "High-impact thumbnails with oversized subject, bold headline, and strong contrast.",
+      "tags": ["thumbnail", "youtube", "hook"],
+      "sourceUrl": "https://youmind.com/zh-CN/prompts/image/youtube-thumbnail",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427859212_9m7rz0_HKsUtLUaMAA668A.jpg",
+      "guidance": "Use case: thumbnail. Use one oversized subject, 2-5 word readable headline, emotional contrast, clear background separation, and no fake platform controls.",
+      "localized": {
+        "zh": {
+          "title": "YouTube 缩略图",
+          "summary": "高冲击缩略图，强调大主体、粗标题和强对比。",
+          "tags": ["缩略图", "视频封面", "钩子"],
+          "guidance": "使用场景: 视频缩略图。使用一个大主体、2-5 个词的可读标题、情绪对比、清晰背景分离，并避免伪造平台控件。"
+        }
+      }
+    },
+    {
+      "id": "app-web-design",
+      "title": "App / Web Design",
+      "summary": "Product UI mockups, landing-page screens, and app showcase visuals generated as images.",
+      "tags": ["app", "web", "ui"],
+      "sourceUrl": "https://youmind.com/zh-CN/prompts/image/app-web-design",
+      "previewImageUrl": "https://marketing-assets.youmind.com/campaigns/prompts/prompts-og.png",
+      "guidance": "Use case: app or web mockup image. Specify viewport, product domain, layout density, components, sample data, and avoid implying real live connectors.",
+      "localized": {
+        "zh": {
+          "title": "App / 网页设计",
+          "summary": "以图片形式生成产品 UI 样稿、落地页屏幕和应用展示视觉。",
+          "tags": ["应用", "网页", "UI"],
+          "guidance": "使用场景: App 或网页样稿。指定视口、产品领域、布局密度、组件、示例数据，并避免暗示真实实时连接。"
+        }
+      }
+    },
+    {
+      "id": "text-typography",
+      "title": "Text / Typography",
+      "summary": "Images where readable text, letterforms, hierarchy, and graphic type are central.",
+      "tags": ["text", "typography", "layout"],
+      "sourceUrl": "https://youmind.com/zh-CN/prompts/image/text-typography",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427873350_ql7y8v_HKvXvNkaUAAnX9n.jpg",
+      "guidance": "Use case: typography. Keep wording short and exact, request readable text, define hierarchy and font mood, and avoid long paragraphs, misspellings, and cluttered layouts.",
+      "localized": {
+        "zh": {
+          "title": "文本 / 排版",
+          "summary": "以可读文字、字形、层级和图形字体为核心的图片。",
+          "tags": ["文字", "排版", "版式"],
+          "guidance": "使用场景: 文字排版。文案短而明确，要求可读文字，定义层级和字体气质，并避免长段落、错字和拥挤版面。"
+        }
+      }
+    }
+  ],
+  "promptTemplates": [
+    {
+      "id": "youmind-product-marketing-launch-poster",
+      "surface": "image",
+      "title": "Product Marketing Launch Poster",
+      "summary": "Hero product campaign visual with readable headline, premium material detail, and staged benefit context.",
+      "categoryId": "product-marketing",
+      "category": "Product Marketing",
+      "tags": ["product", "campaign", "poster"],
+      "model": "gpt-image-2",
+      "aspect": "16:9",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 product marketing launch poster for {USER_BRIEF}. Show one clear hero product as the largest object, staged in a believable commercial environment that communicates the core benefit. Add one short readable headline, one small supporting line, premium lighting, crisp material detail, intentional negative space, and a polished campaign finish. Avoid real brand logos, copied packaging, fake UI, QR codes, watermarks, dense text, and unreadable typography.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427842978_o5z6fz_HKvPlaWbwAANebH.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/product-marketing",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "产品营销发布海报",
+          "summary": "包含可读标题、高级材质细节和卖点场景的主产品营销视觉。",
+          "category": "产品营销",
+          "tags": ["产品", "营销", "海报"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 产品营销发布海报，主题是 {USER_BRIEF}。画面中只有一个最醒目的主产品，放在可信的商业环境中，明确传达核心卖点。加入一个简短可读主标题、一行小号辅助文案、高级布光、清晰材质细节、有意留白和精修广告质感。避免真实品牌标、复制包装、伪造 UI、二维码、水印、密集文字和不可读排版。"
+        }
+      }
+    },
+    {
+      "id": "youmind-ecommerce-clean-main-image",
+      "surface": "image",
+      "title": "Clean Ecommerce Main Image",
+      "summary": "Marketplace-ready product image with simple background, crisp edges, and sparse selling points.",
+      "categoryId": "ecommerce-main-image",
+      "category": "Ecommerce Main Image",
+      "tags": ["ecommerce", "listing", "product"],
+      "model": "gpt-image-2",
+      "aspect": "1:1",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 ecommerce main image for {USER_BRIEF}. Center the product with clean edges, accurate shape, simple high-key background, subtle shadow, and 2-3 small visual callouts only if they remain readable. Keep props minimal and secondary. Avoid marketplace interface chrome, price stickers, fake review stars, QR codes, watermarks, excessive copy, and confusing extra products.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781424063952_jn3ozy_HKtLwQIXUAAy1iK.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/ecommerce-main-image",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "清爽电商主图",
+          "summary": "适合商品列表的主图，背景干净、边缘清晰、卖点克制。",
+          "category": "电商主图",
+          "tags": ["电商", "主图", "产品"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 电商主图，主题是 {USER_BRIEF}。将产品居中展示，边缘干净、形态准确，使用简洁高调背景、轻微阴影；仅在保持可读时加入 2-3 个小卖点标注。道具要极少且次要。避免电商平台界面、价格贴纸、虚假评分星、二维码、水印、过多文案和让人混淆的额外产品。"
+        }
+      }
+    },
+    {
+      "id": "youmind-poster-readable-event-layout",
+      "surface": "image",
+      "title": "Readable Event Poster",
+      "summary": "Poster/flyer layout with exact short text, strong hierarchy, and graphic atmosphere.",
+      "categoryId": "poster-flyer",
+      "category": "Poster / Flyer",
+      "tags": ["poster", "event", "typography"],
+      "model": "gpt-image-2",
+      "aspect": "9:16",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 event poster for {USER_BRIEF}. Use a strong single visual motif, a large exact readable headline, one concise subhead, optional tiny date/location-style microcopy, clear top-to-bottom hierarchy, and a memorable graphic atmosphere. Keep the text short and legible. Avoid copied event branding, artist signatures, watermarks, QR codes, long paragraphs, and decorative text that cannot be read.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427861287_16d7oy_HKs9YrXaQAAFeyY.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/poster-flyer",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "可读活动海报",
+          "summary": "带准确短文案、强层级和图形氛围的海报/传单版式。",
+          "category": "海报 / 传单",
+          "tags": ["海报", "活动", "文字排版"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 活动海报，主题是 {USER_BRIEF}。使用一个强视觉母题、一个巨大且准确可读的主标题、一句简洁副标题、可选的小号日期/地点式微文案、清晰自上而下层级和有记忆点的图形氛围。文字必须短且可读。避免复制现有活动品牌、艺术家签名、水印、二维码、长段落和无法辨认的装饰文字。"
+        }
+      }
+    },
+    {
+      "id": "youmind-social-post-readable-type",
+      "surface": "image",
+      "title": "Social Post With Readable Type",
+      "summary": "Square social creative with one hook, one focal image, safe margins, and high contrast.",
+      "categoryId": "social-media-post",
+      "category": "Social Media Post",
+      "tags": ["social", "post", "headline"],
+      "model": "gpt-image-2",
+      "aspect": "1:1",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 social media post for {USER_BRIEF}. Build around one memorable hook, one visual focal point, readable headline text, clean safe margins, high contrast, and a polished editorial or brand-campaign feel. Keep the headline under seven words and supporting text under one short line. Avoid platform UI, fake engagement counters, watermarks, dense paragraphs, and cluttered stickers.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427850695_o9shxs_HKs2YxBbUAE6DEG.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/social-media-post",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "社交媒体可读文字图",
+          "summary": "方形社媒创意图，强调一个钩子、一个焦点、安全边距和强对比。",
+          "category": "社交媒体帖子",
+          "tags": ["社媒", "帖子", "标题"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 社交媒体帖子，主题是 {USER_BRIEF}。围绕一个有记忆点的钩子、一个视觉焦点、可读主标题、干净安全边距、高对比，以及精修编辑或品牌活动气质来构图。主标题少于七个词，辅助文字不超过一行短句。避免平台 UI、虚假互动数字、水印、长段文字和杂乱贴纸。"
+        }
+      }
+    },
+    {
+      "id": "youmind-infographic-five-part-explainer",
+      "surface": "image",
+      "title": "Five-Part Explainer Infographic",
+      "summary": "Educational image with title, labeled sections, icon logic, and clean hierarchy.",
+      "categoryId": "infographic-edu-visual",
+      "category": "Infographic / Educational Visual",
+      "tags": ["infographic", "education", "diagram"],
+      "model": "gpt-image-2",
+      "aspect": "4:3",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 educational infographic for {USER_BRIEF}. Use one clear title, five labeled sections, simple icon or diagram language, concise labels, consistent spacing, restrained colors, and a clean reading path. Use seeded sample wording rather than precise statistics unless provided by the user. Avoid tiny unreadable labels, fabricated exact numbers, chart junk, watermarks, and crowded paragraphs.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427840951_2zuy5o_HKs61zGbkAAumXu.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/infographic-edu-visual",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "五段式解释信息图",
+          "summary": "带标题、标签分区、图标逻辑和清晰层级的教育视觉图。",
+          "category": "信息图 / 教育视觉图",
+          "tags": ["信息图", "教育", "图解"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 教育信息图，主题是 {USER_BRIEF}。使用一个清晰标题、五个标签分区、简单图标或图解语言、简洁标签、一致间距、克制配色和清楚阅读路径。除非用户提供数据，否则使用示例性文案而不是精确统计。避免过小不可读标签、编造精确数字、图表噪音、水印和拥挤段落。"
+        }
+      }
+    },
+    {
+      "id": "youmind-youtube-thumbnail-bold-hook",
+      "surface": "image",
+      "title": "Bold Hook Thumbnail",
+      "summary": "High-impact video thumbnail with oversized subject and 2-5 word headline.",
+      "categoryId": "youtube-thumbnail",
+      "category": "YouTube Thumbnail",
+      "tags": ["thumbnail", "hook", "contrast"],
+      "model": "gpt-image-2",
+      "aspect": "16:9",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 video thumbnail for {USER_BRIEF}. Use one oversized subject, a 2-5 word readable headline, strong foreground/background separation, high contrast, expressive lighting, and a clear visual reason to click. Keep the composition simple enough to read at small size. Avoid fake platform controls, misleading badges, watermarks, tiny captions, and cluttered multi-scene layouts.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427859212_9m7rz0_HKsUtLUaMAA668A.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/youtube-thumbnail",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "强钩子视频缩略图",
+          "summary": "高冲击视频封面，使用超大主体和 2-5 个词的主标题。",
+          "category": "YouTube 缩略图",
+          "tags": ["缩略图", "钩子", "对比"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 视频缩略图，主题是 {USER_BRIEF}。使用一个超大主体、2-5 个词的可读标题、强前景/背景分离、高对比、富有表情的布光和明确点击理由。构图要简单到小尺寸也能读懂。避免伪造平台控件、误导性角标、水印、细小字幕和杂乱多场景拼贴。"
+        }
+      }
+    },
+    {
+      "id": "youmind-product-benefit-breakdown-ad",
+      "surface": "image",
+      "title": "Product Benefit Breakdown Ad",
+      "summary": "Campaign visual that pairs one hero product with three readable benefit callouts.",
+      "categoryId": "product-marketing",
+      "category": "Product Marketing",
+      "tags": ["product", "benefits", "campaign"],
+      "model": "gpt-image-2",
+      "aspect": "4:5",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 product benefit breakdown ad for {USER_BRIEF}. Place one hero product in a clean premium scene, then add exactly three short readable benefit callouts with simple leader lines or small icon markers. Keep the product dominant, hierarchy obvious, lighting polished, and copy concise. Avoid real brand marks, fake certification badges, watermarks, crowded annotations, and unreadable text.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427842978_o5z6fz_HKvPlaWbwAANebH.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/product-marketing",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "产品卖点拆解广告",
+          "summary": "围绕一个主产品和三个可读卖点标注的营销视觉。",
+          "category": "产品营销",
+          "tags": ["产品", "卖点", "营销"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 产品卖点拆解广告，主题是 {USER_BRIEF}。在干净高级场景中放置一个主产品，并加入恰好三个简短可读卖点标注，使用简单引导线或小图标标记。产品必须占主导，层级清楚，布光精修，文案简洁。避免真实品牌标、虚假认证角标、水印、拥挤注释和不可读文字。"
+        }
+      }
+    },
+    {
+      "id": "youmind-ecommerce-lifestyle-listing-cover",
+      "surface": "image",
+      "title": "Lifestyle Listing Cover",
+      "summary": "Ecommerce cover image that shows product use context while staying listing-clean.",
+      "categoryId": "ecommerce-main-image",
+      "category": "Ecommerce Main Image",
+      "tags": ["ecommerce", "lifestyle", "listing"],
+      "model": "gpt-image-2",
+      "aspect": "1:1",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 ecommerce lifestyle listing cover for {USER_BRIEF}. Show the product in a believable use scene with one simple prop context, clear product edges, bright marketplace-friendly lighting, and optional 1-2 tiny readable selling points. Keep the background uncluttered and the product easy to crop. Avoid platform UI, fake discounts, review stars, QR codes, watermarks, and confusing extra products.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781424063952_jn3ozy_HKtLwQIXUAAy1iK.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/ecommerce-main-image",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "生活方式电商封面",
+          "summary": "展示产品使用场景，同时保持电商主图的清爽和易裁切。",
+          "category": "电商主图",
+          "tags": ["电商", "生活方式", "商品图"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 生活方式电商封面，主题是 {USER_BRIEF}。在可信使用场景中展示产品，只加入一个简单道具语境，保持产品边缘清晰、布光明亮适合商品列表，并可选加入 1-2 个很小但可读的卖点。背景不要杂乱，产品要便于裁切。避免平台 UI、虚假折扣、评分星、二维码、水印和让人混淆的额外产品。"
+        }
+      }
+    },
+    {
+      "id": "youmind-poster-bold-flyer-system",
+      "surface": "image",
+      "title": "Bold Flyer System",
+      "summary": "Flyer-style poster with modular blocks, short event copy, and strong graphic rhythm.",
+      "categoryId": "poster-flyer",
+      "category": "Poster / Flyer",
+      "tags": ["poster", "flyer", "layout"],
+      "model": "gpt-image-2",
+      "aspect": "9:16",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 bold flyer system for {USER_BRIEF}. Use modular graphic blocks, a large exact readable title, one short subtitle, 2-3 small information chips, strong color contrast, and a clear poster hierarchy. Make it feel printable and shareable. Avoid copied event identities, fake sponsors, QR codes, watermarks, long paragraphs, and unreadable decorative type.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427861287_16d7oy_HKs9YrXaQAAFeyY.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/poster-flyer",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "强版式传单系统",
+          "summary": "模块化区块、短活动文案和强图形节奏的传单式海报。",
+          "category": "海报 / 传单",
+          "tags": ["海报", "传单", "版式"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 强版式传单系统，主题是 {USER_BRIEF}。使用模块化图形区块、巨大且准确可读的标题、一句短副标题、2-3 个小信息标签、强色彩对比和清晰海报层级。整体要有可印刷、可传播的质感。避免复制活动身份、虚假赞助商、二维码、水印、长段落和不可读装饰字体。"
+        }
+      }
+    },
+    {
+      "id": "youmind-social-carousel-cover",
+      "surface": "image",
+      "title": "Social Carousel Cover",
+      "summary": "First-slide social cover with a hook headline and space for a carousel sequence.",
+      "categoryId": "social-media-post",
+      "category": "Social Media Post",
+      "tags": ["social", "carousel", "hook"],
+      "model": "gpt-image-2",
+      "aspect": "4:5",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 social carousel cover for {USER_BRIEF}. Make it read like slide 1 of a carousel: one sharp hook headline, one supporting visual, generous safe margins, small sequence hint, high contrast, and a clean branded editorial finish. Avoid platform UI, fake likes, dense copy, watermarks, and cluttered sticker piles.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427850695_o9shxs_HKs2YxBbUAE6DEG.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/social-media-post",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "社媒轮播封面",
+          "summary": "适合作为轮播第一张的社媒封面，突出钩子标题和后续序列感。",
+          "category": "社交媒体帖子",
+          "tags": ["社媒", "轮播", "钩子"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 社媒轮播封面，主题是 {USER_BRIEF}。画面像轮播第 1 页：一个锋利钩子标题、一个辅助视觉、充足安全边距、小号序列提示、高对比，以及干净品牌编辑质感。避免平台 UI、虚假点赞、密集文案、水印和杂乱贴纸堆。"
+        }
+      }
+    },
+    {
+      "id": "youmind-infographic-comparison-map",
+      "surface": "image",
+      "title": "Comparison Map Infographic",
+      "summary": "Side-by-side educational visual for comparing choices, workflows, or concepts.",
+      "categoryId": "infographic-edu-visual",
+      "category": "Infographic / Educational Visual",
+      "tags": ["infographic", "comparison", "education"],
+      "model": "gpt-image-2",
+      "aspect": "16:9",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 comparison map infographic for {USER_BRIEF}. Use a clear title, two or three labeled columns, concise comparison rows, simple icons, consistent spacing, and a restrained palette. Use qualitative placeholders unless the user provides exact data. Avoid fabricated statistics, tiny labels, chart junk, watermarks, and crowded paragraphs.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427840951_2zuy5o_HKs61zGbkAAumXu.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/infographic-edu-visual",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "对比地图信息图",
+          "summary": "用于比较选择、流程或概念的并列教育视觉图。",
+          "category": "信息图 / 教育视觉图",
+          "tags": ["信息图", "对比", "教育"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 对比地图信息图，主题是 {USER_BRIEF}。使用清晰标题、两到三列标签栏、简洁对比行、简单图标、一致间距和克制配色。除非用户提供精确数据，否则使用定性占位文案。避免编造统计、过小标签、图表噪音、水印和拥挤段落。"
+        }
+      }
+    },
+    {
+      "id": "youmind-youtube-before-after-thumbnail",
+      "surface": "image",
+      "title": "Before / After Thumbnail",
+      "summary": "Split thumbnail format for transformations, comparisons, and surprising outcomes.",
+      "categoryId": "youtube-thumbnail",
+      "category": "YouTube Thumbnail",
+      "tags": ["thumbnail", "before-after", "contrast"],
+      "model": "gpt-image-2",
+      "aspect": "16:9",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 before/after video thumbnail for {USER_BRIEF}. Use a clean split composition, one oversized subject or result on each side, a 2-4 word readable headline, a simple directional cue, strong contrast, and clear background separation. Avoid fake platform controls, misleading badges, watermarks, tiny captions, and too many competing elements.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427859212_9m7rz0_HKsUtLUaMAA668A.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/youtube-thumbnail",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "前后对比视频缩略图",
+          "summary": "适合转变、对比和反差结果的分屏视频封面。",
+          "category": "YouTube 缩略图",
+          "tags": ["缩略图", "前后对比", "反差"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 前后对比视频缩略图，主题是 {USER_BRIEF}。使用干净分屏构图，每侧一个超大主体或结果，加入 2-4 个词的可读标题、简单方向提示、强对比和清晰背景分离。避免伪造平台控件、误导性角标、水印、细小字幕和过多竞争元素。"
+        }
+      }
+    },
+    {
+      "id": "youmind-app-saas-dashboard-mockup",
+      "surface": "image",
+      "title": "SaaS Dashboard Mockup",
+      "summary": "App/web UI image with realistic dashboard density, sample data, and clean product framing.",
+      "categoryId": "app-web-design",
+      "category": "App / Web Design",
+      "tags": ["app", "dashboard", "ui"],
+      "model": "gpt-image-2",
+      "aspect": "16:9",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 SaaS dashboard mockup image for {USER_BRIEF}. Show a realistic product screen with navigation, dense but organized cards, charts, tables, sample data, clear hierarchy, and polished app chrome. Keep text short and plausible. Avoid real company logos, live connector claims, unreadable microtext, decorative clutter, and impossible UI states.",
+      "previewImageUrl": "https://marketing-assets.youmind.com/campaigns/prompts/prompts-og.png",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/app-web-design",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "SaaS 仪表盘样机",
+          "summary": "带真实信息密度、示例数据和产品展示框架的 App/Web UI 图片。",
+          "category": "App / 网页设计",
+          "tags": ["应用", "仪表盘", "UI"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 SaaS 仪表盘样机图片，主题是 {USER_BRIEF}。展示真实产品界面，包含导航、密集但有组织的卡片、图表、表格、示例数据、清晰层级和精修应用外壳。文字要短且可信。避免真实公司标志、实时连接承诺、不可读微文字、装饰杂乱和不可能的 UI 状态。"
+        }
+      }
+    },
+    {
+      "id": "youmind-app-landing-page-screen",
+      "surface": "image",
+      "title": "Landing Page Screen",
+      "summary": "Website screen mockup with hero offer, product proof, and conversion-focused layout.",
+      "categoryId": "app-web-design",
+      "category": "App / Web Design",
+      "tags": ["web", "landing", "ui"],
+      "model": "gpt-image-2",
+      "aspect": "16:9",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 landing page screen mockup for {USER_BRIEF}. Show a first-viewport website design with a literal offer headline, concise support copy, product proof area, primary action, restrained navigation, and realistic responsive spacing. Use polished UI styling without making a generic marketing poster. Avoid real brand marks, fake trust logos, unreadable paragraphs, lorem ipsum blocks, and impossible layout overlaps.",
+      "previewImageUrl": "https://marketing-assets.youmind.com/campaigns/prompts/prompts-og.png",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/app-web-design",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "落地页首屏样机",
+          "summary": "包含主张、产品证明和转化导向布局的网站首屏样机。",
+          "category": "App / 网页设计",
+          "tags": ["网页", "落地页", "UI"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 落地页首屏样机，主题是 {USER_BRIEF}。展示网站首屏设计，包含直接明确的产品主张标题、简短辅助文案、产品证明区域、主行动按钮、克制导航和真实响应式间距。UI 要精修，但不要变成泛泛营销海报。避免真实品牌标、虚假信任标志、不可读长段、lorem ipsum 区块和不可能的布局重叠。"
+        }
+      }
+    },
+    {
+      "id": "youmind-typography-quote-poster",
+      "surface": "image",
+      "title": "Typography Quote Poster",
+      "summary": "Readable type-led poster with one exact phrase and expressive letterform hierarchy.",
+      "categoryId": "text-typography",
+      "category": "Text / Typography",
+      "tags": ["typography", "text", "poster"],
+      "model": "gpt-image-2",
+      "aspect": "4:5",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 typography quote poster for {USER_BRIEF}. Use one exact short phrase as the main readable text, expressive letterforms, strong hierarchy, balanced negative space, and a graphic background that supports readability. Keep all wording short and intentional. Avoid misspellings, long paragraphs, watermarks, random decorative letters, and text that is too small to read.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427873350_ql7y8v_HKvXvNkaUAAnX9n.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/text-typography",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "文字金句海报",
+          "summary": "以一句准确短语和有表现力字形层级为核心的可读文字海报。",
+          "category": "文本 / 排版",
+          "tags": ["文字", "排版", "海报"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 文字金句海报，主题是 {USER_BRIEF}。使用一句准确短语作为主要可读文字，搭配有表现力的字形、强层级、平衡留白和支持可读性的图形背景。所有文字都要短且有意图。避免拼写错误、长段文字、水印、随机装饰字母和太小无法阅读的文字。"
+        }
+      }
+    },
+    {
+      "id": "youmind-typography-brand-wordmark-study",
+      "surface": "image",
+      "title": "Brand Wordmark Study",
+      "summary": "Type exploration image centered on a short invented wordmark and supporting layout notes.",
+      "categoryId": "text-typography",
+      "category": "Text / Typography",
+      "tags": ["typography", "wordmark", "branding"],
+      "model": "gpt-image-2",
+      "aspect": "1:1",
+      "prompt": "Create a {ASPECT_RATIO} GPT Image 2 brand wordmark study for {USER_BRIEF}. Center one short invented word or exact user-provided name as readable custom lettering, then add small supporting layout notes, spacing marks, and mood cues around it. Keep the presentation clean like a type specimen. Avoid real trademark imitation, unreadable glyphs, excessive decoration, watermarks, and long explanatory paragraphs.",
+      "previewImageUrl": "https://cms-assets.youmind.com/media/1781427873350_ql7y8v_HKvXvNkaUAAnX9n.jpg",
+      "source": {
+        "name": "YouMind GPT Image 2",
+        "url": "https://youmind.com/zh-CN/prompts/image/text-typography",
+        "licenseNote": "Category-linked source; local prompt is original ArtFlow text."
+      },
+      "localized": {
+        "zh": {
+          "title": "品牌字标探索",
+          "summary": "围绕短虚构字标和辅助版式说明的文字设计探索图。",
+          "category": "文本 / 排版",
+          "tags": ["文字", "字标", "品牌"],
+          "prompt": "创建一张 {ASPECT_RATIO} GPT Image 2 品牌字标探索图，主题是 {USER_BRIEF}。居中放置一个短虚构词或用户提供的准确名称，做成可读定制字形，并在周围加入小号版式说明、间距标记和情绪提示。整体像干净字体样张。避免模仿真实商标、不可读字形、过度装饰、水印和长解释段落。"
+        }
+      }
+    }
+  ]
+}

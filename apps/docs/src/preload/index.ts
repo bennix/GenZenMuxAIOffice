@@ -14,10 +14,20 @@ import type {
   UiTheme,
 } from '../shared/ipc'
 import type { ProjectApi } from '@genoffice/project-store'
+import { WORD_MCP_CHANNELS } from '../shared/ipc'
 
 const api: DesktopApi = {
+  onMcpRequest: (handler) => {
+    const listener = (_event: IpcRendererEvent, request: Parameters<typeof handler>[0]) =>
+      handler(request)
+    ipcRenderer.on(WORD_MCP_CHANNELS.request, listener)
+    return () => ipcRenderer.removeListener(WORD_MCP_CHANNELS.request, listener)
+  },
+  sendMcpResult: (result) => ipcRenderer.send(WORD_MCP_CHANNELS.result, result),
+  ...imageShareBridge(ipcRenderer),
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
+  listOpenFiles: () => ipcRenderer.invoke('tabs:open-files'),
   onConnectReceive: (handler) => {
     const listener = (_event: IpcRendererEvent, payload: Parameters<typeof handler>[0]) =>
       handler(payload)
@@ -70,7 +80,8 @@ const api: DesktopApi = {
     ipcRenderer.invoke('docs:save-bibliography', path, bibText),
   getRecentFiles: () => ipcRenderer.invoke('docs:recent'),
   pickImage: () => ipcRenderer.invoke('docs:pick-image'),
-  print: () => ipcRenderer.invoke('docs:print'),
+  print: (pageWidthTwips: number, pageHeightTwips: number) =>
+    ipcRenderer.invoke('docs:print', pageWidthTwips, pageHeightTwips),
   exportPdf: (
     defaultName: string,
     pageWidthTwips: number,
@@ -83,6 +94,7 @@ const api: DesktopApi = {
     ipcRenderer.invoke('docs:save-merged-pdf', defaultName, base64Parts, outPath),
   exportMarkdown: (defaultName: string, text: string) =>
     ipcRenderer.invoke('docs:export-markdown', defaultName, text),
+  generateGongwen: (request) => ipcRenderer.invoke('docs:generate-gongwen', request),
   getAiSettings: () => ipcRenderer.invoke('ai:get-settings'),
   setAiSettings: (settings: AiSettings) => ipcRenderer.invoke('ai:set-settings', settings),
   aiChat: (request: AiChatRequest) => ipcRenderer.invoke('ai:chat', request),
@@ -167,3 +179,4 @@ installDocumentDropBridge({
   getPathForFile: (file) => webUtils.getPathForFile(file),
   openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
 })
+import { imageShareBridge } from '@genoffice/electron-utils/connect'

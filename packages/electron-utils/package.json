@@ -8,7 +8,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./connect": "./src/connect.ts",
-    "./document-drop": "./src/document-drop.ts"
+    "./open-files": "./src/open-files.ts",
+    "./document-drop": "./src/document-drop.ts",
+    "./markdown-normalize": "./src/markdown-normalize.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

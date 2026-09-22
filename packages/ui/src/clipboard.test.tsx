@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { copyTextToClipboard } from './clipboard'
+import { copyHtmlToClipboard, copyTextToClipboard } from './clipboard'
 
 const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
 const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document')
@@ -52,5 +52,27 @@ describe('copyTextToClipboard', () => {
     expect(textarea.value).toBe('$$x^2$$')
     expect(execCommand).toHaveBeenCalledWith('copy')
     expect(textarea.remove).toHaveBeenCalled()
+  })
+})
+
+describe('copyHtmlToClipboard', () => {
+  it('writes text/html and text/plain via ClipboardItem', async () => {
+    const write = vi.fn().mockResolvedValue(undefined)
+    class FakeClipboardItem {
+      constructor(public readonly items: Record<string, Blob>) {}
+    }
+    Object.defineProperty(globalThis, 'ClipboardItem', {
+      configurable: true,
+      value: FakeClipboardItem,
+    })
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { clipboard: { write } },
+    })
+    await expect(copyHtmlToClipboard('<section>hi</section>', 'hi')).resolves.toBe(true)
+    expect(write).toHaveBeenCalledTimes(1)
+    const item = write.mock.calls[0]?.[0]?.[0] as { items: Record<string, Blob> }
+    expect(item.items['text/html']).toBeInstanceOf(Blob)
+    expect(item.items['text/plain']).toBeInstanceOf(Blob)
   })
 })

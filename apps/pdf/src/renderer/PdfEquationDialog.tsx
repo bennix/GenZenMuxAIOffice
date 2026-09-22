@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { latexToOmml, ommlToMathML } from '@genoffice/docx-engine'
 import { cleanRecognizedLatex, formulaRecognitionRequest } from '@genoffice/ai-provider'
 import { FormulaImageRecognition, type FormulaImageData } from '@genoffice/ui'
+import { useI18n } from './i18n/locale'
 
 function latexToMathML(latex: string): string {
   const inner = latexToOmml(latex.trim())
@@ -63,7 +64,8 @@ export function PdfEquationDialog({
   onClose: () => void
   onPlace: (equation: { latex: string; base64: string; width: number; height: number }) => void
 }) {
-  const zh = navigator.language.toLowerCase().startsWith('zh')
+  const { lang } = useI18n()
+  const zh = lang === 'zh' || lang === 'zh-TW'
   const [latex, setLatex] = useState('')
   const [busy, setBusy] = useState(false)
   const preview = useMemo(() => {
@@ -124,7 +126,7 @@ export function PdfEquationDialog({
             <span dangerouslySetInnerHTML={{ __html: preview.mathml }} />
           )}
         </div>
-        <FormulaImageRecognition onRecognize={recognize} />
+        <FormulaImageRecognition language={lang} onRecognize={recognize} />
         <p className="pdf-equation-note">
           {zh
             ? '识别通过 ZenMux 视觉模型完成；网络状况可能影响速度。插入后点击页面放置公式。'

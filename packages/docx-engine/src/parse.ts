@@ -3487,6 +3487,7 @@ type ImageMeta = Pick<
   | 'imageFlipV'
   | 'imageCrop'
   | 'imageFillRect'
+  | 'infographicSyntax'
 >
 
 /** a:srcRect / a:fillRect attribute (1000ths of a percent; some writers emit decimals) → fraction */
@@ -3497,6 +3498,19 @@ function rectFrac(tag: string, name: string): number {
 
 function imageMeta(xml: string): ImageMeta {
   const meta: ImageMeta = {}
+  const docPr = /<wp:docPr\b[^>]*\/?>/.exec(xml)?.[0] ?? ''
+  const description = /\bdescr="([^"]*)"/.exec(docPr)?.[1]
+  if (description) {
+    const decoded = decodeEntities(description)
+    if (decoded.startsWith('zenoffice-infographic:')) {
+      try {
+        const syntax = decodeURIComponent(decoded.slice('zenoffice-infographic:'.length))
+        if (syntax.trim()) meta.infographicSyntax = syntax
+      } catch {
+        // Ignore malformed third-party metadata; the picture itself remains usable.
+      }
+    }
+  }
   const extent = /<wp:extent[^>]*\/?>/.exec(xml)?.[0]
   if (extent) {
     const cx = parseInt(/cx="(\d+)"/.exec(extent)?.[1] ?? '', 10)

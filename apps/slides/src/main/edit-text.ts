@@ -35,6 +35,19 @@ function fontKey(name?: string): string | undefined {
   return FONT_ALIAS[name] ?? name.toLowerCase()
 }
 
+/** True when the editor/AI sent an absolute font size that differs from the model run. */
+export function hasExplicitFontSizeChange(oldParas: Paragraph[], edited: EditParagraph[]): boolean {
+  return edited.some((p, pi) => {
+    const oldPara = oldParas[p.srcPara ?? pi]
+    return p.runs.some((r, ri) => {
+      if (r.fontSize == null) return false
+      const oldRun =
+        r.srcRun != null ? oldPara?.runs[r.srcRun] : (oldPara?.runs[ri] ?? oldPara?.runs[0])
+      return r.fontSize !== oldRun?.fontSize
+    })
+  })
+}
+
 export function applyEditParagraphs(oldParas: Paragraph[], edited: EditParagraph[]): Paragraph[] {
   return edited.map((p, pi) => {
     const oldPara = oldParas[p.srcPara ?? pi]

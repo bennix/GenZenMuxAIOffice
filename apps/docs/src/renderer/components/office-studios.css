@@ -1,0 +1,215 @@
+:root {
+  --gongwen-red: #c02020;
+  --gongwen-guide: #aaaaaa;
+  --gongwen-note: #666666;
+}
+.office-studio-backdrop {
+  z-index: 2000;
+}
+.office-studio {
+  width: calc(100vw - 48px);
+  height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-modal-strong);
+}
+.office-studio > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.office-studio > header strong {
+  font-size: 18px;
+  display: block;
+}
+.office-studio > header span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.office-studio iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  min-height: 0;
+}
+.gongwen-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(260px, 0.7fr);
+  flex: 1;
+  overflow: auto;
+}
+.gongwen-fields {
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.gongwen-fields label {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+}
+.gongwen-fields input,
+.gongwen-fields select,
+.gongwen-fields textarea {
+  padding: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+.gongwen-fields textarea {
+  resize: vertical;
+  min-height: 180px;
+  font-family: inherit;
+  line-height: 1.7;
+}
+.gongwen-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.gongwen-preview {
+  padding: 24px;
+  background: var(--surface-subtle);
+  border-left: 1px solid var(--border);
+}
+.gongwen-paper {
+  aspect-ratio: 210 / 297;
+  padding: 17.6% 12.4% 16.7% 13.3%;
+  background: white;
+  color: black;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-modal-strong);
+  font-family: FangSong, STFangsong, serif;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.gongwen-paper h3 {
+  font-family: '方正小标宋简体', 'Songti SC', serif;
+  font-size: 20px;
+  text-align: center;
+  font-weight: normal;
+}
+.gongwen-paper p {
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  text-indent: 2em;
+}
+.gongwen-letterhead {
+  color: var(--gongwen-red);
+  text-align: center;
+  border-bottom: 2px solid;
+  padding: 18px 0 12px;
+}
+.gongwen-reserve {
+  height: 90px;
+  border: 1px dashed var(--gongwen-guide);
+  color: var(--gongwen-note);
+  font: 12px sans-serif;
+  text-align: center;
+  padding: 12px;
+}
+.gongwen-preview > p {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.office-studio > footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.office-studio [role='alert'] {
+  color: var(--text);
+  padding: 10px 20px;
+}
+@media (max-width: 800px) {
+  .gongwen-layout {
+    grid-template-columns: 1fr;
+  }
+  .gongwen-preview {
+    display: none;
+  }
+}
+.office-studio > header button,
+.office-studio > footer button,
+.gongwen-fields > button {
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 14px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+.office-studio > footer button:last-child,
+.gongwen-fields > button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--color-btn-primary-text);
+}
+.office-studio button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.office-studio button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.gongwen-ai {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+.gongwen-ai p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.gongwen-ai textarea {
+  min-height: 80px;
+}
+.gongwen-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gongwen-ai-actions button {
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 14px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+.gongwen-ai-actions button:first-child {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--color-btn-primary-text);
+}
+.gongwen-ai-result {
+  display: grid;
+  gap: 8px;
+}

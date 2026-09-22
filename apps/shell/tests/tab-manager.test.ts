@@ -8,6 +8,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  */
 
 interface FakeWebContents {
+  send: ReturnType<typeof vi.fn>
+  isDestroyed: ReturnType<typeof vi.fn>
   id: number
   on: ReturnType<typeof vi.fn>
   close: ReturnType<typeof vi.fn>
@@ -26,6 +28,8 @@ function makeFakeView(): FakeView {
   const listeners = new Map<string, () => void>()
   return {
     webContents: {
+      send: vi.fn(),
+      isDestroyed: vi.fn(() => false),
       id: nextWebContentsId++,
       listeners,
       on: vi.fn((event: string, handler: () => void) => {
@@ -145,9 +149,23 @@ beforeEach(() => {
 })
 
 describe('initial state', () => {
+  it('shares images only to supported peer files, including PDFs', () => {
+    manager.openDocsTab('/tmp/source.docx')
+    const source = lastCreatedView(createDocsView).webContents.id
+    const target = manager.openPdfTab('/tmp/target.pdf')
+    const pdf = lastCreatedView(createPdfView).webContents
+    manager.openSheetsTab('/tmp/table.xlsx')
+    expect(manager.imageShareTargets(source).map((tab) => tab.kind)).toEqual(['pdf'])
+    expect(manager.imageShareTargets(99999)).toEqual([])
+    expect(manager.sendSharedImage(source, 'missing', { id: 'one', dataUrl: 'image' })).toBeNull()
+    expect(manager.sendSharedImage(source, target, { id: 'one', dataUrl: 'image' })).toBe(pdf.id)
+    expect(pdf.send).toHaveBeenCalledWith('image-share:receive', { id: 'one', dataUrl: 'image' })
+    pdf.isDestroyed.mockReturnValue(true)
+    expect(manager.sendSharedImage(source, target, { id: 'two', dataUrl: 'image' })).toBeNull()
+  })
   it('starts with only the non-closable, active Home tab', () => {
     expect(manager.list()).toEqual([
-      { id: 'home', kind: 'home', title: 'GenOffice', closable: false, active: true },
+      { id: 'home', kind: 'home', title: 'ZenOffice', closable: false, active: true },
     ])
   })
 })
@@ -160,7 +178,7 @@ describe('opening tabs', () => {
     expect(tabs[1]).toMatchObject({
       id,
       kind: 'docs',
-      title: 'GenOffice Docs',
+      title: 'ZenOffice Docs',
       closable: true,
       active: true,
     })
@@ -175,8 +193,9 @@ describe('opening tabs', () => {
     manager.openSheetsTab('/tmp/budget.xlsx')
     manager.openSlidesTab('/tmp/deck.pptx')
     manager.openPdfTab('/tmp/scan.pdf')
+    expect(manager.list().find((t) => t.title === 'report.docx')?.filePath).toBe('/tmp/report.docx')
     expect(manager.list().map((t) => t.title)).toEqual([
-      'GenOffice',
+      'ZenOffice',
       'report.docx',
       'budget.xlsx',
       'deck.pptx',
@@ -187,7 +206,7 @@ describe('opening tabs', () => {
   it('uses module default titles for pathless tabs', () => {
     manager.openSheetsTab()
     manager.openSlidesTab()
-    expect(manager.list().map((t) => t.title)).toEqual(['GenOffice', 'AI Sheets', 'AI Slides'])
+    expect(manager.list().map((t) => t.title)).toEqual(['ZenOffice', 'AI Sheets', 'AI Slides'])
   })
 
   it('assigns unique, monotonic tab ids', () => {

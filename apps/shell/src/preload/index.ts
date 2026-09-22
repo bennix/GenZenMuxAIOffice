@@ -16,6 +16,7 @@ import type {
   ProjectSummaryEntry,
   TimelineEntryItem,
   UiLanguage,
+  UpdateCheckResult,
 } from '../shared/home-api'
 import { HOME_CHANNELS, PROJECT_CHANNELS } from '../shared/home-api'
 import type { AiSettings } from '@genoffice/ai-provider'
@@ -135,6 +136,10 @@ const homeApi: HomeApi = {
     // silently disappear). Preload entries must stay single-file bundles.
     if (channel !== 'stable' && channel !== 'beta') throw new Error('Invalid update channel.')
     await ipcRenderer.invoke(HOME_CHANNELS.setUpdateChannel, channel)
+  },
+  async checkForUpdates() {
+    const result: unknown = await ipcRenderer.invoke(HOME_CHANNELS.checkForUpdates)
+    return result as UpdateCheckResult
   },
   async accountStatus() {
     const result: unknown = await ipcRenderer.invoke(HOME_CHANNELS.accountStatus)

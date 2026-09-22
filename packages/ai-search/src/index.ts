@@ -82,7 +82,7 @@ async function tryMarketQuote(query: string): Promise<{
     if (!symbol) return null
     const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1m&range=1d`
     const response = await fetchWithTimeout(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 GenOffice/1.0' },
+      headers: { 'User-Agent': 'Mozilla/5.0 ZenOffice/1.0' },
     })
     if (!response.ok) return null
     const root = asRecord(await response.json())
@@ -130,7 +130,7 @@ async function resolveMarketSymbol(query: string): Promise<string> {
   if (!company) return ''
   const response = await fetchWithTimeout(
     `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(company)}&quotesCount=8&newsCount=0`,
-    { headers: { 'User-Agent': 'Mozilla/5.0 GenOffice/1.0' } },
+    { headers: { 'User-Agent': 'Mozilla/5.0 ZenOffice/1.0' } },
   )
   if (!response.ok) return ''
   const data = asRecord(await response.json())

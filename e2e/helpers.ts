@@ -19,6 +19,9 @@ export const ARTIFACTS_DIR = resolve(__dirname, 'artifacts')
 const SHELL_MAIN = join(SHELL_DIR, 'out/main/index.js')
 
 interface LaunchOptions {
+  env?: Record<string, string>
+  /** Disable screencast when verifying embedded frames on affected Chromium builds. */
+  recordVideo?: boolean
   /** reuse a previous scratch dir to simulate a second launch */
   userDataDir?: string
   /** UI language override (GENOFFICE_LANG); defaults to English for stable assertions */
@@ -67,15 +70,17 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
     args,
     env: {
       ...hostEnv,
+      ...options.env,
       GENOFFICE_USER_DATA: userDataDir,
       GENOFFICE_LANG: options.lang ?? 'en',
+      GENOFFICE_E2E_PLAINTEXT_AI_SETTINGS: '1',
       ...(process.platform === 'linux' ? { ELECTRON_DISABLE_SANDBOX: '1' } : {}),
     },
     // Playwright's Electron screencast wedges the page CDP session on Linux
     // (page.url() stays empty, no lifecycle events, evaluate hangs) — record
     // only where it works
     recordVideo:
-      process.platform === 'linux'
+      process.platform === 'linux' || options.recordVideo === false
         ? undefined
         : {
             dir: join(ARTIFACTS_DIR, options.videoDir),

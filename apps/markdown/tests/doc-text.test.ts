@@ -22,7 +22,14 @@ $$
 R_t^{gt}=T_\theta R_{t-1}+t_{gt},
 $$
 其中 $T_\theta\in\mathbb{R}^{3\times3}$。`)
-    expect(repairOverescapedMarkdown(md)).toBe(normalizeAlternateMathDelimiters(md))
+    expect(repairOverescapedMarkdown(md))
+      .toBe(String.raw`第 3.2 节将关键点坐标定义为 $R_{t-1}\in\mathbb{R}^{N_q\times3}$，但式（13）写为
+
+$$
+R_t^{gt}=T_\theta R_{t-1}+t_{gt},
+$$
+
+其中 $T_\theta\in\mathbb{R}^{3\times3}$。`)
   })
 
   it('repairs a one-line display delimiter and preserves code', () => {
@@ -77,6 +84,21 @@ describe('repairEscapedWhitespaceEntities', () => {
 })
 
 describe('delimitBareLatex', () => {
+  it('repairs parenthesized AI-review formulas after @Connect', () => {
+    const md = String.raw`- 从 (N_q\times N_q\times C) 到 (G\in\mathbb{R}^{N_q\times d})。
+- 损失为 (\mathcal F(\hat b_t,b_t^{gt}))，权重是 (\lambda_1,\lambda_2)。
+- 修正 (\widetilde Q_t^S/Q_t^S) 与 (R_{t-1})。`
+    expect(delimitBareLatex(md))
+      .toBe(String.raw`- 从 $N_q\times N_q\times C$ 到 $G\in\mathbb{R}^{N_q\times d}$。
+- 损失为 $\mathcal F(\hat b_t,b_t^{gt})$，权重是 $\lambda_1,\lambda_2$。
+- 修正 $\widetilde Q_t^S/Q_t^S$ 与 $R_{t-1}$。`)
+  })
+
+  it('repairs malformed strong markers and invisible separators', () => {
+    const md = '**修正式（13）及全部坐标约定。 **明确后续。\u200B**重点**'
+    expect(delimitBareLatex(md)).toBe('**修正式（13）及全部坐标约定。** 明确后续。**重点**')
+  })
+
   it('repairs common unit and Greek formulas emitted without math delimiters', () => {
     const md = String.raw`质量为 4\text{ kg}，取 g 为 10\text{ N/kg}，拉力 F_1 = 5\text{ N}，且 \mu = 0.2。`
     expect(delimitBareLatex(md)).toBe(
@@ -105,9 +127,29 @@ describe('delimitBareLatex', () => {
     ].join('\n')
     expect(delimitBareLatex(md)).toBe(md)
   })
+
+  it('does not treat ordinary parentheses or code as formulas', () => {
+    const md = [
+      '普通说明 (height, width, channels) 保持不变。',
+      String.raw`代码 \`(G\in\mathbb{R}^d)\` 保持不变。`,
+      '```tex',
+      String.raw`(G\in\mathbb{R}^d)`,
+      '```',
+    ].join('\n')
+    expect(delimitBareLatex(md)).toBe(md)
+  })
 })
 
 describe('repairOverescapedMarkdown', () => {
+  it('repairs escaped strong spans from a saved review list', () => {
+    const md = String.raw`- \*\*问题具有现实意义。\*\*将“一类一个模型”改为单模型多类别跟踪。
+- \*\*整体组织较好。 \*\*引言与第 3 节对应。`
+    expect(repairOverescapedMarkdown(md)).toBe(
+      '- **问题具有现实意义。** 将“一类一个模型”改为单模型多类别跟踪。\n' +
+        '- **整体组织较好。** 引言与第 3 节对应。',
+    )
+  })
+
   it('repairs legacy AI formatting and LaTeX while preserving code fences', () => {
     const md = [
       '\\* **not paired**',

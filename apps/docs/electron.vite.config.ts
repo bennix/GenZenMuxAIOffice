@@ -16,13 +16,23 @@ export default defineConfig({
   // must be bundled — externalizing them yields ERR_MODULE_NOT_FOUND under Node
   // (same setup as apps/slides).
   main: {
-    plugins: [externalizeDepsPlugin({ exclude: ['@genoffice/electron-utils'] })],
+    plugins: [
+      externalizeDepsPlugin({ exclude: ['@genoffice/electron-utils', '@genoffice/gongwen'] }),
+    ],
     resolve: { alias: localAlias },
   },
   preload: {
     plugins: [externalizeDepsPlugin({ exclude: ['@genoffice/electron-utils'] })],
   },
   renderer: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, 'src/renderer/index.html'),
+          loveart: resolve(__dirname, 'src/renderer/loveart.html'),
+        },
+      },
+    },
     plugins: [react()],
     resolve: { alias: localAlias },
     server: {

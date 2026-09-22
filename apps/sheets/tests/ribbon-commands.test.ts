@@ -132,3 +132,15 @@ describe('handleRibbonCommand number format', () => {
     expect(model.numberFormat).toBe('h:mm:ss AM/PM')
   })
 })
+
+describe('handleRibbonCommand infographic', () => {
+  it('opens the AI infographic studio from the chart ribbon', () => {
+    const { ctx } = makeDispatchHarness()
+    let opened = false
+    ctx.openInfographic = () => {
+      opened = true
+    }
+    handleRibbonCommand(ctx, 'insert-infographic')
+    expect(opened).toBe(true)
+  })
+})

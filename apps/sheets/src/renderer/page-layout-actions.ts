@@ -208,3 +208,31 @@ export async function handleExportPdf(ctx: PageLayoutContext): Promise<void> {
     ctx.setMessage(error instanceof Error ? error.message : t('appPdfExportFailed'))
   }
 }
+
+export async function handlePrint(
+  ctx: PageLayoutContext,
+  mode: 'print' | 'preview',
+): Promise<void> {
+  const runtime = ctx.univerRef.current
+  const worksheet = runtime?.univerAPI.getActiveWorkbook()?.getActiveSheet()
+  if (!runtime || !worksheet) return
+  const state = ctx.lazyWorkbookRef.current
+  if (state && !state.flags.preloadComplete) {
+    ctx.setMessage(t('appPdfNeedsFullLoad'))
+    return
+  }
+  try {
+    const pageSetup = state?.editJournal.pageSetup.get(worksheet.getSheetId()) ?? {}
+    const baseName = (state?.file.name ?? 'Book1').replace(/\.[^.]+$/, '')
+    const payload = buildSheetPrintPayload(
+      worksheet as unknown as PrintWorksheet,
+      pageSetup,
+      `${baseName}.pdf`,
+      worksheet.getSheetName(),
+    )
+    const result = await window.desktopApi.print({ ...payload, mode })
+    if (!result.ok) ctx.setMessage(result.error ?? t('appPdfExportFailed'))
+  } catch (error: unknown) {
+    ctx.setMessage(error instanceof Error ? error.message : t('appPdfExportFailed'))
+  }
+}
