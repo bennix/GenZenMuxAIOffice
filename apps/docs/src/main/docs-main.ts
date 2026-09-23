@@ -22,7 +22,9 @@ import {
   shell,
 } from 'electron'
 import {
+  aboutMenuLabel,
   appMenuLabels,
+  applicationMenuTemplate,
   configuredDefaultSaveDir,
   contextMenuLabels,
   fetchRemoteImage,
@@ -3567,6 +3569,12 @@ export function setDocsMenuGate(gate: () => boolean): void {
   docsMenuGate = gate
 }
 
+let aboutHook: (() => void) | null = null
+/** Shell supplies this so the macOS About item checks for updates. */
+export function setDocsAboutHook(fn: (() => void) | null): void {
+  aboutHook = fn
+}
+
 export function buildDocsMenu(): void {
   if (docsMenuGate && !docsMenuGate()) return
   const isMac = process.platform === 'darwin'
@@ -3585,24 +3593,9 @@ export function buildDocsMenu(): void {
       : [{ label: tm('menuNoRecent'), enabled: false }]
 
   const template: MenuItemConstructorOptions[] = [
-    ...(isMac
-      ? [
-          {
-            label: app.name,
-            submenu: [
-              { role: 'about' as const },
-              { type: 'separator' as const },
-              { role: 'services' as const },
-              { type: 'separator' as const },
-              { role: 'hide' as const },
-              { role: 'hideOthers' as const },
-              { role: 'unhide' as const },
-              { type: 'separator' as const },
-              { role: 'quit' as const },
-            ],
-          },
-        ]
-      : []),
+    ...applicationMenuTemplate(process.platform, app.name, aboutMenuLabel(getUiLang()), () =>
+      aboutHook?.(),
+    ),
     {
       label: tm('menuFile'),
       submenu: [

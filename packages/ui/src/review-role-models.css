@@ -1,0 +1,37 @@
+.review-role-models {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 100%;
+}
+
+.review-role-models legend {
+  padding: 0;
+  margin-bottom: 4px;
+  color: var(--text-secondary, var(--color-text-secondary));
+  font-size: 12px;
+}
+
+.review-role-models label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+  flex: 1 1 220px;
+  margin: 0;
+  color: var(--text-secondary, var(--color-text-secondary));
+  font-size: 12px;
+}
+
+.review-role-models input {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border, var(--color-border-default));
+  border-radius: 6px;
+  background: var(--surface, var(--color-bg-default));
+  color: var(--text, var(--color-text-primary));
+  font: inherit;
+}

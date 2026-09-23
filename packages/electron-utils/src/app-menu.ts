@@ -354,6 +354,58 @@ const LABELS: Record<string, Labels> = {
   },
 }
 
+const ABOUT_LABEL: Record<string, string> = {
+  zh: '关于',
+  'zh-TW': '關於',
+  en: 'About',
+  ja: '情報',
+  ko: '정보',
+  fr: 'À propos',
+  de: 'Über',
+  es: 'Acerca de',
+  th: 'เกี่ยวกับ',
+  id: 'Tentang',
+  ru: 'О программе',
+  ar: 'حول',
+  pt: 'Sobre',
+  it: 'Informazioni',
+  pl: 'O aplikacji',
+  nl: 'Over',
+  ms: 'Perihal',
+  he: 'אודות',
+  hi: 'जानकारी',
+}
+
+export function aboutMenuLabel(lang: string): string {
+  return ABOUT_LABEL[lang] ?? 'About'
+}
+
+/** macOS application menu whose About item runs `onAbout` instead of the stock panel. */
+export function applicationMenuTemplate(
+  platform: NodeJS.Platform,
+  appName: string,
+  aboutLabel: string,
+  onAbout: () => void,
+): MenuItemConstructorOptions[] {
+  if (platform !== 'darwin') return []
+  return [
+    {
+      label: appName,
+      submenu: [
+        { label: aboutLabel, click: () => onAbout() },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    },
+  ]
+}
+
 export function appMenuLabels(lang: string): AppMenuLabels {
   return { ...contextMenuLabels(lang), ...(LABELS[lang] ?? EN) }
 }

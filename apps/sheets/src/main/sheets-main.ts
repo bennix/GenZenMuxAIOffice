@@ -37,6 +37,8 @@ import type {
 import { z } from 'zod'
 import {
   appMenuLabels,
+  aboutMenuLabel,
+  applicationMenuTemplate,
   configuredDefaultSaveDir,
   contextMenuLabels,
   installContextMenu,
@@ -2779,6 +2781,12 @@ export function setSheetsExtraFileMenuItems(items: MenuItemConstructorOptions[])
   extraFileMenuItems = items
 }
 
+let aboutHook: (() => void) | null = null
+/** Shell supplies this so the macOS About item checks for updates. */
+export function setSheetsAboutHook(fn: (() => void) | null): void {
+  aboutHook = fn
+}
+
 /** tab mode: closes the sheets tab instead of the whole shell window (Cmd+W / role:'close') */
 let closeActiveTabHook: (() => void) | null = null
 export function setSheetsCloseTabHook(fn: (() => void) | null): void {
@@ -2792,7 +2800,9 @@ function installApplicationMenu(): void {
   const labels = appMenuLabels(getUiLang())
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
-      ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
+      ...applicationMenuTemplate(process.platform, app.name, aboutMenuLabel(getUiLang()), () =>
+        aboutHook?.(),
+      ),
       {
         label: tm('menuFile'),
         submenu: [

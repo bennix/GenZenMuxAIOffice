@@ -6,7 +6,9 @@ export {
   type ContextMenuLabels,
 } from './context-menu'
 export {
+  aboutMenuLabel,
   appMenuLabels,
+  applicationMenuTemplate,
   editMenuTemplate,
   toggleDevToolsItem,
   viewMenuTemplate,

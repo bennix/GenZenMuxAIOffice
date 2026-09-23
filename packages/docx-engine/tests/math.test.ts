@@ -146,6 +146,25 @@ describe('latexToOmml', () => {
     expect(() => latexToOmml(decompiled!)).not.toThrow()
   })
 
+  it('renders AI bold math commands \\mathbf and \\boldsymbol', () => {
+    const latex = '\\mathbf{F} = m\\boldsymbol{a}'
+    const omml = latexToOmml(latex)
+    expect(omml).toContain('<m:sty m:val="b"/>')
+    expect(omml).toContain('<m:sty m:val="bi"/>')
+    const mathml = ommlToMathML(`<m:oMath>${omml}</m:oMath>`)
+    expect(mathml).toContain('mathvariant="bold"')
+    expect(mathml).toContain('mathvariant="bold-italic"')
+    expect(mathml).toContain('>F<')
+    const decompiled = ommlToLatex(`<m:oMath>${omml}</m:oMath>`)
+    expect(() => latexToOmml('\\textbf{F}= m\\boldsymbol{a}')).not.toThrow()
+    expect(decompiled).toContain('\\textbf{F}')
+    expect(decompiled).toContain('\\boldsymbol{a}')
+    expect(() => latexToOmml(decompiled!)).not.toThrow()
+    expect(ommlToMathML('<m:oMath>' + latexToOmml('\\mathbf{x}_{i}') + '</m:oMath>')).toContain(
+      'mathvariant="bold"',
+    )
+  })
+
   it('renders and round-trips bold text joined by long arrows', () => {
     const latex =
       '\\textbf{一重} \\longrightarrow \\textbf{二弹（撤面法）} \\longrightarrow \\textbf{三摩擦}'

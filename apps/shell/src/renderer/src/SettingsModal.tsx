@@ -148,6 +148,8 @@ export interface SettingsModalProps {
   /** closes the modal and launches the ZenMux login flow (progress shows on the account entry) */
   onLogin: () => void
   onLogout: () => void
+  /** Increments when the application About menu asks to open this page and check for updates. */
+  aboutTick?: number
 }
 
 export function SettingsModal({
@@ -161,6 +163,7 @@ export function SettingsModal({
   onClose,
   onLogin,
   onLogout,
+  aboutTick = 0,
 }: SettingsModalProps) {
   const { lang, setLang, t } = useI18n()
   const [section, setSection] = useState<SectionId>('ai')
@@ -279,6 +282,12 @@ export function SettingsModal({
     setSection(next)
     if (next === 'about') runUpdateCheck()
   }
+
+  useEffect(() => {
+    if (aboutTick <= 0) return
+    setSection('about')
+    runUpdateCheck()
+  }, [aboutTick])
 
   const loggedIn = status?.loggedIn ?? false
   const email = status?.email ?? ''

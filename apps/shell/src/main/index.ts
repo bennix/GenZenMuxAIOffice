@@ -59,7 +59,9 @@ import {
   DEFAULT_SAVE_DIR_KEY,
   OPEN_FILES_CHANNEL,
   isOpenFileKind,
+  aboutMenuLabel,
   appMenuLabels,
+  applicationMenuTemplate,
   contextMenuLabels,
   editMenuTemplate,
   installContextMenu,
@@ -97,6 +99,7 @@ import {
   getProjectStore,
   toggleStarredFile,
   registerDocsIpc,
+  setDocsAboutHook,
   setDocsExtraFileMenuItems,
   setDocsMenuGate,
   setDocsShellHooks,
@@ -119,6 +122,7 @@ import {
   sendSheetsMenuAction,
   sheetsFileRenamed,
   setForcedWorkbookPath,
+  setSheetsAboutHook,
   setSheetsCloseTabHook,
   setSheetsExtraFileMenuItems,
   setSheetsShellWindow,
@@ -131,6 +135,7 @@ import {
   installSlidesMenu,
   replaceSlidesRecentFile,
   requestSlidesClose,
+  setSlidesAboutHook,
   setSlidesCloseTabHook,
   setSlidesExtraFileMenuItems,
   setSlidesOpenedHook,
@@ -1483,6 +1488,9 @@ function createShellWindow(): void {
 
   // pushRecent-triggered docs menu rebuilds must not clobber the active tab's menu
   setDocsMenuGate(() => manager.list().some((t) => t.active && t.kind === 'docs'))
+  setDocsAboutHook(() => showAboutAndCheckUpdates())
+  setSheetsAboutHook(() => showAboutAndCheckUpdates())
+  setSlidesAboutHook(() => showAboutAndCheckUpdates())
 
   setDocsShellWindow(win)
   setSheetsShellWindow(win)
@@ -2394,10 +2402,22 @@ async function openFileViaDialog(): Promise<void> {
   if (!result.canceled && result.filePaths[0]) openDocumentPath(result.filePaths[0])
 }
 
+function showAboutAndCheckUpdates(): void {
+  tabManager?.openHomeTab()
+  const contents = shellWindow?.webContents
+  if (contents && !contents.isDestroyed()) contents.send(HOME_CHANNELS.showAbout)
+}
+
+function aboutMenuItem(): MenuItemConstructorOptions {
+  return { label: aboutMenuLabel(currentLang()), click: () => showAboutAndCheckUpdates() }
+}
+
 function buildHomeMenu(): void {
   const isMac = process.platform === 'darwin'
   const template: MenuItemConstructorOptions[] = [
-    ...(isMac ? [{ role: 'appMenu' as const }] : []),
+    ...applicationMenuTemplate(process.platform, app.name, aboutMenuLabel(currentLang()), () =>
+      showAboutAndCheckUpdates(),
+    ),
     {
       label: tm('menuFile'),
       submenu: [
@@ -2428,7 +2448,10 @@ function buildHomeMenu(): void {
     {
       role: 'help',
       label: tm('menuHelp'),
-      submenu: [{ label: tm('thirdPartyNotices'), click: () => void openThirdPartyNotices() }],
+      submenu: [
+        ...(!isMac ? [aboutMenuItem()] : []),
+        { label: tm('thirdPartyNotices'), click: () => void openThirdPartyNotices() },
+      ],
     },
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
@@ -2441,7 +2464,9 @@ function buildPdfMenu(): void {
   const printLabel = currentLang() === 'zh' ? '打印…' : 'Print…'
   const previewLabel = currentLang() === 'zh' ? '打印预览…' : 'Print Preview…'
   const template: MenuItemConstructorOptions[] = [
-    ...(isMac ? [{ role: 'appMenu' as const }] : []),
+    ...applicationMenuTemplate(process.platform, app.name, aboutMenuLabel(currentLang()), () =>
+      showAboutAndCheckUpdates(),
+    ),
     {
       label: tm('menuFile'),
       submenu: [
@@ -2493,7 +2518,10 @@ function buildPdfMenu(): void {
     {
       role: 'help',
       label: tm('menuHelp'),
-      submenu: [{ label: tm('thirdPartyNotices'), click: () => void openThirdPartyNotices() }],
+      submenu: [
+        ...(!isMac ? [aboutMenuItem()] : []),
+        { label: tm('thirdPartyNotices'), click: () => void openThirdPartyNotices() },
+      ],
     },
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
@@ -2506,7 +2534,9 @@ function buildMarkdownMenu(): void {
   const printLabel = currentLang() === 'zh' ? '打印…' : 'Print…'
   const previewLabel = currentLang() === 'zh' ? '打印预览…' : 'Print Preview…'
   const template: MenuItemConstructorOptions[] = [
-    ...(isMac ? [{ role: 'appMenu' as const }] : []),
+    ...applicationMenuTemplate(process.platform, app.name, aboutMenuLabel(currentLang()), () =>
+      showAboutAndCheckUpdates(),
+    ),
     {
       label: tm('menuFile'),
       submenu: [
@@ -2589,7 +2619,10 @@ function buildMarkdownMenu(): void {
     {
       role: 'help',
       label: tm('menuHelp'),
-      submenu: [{ label: tm('thirdPartyNotices'), click: () => void openThirdPartyNotices() }],
+      submenu: [
+        ...(!isMac ? [aboutMenuItem()] : []),
+        { label: tm('thirdPartyNotices'), click: () => void openThirdPartyNotices() },
+      ],
     },
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))

@@ -110,6 +110,8 @@ export interface HomeApi {
   setUpdateChannel(channel: UpdateChannel): Promise<void>
   /** user-initiated update check from Settings → About */
   checkForUpdates(): Promise<UpdateCheckResult>
+  /** macOS About / Help → About: open Settings on About and check for updates */
+  onShowAbout(handler: () => void): () => void
   /** ZenMux account status (gsk login state; to be upgraded to a signup/account system later) */
   accountStatus(): Promise<AccountStatus>
   /** start ZenMux login (opens the browser; accountStatus flips to logged-in on completion); returns whether the launch succeeded */
@@ -289,6 +291,7 @@ export const HOME_CHANNELS = {
   getUpdateChannel: 'home:get-update-channel',
   setUpdateChannel: 'home:set-update-channel',
   checkForUpdates: 'home:check-for-updates',
+  showAbout: 'home:show-about',
   accountStatus: 'home:account-status',
   accountLogin: 'home:account-login',
   accountLoginEvent: 'home:account-login-event',

@@ -11,7 +11,8 @@ const app = readFileSync(resolve(workspace, 'src/renderer/App.tsx'), 'utf8')
 describe('PDF AI review committee', () => {
   it('reuses the shared strict committee and routes every reviewer through PDF ZenMux AI', () => {
     expect(modal).toContain('REVIEW_PROFILES')
-    expect(modal).toContain('assignReviewModels')
+    expect(modal).toContain('resolveReviewRoleModels')
+    expect(modal).toContain('ReviewRoleModels')
     expect(modal).toContain('availableReviewModels')
     expect(modal).toContain('profile.members.length + 1')
     expect(modal.match(/window\.pdfApi\.aiChat/g)).toHaveLength(3)

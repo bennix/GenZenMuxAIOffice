@@ -27,7 +27,9 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { userInfo } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import {
+  aboutMenuLabel,
   appMenuLabels,
+  applicationMenuTemplate,
   configuredDefaultSaveDir,
   contextMenuLabels,
   installContextMenu,
@@ -4231,6 +4233,11 @@ export function createSlidesView(openPath?: string | null): WebContentsView {
 
 /** Items the shell injects into the File menu (e.g. Back to Home) */
 let extraFileMenuItems: Electron.MenuItemConstructorOptions[] = []
+let aboutHook: (() => void) | null = null
+/** Shell supplies this so the macOS About item checks for updates. */
+export function setSlidesAboutHook(fn: (() => void) | null): void {
+  aboutHook = fn
+}
 export function setSlidesExtraFileMenuItems(items: Electron.MenuItemConstructorOptions[]): void {
   extraFileMenuItems = items
 }
@@ -4250,7 +4257,9 @@ export function buildSlidesMenu(): Menu {
   const isMac = process.platform === 'darwin'
   const labels = appMenuLabels(getUiLang())
   const template: Electron.MenuItemConstructorOptions[] = [
-    ...(isMac ? [{ role: 'appMenu' as const }] : []),
+    ...applicationMenuTemplate(process.platform, app.name, aboutMenuLabel(getUiLang()), () =>
+      aboutHook?.(),
+    ),
     {
       label: tm('menuFile'),
       submenu: [

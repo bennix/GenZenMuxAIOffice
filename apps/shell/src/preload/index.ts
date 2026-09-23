@@ -141,6 +141,11 @@ const homeApi: HomeApi = {
     const result: unknown = await ipcRenderer.invoke(HOME_CHANNELS.checkForUpdates)
     return result as UpdateCheckResult
   },
+  onShowAbout(handler) {
+    const listener = () => handler()
+    ipcRenderer.on(HOME_CHANNELS.showAbout, listener)
+    return () => ipcRenderer.removeListener(HOME_CHANNELS.showAbout, listener)
+  },
   async accountStatus() {
     const result: unknown = await ipcRenderer.invoke(HOME_CHANNELS.accountStatus)
     return (result ?? { loggedIn: false }) as AccountStatus

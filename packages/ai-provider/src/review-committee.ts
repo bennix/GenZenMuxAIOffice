@@ -366,6 +366,28 @@ export function availableReviewModels(settings: AiSettings): string[] {
   return [...new Set([...(config.models ?? []), config.model, ...ZENMUX_MODELS].filter(Boolean))]
 }
 
+/**
+ * Models for each reviewer plus the chair. Named slots are used as typed;
+ * blank slots use the active model. With no names at all, roles are shuffled
+ * across the available pool.
+ */
+export function resolveReviewRoleModels(
+  requested: string[] | undefined,
+  fallbackModel: string,
+  pool: string[],
+  count: number,
+): string[] {
+  const named = requested?.some((model) => model.trim())
+  if (!named) {
+    const source = pool.filter(Boolean)
+    return assignReviewModels(source.length ? source : [fallbackModel].filter(Boolean), count)
+  }
+  return Array.from(
+    { length: count },
+    (_, index) => requested?.[index]?.trim() || fallbackModel,
+  )
+}
+
 export function assignReviewModels(
   models: string[],
   count: number,

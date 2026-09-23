@@ -1,10 +1,10 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { ConnectButton, Markdown, copyTextToClipboard } from '@genoffice/ui'
+import { ConnectButton, Markdown, ReviewRoleModels, copyTextToClipboard } from '@genoffice/ui'
 import {
   REVIEW_PROFILES,
-  assignReviewModels,
   availableReviewModels,
+  resolveReviewRoleModels,
   chairSystemPrompt,
   noveltyQuerySystemPrompt,
   reviewerSystemPrompt,
@@ -97,11 +97,29 @@ export function PdfReviewCommitteeModal({
   const [reportSendStatus, setReportSendStatus] = useState<'idle' | 'sent' | 'failed'>('idle')
   const [literatureEnabled, setLiteratureEnabled] = useState(true)
   const [literatureStatus, setLiteratureStatus] = useState('')
+  const [modelSuggestions, setModelSuggestions] = useState<string[]>([])
+  const [roleModels, setRoleModels] = useState<string[]>([])
+  const [fallbackModel, setFallbackModel] = useState('')
   const runRef = useRef(0)
+  useEffect(() => {
+    void window.pdfApi.getAiSettings().then((settings) => {
+      setModelSuggestions(availableReviewModels(settings))
+      setFallbackModel(settings.providers.zenmux.model)
+      setRoleModels((current) =>
+        current.some((model) => model.trim())
+          ? current
+          : Array(4).fill(settings.providers.zenmux.model),
+      )
+    })
+  }, [])
   const profile = useMemo(
     () => PDF_REVIEW_PROFILES.find((item) => item.id === profileId) ?? PDF_REVIEW_PROFILES[0]!,
     [profileId],
   )
+  const roleLabels = [
+    ...profile.members.map((member) => (chinese ? member.roleZh : member.roleEn)),
+    chinese ? '委员会主席' : 'Committee Chair',
+  ]
 
   const start = async (): Promise<void> => {
     if (running || preparing) return
@@ -138,7 +156,9 @@ export function PdfReviewCommitteeModal({
         `\nVISUAL PAGE PREVIEWS PROVIDED: ${visualPages}.`,
         'Inspect formulas, charts, tables, diagrams, figures, labels, and visual consistency on the supplied previews. Explicitly disclose that pages without a preview were reviewed from extracted text only and could not be fully visually verified.',
       ].join('\n\n')
-      const assignments = assignReviewModels(
+      const assignments = resolveReviewRoleModels(
+        roleModels,
+        settings.providers.zenmux.model || fallbackModel,
         availableReviewModels(settings),
         profile.members.length + 1,
       )
@@ -306,8 +326,8 @@ export function PdfReviewCommitteeModal({
             <h2>{chinese ? 'PDF AI 审稿委员会' : 'PDF AI Review Committee'}</h2>
             <p>
               {chinese
-                ? '3 名独立委员 + 1 名主席；模型随机分配，全部通过 ZenMux。AI 功能可能受网络或代理状态影响。'
-                : '3 independent reviewers + 1 chair; models are randomly assigned, all through ZenMux. Network or proxy conditions may affect AI.'}
+                ? '3 名独立委员 + 1 名主席。可为每个角色填写 ZenMux 模型名。AI 功能可能受网络或代理状态影响。'
+                : '3 independent reviewers + 1 chair. Name a ZenMux model for each role. Network or proxy conditions may affect AI.'}
             </p>
           </div>
           <button disabled={busy} aria-label={chinese ? '关闭' : 'Close'} onClick={onClose}>
@@ -354,6 +374,16 @@ export function PdfReviewCommitteeModal({
               ))}
             </select>
           </label>
+          <ReviewRoleModels
+            label={chinese ? '各角色模型' : 'Model for each role'}
+            roles={roleLabels}
+            values={roleModels}
+            suggestions={modelSuggestions}
+            disabled={busy}
+            onChange={(index, value) =>
+              setRoleModels((current) => current.map((item, i) => (i === index ? value : item)))
+            }
+          />
           <button className="primary" disabled={busy} onClick={() => void start()}>
             {preparing
               ? chinese

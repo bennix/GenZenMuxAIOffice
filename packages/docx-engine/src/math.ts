@@ -243,7 +243,11 @@ function runToMml(run: XNode): string {
   for (const child of childrenOf(run)) {
     if (nameOf(child) === 'm:t') out += runTextToMml(textOf(child), plain)
   }
-  return bold && out ? `<mrow data-math-bold="true" style="font-weight:700">${out}</mrow>` : out
+  if (!bold || !out) return out
+  // Math fonts ignore font-weight. mathvariant is what Chromium actually draws.
+  const variant = plain ? 'bold' : 'bold-italic'
+  const marked = out.replace(/<(mi|mn|mo|mtext)(\s|>)/g, `<$1 mathvariant="${variant}"$2`)
+  return `<mrow data-math-bold="true" style="font-weight:700">${marked}</mrow>`
 }
 
 const OPERATOR_CHARS = new Set('+-−=<>±∓×÷·⋅∙*/!%&|∣,;:()[]{}′″∞→←↔⇒⇐⇔⟶⟵⟹⟸∈∉⊂⊃∪∩∀∃∧∨¬≤≥≠≈≡∼∝⊥∥°∂∇')
@@ -722,6 +726,7 @@ function runToLatex(run: XNode): string {
   for (const child of childrenOf(run)) {
     if (nameOf(child) === 'm:t') text += textOf(child)
   }
+  if (sty === 'bi' && !plain) return `\\boldsymbol{${charsToLatex(text)}}`
   if (!plain) return charsToLatex(text)
   const trimmed = text.trim()
   if (trimmed === '') return ' '
@@ -794,6 +799,21 @@ export function mathParagraphXml(
     `<w:p>${jc}<m:oMathPara><m:oMathParaPr><m:jc m:val="${align === 'center' ? 'center' : align}"/></m:oMathParaPr>` +
     `<m:oMath>${omml}</m:oMath></m:oMathPara></w:p>`
   )
+}
+
+/** Stamp bold (upright) or bold-italic onto every run inside an already-built fragment. */
+function emphasizeOmml(omml: string, style: 'b' | 'bi'): string {
+  return omml.replace(/<m:r>(?:<m:rPr>[\s\S]*?<\/m:rPr>)?/g, (open) => {
+    const sty = `<m:sty m:val="${style}"/>`
+    const nor = style === 'b' ? '<m:nor/>' : ''
+    if (!open.includes('<m:rPr>')) return `<m:r><m:rPr>${sty}${nor}</m:rPr>`
+    let next = /<m:sty\b[^>]*\/>/.test(open)
+      ? open.replace(/<m:sty\b[^>]*\/>/, sty)
+      : open.replace('<m:rPr>', `<m:rPr>${sty}`)
+    if (style === 'b' && !next.includes('<m:nor')) next = next.replace(sty, `${sty}${nor}`)
+    if (style === 'bi') next = next.replace(/<m:nor\s*\/>/g, '')
+    return next
+  })
 }
 
 function mathRun(text: string, plain = false, bold = false): string {
@@ -1097,6 +1117,12 @@ function parseControl(p: LatexParser): string {
       return mathRun(readBraceText(p), true)
     case 'textbf':
       return mathRun(readBraceText(p), true, true)
+    case 'mathbf':
+    case 'bf':
+      return emphasizeOmml(parseGroup(p), 'b')
+    case 'boldsymbol':
+    case 'bm':
+      return emphasizeOmml(parseGroup(p), 'bi')
     case 'mathbb':
       return mathRun(doubleStruckText(readBraceText(p)))
     case 'lim': {

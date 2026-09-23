@@ -61,6 +61,7 @@ export {
   REVIEW_PROFILES,
   availableReviewModels,
   assignReviewModels,
+  resolveReviewRoleModels,
   settingsForReviewModel,
   reviewerSystemPrompt,
   chairSystemPrompt,

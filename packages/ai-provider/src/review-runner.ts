@@ -1,7 +1,7 @@
 import {
   REVIEW_PROFILES,
-  assignReviewModels,
   availableReviewModels,
+  resolveReviewRoleModels,
   settingsForReviewModel,
   reviewerSystemPrompt,
   chairSystemPrompt,
@@ -31,12 +31,16 @@ export async function runDocumentReview(options: {
   onMember?(index: number, result: ReviewResult): void
   onChair?(result: ReviewResult): void
   onLiterature?(message: string): void
+  /** One ZenMux model id per reviewer, then the chair. Blank entries use the active model. */
+  roleModels?: string[]
 }) {
   const { settings, profileId, language, text, images, signal } = options
   const profile = REVIEW_PROFILES.find((p) => p.id === profileId)
   if (!profile) throw new Error('未知审稿标准')
   if (!text.trim()) throw new Error('没有可审阅的正文')
-  const assignments = assignReviewModels(
+  const assignments = resolveReviewRoleModels(
+    options.roleModels,
+    settings.providers.zenmux.model,
     availableReviewModels(settings),
     profile.members.length + 1,
   )

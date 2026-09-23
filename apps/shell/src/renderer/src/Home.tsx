@@ -393,10 +393,18 @@ function ProjectPanel({ projects, selectedId, onSelect, onRefresh }: ProjectPane
 function SettingsEntry() {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
+  const [aboutTick, setAboutTick] = useState(0)
+  useEffect(() => {
+    return window.aiOffice.onShowAbout(() => {
+      setOpen(true)
+      setAboutTick((tick) => tick + 1)
+    })
+  }, [])
   return (
     <div className="account-entry">
       {open && (
         <SettingsModal
+          aboutTick={aboutTick}
           status={null}
           loggingOut={false}
           loginWaiting={false}

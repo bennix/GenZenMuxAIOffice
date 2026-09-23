@@ -26,6 +26,26 @@ it('uses independent members then chair, discloses a failed reviewer and does no
   expect(result.literatureEvidence).toContain('disabled')
 })
 
+it('calls each named role model instead of shuffling the pool', async () => {
+  const chat = vi.fn(async (_request: any) => ({ ok: true as const, content: '审稿意见' }))
+  await runDocumentReview({
+    settings: defaultAiSettings(),
+    profileId: 'science',
+    language: 'zh',
+    text: '研究正文',
+    literature: false,
+    roleModels: ['vendor/one', 'vendor/two', 'vendor/three', 'vendor/chair'],
+    chat,
+    searchEvidence: async () => '',
+  })
+  expect(chat.mock.calls.map((call) => call[0].settings.providers.zenmux.model)).toEqual([
+    'vendor/one',
+    'vendor/two',
+    'vendor/three',
+    'vendor/chair',
+  ])
+})
+
 it('reports evidence search failure and honors cancellation before model requests', async () => {
   const chat = vi.fn(async () => ({ ok: true as const, content: 'fixture' }))
   const options = {

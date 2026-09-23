@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Editor, JSONContent } from '@tiptap/core'
-import { Markdown } from '@genoffice/ui'
+import { Markdown, ReviewRoleModels } from '@genoffice/ui'
 import { LANGUAGE_OPTIONS } from '@genoffice/i18n'
 import { parseNoveltyQueries, searchNoveltyEvidence } from '@genoffice/citations'
 import {
   REVIEW_PROFILES,
+  availableReviewModels,
   runDocumentReview,
   supportsLiteratureReview,
   type ReviewLanguage,
@@ -73,6 +74,15 @@ export function AiReviewCommitteeModal({
   const [keyMissing, setKeyMissing] = useState(false)
   const [literatureEnabled, setLiteratureEnabled] = useState(true)
   const [literatureStatus, setLiteratureStatus] = useState('')
+  const [modelSuggestions, setModelSuggestions] = useState<string[]>([])
+  const [roleModels, setRoleModels] = useState<string[]>([])
+  useEffect(() => {
+    void window.markdownApi.getAiSettings().then((settings) => {
+      const active = settings.providers.zenmux.model
+      setModelSuggestions(availableReviewModels(settings))
+      setRoleModels((current) => (current.some((model) => model.trim()) ? current : Array(4).fill(active)))
+    })
+  }, [])
   useEffect(() => {
     setMembers([])
     setChair(null)
@@ -82,6 +92,10 @@ export function AiReviewCommitteeModal({
     () => profileOptions.find((p) => p.id === profileId) ?? profileOptions[0]!,
     [profileId, profileOptions],
   )
+  const roleLabels = [
+    ...profile.members.map((member) => (chinese ? member.roleZh : member.roleEn)),
+    chinese ? '委员会主席' : 'Committee Chair',
+  ]
 
   const start = async () => {
     if (running) return
@@ -106,6 +120,7 @@ export function AiReviewCommitteeModal({
         text,
         images,
         literature: literatureEnabled,
+        roleModels,
         chat: (request) => window.markdownApi.aiChat(request),
         searchEvidence: async (raw, fallback) =>
           (await searchNoveltyEvidence(parseNoveltyQueries(raw, fallback))).evidence,
@@ -151,7 +166,7 @@ export function AiReviewCommitteeModal({
                 ? mode === 'composition'
                   ? '3 名分项评委 + 1 名主席，按指定考试或竞赛标准评分，并给出保留原意的完整润色稿。'
                   : '3 名独立委员 + 1 名主席；学术类可检索真实文献核验创新性。全部通过 ZenMux，网络可能影响结果。'
-                : '3 independent reviewers + 1 chair; models are randomly assigned, all through ZenMux. Network or proxy conditions may affect AI.'}
+                : '3 independent reviewers + 1 chair. Name a ZenMux model for each role. Network or proxy conditions may affect AI.'}
             </p>
           </div>
           <button aria-label={chinese ? '关闭' : 'Close'} disabled={running} onClick={onClose}>
@@ -209,6 +224,16 @@ export function AiReviewCommitteeModal({
               ))}
             </select>
           </label>
+          <ReviewRoleModels
+            label={chinese ? '各角色模型' : 'Model for each role'}
+            roles={roleLabels}
+            values={roleModels}
+            suggestions={modelSuggestions}
+            disabled={running}
+            onChange={(index, value) =>
+              setRoleModels((current) => current.map((item, i) => (i === index ? value : item)))
+            }
+          />
           <button className="btn-primary" disabled={running} onClick={() => void start()}>
             {running
               ? chinese
