@@ -1,4 +1,4 @@
-import { app, shell } from 'electron'
+import { app, net, shell } from 'electron'
 import type { BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import type { UpdateInfo } from 'electron-updater'
@@ -369,54 +369,52 @@ export function checkForUpdatesNow(channel: UpdateChannel): Promise<UpdateCheckR
   return manualCheck
 }
 
+const RELEASES_API = 'https://api.github.com/repos/bennix/GenZenMuxAIOffice/releases'
+
+/** Read the published tag when the updater feed is missing (mac builds ship latest.yml but not latest-mac.yml). */
+async function latestReleaseTag(channel: UpdateChannel): Promise<string> {
+  const endpoint = channel === 'beta' ? `${RELEASES_API}?per_page=20` : `${RELEASES_API}/latest`
+  const response = await net.fetch(endpoint, {
+    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'ZenOffice-Updater' },
+  })
+  if (!response.ok) throw new Error(`GitHub returned ${response.status}`)
+  const payload: unknown = await response.json()
+  const release = Array.isArray(payload)
+    ? payload.find((item) => item && typeof item === 'object' && !(item as { draft?: boolean }).draft)
+    : payload
+  const tag =
+    release &&
+    typeof release === 'object' &&
+    typeof (release as { tag_name?: unknown }).tag_name === 'string'
+      ? (release as { tag_name: string }).tag_name
+      : ''
+  if (!tag) throw new Error('Latest release did not include a version tag')
+  return tag.replace(/^v/i, '')
+}
+
+function releaseResult(currentVersion: string, latestVersion: string): UpdateCheckResult {
+  const newer = isNewerVersion(latestVersion, currentVersion)
+  if (!newer || !updaterActive) aboutInstallPending = false
+  return {
+    status: newer ? 'available' : 'current',
+    currentVersion,
+    latestVersion,
+  }
+}
+
 async function performUpdateCheck(channel: UpdateChannel): Promise<UpdateCheckResult> {
   const currentVersion = app.getVersion()
   try {
     if (updaterActive) {
-      const result = await autoUpdater.checkForUpdates()
-      const latestVersion = result?.updateInfo?.version
-      if (!latestVersion || !isNewerVersion(latestVersion, currentVersion)) {
-        aboutInstallPending = false
-        return { status: 'current', currentVersion, latestVersion: latestVersion || currentVersion }
-      }
-      return {
-        status: 'available',
-        currentVersion,
-        latestVersion,
+      try {
+        const result = await autoUpdater.checkForUpdates()
+        const latestVersion = result?.updateInfo?.version
+        if (latestVersion) return releaseResult(currentVersion, latestVersion)
+      } catch (error) {
+        log('updater feed failed, using the GitHub release tag:', error instanceof Error ? error.message : error)
       }
     }
-
-    // DEB/RPM and development runs cannot self-update, but About still performs
-    // a useful release check and reports whether a manual download is available.
-    const endpoint =
-      channel === 'beta'
-        ? 'https://api.github.com/repos/bennix/GenZenMuxAIOffice/releases?per_page=20'
-        : 'https://api.github.com/repos/bennix/GenZenMuxAIOffice/releases/latest'
-    const response = await fetch(endpoint, {
-      headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'ZenOffice-Updater' },
-    })
-    if (!response.ok) throw new Error(`GitHub returned ${response.status}`)
-    const payload: unknown = await response.json()
-    const release = Array.isArray(payload)
-      ? payload.find(
-          (item) => item && typeof item === 'object' && !(item as { draft?: boolean }).draft,
-        )
-      : payload
-    const tag =
-      release &&
-      typeof release === 'object' &&
-      typeof (release as { tag_name?: unknown }).tag_name === 'string'
-        ? (release as { tag_name: string }).tag_name
-        : ''
-    if (!tag) throw new Error('Latest release did not include a version tag')
-    const latestVersion = tag.replace(/^v/i, '')
-    const newer = isNewerVersion(latestVersion, currentVersion)
-    if (!newer || !updaterActive) aboutInstallPending = false
-    return {
-      status: newer ? 'available' : 'current',
-      currentVersion,
-      latestVersion,
-    }
+    return releaseResult(currentVersion, await latestReleaseTag(channel))
   } catch (error) {
     aboutInstallPending = false
     log('manual check failed:', error instanceof Error ? error.message : error)

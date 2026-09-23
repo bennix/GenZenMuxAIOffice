@@ -1042,9 +1042,10 @@ export function SettingsModal({
                             ? '正在连接 ZenOffice 发布服务。'
                             : 'Contacting the ZenOffice release service.'
                           : updateCheck.status === 'error'
-                            ? isChinese
-                              ? '请检查网络后重试。'
-                              : 'Check your network connection and try again.'
+                            ? ('error' in updateCheck && updateCheck.error) ||
+                              (isChinese
+                                ? '请检查网络后重试。'
+                                : 'Check your network connection and try again.')
                             : isChinese
                               ? `已检查发布通道：${channel === 'beta' ? 'Beta' : '稳定版'}`
                               : `Checked the ${channel === 'beta' ? 'Beta' : 'Stable'} channel.`}

@@ -9,6 +9,8 @@ import type { UpdateUiState } from '../src/shared/update-api'
 
 const appState = { isPackaged: true }
 
+const netFetch = vi.fn<() => Promise<unknown>>()
+
 vi.mock('electron', () => ({
   app: {
     get isPackaged() {
@@ -16,6 +18,10 @@ vi.mock('electron', () => ({
     },
     getVersion: () => '0.1.0',
   },
+  net: {
+    fetch: () => netFetch(),
+  },
+  shell: { openExternal: vi.fn() },
 }))
 
 type Listener = (...args: unknown[]) => unknown
@@ -127,6 +133,7 @@ beforeEach(() => {
   updaterState.disableDifferentialDownload = false
   updaterState.channel = null
   updaterState.allowDowngrade = false
+  netFetch.mockReset()
   checkForUpdates.mockReset()
   checkForUpdates.mockImplementation(() => Promise.resolve(null))
   downloadUpdate.mockReset()
@@ -258,6 +265,21 @@ describe('initAutoUpdater', () => {
       latestVersion: '0.2.0',
     })
     expect(checkForUpdates).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats a missing updater feed as the published GitHub release', async () => {
+    checkForUpdates.mockRejectedValue(new Error('Cannot find latest-mac.yml'))
+    netFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ tag_name: 'v0.1.0' }),
+    })
+    const { checkForUpdatesNow, initAutoUpdater } = await loadUpdater()
+    initAutoUpdater(() => null)
+    await expect(checkForUpdatesNow('stable')).resolves.toEqual({
+      status: 'current',
+      currentVersion: '0.1.0',
+      latestVersion: '0.1.0',
+    })
   })
 
   it('compares release versions numerically', async () => {
