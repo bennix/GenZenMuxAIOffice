@@ -54,6 +54,9 @@ jobs:
           npm run notices
           npm run build:all
 
+      - name: Prepare Linux OfficeCLI sidecar
+        run: node tools/prepare-officecli.mjs linux
+
       - name: Build RPM
         working-directory: apps/shell
         run: npx electron-builder --linux rpm --x64 --publish never
