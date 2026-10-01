@@ -25,6 +25,8 @@ interface AuditEntry {
   preview: string
   /** Pixels by which the text content height exceeds the box height (only meaningful when >0) */
   overflowPx: number
+  /** Actual laid-out glyph rectangles, in the same slide coordinates as shape boxes. */
+  ink: Array<{ x: number; y: number; w: number; h: number }>
 }
 
 const PREVIEW_MAX = 18
@@ -46,6 +48,7 @@ function collectEntries(nodes: RenderNode[]): AuditEntry[] {
     let hasText = false
     let preview = ''
     let overflowPx = 0
+    let ink: AuditEntry['ink'] = []
     if (n.type === 'shape' || n.type === 'text') {
       const sn = n as ShapeRenderNode
       preview = textPreview(sn)
@@ -53,13 +56,25 @@ function collectEntries(nodes: RenderNode[]): AuditEntry[] {
       if (sn.text && hasText) {
         const inner = h - sn.text.insets.t - sn.text.insets.b
         overflowPx = Math.round(sn.text.contentHeight - inner)
+        if (Math.abs(n.box.rotationDeg) < 1 && !sn.text.vert) {
+          ink = sn.text.lines.flatMap((line) =>
+            line.runs
+              .filter((run) => run.text.trim() && run.widthPx > 0)
+              .map((run) => ({
+                x: x + run.x,
+                y: y + run.baselineY - (run.ascentPx ?? run.fontSizePx * 0.8),
+                w: run.widthPx,
+                h: run.fontSizePx,
+              })),
+          )
+        }
       }
     } else if (n.type === 'group') {
       // If any child in the group has text, treat it as text content for overlap detection
       hasText = groupHasText(n as GroupRenderNode)
       preview = '(group)'
     }
-    out.push({ id: n.sourceId, type: n.type, x, y, w, h, hasText, preview, overflowPx })
+    out.push({ id: n.sourceId, type: n.type, x, y, w, h, hasText, preview, overflowPx, ink })
   }
   return out
 }
@@ -95,7 +110,7 @@ const OVERLAP_RATIO = 0.12
 const OVERLAP_MIN_AREA = 400
 /** Background color blocks (≥70% of canvas area) don't participate in overlap detection */
 const BACKGROUND_AREA_RATIO = 0.7
-const MAX_ISSUES = 12
+const MAX_ISSUES = 30
 
 /**
  * Audit one page's layout and return the list of problems (empty array = pass).
@@ -125,6 +140,52 @@ export function auditSlideLayout(slide: RenderSlide): string[] {
         `Text overflow: ${label(e)} content exceeds the box height by ${e.overflowPx}px (make the box taller or reduce the font size)`,
       )
     }
+    if (
+      e.ink.some(
+        (r) =>
+          r.x < e.x - 4 || r.y < e.y - 4 || r.x + r.w > e.x + e.w + 4 || r.y + r.h > e.y + e.h + 4,
+      )
+    ) {
+      issues.push(
+        `Glyph overflow: ${label(e)} rendered text extends beyond its shape; widen or grow the text box`,
+      )
+    }
+  }
+
+  // A short label inside a pill can have no overflow at all while visibly
+  // hugging the top edge. Compare rendered glyphs with the pill's actual bounds.
+  for (const node of slide.nodes) {
+    if (node.decoration || (node.type !== 'shape' && node.type !== 'text')) continue
+    const pill = node as ShapeRenderNode
+    const isPill =
+      (pill.cornerRadiusPx ?? 0) >= pill.box.h * 0.25 &&
+      pill.box.h >= 24 &&
+      pill.box.h <= 90 &&
+      pill.box.w >= pill.box.h * 2
+    const isIconCircle =
+      (pill.presetGeometry === 'ellipse' || (pill.cornerRadiusPx ?? 0) >= pill.box.h * 0.4) &&
+      pill.box.h >= 40 &&
+      Math.abs(pill.box.w - pill.box.h) <= pill.box.h * 0.12
+    if (!isPill && !isIconCircle) continue
+    const labels = entries.filter(
+      (e) =>
+        e.ink.length > 0 &&
+        e.preview.length <= (isPill ? 30 : 8) &&
+        (isPill || /\p{Extended_Pictographic}/u.test(e.preview)) &&
+        e.x >= pill.box.x - 2 &&
+        e.x + e.w <= pill.box.x + pill.box.w + 2 &&
+        e.y >= pill.box.y - 4 &&
+        e.y + e.h <= pill.box.y + pill.box.h + 4,
+    )
+    if (labels.length !== 1) continue
+    const label = labels[0]!
+    const inkTop = Math.min(...label.ink.map((r) => r.y))
+    const inkBottom = Math.max(...label.ink.map((r) => r.y + r.h))
+    const offset = (inkTop + inkBottom - 2 * pill.box.y - pill.box.h) / 2
+    if (Math.abs(offset) > 7 && Math.abs(offset) > pill.box.h * 0.14)
+      issues.push(
+        `${isPill ? 'Pill label' : 'Circle icon'} off-center: ${label.id} in ${pill.sourceId} is ${Math.round(Math.abs(offset))}px too ${offset < 0 ? 'high' : 'low'}`,
+      )
   }
 
   // 3. Pairwise overlap of content elements
@@ -149,6 +210,61 @@ export function auditSlideLayout(slide: RenderSlide): string[] {
     if (issues.length >= MAX_ISSUES) break
   }
 
+  // Text can collide even when its parent shapes overlap by too little for the broad box check.
+  // Compare rendered glyph spans, as in ZenCode's DOM Range based audit.
+  for (let i = 0; i < content.length && issues.length < MAX_ISSUES; i++) {
+    const a = content[i]!
+    if (!a.ink.length) continue
+    for (let j = i + 1; j < content.length && issues.length < MAX_ISSUES; j++) {
+      const b = content[j]!
+      if (!b.ink.length) continue
+      const collided = a.ink.some((ra) =>
+        b.ink.some((rb) => {
+          const ix = Math.min(ra.x + ra.w, rb.x + rb.w) - Math.max(ra.x, rb.x)
+          const iy = Math.min(ra.y + ra.h, rb.y + rb.h) - Math.max(ra.y, rb.y)
+          return ix > 3 && iy > 3 && ix * iy > 24
+        }),
+      )
+      if (
+        collided &&
+        !issues.some(
+          (issue) =>
+            issue.startsWith('Overlap:') && issue.includes(label(a)) && issue.includes(label(b)),
+        )
+      )
+        issues.push(`Glyph overlap: ${label(a)} and ${label(b)} have rendered text crossing`)
+    }
+  }
+
+  // A separate horizontal rule through the middle of glyphs is usually an accidental overlay.
+  for (const n of slide.nodes) {
+    if (issues.length >= MAX_ISSUES) break
+    if (n.decoration || (n.type !== 'shape' && n.type !== 'text') || !n.line) continue
+    const points = n.line.points
+    if (points.length < 4) continue
+    const x1 = n.box.x + points[0]!
+    const y1 = n.box.y + points[1]!
+    const x2 = n.box.x + points[points.length - 2]!
+    const y2 = n.box.y + points[points.length - 1]!
+    if (Math.abs(y2 - y1) > 3 || Math.abs(x2 - x1) < 50) continue
+    const left = Math.min(x1, x2)
+    const right = Math.max(x1, x2)
+    for (const e of content) {
+      if (e.id === n.sourceId || !e.ink.length) continue
+      if (
+        e.ink.some(
+          (r) =>
+            y1 > r.y + r.h * 0.15 &&
+            y1 < r.y + r.h * 0.8 &&
+            Math.min(right, r.x + r.w) - Math.max(left, r.x) > 12,
+        )
+      ) {
+        issues.push(`Line crosses text: ${n.sourceId} passes through ${label(e)}`)
+        break
+      }
+    }
+  }
+
   return issues.slice(0, MAX_ISSUES)
 }
 
@@ -160,6 +276,6 @@ export function formatAudit(issues: string[], round?: string): string {
   const body = issues.map((s) => `- ${s}`).join('\n')
   const tail = round
     ? `\n${round}\n</layout-audit>`
-    : "\n→ Immediately write another execute_slide_script to fix these issues (don't stop, don't ask the user, don't declare completion). els reflects the new positions after the last apply; compute from it directly. At most 2 fix rounds; only if still unresolved tell the user honestly.\n</layout-audit>"
+    : "\n→ Immediately write another execute_slide_script to fix these issues (don't stop, don't ask the user, don't declare completion). Preserve all content. els reflects the new positions after the last apply; compute from it directly. At most 5 fix rounds; if still unresolved tell the user honestly.\n</layout-audit>"
   return head + body + tail
 }

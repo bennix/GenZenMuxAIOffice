@@ -746,6 +746,7 @@ export function App() {
   const saveAs = useCallback(() => fileActions.saveAs(ctxRef.current), [])
   const exportImages = useCallback(() => fileActions.exportImages(ctxRef.current), [])
   const exportPdf = useCallback(() => fileActions.exportPdf(ctxRef.current), [])
+  const exportVisualPptx = useCallback(() => fileActions.exportVisualPptx(ctxRef.current), [])
 
   const [printDlgOpen, setPrintDlgOpen] = useState(false)
   const printSlides = useCallback(
@@ -1780,6 +1781,7 @@ export function App() {
       else if (cmd === 'save-as') void saveAs()
       // macOS has no File ribbon tab, so these only exist in the menu
       else if (cmd === 'export-pdf') void exportPdf()
+      else if (cmd === 'export-visual-pptx') void exportVisualPptx()
       else if (cmd === 'export-images') void exportImages()
       else if (cmd === 'print') setPrintDlgOpen(true)
       // Through the preview path so the zoom pivots on the viewport center, not the scroll origin
@@ -1806,6 +1808,7 @@ export function App() {
     save,
     saveAs,
     exportPdf,
+    exportVisualPptx,
     exportImages,
     undo,
     redo,
@@ -2510,6 +2513,7 @@ export function App() {
         onRedo={() => void redo()}
         onSaveAs={() => void saveAs()}
         onExportPdf={() => void exportPdf()}
+        onExportVisualPptx={() => void exportVisualPptx()}
         onPrint={() => setPrintDlgOpen(true)}
         onExportImages={() => void exportImages()}
         onFormat={onFormat}

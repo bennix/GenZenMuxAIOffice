@@ -97,6 +97,7 @@ export type { FormatCmd, SlidesViewMode } from './ribbon-shared'
 import type { FormatCmd } from './ribbon-shared'
 import { RibbonHomeTab } from './RibbonHomeTab'
 import { RibbonInsertTab } from './RibbonInsertTab'
+import { getLang } from '../i18n/locale'
 import { ShapePreview } from './gallery-previews'
 
 const IS_MAC = navigator.platform.toLowerCase().includes('mac')
@@ -737,6 +738,7 @@ export function Ribbon({
   onRedo,
   onSaveAs,
   onExportPdf,
+  onExportVisualPptx,
   onPrint,
   onExportImages,
   onFormat,
@@ -1441,6 +1443,17 @@ export function Ribbon({
                   }}
                 >
                   {t('ribbonFileExportPdf')}
+                </button>
+                <button
+                  disabled={!hasDoc}
+                  onClick={() => {
+                    setFileOpen(false)
+                    onExportVisualPptx()
+                  }}
+                >
+                  {getLang() === 'zh'
+                    ? '导出保真 PPTX（整页图片）'
+                    : 'Export visual PPTX (full-page images)'}
                 </button>
                 <button
                   disabled={!hasDoc}

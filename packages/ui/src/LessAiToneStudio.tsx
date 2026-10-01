@@ -4,7 +4,8 @@ import {
   applyToneChanges,
   captureToneSource,
   detectTone,
-  humanizeTone,
+  humanizeRequest,
+  parseHumanize,
   previewTone,
   rewriteTone,
   toneCoverage,
@@ -21,10 +22,17 @@ import { scanToneOffline, TONE_PROFILES, type ToneProfile } from './tone-profile
 export function LessAiToneStudio({
   editor,
   generate,
+  stream,
   onClose,
 }: {
   editor: ToneEditor
   generate: ToneGenerate
+  /** Streams the Chinese polish. When omitted, `generate` is used and the result is still applied at the end. */
+  stream?: (
+    prompt: { system: string; user: string },
+    onDelta: (text: string) => void,
+    signal: AbortSignal,
+  ) => Promise<string>
   onClose: () => void
 }) {
   const [range] = useState(() => editor.state.selection)
@@ -42,10 +50,18 @@ export function LessAiToneStudio({
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
+  const [draft, setDraft] = useState('')
   const dialog = useRef<HTMLDialogElement>(null)
+  const draftBox = useRef<HTMLPreElement>(null)
+  const polishAbort = useRef<AbortController | null>(null)
   useEffect(() => {
     dialog.current?.showModal()
+    return () => polishAbort.current?.abort()
   }, [])
+  useEffect(() => {
+    const box = draftBox.current
+    if (box) box.scrollTop = box.scrollHeight
+  }, [draft])
   const chosen = changes.filter((_, index) => selected.includes(index))
   const reset = () => {
     setBefore(null)
@@ -85,18 +101,28 @@ export function LessAiToneStudio({
   }
   const humanize = async () => {
     reset()
+    setDraft('')
     setBusy(true)
+    const abort = new AbortController()
+    polishAbort.current = abort
     try {
       if (editor.state.doc !== snapshot.doc) throw new Error('文档已变化，请重新打开工作台。')
       setStatus('正在重写，去掉 AI 腔并换成更像人写的句子…')
-      const next = await humanizeTone(generate, snapshot.segments, style)
-      setChanges(next)
-      setSelected(next.map((_, i) => i))
-      setStatus('重写完成。核对原意后可以写回文档。')
+      const request = humanizeRequest(snapshot.segments, style)
+      const raw = stream
+        ? await stream(request, setDraft, abort.signal)
+        : await generate(request)
+      if (abort.signal.aborted) return
+      setDraft(raw)
+      const next = parseHumanize(raw, snapshot.segments)
+      applyToneChanges(editor, snapshot, next)
+      onClose()
     } catch (cause) {
+      if (abort.signal.aborted) return
       setError(cause instanceof Error ? cause.message : String(cause))
       setStatus('')
     } finally {
+      if (polishAbort.current === abort) polishAbort.current = null
       setBusy(false)
     }
   }
@@ -165,7 +191,7 @@ export function LessAiToneStudio({
       <header>
         <div>
           <strong>去 AI 味工作台</strong>
-          <p>选中正文后重写，去掉套话，保留事实</p>
+          <p>选中中文后润色，去掉空话和套话，保留事实</p>
         </div>
         <button disabled={busy} onClick={onClose}>
           返回文档
@@ -231,7 +257,7 @@ export function LessAiToneStudio({
         </small>
         <div className="screenwriting-actions">
           <button disabled={!snapshot.segments.length} onClick={() => void humanize()}>
-            去 AI 味
+            中文润色
           </button>
           <button disabled={!snapshot.segments.length} onClick={() => void run(false)}>
             仅检测原文
@@ -241,6 +267,11 @@ export function LessAiToneStudio({
           </button>
         </div>
       </fieldset>
+      {draft && (
+        <pre ref={draftBox} className="tone-stream" aria-live="polite">
+          {draft}
+        </pre>
+      )}
       <div className="screenwriting-columns">
         {report('处理前检测', before, snapshot.segments)}
         {report('处理后检测（选中建议稿）', after, revised)}
@@ -303,9 +334,9 @@ export function LessAiToneStudio({
       {status && <p role="status">{status}</p>}
       {error && <p role="alert">{error}</p>}
       <small>
-        规则来源：lieflat-less-ai-tone · 内置版本 27d2923 · MIT © 2026
-        shiujan。中文扩展参考 no-ai-slop-zh · 89d6fab · MIT © 2026 Peter Yang。
-        英文模式为应用自有简洁表达规则。本工作台未接入独立的 AI 作者检测模型。
+        中文润色使用 Humanizer-zh · MIT © 2026 歸藏。局部检测仍使用
+        lieflat-less-ai-tone · 内置版本 27d2923 · MIT © 2026 shiujan。
+        本工作台不判断作者身份，也不保证能通过检测器。
       </small>
     </dialog>
   )

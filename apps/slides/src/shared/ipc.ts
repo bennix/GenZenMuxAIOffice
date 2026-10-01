@@ -957,6 +957,13 @@ export interface ExportPdfResult {
   error?: string
 }
 
+export interface ExportVisualPptxOp {
+  filePath: string
+  pngsBase64: string[]
+  widthPx: number
+  heightPx: number
+}
+
 /** Print: same page assembly as ExportPdfOp, using the system print dialog. */
 export interface PrintSlidesOp {
   pngsBase64: string[]
@@ -999,6 +1006,7 @@ export type MenuCommand =
   | 'save'
   | 'save-as'
   | 'export-pdf'
+  | 'export-visual-pptx'
   | 'export-images'
   | 'print'
   | 'zoom-in'
@@ -1301,8 +1309,11 @@ export interface SlidesApi extends ConnectApi {
   exportImages: (op: ExportImagesOp) => Promise<ExportImagesResult>
   /** Export as PDF: shows the save dialog for the target path, cancel returns null */
   pickExportPdfPath: (defaultName: string) => Promise<string | null>
+  pickExportVisualPptxPath: (defaultName: string) => Promise<string | null>
   /** Main process printToPDF via a hidden window, written to disk */
   exportPdf: (op: ExportPdfOp) => Promise<ExportPdfResult>
+  /** Fixed-layout PPTX: one full-page picture per slide, generated and validated with OfficeCLI. */
+  exportVisualPptx: (op: ExportVisualPptxOp) => Promise<ExportPdfResult>
   /** Print (system dialog; cancel counts as ok=false without an error) */
   printSlides: (op: PrintSlidesOp) => Promise<{ ok: boolean; error?: string }>
   save: () => Promise<{ ok: boolean; path?: string; error?: string; slides?: RenderSlide[] }>

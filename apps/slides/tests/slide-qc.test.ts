@@ -8,8 +8,9 @@ import {
   generatedPageRange,
   mergeQcPages,
   createSlideFixSkill,
-  isQcEnabled,
+  settingsForSlideRepair,
 } from '../src/renderer/ai/slide-qc'
+import { defaultAiSettings } from '@genoffice/ai-provider'
 import type { DeckAccess } from '../src/renderer/ai/slides-skill'
 
 const access: DeckAccess = {
@@ -82,12 +83,18 @@ describe('createSlideFixSkill', () => {
   })
 })
 
-describe('isQcEnabled', () => {
-  it("localStorage 'ai-slides-qc'='0' is the kill switch", () => {
-    localStorage.removeItem('ai-slides-qc')
-    expect(isQcEnabled()).toBe(true)
-    localStorage.setItem('ai-slides-qc', '0')
-    expect(isQcEnabled()).toBe(false)
-    localStorage.removeItem('ai-slides-qc')
+describe('settingsForSlideRepair', () => {
+  it('uses the chosen repair model without changing the writer settings', () => {
+    const settings = defaultAiSettings()
+    const writer = settings.providers.zenmux.model
+    settings.providers.zenmux.slideRepairModel = 'provider/layout-fixer'
+    const repair = settingsForSlideRepair(settings)
+    expect(repair.providers.zenmux.model).toBe('provider/layout-fixer')
+    expect(settings.providers.zenmux.model).toBe(writer)
+  })
+
+  it('follows the writer when the repair model is empty', () => {
+    const settings = defaultAiSettings()
+    expect(settingsForSlideRepair(settings)).toBe(settings)
   })
 })

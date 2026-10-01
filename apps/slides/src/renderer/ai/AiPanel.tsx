@@ -23,7 +23,7 @@ import { BeautifySuggestions } from './BeautifySuggestions'
 import { createFilesSkill } from './files-skill'
 import { createElectronTransport } from './transport'
 import { renderSlidesToPngBase64 } from '../export-render'
-import { isQcEnabled, mergeQcPages, qcSlidePage, QC_MAX_PAGES } from './slide-qc'
+import { mergeQcPages, qcSlidePage, settingsForSlideRepair } from './slide-qc'
 import { auditSlideLayout } from './layout-audit'
 import { describeLayoutAction, judgeGeneratedLayout } from './slide-jev'
 import { useI18n, t as tGlobal, aiLangDirective, type TFunc } from '../i18n/locale'
@@ -1276,7 +1276,6 @@ export function AiPanel({
           }
         },
         onError: (error) => {
-          qcPagesRef.current = []
           setChat((prev) => {
             const next = [...prev]
             // the loop rolled this run's user message out of the model context — surface that
@@ -1298,7 +1297,10 @@ export function AiPanel({
             }
             return next
           })
-          void finishHistoryBatch().finally(() => setBusy(false))
+          void finishHistoryBatch().finally(() => {
+            setBusy(false)
+            if (qcPagesRef.current.length > 0) void runQcPassRef.current()
+          })
         },
       },
     })
@@ -1484,16 +1486,24 @@ export function AiPanel({
    * got worse, that batch is rolled back. Progress streams into one assistant chat entry.
    */
   const runQcPass = async () => {
+    // A second generation can finish while an earlier QC pass is still active.
+    // Leave its pages queued for the next pass instead of discarding them.
+    if (qcRunningRef.current) return
     const pages = qcPagesRef.current
     qcPagesRef.current = []
     const access = accessRef.current
-    if (pages.length === 0 || !access || qcRunningRef.current || !isQcEnabled()) return
+    if (pages.length === 0) return
+    if (!access) {
+      qcPagesRef.current = pages
+      return
+    }
     qcRunningRef.current = true
     const controller = new AbortController()
     qcAbortRef.current = controller
-    const capped = pages.slice(0, QC_MAX_PAGES)
-    const transport = createElectronTransport(() => settingsRef.current)
-    const header = tGlobal('aiQcStart', { count: capped.length })
+    const currentSettings = await window.slidesApi.getAiSettings().catch(() => settingsRef.current)
+    const qcSettings = settingsForSlideRepair(currentSettings)
+    const transport = createElectronTransport(() => qcSettings)
+    const header = tGlobal('aiQcStart', { count: pages.length })
     const lines: string[] = []
     const renderEntry = () => [header, ...lines].join('\n')
     setBusy(true)
@@ -1511,88 +1521,116 @@ export function AiPanel({
     // so restoring it rewinds past the QC edits too)
     let qcSnapshotId: number | null = null
     try {
-      for (const page of capped) {
+      for (const page of pages) {
         if (controller.signal.aborted) break
-        const shot = await captureSlideShot(page)
-        if (!shot) {
-          if (slidesRef.current[page]) lines.push(tGlobal('aiQcPageSkipped', { n: page + 1 }))
-          continue
-        }
-        const slide = access.getSlides()[page]
-        const issues = slide ? auditSlideLayout(slide) : []
-        const judged = slide
-          ? await judgeGeneratedLayout(slide, issues, (state, questions) =>
-              window.slidesApi.systemOne({ state, questions }),
-            )
-          : { status: 'unavailable' as const }
-        if (controller.signal.aborted) break
-        if (judged.status === 'skip') {
-          lines.push(tGlobal('aiQcJevSkip', { n: page + 1 }))
-          patchLastAssistant({ text: renderEntry() })
-          continue
-        }
-        if (judged.status === 'apply') {
+        try {
+          const shot = await captureSlideShot(page)
+          const slide = access.getSlides()[page]
+          if (!slide) continue
+          const issues = slide ? auditSlideLayout(slide) : []
+          const judged = slide
+            ? await judgeGeneratedLayout(slide, issues, (state, questions) =>
+                window.slidesApi.systemOne({ state, questions }),
+              )
+            : { status: 'unavailable' as const }
+          if (controller.signal.aborted) break
+          let shotForQc = shot
+          if (judged.status === 'apply') {
+            const batchOpened = await window.slidesApi.beginHistoryBatch()
+            const updated = await window.slidesApi.batchEditTransform({
+              slideIndex: page,
+              fitWidthPx: access.fitWidthPx,
+              items: judged.ops.map((op) => ({
+                sourceId: op.id,
+                xPx: op.x,
+                yPx: op.y,
+                wPx: op.w,
+                hPx: op.h,
+                rotationDeg: op.rotation,
+              })),
+            })
+            const batchId = batchOpened ? await window.slidesApi.endHistoryBatch() : null
+            if (updated) {
+              const afterIssues = auditSlideLayout(updated)
+              if (afterIssues.length > issues.length) {
+                const restored =
+                  typeof batchId === 'number'
+                    ? await window.slidesApi.aiSnapshotRestore(batchId)
+                    : null
+                if (restored) {
+                  applyDeckRef.current(restored, Math.min(currentRef.current, restored.length - 1))
+                  lines.push(tGlobal('aiQcPageReverted', { n: page + 1 }))
+                } else {
+                  access.applySlide(page, updated)
+                  lines.push(
+                    tGlobal('aiQcPageFailed', { n: page + 1, error: 'layout rollback failed' }),
+                  )
+                }
+              } else {
+                access.applySlide(page, updated)
+                shotForQc = (await captureSlideShot(page)) ?? shot
+                lines.push(
+                  tGlobal('aiQcPageFixed', {
+                    n: page + 1,
+                    summary: describeLayoutAction(judged.action),
+                  }),
+                )
+                if (typeof batchId === 'number' && qcSnapshotId == null) qcSnapshotId = batchId
+              }
+            } else {
+              lines.push(tGlobal('aiQcPageFailed', { n: page + 1, error: 'layout apply failed' }))
+            }
+            patchLastAssistant({ text: renderEntry() })
+          }
           const batchOpened = await window.slidesApi.beginHistoryBatch()
-          const updated = await window.slidesApi.batchEditTransform({
-            slideIndex: page,
-            fitWidthPx: access.fitWidthPx,
-            items: judged.ops.map((op) => ({
-              sourceId: op.id,
-              xPx: op.x,
-              yPx: op.y,
-              wPx: op.w,
-              hPx: op.h,
-              rotationDeg: op.rotation,
-            })),
+          const result = await qcSlidePage({
+            access,
+            transport,
+            pageIndex: page,
+            screenshot: shotForQc,
+            systemSuffix: aiLangDirective,
+            signal: controller.signal,
           })
           const batchId = batchOpened ? await window.slidesApi.endHistoryBatch() : null
-          if (updated) {
-            access.applySlide(page, updated)
-            lines.push(
-              tGlobal('aiQcPageFixed', { n: page + 1, summary: describeLayoutAction(judged.action) }),
-            )
+          if (controller.signal.aborted) break
+          if (result.error) {
+            lines.push(tGlobal('aiQcPageFailed', { n: page + 1, error: result.error }))
+          } else if (result.edited && result.postIssues > result.preIssues) {
+            // The fix made the deterministic audit worse — undo this page's batch
+            if (typeof batchId === 'number') {
+              const restored = await window.slidesApi.aiSnapshotRestore(batchId)
+              if (restored)
+                applyDeckRef.current(restored, Math.min(currentRef.current, restored.length - 1))
+            }
+            lines.push(tGlobal('aiQcPageReverted', { n: page + 1 }))
+          } else if (result.edited) {
+            const summary =
+              result.reply && result.reply.toUpperCase() !== 'OK'
+                ? result.reply
+                : tGlobal('aiQcPageFixedDefault')
+            lines.push(tGlobal('aiQcPageFixed', { n: page + 1, summary }))
             if (typeof batchId === 'number' && qcSnapshotId == null) qcSnapshotId = batchId
           } else {
-            lines.push(tGlobal('aiQcPageFailed', { n: page + 1, error: 'layout apply failed' }))
+            lines.push(tGlobal('aiQcPageOk', { n: page + 1 }))
+          }
+          if (!result.error && result.postIssues > 0) {
+            lines.push(
+              tGlobal('aiQcPageFailed', {
+                n: page + 1,
+                error: `${result.postIssues} layout issue(s) remain`,
+              }),
+            )
           }
           patchLastAssistant({ text: renderEntry() })
-          continue
+        } catch (error) {
+          lines.push(
+            tGlobal('aiQcPageFailed', {
+              n: page + 1,
+              error: error instanceof Error ? error.message : String(error),
+            }),
+          )
+          patchLastAssistant({ text: renderEntry() })
         }
-        const batchOpened = await window.slidesApi.beginHistoryBatch()
-        const result = await qcSlidePage({
-          access,
-          transport,
-          pageIndex: page,
-          screenshot: shot,
-          systemSuffix: aiLangDirective,
-          signal: controller.signal,
-        })
-        const batchId = batchOpened ? await window.slidesApi.endHistoryBatch() : null
-        if (controller.signal.aborted) break
-        if (result.error) {
-          lines.push(tGlobal('aiQcPageFailed', { n: page + 1, error: result.error }))
-        } else if (result.edited && result.postIssues > result.preIssues) {
-          // The fix made the deterministic audit worse — undo this page's batch
-          if (typeof batchId === 'number') {
-            const restored = await window.slidesApi.aiSnapshotRestore(batchId)
-            if (restored)
-              applyDeckRef.current(restored, Math.min(currentRef.current, restored.length - 1))
-          }
-          lines.push(tGlobal('aiQcPageReverted', { n: page + 1 }))
-        } else if (result.edited) {
-          const summary =
-            result.reply && result.reply.toUpperCase() !== 'OK'
-              ? result.reply
-              : tGlobal('aiQcPageFixedDefault')
-          lines.push(tGlobal('aiQcPageFixed', { n: page + 1, summary }))
-          if (typeof batchId === 'number' && qcSnapshotId == null) qcSnapshotId = batchId
-        } else {
-          lines.push(tGlobal('aiQcPageOk', { n: page + 1 }))
-        }
-        patchLastAssistant({ text: renderEntry() })
-      }
-      if (pages.length > capped.length) {
-        lines.push(tGlobal('aiQcCapped', { count: pages.length - capped.length }))
       }
       if (controller.signal.aborted) lines.push(tGlobal('aiQcStopped'))
     } finally {
@@ -1606,6 +1644,7 @@ export function AiPanel({
       })
       persistMessage('assistant', finalText)
       setBusy(false)
+      if (qcPagesRef.current.length > 0) void runQcPassRef.current()
     }
   }
   runQcPassRef.current = runQcPass

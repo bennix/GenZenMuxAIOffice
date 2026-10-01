@@ -1,7 +1,7 @@
 {
   "name": "@genoffice/shell",
   "productName": "ZenOffice",
-  "version": "0.6.94",
+  "version": "0.6.95",
   "license": "Apache-2.0",
   "homepage": "https://github.com/bennix/GenZenMuxAIOffice",
   "private": true,
@@ -14,9 +14,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "start": "electron-vite build && electron .",
-    "dist:mac": "electron-vite build && electron-builder --mac",
-    "dist:win": "electron-vite build && electron-builder --win",
-    "dist:linux": "electron-vite build && electron-builder --linux"
+    "dist:mac": "node ../../tools/prepare-officecli.mjs mac && electron-vite build && electron-builder --mac",
+    "dist:win": "node ../../tools/prepare-officecli.mjs win && electron-vite build && electron-builder --win",
+    "dist:linux": "node ../../tools/prepare-officecli.mjs linux && electron-vite build && electron-builder --linux"
   },
   "devDependencies": {
     "@genoffice/mcp-server": "*",

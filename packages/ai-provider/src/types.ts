@@ -27,6 +27,8 @@ export interface AiProviderConfig {
    * fix plan is reasonable). Not a chat model.
    */
   jevModel?: string | undefined
+  /** Chat model used for PPT layout repair; empty follows the selected writer model. */
+  slideRepairModel?: string | undefined
   /** ZenMux (defaults to zenmux.ai) and the custom OpenAI-compatible provider */
   baseUrl?: string | undefined
 }

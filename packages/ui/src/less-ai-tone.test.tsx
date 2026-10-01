@@ -137,6 +137,7 @@ describe('less AI tone edits', () => {
     const generate = vi.fn().mockResolvedValue('方案把效率提高了 20%。\n<<<SEG>>>\n团队把流程改完了。')
     const changes = await humanizeTone(generate, segments, '')
     expect(changes.map((change) => change.after)).toEqual(['方案把效率提高了 20%。', '团队把流程改完了。'])
+    expect(generate.mock.calls[0]![0].system).toContain('Humanizer-zh')
     expect(generate.mock.calls[0]![0].system).toContain('只交付最终版本')
     expect(() => humanizeChanges(segments, ['方案把效率提高了 30%。', '团队把流程改完了。'])).toThrow(
       '数字',

@@ -24,7 +24,7 @@ import { SlashMenu, type SlashMenuHandle } from './components/SlashMenu'
 import { TableMenu } from './components/TableMenu'
 import { EquationDialog, type MarkdownEquationTarget } from './components/EquationDialog'
 import { MermaidDialog } from './components/MermaidDialog'
-import { ScreenwritingStudio, LessAiToneStudio, screenplayParagraphs } from '@genoffice/ui'
+import { ScreenwritingStudio, LessAiToneStudio, screenplayParagraphs, streamPromptText } from '@genoffice/ui'
 import { WechatExportDialog } from './components/WechatExportDialog'
 import { AiReviewCommitteeModal, documentImages } from './components/AiReviewCommitteeModal'
 import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
@@ -720,6 +720,9 @@ export default function App() {
               throw new Error(response.error || 'AI 处理失败。请检查 AI 设置后重试。')
             return response.content || ''
           }}
+          stream={(prompt, onDelta, signal) =>
+            streamPromptText(window.markdownApi, prompt, onDelta, signal)
+          }
         />
       )}
       {wechatOpen && editor && (

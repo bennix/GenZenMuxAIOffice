@@ -190,6 +190,26 @@ describe('auditSlideLayout', () => {
     expect(issues.some((s) => s.includes('Text overflow'))).toBe(true)
   })
 
+  it('detects glyphs that spill past their text box even when content height fits', () => {
+    const slide = slideOf([textNode('label', box(80, 60, 60, 40), 'Long label')])
+    expect(auditSlideLayout(slide).some((s) => s.includes('Glyph overflow'))).toBe(true)
+  })
+
+  it('detects a timeline rule running through laid-out text', () => {
+    const text = textNode('milestone', box(80, 200, 220, 45), 'Milestone')
+    const rule: ShapeRenderNode = {
+      id: 'rule',
+      sourceId: 'rule',
+      type: 'shape',
+      box: box(80, 210, 350, 2),
+      fill: { kind: 'none' },
+      line: { points: [0, 0, 350, 0] },
+    }
+    expect(
+      auditSlideLayout(slideOf([text, rule])).some((s) => s.includes('Line crosses text')),
+    ).toBe(true)
+  })
+
   it('decoration layers and large background blocks are excluded', () => {
     const bg = textNode('bg', box(0, 0, 1280, 720), 'Background watermark')
     const deco = { ...textNode('deco', box(100, 100, 400, 200), 'Decoration'), decoration: true }

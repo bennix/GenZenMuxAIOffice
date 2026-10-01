@@ -5,7 +5,7 @@
 import type { RenderSlide } from '@genoffice/pptx-render'
 import type { ActionCtx } from './action-context'
 import { renderSlidesToPngBase64 } from './export-render'
-import { t } from './i18n/locale'
+import { getLang, t } from './i18n/locale'
 import { showToast } from './components/toast-bus'
 
 /**
@@ -135,6 +135,44 @@ export async function exportPdf(ctx: ActionCtx): Promise<void> {
     )
   } catch (err) {
     ctx.setStatus(t('appExportPdfFailed', { error: String(err) }))
+  }
+}
+
+/** Fixed-layout PPTX uses the PDF export's rendered page images and OfficeCLI.
+ * Each page is one picture: it preserves appearance but is not element-editable. */
+export async function exportVisualPptx(ctx: ActionCtx): Promise<void> {
+  const zh = getLang() === 'zh'
+  const visible = ctx.slides.filter((s) => !s.hidden)
+  if (visible.length === 0) {
+    ctx.setStatus(t('appExportNoSlides'))
+    return
+  }
+  const target = await window.slidesApi.pickExportVisualPptxPath(
+    `${exportBaseName(ctx)}-visual.pptx`,
+  )
+  if (!target) return
+  ctx.setStatus(zh ? '正在导出保真 PPTX…' : 'Exporting visual PPTX…')
+  try {
+    const pngsBase64 = await renderSlidesToPngBase64(visible, ctx.images)
+    const result = await window.slidesApi.exportVisualPptx({
+      filePath: target,
+      pngsBase64,
+      widthPx: visible[0]!.widthPx,
+      heightPx: visible[0]!.heightPx,
+    })
+    ctx.setStatus(
+      result.ok
+        ? zh
+          ? `保真 PPTX 已保存：${result.path}`
+          : `Visual PPTX saved: ${result.path}`
+        : zh
+          ? `保真 PPTX 导出失败：${result.error}`
+          : `Visual PPTX export failed: ${result.error}`,
+    )
+  } catch (error) {
+    ctx.setStatus(
+      zh ? `保真 PPTX 导出失败：${String(error)}` : `Visual PPTX export failed: ${String(error)}`,
+    )
   }
 }
 

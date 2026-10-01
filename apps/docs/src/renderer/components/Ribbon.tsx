@@ -1,6 +1,6 @@
 import { ArtFlowStudio } from './ArtFlowStudio'
 import { GongwenStudio } from './GongwenStudio'
-import { ScreenwritingStudio, LessAiToneStudio, screenplayParagraphs } from '@genoffice/ui'
+import { ScreenwritingStudio, LessAiToneStudio, screenplayParagraphs, streamPromptText } from '@genoffice/ui'
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { ChainedCommands, Editor } from '@tiptap/core'
@@ -1559,6 +1559,9 @@ function RibbonInner({
               throw new Error(response.error || 'AI 处理失败。请检查 AI 设置后重试。')
             return response.content || ''
           }}
+          stream={(prompt, onDelta, signal) =>
+            streamPromptText(window.desktop, prompt, onDelta, signal)
+          }
         />
       )}
       <div
@@ -1609,11 +1612,21 @@ function RibbonInner({
           type="button"
           className="tone-quick-entry"
           disabled={!hasDoc}
-          title="重写选中正文，去掉 AI 套话并保留事实"
+          title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => setLessAiToneOpen(true)}
         >
           AI 检测 / 去 AI 味
+        </button>
+        <button
+          type="button"
+          className="tone-quick-entry"
+          disabled={!hasDoc}
+          title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => setLessAiToneOpen(true)}
+        >
+          中文润色
         </button>
         {TABS.filter((tabName) => tabName !== 'file').map((tabName) => (
           <button

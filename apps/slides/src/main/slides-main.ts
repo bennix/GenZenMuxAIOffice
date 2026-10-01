@@ -21,6 +21,7 @@ import {
 import type { WebContents } from 'electron'
 import { execFile } from 'node:child_process'
 import { loadPrintHtml } from './print-html'
+import { exportVisualPptx } from './officecli-visual-export'
 import { copyFile, readFile, writeFile, rm, stat, mkdir, open } from 'node:fs/promises'
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
@@ -214,6 +215,7 @@ import type {
   ExportImagesOp,
   ExportImagesResult,
   ExportPdfOp,
+  ExportVisualPptxOp,
   ExportPdfResult,
   OpenResult,
   PasteElementsOp,
@@ -3878,6 +3880,32 @@ export function registerSlidesIpc(): void {
     return r.canceled || !r.filePath ? null : r.filePath
   })
 
+  ipcMain.handle('slides:pick-export-visual-pptx-path', async (_e, defaultName: string) => {
+    const r = await showSaveDialogWithMemory(
+      dialog,
+      dialogParent(),
+      {
+        title: getUiLang() === 'zh' ? '导出保真 PPTX' : 'Export visual PPTX',
+        defaultPath: defaultName,
+        filters: [{ name: 'PowerPoint', extensions: ['pptx'] }],
+      },
+      getDraftsDir(),
+    )
+    return r.canceled || !r.filePath ? null : r.filePath
+  })
+
+  ipcMain.handle(
+    'slides:export-visual-pptx',
+    async (_e, op: ExportVisualPptxOp): Promise<ExportPdfResult> => {
+      try {
+        await exportVisualPptx(op.pngsBase64, op.filePath, op.widthPx, op.heightPx)
+        return { ok: true, path: op.filePath }
+      } catch (error) {
+        return { ok: false, error: String(error) }
+      }
+    },
+  )
+
   ipcMain.handle('slides:export-pdf', async (_e, op: ExportPdfOp): Promise<ExportPdfResult> => {
     // PDF page size: fixed 7.5in height, width by slide ratio (16:9 -> 13.333in, 4:3 -> 10in)
     const heightIn = 7.5
@@ -4274,6 +4302,10 @@ export function buildSlidesMenu(): Menu {
         // The ribbon's File tab is Windows-only, so without these macOS had no way
         // to export or print at all
         { label: tm('menuExportPdf'), click: () => send('export-pdf') },
+        {
+          label: getUiLang() === 'zh' ? '导出保真 PPTX…' : 'Export visual PPTX…',
+          click: () => send('export-visual-pptx'),
+        },
         { label: tm('menuExportImages'), click: () => send('export-images') },
         {
           label: getUiLang() === 'zh' ? '打印预览…' : 'Print Preview…',

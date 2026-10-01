@@ -12,14 +12,20 @@ import {
 } from '@genoffice/agent-core'
 import { auditSlideLayout } from './layout-audit'
 import { createSlidesSkill, formatSlideDump, type DeckAccess } from './slides-skill'
+import type { AiSettings } from '../../shared/ipc'
 
-/** Kill switch: localStorage 'ai-slides-qc' = '0' disables the automatic pass */
-export function isQcEnabled(): boolean {
-  return localStorage.getItem('ai-slides-qc') !== '0'
+/** Freeze the selected repair model for one QC run; an empty value follows the writer. */
+export function settingsForSlideRepair(settings: AiSettings): AiSettings {
+  const repairModel = settings.providers.zenmux.slideRepairModel?.trim()
+  if (!repairModel) return settings
+  return {
+    ...settings,
+    providers: {
+      ...settings.providers,
+      zenmux: { ...settings.providers.zenmux, model: repairModel },
+    },
+  }
 }
-
-/** Cost ceiling per generation run — beyond this the tail pages are skipped (reported to the user) */
-export const QC_MAX_PAGES = 20
 
 /**
  * Pages produced by a generateFromHtml/regenerateSlide call, as 0-based indexes.
@@ -81,11 +87,14 @@ Look at the screenshot for OBJECTIVE layout defects only:
 - elements overlapping unintentionally (a text block over another text block; content under an image)
 - unreadable contrast (text color too close to what it sits on)
 - obviously ragged alignment or wildly uneven spacing among sibling items (cards, bullets, columns)
+- content crowded on one side while an entire half of the slide is empty; redistribute existing content without rewriting it
 - distorted or badly cropped images
 
-Fix defects with execute_slide_script (batch every change for this page into as few calls as possible; call read_slide first if you need fresher geometry than the inventory). Prefer the minimal change: move/resize/shrink font — keep the page's design.
+Fix defects with execute_slide_script (batch every change for this page into as few calls as possible; call read_slide first if you need fresher geometry than the inventory). Prefer moving, widening, or growing boxes within the canvas; reduce font size only when reflow cannot fit. Keep the page's design and all content.
 
-STRICTLY FORBIDDEN: redesigning the page, changing the color scheme or fonts for taste, rewriting copy, adding or deleting elements, touching elements that look fine. When the screenshot shows no objective defect, make NO tool call.
+Treat measured glyph overflow, glyph overlap, and rules crossing text as defects unless the image clearly disproves them. Recheck the audit after edits and repair remaining issues in this run.
+
+STRICTLY FORBIDDEN: redesigning the page, changing the color scheme or fonts for taste, rewriting copy, hiding or deleting content, touching elements that look fine. When both the screenshot and geometry audit show no objective defect, make NO tool call.
 
 Final reply: one short line (under 15 words) stating what you fixed, or exactly "OK" if nothing needed fixing.`
 
@@ -132,9 +141,9 @@ function buildQcInstruction(
   approvedPlan?: string,
 ): string {
   const auditStr = issues.length
-    ? `Deterministic geometry audit already flags:\n${issues.map((s) => `- ${s}`).join('\n')}\n(These are hints — the screenshot is the ground truth; it may show more or reveal a flagged item is fine.)`
+    ? `Deterministic geometry audit already flags:\n${issues.map((s) => `- ${s}`).join('\n')}\n(Use the screenshot to confirm each issue; visible glyph collisions and text crossings take priority.)`
     : 'The deterministic geometry audit found nothing — trust the screenshot for visual defects it cannot measure (contrast, alignment, crowding).'
-  return `Slide ${pageIndex + 1} (slideIndex ${pageIndex}) was just auto-generated. The attached image is its current rendering.
+  return `Slide ${pageIndex + 1} (slideIndex ${pageIndex}) was just auto-generated. The current rendering is attached when available; otherwise use the measured geometry.
 
 Element inventory:
 ${dump}
@@ -142,9 +151,7 @@ ${dump}
 ${auditStr}
 
 Inspect the screenshot and fix objective layout defects now.${
-    approvedPlan
-      ? `\n\nApproved fix — do only this, then stop:\n${approvedPlan}`
-      : ''
+    approvedPlan ? `\n\nApproved fix — do only this, then stop:\n${approvedPlan}` : ''
   }`
 }
 
@@ -166,12 +173,7 @@ export async function qcSlidePage(opts: QcPageOptions): Promise<QcPageResult> {
     }
   }
   const preIssues = auditSlideLayout(slide)
-  const instruction = buildQcInstruction(
-    pageIndex,
-    formatSlideDump(slide),
-    preIssues,
-    approvedPlan,
-  )
+  const instruction = buildQcInstruction(pageIndex, formatSlideDump(slide), preIssues, approvedPlan)
 
   return new Promise((resolve) => {
     let edited = false
@@ -189,8 +191,8 @@ export async function qcSlidePage(opts: QcPageOptions): Promise<QcPageResult> {
     const loop = new AgentLoop({
       transport,
       skill: createSlideFixSkill(access),
-      // audit feedback inside execute_slide_script output drives at most a couple of fix rounds
-      maxTurns: 6,
+      // Give the model room for up to five write → audit → repair rounds.
+      maxTurns: 12,
       ...(systemSuffix ? { systemSuffix } : {}),
       events: {
         onToolExecuted: ({ execution }) => {

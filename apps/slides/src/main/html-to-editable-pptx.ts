@@ -132,7 +132,9 @@ function pickContainer(
     const yOverlap = overlapLen(text.y, text.y + text.h, shape.y, shape.y + shape.h)
     const mostlyInside = yOverlap > text.h * 0.4
     const spilling =
-      yOverlap > 0 && text.y <= shape.y + shape.h + Math.min(12, font * 0.4) && text.y >= shape.y - 8
+      yOverlap > 0 &&
+      text.y <= shape.y + shape.h + Math.min(12, font * 0.4) &&
+      text.y >= shape.y - 8
     if (!mostlyInside && !spilling) continue
     if (shape.w + 4 < text.w * 0.7) continue
     const area = shape.w * shape.h
@@ -158,8 +160,10 @@ function edgeLimit(
     if (isBackdrop(other, pageWidth, pageHeight)) continue
     const yOverlap = overlapLen(node.y, node.y + node.h, other.y, other.y + other.h)
     if (yOverlap < 6) continue
-    if (side === 'right' && other.x >= node.x + node.w - 2) limit = Math.min(limit, other.x - FIT_GAP)
-    if (side === 'left' && other.x + other.w <= node.x + 2) limit = Math.max(limit, other.x + other.w + FIT_GAP)
+    if (side === 'right' && other.x >= node.x + node.w - 2)
+      limit = Math.min(limit, other.x - FIT_GAP)
+    if (side === 'left' && other.x + other.w <= node.x + 2)
+      limit = Math.max(limit, other.x + other.w + FIT_GAP)
   }
   return limit
 }
@@ -181,7 +185,8 @@ export function fitTextInsideDecorations(
   const shapes = fitted.filter(isDecorShape)
   const containerOf = new Map<EditableHtmlNode, EditableHtmlNode | undefined>()
   const padOf = new Map<EditableHtmlNode, { l: number; r: number; t: number; b: number }>()
-  for (const text of texts) containerOf.set(text, pickContainer(text, shapes, pageWidth, pageHeight))
+  for (const text of texts)
+    containerOf.set(text, pickContainer(text, shapes, pageWidth, pageHeight))
   for (const shape of shapes) {
     if (isBackdrop(shape, pageWidth, pageHeight)) continue
     const members = texts.filter((text) => containerOf.get(text) === shape)
@@ -275,7 +280,9 @@ export function fitTextInsideDecorations(
         if (xOverlap > node.w * 0.7 && yOverlap > node.h * 0.7) return top
         return Math.min(top, node.y)
       }, Infinity)
-      const yielded = Number.isFinite(foreignTop) ? Math.min(targetBottom, foreignTop - 4) : targetBottom
+      const yielded = Number.isFinite(foreignTop)
+        ? Math.min(targetBottom, foreignTop - 4)
+        : targetBottom
       const shrunk = Math.max(contentBottom + 8, yielded) - shape.y
       if (shrunk < shape.h - 2 && shrunk > 16) shape.h = shrunk
       continue
@@ -306,6 +313,33 @@ export function fitTextInsideDecorations(
       if (text.lineHeight)
         text.lineHeight = Math.round((text.lineHeight || text.fontSize || 18) * scale * 10) / 10
     }
+  }
+
+  // Browser extraction often gives a pill label a tight box at the top of its
+  // background. PowerPoint then faithfully top-aligns that box. Make the label's
+  // text box span the pill and use a real vertical anchor so Office and our
+  // renderer both center it, regardless of the extracted glyph box position.
+  for (const shape of shapes) {
+    const isPill =
+      shape.h >= 24 &&
+      shape.h <= 90 &&
+      shape.w >= shape.h * 2 &&
+      (shape.radius ?? 0) >= shape.h * 0.25
+    const isIconCircle =
+      shape.h >= 40 &&
+      Math.abs(shape.w - shape.h) <= shape.h * 0.12 &&
+      (shape.radius ?? 0) >= shape.h * 0.4
+    if (!isPill && !isIconCircle) continue
+    const members = texts.filter((text) => containerOf.get(text) === shape)
+    if (members.length !== 1) continue
+    const text = members[0]!
+    if (!text.text || text.text.includes('\n') || text.text.length > (isPill ? 60 : 8)) continue
+    if (isIconCircle && !/\p{Extended_Pictographic}/u.test(text.text)) continue
+    if (text.x < shape.x - 2 || text.x + text.w > shape.x + shape.w + 2) continue
+    if (text.y < shape.y - 8 || text.y > shape.y + shape.h * 0.7) continue
+    text.y = shape.y + 2
+    text.h = Math.max(1, shape.h - 4)
+    text.valign = 'middle'
   }
 
   return fitted

@@ -1,11 +1,21 @@
 .less-ai-tone-studio {
   text-align: left;
 }
+.less-ai-tone-studio .tone-stream,
 .less-ai-tone-studio pre {
   white-space: pre-wrap;
   max-height: 220px;
   overflow: auto;
   font: inherit;
+}
+.less-ai-tone-studio .tone-stream {
+  max-height: 240px;
+  margin: 12px 0 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
 }
 .less-ai-tone-studio .tone-report {
   min-width: 0;

@@ -186,6 +186,7 @@ export function SettingsModal({
   const [removedImageModels, setRemovedImageModels] = useState<string[]>([])
   const [newImageModel, setNewImageModel] = useState('')
   const [jevModel, setJevModel] = useState(ZENMUX_DEFAULT_JEV_MODEL)
+  const [slideRepairModel, setSlideRepairModel] = useState('')
   const [aiSaved, setAiSaved] = useState(false)
   const [knowledgeSettings, setKnowledgeSettings] = useState<KnowledgeSettingsItem | null>(null)
   const [memories, setMemories] = useState<KnowledgeMemoryItem[]>([])
@@ -231,6 +232,7 @@ export function SettingsModal({
         ),
       )
       setJevModel(config.jevModel?.trim() || ZENMUX_DEFAULT_JEV_MODEL)
+      setSlideRepairModel(config.slideRepairModel ?? '')
     })
     void window.aiOfficeProject?.getKnowledgeSettings().then((settings) => {
       if (alive) setKnowledgeSettings(settings)
@@ -360,6 +362,7 @@ export function SettingsModal({
           imageModels,
           removedImageModels,
           jevModel: jevModel.trim() || ZENMUX_DEFAULT_JEV_MODEL,
+          slideRepairModel: slideRepairModel.trim(),
           baseUrl: baseUrl.trim().replace(/\/+$/, '') || ZENMUX_BASE_URL,
         },
       },
@@ -725,6 +728,27 @@ export function SettingsModal({
                   {isChinese
                     ? '生成或美化结束后，用这个模型判断要不要改版式、改法是否合理。它只返回判断，不写文案。默认 typesafe/jev-1.13。'
                     : 'After generation or beautify, this model decides whether a layout fix is needed and whether the plan is reasonable. It returns a judgement, not copy. Default: typesafe/jev-1.13.'}
+                </div>
+                <label className="set-ai-field" htmlFor="set-zenmux-slide-repair-model">
+                  <span>{isChinese ? 'PPT 版面修复模型' : 'PPT layout repair model'}</span>
+                  <input
+                    id="set-zenmux-slide-repair-model"
+                    className="set-input"
+                    value={slideRepairModel}
+                    placeholder={
+                      model || (isChinese ? '留空跟随成稿模型' : 'Blank: follow writer model')
+                    }
+                    spellCheck={false}
+                    onChange={(e) => {
+                      setSlideRepairModel(e.target.value)
+                      setAiSaved(false)
+                    }}
+                  />
+                </label>
+                <div className="set-ai-help">
+                  {isChinese
+                    ? '每页生成或美化后使用此聊天模型检查截图并修复版面；留空时使用当前成稿模型。JEV 只负责评估。'
+                    : 'After each generated or beautified page, this chat model checks the screenshot and repairs layout. Blank uses the writer model; JEV only evaluates.'}
                 </div>
                 <div className="set-pane-footer">
                   {aiSaved && <span className="set-saved">{isChinese ? '已保存' : 'Saved'}</span>}

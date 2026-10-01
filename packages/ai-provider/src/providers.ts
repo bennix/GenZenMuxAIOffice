@@ -125,6 +125,7 @@ export function defaultAiSettings(
   providers.zenmux.baseUrl = ZENMUX_BASE_URL
   providers.zenmux.imageModel = ZENMUX_DEFAULT_IMAGE_MODEL
   providers.zenmux.jevModel = ZENMUX_DEFAULT_JEV_MODEL
+  providers.zenmux.slideRepairModel = ''
   return { provider: 'zenmux', providers }
 }
 
@@ -150,6 +151,7 @@ export function resolveAiSettings(
   resolved.providers.zenmux.imageModel ??= ZENMUX_DEFAULT_IMAGE_MODEL
   resolved.providers.zenmux.jevModel =
     resolved.providers.zenmux.jevModel?.trim() || ZENMUX_DEFAULT_JEV_MODEL
+  resolved.providers.zenmux.slideRepairModel ??= ''
   resolved.providers.zenmux.baseUrl = resolveZenmuxBaseUrl(resolved.providers.zenmux)
   return resolved
 }

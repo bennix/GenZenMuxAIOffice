@@ -273,13 +273,24 @@ export function DesignTab({
           <button
             className="rb-big"
             disabled={!hasDoc}
-            title="重写选中正文，去掉 AI 套话并保留事实"
+            title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
             onClick={() => document.dispatchEvent(new Event('zenoffice:open-less-ai-tone'))}
           >
             <span className="rb-big-icon">
               <IconTheme size={BIG} />
             </span>
             <span>去 AI 味</span>
+          </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
+            onClick={() => document.dispatchEvent(new Event('zenoffice:open-less-ai-tone'))}
+          >
+            <span className="rb-big-icon">
+              <IconTheme size={BIG} />
+            </span>
+            <span>中文润色</span>
           </button>
         </div>
         <div className="ribbon-group-label">专业写作</div>

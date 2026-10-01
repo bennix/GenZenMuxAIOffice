@@ -287,11 +287,21 @@ export function Ribbon({
           type="button"
           className="tone-quick-entry"
           disabled={off}
-          title="重写选中正文，去掉 AI 套话并保留事实"
+          title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
           onMouseDown={(event) => event.preventDefault()}
           onClick={onLessAiTone}
         >
           AI 检测 / 去 AI 味
+        </button>
+        <button
+          type="button"
+          className="tone-quick-entry"
+          disabled={off}
+          title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={onLessAiTone}
+        >
+          中文润色
         </button>
       </div>
 
@@ -363,6 +373,18 @@ export function Ribbon({
                 <span className="ai-feature-icon">✎</span>
               </span>
               <span>去 AI 味</span>
+            </button>
+            <button
+              type="button"
+              className="rb-big ai-entry"
+              disabled={off || state?.empty}
+              onClick={onLessAiTone}
+              aria-label="中文润色"
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon">润</span>
+              </span>
+              <span>中文润色</span>
             </button>
             <button
               type="button"

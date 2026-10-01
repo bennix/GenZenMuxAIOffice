@@ -43,6 +43,66 @@ const PAGE: EditableHtmlPage = {
 }
 
 describe('HTML to editable PPTX conversion', () => {
+  it('centers a short label vertically inside a rounded pill', () => {
+    const [pill, label] = fitTextInsideDecorations(
+      [
+        { kind: 'shape', x: 20, y: 26, w: 190, h: 46, fill: '00272D', radius: 23 },
+        { kind: 'text', x: 65, y: 27, w: 100, h: 18, text: '语言AI输入', fontSize: 16 },
+      ],
+      686,
+      160,
+    )
+    expect(pill?.h).toBe(46)
+    expect(label).toMatchObject({ y: 28, h: 42, valign: 'middle' })
+  })
+
+  it('centers an emoji inside a circular icon container and saves its anchor', async () => {
+    const [, icon] = fitTextInsideDecorations(
+      [
+        {
+          kind: 'shape',
+          x: 78,
+          y: 22,
+          w: 130,
+          h: 130,
+          lineColor: '00DDED',
+          lineWidth: 3,
+          radius: 65,
+        },
+        { kind: 'text', x: 120, y: 37, w: 46, h: 42, text: '💻', fontSize: 32 },
+      ],
+      900,
+      230,
+    )
+    expect(icon).toMatchObject({ y: 24, h: 126, valign: 'middle' })
+    const generated = await buildEditableSlidePptx(
+      {
+        width: 900,
+        height: 230,
+        nodes: [
+          {
+            kind: 'shape',
+            x: 78,
+            y: 22,
+            w: 130,
+            h: 130,
+            lineColor: '00DDED',
+            lineWidth: 3,
+            radius: 65,
+          },
+          { kind: 'text', x: 120, y: 37, w: 46, h: 42, text: '💻', fontSize: 32 },
+        ],
+      },
+      async () => null,
+    )
+    const opened = await openPptx(generated.bytes)
+    expect(
+      opened.deck.slides[0]?.elements.some(
+        (element) => 'text' in element && element.text?.anchor === 'middle',
+      ),
+    ).toBe(true)
+  })
+
   it('places late backgrounds and nested cards behind text and images in the saved PPTX', async () => {
     const text: EditableHtmlNode = {
       kind: 'text',
@@ -272,7 +332,14 @@ describe('HTML to editable PPTX conversion', () => {
       widenPx: 90,
       unwrapLines: 1,
     }
-    const neighbor: EditableHtmlNode = { kind: 'shape', x: 312, y: 40, w: 260, h: 160, fill: 'FFFFFF' }
+    const neighbor: EditableHtmlNode = {
+      kind: 'shape',
+      x: 312,
+      y: 40,
+      w: 260,
+      h: 160,
+      fill: 'FFFFFF',
+    }
     const [, fittedLine, fittedNeighbor] = fitTextInsideDecorations(
       [card, line, neighbor],
       1280,

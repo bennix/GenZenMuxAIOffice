@@ -14,7 +14,8 @@
  */
 
 const { execFileSync } = require('node:child_process')
-const { existsSync } = require('node:fs')
+const { existsSync, readFileSync } = require('node:fs')
+const { createHash } = require('node:crypto')
 const { join } = require('node:path')
 
 const updateUrl = process.env.GENOFFICE_UPDATE_URL
@@ -95,6 +96,35 @@ function assertModuleTreesPresent() {
     if (!existsSync(join(__dirname, rel))) {
       throw new Error(
         `electron-builder extraResources source missing: ${rel} (run npm run build:all first)`,
+      )
+    }
+  }
+}
+
+function assertOfficeCliPresent(platform) {
+  const assets =
+    platform === 'darwin'
+      ? {
+          'officecli-mac-arm64': 'e2ed6eba5cd46d6800139f2835097828b8ccd7c8c9b679463b50e45ba2f1dbf5',
+          'officecli-mac-x64': '5071abef56c1d4a4d60e28ed12bc66183d8dc6a9783529c3f1a9cf6bdfe6c2dd',
+        }
+      : platform === 'win32'
+        ? {
+            'officecli-win-x64.exe':
+              '047705402974c3690a4437e55f620d03afac4beba4fdd28fdb59af610a3afff2',
+          }
+        : {
+            'officecli-linux-x64':
+              'e54d3c1d248372365f0634aac56d6f1918bd04d6e71afc792ad50e075f56cfe9',
+          }
+  for (const [asset, expected] of Object.entries(assets)) {
+    const path = join(__dirname, 'build/officecli', asset)
+    if (
+      !existsSync(path) ||
+      createHash('sha256').update(readFileSync(path)).digest('hex') !== expected
+    ) {
+      throw new Error(
+        `OfficeCLI ${asset} missing or invalid (run tools/prepare-officecli.mjs before packaging)`,
       )
     }
   }
@@ -245,6 +275,8 @@ const config = {
         from: '../sheets/native/xlsx-engine/target/release/xlsx-sidecar',
         to: 'native/xlsx-sidecar',
       },
+      { from: 'build/officecli/officecli-mac-arm64', to: 'officecli/officecli-mac-arm64' },
+      { from: 'build/officecli/officecli-mac-x64', to: 'officecli/officecli-mac-x64' },
     ],
   },
   win: {
@@ -259,6 +291,7 @@ const config = {
         from: windowsSidecar,
         to: 'native/xlsx-sidecar.exe',
       },
+      { from: 'build/officecli/officecli-win-x64.exe', to: 'officecli/officecli-win-x64.exe' },
     ],
   },
   // Unlike win (which cross-compiles the sidecar to an explicit target
@@ -307,6 +340,7 @@ const config = {
         from: '../sheets/native/xlsx-engine/target/release/xlsx-sidecar',
         to: 'native/xlsx-sidecar',
       },
+      { from: 'build/officecli/officecli-linux-x64', to: 'officecli/officecli-linux-x64' },
     ],
   },
   // Same "@genoffice/shell" problem as executableName above: the default deb
@@ -344,6 +378,7 @@ const config = {
   },
   beforePack: async (context) => {
     assertModuleTreesPresent()
+    assertOfficeCliPresent(context.electronPlatformName)
     if (context.electronPlatformName === 'darwin' && includeMacX64) assertUniversalSidecar()
   },
   dmg: {
