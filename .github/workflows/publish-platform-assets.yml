@@ -1,0 +1,38 @@
+name: Publish verified platform assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag
+        required: true
+        default: v0.6.95
+      windows_run_id:
+        required: true
+      deb_run_id:
+        required: true
+      rpm_run_id:
+        required: true
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified build artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p assets/windows assets/deb assets/rpm
+          gh run download "${{ inputs.windows_run_id }}" -n "zenoffice-windows-${{ inputs.release_tag }}" -D assets/windows --repo "${{ github.repository }}"
+          gh run download "${{ inputs.deb_run_id }}" -n "zenoffice-ubuntu-deb-${{ inputs.release_tag }}" -D assets/deb --repo "${{ github.repository }}"
+          gh run download "${{ inputs.rpm_run_id }}" -n "zenoffice-linux-rpm-${{ inputs.release_tag }}" -D assets/rpm --repo "${{ github.repository }}"
+
+      - name: Attach platform installers to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ inputs.release_tag }}" assets/windows/* assets/deb/* assets/rpm/* --clobber --repo "${{ github.repository }}"
