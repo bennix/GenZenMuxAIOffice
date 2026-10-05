@@ -4,7 +4,9 @@ import { execFileSync } from 'node:child_process'
 import { PNG } from 'pngjs'
 import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
 
-test('Word prints the same physical image size and position at 100% and 70% view zoom', async (_fixtures, testInfo) => {
+test('Word prints the same physical image size and position at 100% and 70% view zoom', async ({
+  page: _page,
+}, testInfo) => {
   const launched = await launchShell({
     onboardingSeen: true,
     recordVideo: false,

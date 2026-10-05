@@ -36,6 +36,14 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
+      # OfficeCLI is a framework-dependent .NET 10 application on Linux.
+      # Install the runtime explicitly so the integration test is reproducible
+      # on GitHub-hosted images as their preinstalled runtimes change.
+      - name: Setup .NET
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5 # v5.0.0
+        with:
+          dotnet-version: 10.0.x
+
       - name: Setup Rust
         # SHA-pinned (third-party action); the ref no longer selects the
         # toolchain, so it is passed explicitly.
@@ -163,6 +171,11 @@ jobs:
       # Electron needs a display server on Linux runners. DEBUG=pw:browser
       # forwards the Electron process stdout/stderr into the CI log so launch
       # failures are diagnosable.
+      - name: Setup .NET
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5 # v5.0.0
+        with:
+          dotnet-version: 10.0.x
+
       - name: E2E (Electron shell)
         env:
           DEBUG: 'pw:browser'

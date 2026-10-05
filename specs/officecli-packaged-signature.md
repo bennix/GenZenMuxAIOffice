@@ -35,3 +35,5 @@ sequenceDiagram
 - A macOS release build confirms the bundled OfficeCLI has the expected team signature and a real editable Office export can invoke it.
 - The release acceptance runs the macOS integration test against the actual packaged app resources, not only a mocked signature metadata string.
 - CI prepares the pinned Linux OfficeCLI in the workspace before running OfficeCLI integration tests; those tests must not depend on runner user-directory caches.
+- Linux CI installs the .NET 10 runtime required by the framework-dependent OfficeCLI before unit/integration and Electron E2E tests.
+- Playwright E2E callbacks use its supported fixture destructuring signature so test discovery works consistently in CI.
