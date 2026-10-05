@@ -1,5 +1,10 @@
 import type { SystemOneAnswer, SystemOneQuestion, SystemOneResponse } from '@genoffice/ai-provider'
-import type { GroupRenderNode, RenderNode, RenderSlide, ShapeRenderNode } from '@genoffice/pptx-render'
+import type {
+  GroupRenderNode,
+  RenderNode,
+  RenderSlide,
+  ShapeRenderNode,
+} from '@genoffice/pptx-render'
 
 /** Below this, Jev is not sure enough that a layout change is warranted. */
 export const JEV_CHANGE_MIN = 0.62
@@ -80,9 +85,7 @@ export function layoutJudgementState(dump: string, issues: string[], plan: strin
   return `Slide geometry\n${body}\n\nMeasured issues\n${measured}\n\nProposed fix\n${plan}`
 }
 
-const VISION_PLAN =
-  'Fix only an objective layout defect: text outside a card, pill, or banner; a line whose last few characters sit alone on the next line; overlap; or clipping. Do not restyle or rewrite.'
-
+// 该提示词常量没有调用方；删除死代码，实际布局判断仍由下方评分阈值控制。
 export function shouldApplyLayoutFix(
   approach: LayoutApproach,
   answers: {
@@ -138,7 +141,9 @@ function walkShapes(nodes: RenderNode[], out: ShapeRenderNode[]) {
   }
 }
 
-function measureLine(line: { runs: Array<{ widthPx: number; fontSizePx: number; text: string; isBullet?: boolean }> }) {
+function measureLine(line: {
+  runs: Array<{ widthPx: number; fontSizePx: number; text: string; isBullet?: boolean }>
+}) {
   let width = 0
   let font = 0
   let chars = ''
@@ -160,7 +165,10 @@ export function measureLayoutTargets(slide: RenderSlide): LayoutTarget[] {
     .filter((shape) => shape.text?.lines?.some((line) => line.runs.some((run) => run.text.trim())))
     .map((shape) => {
       const lines = shape.text!.lines
-      const fontPx = Math.max(12, ...lines.flatMap((line) => line.runs.map((run) => run.fontSizePx)))
+      const fontPx = Math.max(
+        12,
+        ...lines.flatMap((line) => line.runs.map((run) => run.fontSizePx)),
+      )
       let orphanPx = 0
       const innerW = Math.max(1, shape.box.w - shape.text!.insets.l - shape.text!.insets.r)
       for (let i = 1; i < lines.length; i++) {
@@ -168,7 +176,8 @@ export function measureLayoutTargets(slide: RenderSlide): LayoutTarget[] {
         const cur = measureLine(lines[i]!)
         const wrapped = !lines[i]!.paraStart
         const prevFilled = prev.width >= innerW - fontPx * 1.15
-        const shortTail = cur.width > 0 && cur.width <= fontPx * 4.5 && cur.width < prev.width * 0.55
+        const shortTail =
+          cur.width > 0 && cur.width <= fontPx * 4.5 && cur.width < prev.width * 0.55
         if (wrapped && prevFilled && shortTail) orphanPx = Math.max(orphanPx, cur.width)
       }
       const last = lines[lines.length - 1]!
@@ -180,7 +189,10 @@ export function measureLayoutTargets(slide: RenderSlide): LayoutTarget[] {
         w: shape.box.w,
         h: shape.box.h,
         rotation: shape.box.rotationDeg,
-        text: lines.map((line) => measureLine(line).chars).join('\n').slice(0, 80),
+        text: lines
+          .map((line) => measureLine(line).chars)
+          .join('\n')
+          .slice(0, 80),
         fontPx,
         filled: shape.fill?.kind === 'solid',
         orphanPx: Math.round(orphanPx),
@@ -201,7 +213,8 @@ export function measureLayoutTargets(slide: RenderSlide): LayoutTarget[] {
     let best: ShapeRenderNode | undefined
     let bestArea = Infinity
     for (const card of cards) {
-      const xOverlap = Math.min(target.x + target.w, card.box.x + card.box.w) - Math.max(target.x, card.box.x)
+      const xOverlap =
+        Math.min(target.x + target.w, card.box.x + card.box.w) - Math.max(target.x, card.box.x)
       if (xOverlap < target.w * 0.55) continue
       if (target.y < card.box.y - 8 || target.y > card.box.y + card.box.h + 12) continue
       const area = card.box.w * card.box.h
@@ -242,7 +255,8 @@ export function layoutActionQuestions(): Record<string, SystemOneQuestion> {
         'The state lists measured layout defects. Choose the smallest geometry correction. Do not restyle or rewrite the copy.',
       criteria: {
         leave: 'No correction is worth applying',
-        widen: 'A line dropped only a few characters onto the next line; widen that text and its card',
+        widen:
+          'A line dropped only a few characters onto the next line; widen that text and its card',
         grow_container: 'Text hangs below the card, pill, or banner behind it; grow that shape',
         separate: 'Elements overlap; move the lower one just clear of the one above',
         both: 'Both a short wrapped tail and text outside its decorative shape need fixing',
@@ -260,13 +274,19 @@ export function layoutActionState(slide: RenderSlide, issues: string[]): string 
     if (target.spillPx) bits.push(`extends ${target.spillPx}px below shape ${target.containerId}`)
     return `- ${bits.join('; ')}`
   })
-  const audit = issues.length ? issues.slice(0, 6).map((issue) => `- ${issue}`).join('\n') : '- none'
+  const audit = issues.length
+    ? issues
+        .slice(0, 6)
+        .map((issue) => `- ${issue}`)
+        .join('\n')
+    : '- none'
   return `Canvas ${slide.widthPx}×${slide.heightPx}\nMeasured defects\n${lines.join('\n') || '- none'}\nGeometry audit\n${audit}`
 }
 
 export function readLayoutAction(answers: Record<string, SystemOneAnswer>): JevLayoutAction | null {
   const answer = answers.action
-  if (!answer || answer.type !== 'choice' || !ACTIONS.has(answer.choice as JevLayoutAction)) return null
+  if (!answer || answer.type !== 'choice' || !ACTIONS.has(answer.choice as JevLayoutAction))
+    return null
   const action = answer.choice as JevLayoutAction
   const probability = answer.probabilities?.[action] ?? 0
   if (action !== 'leave' && probability < 0.4 && (answer.confidence ?? 0) < 0.35) return 'leave'
@@ -299,7 +319,10 @@ export function patchesForLayoutAction(
       if (target.orphanPx <= 0) continue
       const box = patch(target.id)
       if (!box) continue
-      const grow = Math.min(target.orphanPx + target.fontPx * 0.4, rightLimit(target, targets, pageWidth) - (box.x + box.w))
+      const grow = Math.min(
+        target.orphanPx + target.fontPx * 0.4,
+        rightLimit(target, targets, pageWidth) - (box.x + box.w),
+      )
       if (grow < 4) continue
       box.w += grow
       const card = target.containerId ? patch(target.containerId) : undefined
@@ -343,7 +366,9 @@ export function patchesForLayoutAction(
   return [...boxes.values()]
     .filter((box) => {
       const original = targets.find((target) => target.id === box.id)!
-      return box.x !== original.x || box.y !== original.y || box.w !== original.w || box.h !== original.h
+      return (
+        box.x !== original.x || box.y !== original.y || box.w !== original.w || box.h !== original.h
+      )
     })
     .map((box) => ({ id: box.id, x: box.x, y: box.y, w: box.w, h: box.h, rotation: box.rotation }))
 }
@@ -379,7 +404,8 @@ export async function judgeGeneratedLayout(
   ask: (state: string, questions: Record<string, SystemOneQuestion>) => Promise<SystemOneResponse>,
 ): Promise<LayoutJudgement> {
   const targets = measureLayoutTargets(slide)
-  const hasDefect = targets.some((target) => target.orphanPx > 0 || target.spillPx > 0) || issues.length > 0
+  const hasDefect =
+    targets.some((target) => target.orphanPx > 0 || target.spillPx > 0) || issues.length > 0
   if (!hasDefect) return { status: 'skip' }
   let response: SystemOneResponse
   try {

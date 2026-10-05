@@ -7,7 +7,7 @@
  * Build first: `npm run build:all`.
  */
 import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, writeFile, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -45,12 +45,17 @@ export async function launchShell(options: LaunchOptions): Promise<LaunchedApp> 
     throw new Error(`Missing build output at ${SHELL_MAIN} — run \`npm run build:all\` first`)
   }
   const userDataDir = options.userDataDir ?? (await mkdtemp(join(tmpdir(), 'genoffice-e2e-')))
-  if (options.onboardingSeen) {
-    await writeFile(
-      join(userDataDir, 'app-settings.json'),
-      JSON.stringify({ onboardingSeen: true }),
-    )
-  }
+  const settingsPath = join(userDataDir, 'app-settings.json')
+  const settings = JSON.parse(await readFile(settingsPath, 'utf8').catch(() => '{}'))
+  // userData 隔离不会改变系统 Documents；测试草稿也必须显式指向临时目录。
+  await writeFile(
+    settingsPath,
+    JSON.stringify({
+      ...settings,
+      defaultSaveDir: settings.defaultSaveDir ?? join(userDataDir, 'drafts'),
+      ...(options.onboardingSeen ? { onboardingSeen: true } : {}),
+    }),
+  )
   const require = createRequire(join(SHELL_DIR, 'package.json'))
   const executablePath = require('electron') as unknown as string
   // ELECTRON_RUN_AS_NODE (set by VS Code/CI hosts) would boot Electron as

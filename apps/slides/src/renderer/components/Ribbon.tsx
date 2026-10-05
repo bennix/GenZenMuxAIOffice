@@ -739,6 +739,7 @@ export function Ribbon({
   onSaveAs,
   onExportPdf,
   onExportVisualPptx,
+  onExportCompatiblePptx,
   onPrint,
   onExportImages,
   onFormat,
@@ -1448,12 +1449,21 @@ export function Ribbon({
                   disabled={!hasDoc}
                   onClick={() => {
                     setFileOpen(false)
+                    onExportCompatiblePptx()
+                  }}
+                >
+                  {getLang() === 'zh' ? '高保真 PPTX（可编辑）' : 'High-fidelity PPTX (editable)'}
+                </button>
+                <button
+                  disabled={!hasDoc}
+                  onClick={() => {
+                    setFileOpen(false)
                     onExportVisualPptx()
                   }}
                 >
                   {getLang() === 'zh'
-                    ? '导出保真 PPTX（整页图片）'
-                    : 'Export visual PPTX (full-page images)'}
+                    ? '高保真 PPTX（整页图片）'
+                    : 'High-fidelity PPTX (full-page images)'}
                 </button>
                 <button
                   disabled={!hasDoc}

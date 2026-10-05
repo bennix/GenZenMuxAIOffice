@@ -130,6 +130,7 @@ export type MenuCommand =
   | 'open-path'
   | 'save'
   | 'save-as'
+  | 'save-compatible'
   | 'undo'
   | 'redo'
   | 'zoom-in'
@@ -205,6 +206,7 @@ export interface DesktopApi extends ConnectApi {
   saveDocxAs(
     defaultName: string,
     data: ArrayBuffer,
+    compatible?: boolean,
   ): Promise<{ ok: boolean; path?: string; error?: string }>
   /** first save of a new document: silently writes into the default folder, no dialog */
   saveDocxNew(

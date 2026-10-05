@@ -148,10 +148,11 @@ export async function exportVisualPptx(ctx: ActionCtx): Promise<void> {
     return
   }
   const target = await window.slidesApi.pickExportVisualPptxPath(
-    `${exportBaseName(ctx)}-visual.pptx`,
+    `${exportBaseName(ctx)}-image.pptx`,
+    'image',
   )
   if (!target) return
-  ctx.setStatus(zh ? '正在导出保真 PPTX…' : 'Exporting visual PPTX…')
+  ctx.setStatus(zh ? '正在导出整页图片保真 PPTX…' : 'Exporting visual PPTX…')
   try {
     const pngsBase64 = await renderSlidesToPngBase64(visible, ctx.images)
     const result = await window.slidesApi.exportVisualPptx({
@@ -163,15 +164,17 @@ export async function exportVisualPptx(ctx: ActionCtx): Promise<void> {
     ctx.setStatus(
       result.ok
         ? zh
-          ? `保真 PPTX 已保存：${result.path}`
+          ? `整页图片保真 PPTX 已保存：${result.path}`
           : `Visual PPTX saved: ${result.path}`
         : zh
-          ? `保真 PPTX 导出失败：${result.error}`
+          ? `整页图片保真 PPTX 导出失败：${result.error}`
           : `Visual PPTX export failed: ${result.error}`,
     )
   } catch (error) {
     ctx.setStatus(
-      zh ? `保真 PPTX 导出失败：${String(error)}` : `Visual PPTX export failed: ${String(error)}`,
+      zh
+        ? `整页图片保真 PPTX 导出失败：${String(error)}`
+        : `Visual PPTX export failed: ${String(error)}`,
     )
   }
 }
@@ -206,5 +209,88 @@ export async function printSlides(
     ctx.setStatus(r.ok ? '' : t('appPrintFailed', { error: r.error ?? t('appUnknownError') }))
   } catch (err) {
     ctx.setStatus(t('appPrintFailed', { error: String(err) }))
+  }
+}
+
+let compatibleExportRunning = false
+
+/** 独立导出不修改正在编辑的会话、路径或 dirty 标志。 */
+export async function exportCompatiblePptx(ctx: ActionCtx): Promise<void> {
+  const zh = getLang() === 'zh'
+  if (compatibleExportRunning) return
+  compatibleExportRunning = true
+  try {
+    await flushActiveEdit(ctx)
+    await ctx.flushNotes()
+    const target = await window.slidesApi.pickExportVisualPptxPath(
+      `${exportBaseName(ctx)}-editable.pptx`,
+      'editable',
+    )
+    if (!target) return
+    try {
+      ctx.setStatus(zh ? '正在捕获原生导出快照…' : 'Capturing native export snapshot…')
+      const snapshot = await window.slidesApi.prepareCompatiblePptx()
+      await document.fonts.ready
+      // 重新打开快照后媒体 id 可能改变，必须按快照的数据 URL 加载，不能沿用旧 id。
+      const images = new Map(ctx.images)
+      const urls = new Set<string>()
+      const collect = (value: unknown): void => {
+        if (!value || typeof value !== 'object') return
+        for (const [key, child] of Object.entries(value)) {
+          if (key === 'dataUrl' && typeof child === 'string') urls.add(child)
+          else collect(child)
+        }
+      }
+      collect(snapshot.slides)
+      await Promise.all(
+        [...urls].map(async (url) => {
+          if (images.get(url)?.complete) return
+          const image = new Image()
+          image.src = url
+          await image.decode()
+          images.set(url, image)
+        }),
+      )
+      ctx.setStatus(zh ? '正在生成逐页参考图…' : 'Rendering source references…')
+      const pngsBase64 = await renderSlidesToPngBase64(snapshot.slides, images, 1)
+      ctx.setStatus(
+        zh ? '正在使用 LibreOffice 独立渲染并校验版式…' : 'Auditing layout with LibreOffice…',
+      )
+      const candidates = []
+      for (const candidate of snapshot.candidates) {
+        const slide = snapshot.slides[candidate.slideIndex]
+        const node = slide?.nodes.find((item) => item.sourceId === candidate.sourceId)
+        if (!node || node.type !== 'shape') continue
+        const [pngBase64] = await renderSlidesToPngBase64(
+          [{ ...slide, nodes: [node] }],
+          images,
+          1,
+          true,
+        )
+        candidates.push({ ...candidate, pngBase64 })
+      }
+      const result = await window.slidesApi.exportCompatiblePptx({
+        filePath: target,
+        bytes: snapshot.bytes,
+        pngsBase64,
+        candidates,
+      })
+      if (!result.ok) throw new Error(result.error)
+      const status =
+        result.layoutStatus === 'passed'
+          ? zh
+            ? '版式检查通过'
+            : 'Layout check passed'
+          : zh
+            ? '版式需复核，详见报告'
+            : 'Layout needs review; see report'
+      ctx.setStatus(`${status}: ${result.path}; ${result.reportPath}`)
+    } catch (error) {
+      ctx.setStatus(
+        zh ? `可编辑导出失败：${String(error)}` : `Editable export failed: ${String(error)}`,
+      )
+    }
+  } finally {
+    compatibleExportRunning = false
   }
 }

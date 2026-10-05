@@ -1,4 +1,5 @@
 import PptxGenJS from 'pptxgenjs'
+import { prepareCompatiblePptxBytes } from './pptx-compatible-snapshot'
 
 export interface EditableHtmlNode {
   kind: 'shape' | 'text' | 'image'
@@ -448,5 +449,5 @@ export async function buildEditableSlidePptx(
   }
 
   const bytes = await pptx.write({ outputType: 'nodebuffer' })
-  return { bytes: new Uint8Array(bytes as Buffer), imageFailures }
+  return { bytes: await prepareCompatiblePptxBytes(new Uint8Array(bytes as Buffer)), imageFailures }
 }

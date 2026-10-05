@@ -1,3 +1,4 @@
+import { publishCompatibleOffice } from '@genoffice/electron-utils'
 import { generateGongwen, type GongwenRequest } from '@genoffice/gongwen'
 import { createHash } from 'node:crypto'
 import {
@@ -3175,13 +3176,13 @@ export function registerDocsIpc(): void {
     }
   })
 
-  ipcMain.handle('docs:save-as', async (event, defaultName: string, data: ArrayBuffer) => {
+  ipcMain.handle('docs:save-as', async (event, defaultName: string, data: ArrayBuffer, compatible = false) => {
     // an orphaned (closed-tab) renderer must not open dialogs or land new files
     if (tornDownWcIds.has(event.sender.id)) return { ok: false }
     const result = await saveDialog(event, {
       title: tm('dlgSaveAs'),
-      defaultPath: defaultName,
-      filters: [
+      defaultPath: compatible ? defaultName.replace(/\.doc$/i, '.docx') : defaultName,
+      filters: compatible ? [{ name: 'Word DOCX', extensions: ['docx'] }] : [
         { name: `${tm('filterWord')} (.docx)`, extensions: ['docx'] },
         { name: `${tm('filterWord')} 97-2003 (.doc)`, extensions: ['doc'] },
       ],
@@ -3190,9 +3191,15 @@ export function registerDocsIpc(): void {
     // the tab may have been closed while the dialog was open; checked before the
     // write because Save As may overwrite an existing file (no safe rollback)
     if (tornDownWcIds.has(event.sender.id)) return { ok: false }
+    if (compatible && !result.filePath.toLowerCase().endsWith('.docx')) return { ok: false, error: 'Compatible editable export requires .docx' }
     try {
       const bytes = await wordBytesForPath(result.filePath, Buffer.from(data))
-      await atomicWriteFile(result.filePath, bytes)
+      if (result.filePath.toLowerCase().endsWith('.docx')) {
+        // 原生段落/表格/分节结构由既有序列化器负责，兼容层只校验和发布。
+        await publishCompatibleOffice(result.filePath, path => atomicWriteFile(path, bytes), { isPackaged: app.isPackaged, appPath: app.getAppPath(), resourcesPath: process.resourcesPath })
+      } else {
+        await atomicWriteFile(result.filePath, bytes)
+      }
       allowDocWrite(event.sender.id, result.filePath)
       await rememberDiskState(event.sender.id, result.filePath, bytes)
       pushRecent(result.filePath)
@@ -3629,6 +3636,7 @@ export function buildDocsMenu(): void {
         },
         { type: 'separator' },
         { label: tm('menuPageSetup'), click: () => sendCommand('page-setup') },
+        { label: getUiLang() === 'zh' ? '另存可编辑兼容版…' : 'Save editable compatible copy…', click: () => sendCommand('save-compatible') },
         { label: tm('menuExportPdf'), click: () => sendCommand('export-pdf') },
         { label: 'Export Markdown…', click: () => sendCommand('export-markdown') },
         {

@@ -1,3 +1,4 @@
+import { auditOfficeLayout, publishCompatibleOffice } from '@genoffice/electron-utils'
 /**
  * ZenOffice Slides main process — pptx parsing/render-tree building/edit application/saving all live
  * here (Node side). The renderer only gets plain-data RenderSlide; edit intents are sent back
@@ -21,6 +22,7 @@ import {
 import type { WebContents } from 'electron'
 import { execFile } from 'node:child_process'
 import { loadPrintHtml } from './print-html'
+import { prepareCompatiblePptxBytes } from './pptx-compatible-snapshot'
 import { exportVisualPptx } from './officecli-visual-export'
 import { copyFile, readFile, writeFile, rm, stat, mkdir, open } from 'node:fs/promises'
 import { createHash, randomUUID } from 'node:crypto'
@@ -3819,7 +3821,12 @@ export function registerSlidesIpc(): void {
     const r = await showSaveDialogWithMemory(dialog, parent, options, getDraftsDir())
     if (r.canceled || !r.filePath) return { ok: false }
     try {
-      await savePptxToFile(session.opened, r.filePath)
+      // 另存为保留原生对象，先验收临时包再发布，不能让 CLI 重建损失源结构。
+      await publishCompatibleOffice(r.filePath, (path) => savePptxToFile(session.opened, path), {
+        isPackaged: app.isPackaged,
+        appPath: app.getAppPath(),
+        resourcesPath: process.resourcesPath,
+      })
       session.path = r.filePath
       autosaveBackoff.delete(r.filePath)
       dropUntitledRecovery(e.sender.id)
@@ -3880,26 +3887,216 @@ export function registerSlidesIpc(): void {
     return r.canceled || !r.filePath ? null : r.filePath
   })
 
-  ipcMain.handle('slides:pick-export-visual-pptx-path', async (_e, defaultName: string) => {
-    const r = await showSaveDialogWithMemory(
-      dialog,
-      dialogParent(),
-      {
-        title: getUiLang() === 'zh' ? '导出保真 PPTX' : 'Export visual PPTX',
-        defaultPath: defaultName,
-        filters: [{ name: 'PowerPoint', extensions: ['pptx'] }],
-      },
-      getDraftsDir(),
+  ipcMain.handle('slides:prepare-compatible-pptx', async (e) => {
+    const current = sessions.get(e.sender.id)
+    if (!current) throw new Error('No file open')
+    // 导出截图与包必须来自同一快照，不能用用户继续编辑后的会话做视觉验收。
+    const bytes = await prepareCompatiblePptxBytes(await savePptx(current.opened))
+    const snapshot = await openPptx(bytes)
+    const candidates = snapshot.deck.slides.flatMap((slide, slideIndex) =>
+      slide.elements.flatMap((element, elementIndex) => {
+        const xml = element.anchor.originalXml
+        // 文字、表格、图表和媒体不得栅格化；仅复杂纯图形进入视觉修复候选。
+        return element.type === 'shape' &&
+          !/<(?:\w+:)?(?:t|tbl|chart|oleObj|video|audio)\b/.test(xml) &&
+          /<(?:\w+:)?(?:custGeom|gradFill|outerShdw|glow|effectDag|scene3d|sp3d)\b/.test(xml)
+          ? [
+              {
+                slideIndex,
+                elementIndex,
+                sourceId: element.id,
+                xmlHash: createHash('sha256').update(xml).digest('hex'),
+              },
+            ]
+          : []
+      }),
     )
-    return r.canceled || !r.filePath ? null : r.filePath
+    return { bytes, slides: buildAllRenderSlides(snapshot, current.fitWidthPx), candidates }
   })
+
+  ipcMain.handle(
+    'slides:export-compatible-pptx',
+    async (
+      _e,
+      op: {
+        filePath: string
+        bytes: Uint8Array
+        pngsBase64: string[]
+        candidates: {
+          slideIndex: number
+          elementIndex: number
+          xmlHash: string
+          pngBase64: string
+        }[]
+      },
+    ) => {
+      try {
+        if (
+          !op.bytes?.length ||
+          op.bytes.length > 100 * 1024 * 1024 ||
+          !Array.isArray(op.pngsBase64) ||
+          !op.pngsBase64.length ||
+          op.pngsBase64.length > 500
+        )
+          throw new Error('Invalid compatible export snapshot')
+        const references = op.pngsBase64.map((value) => Buffer.from(value, 'base64'))
+        if (
+          references.reduce((sum, png) => sum + png.length, 0) > 100 * 1024 * 1024 ||
+          references.some(
+            (png) => !png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])),
+          )
+        )
+          throw new Error('Invalid source PNG references')
+        const snapshot = await openPptx(op.bytes)
+        if (snapshot.deck.slides.length !== references.length)
+          throw new Error('Snapshot page count mismatch')
+        let layoutStatus = 'unavailable'
+        const result = await publishCompatibleOffice(
+          op.filePath,
+          (file) => writeFile(file, op.bytes),
+          {
+            isPackaged: app.isPackaged,
+            appPath: app.getAppPath(),
+            resourcesPath: process.resourcesPath,
+          },
+          async (file) => {
+            const decode = (png: Buffer) => {
+              const image = nativeImage.createFromBuffer(png)
+              return { ...image.getSize(), data: image.toBitmap() }
+            }
+            const initial = await auditOfficeLayout(file, references, decode)
+            const candidates = (op.candidates ?? []).filter((candidate) => {
+              const element =
+                snapshot.deck.slides[candidate.slideIndex]?.elements[candidate.elementIndex]
+              const xml = element?.anchor.originalXml ?? ''
+              return (
+                element?.type === 'shape' &&
+                createHash('sha256').update(xml).digest('hex') === candidate.xmlHash &&
+                !/<(?:\w+:)?(?:t|tbl|chart|oleObj|video|audio)\b/.test(xml) &&
+                /<(?:\w+:)?(?:custGeom|gradFill|outerShdw|glow|effectDag|scene3d|sp3d)\b/.test(
+                  xml,
+                ) &&
+                initial.pages[candidate.slideIndex]?.status === 'review-required'
+              )
+            })
+            if (
+              candidates.length > 500 ||
+              candidates.reduce((sum, item) => sum + item.pngBase64.length, 0) > 100 * 1024 * 1024
+            )
+              throw new Error('Too many local repair images')
+            const apply = async (selected: typeof candidates) => {
+              const trial = await openPptx(op.bytes)
+              const seen = new Set<string>()
+              for (const candidate of selected) {
+                const key = `${candidate.slideIndex}:${candidate.elementIndex}`
+                if (seen.has(key)) throw new Error('Duplicate repair candidate')
+                seen.add(key)
+                const slide = trial.deck.slides[candidate.slideIndex]
+                const bytes = Buffer.from(candidate.pngBase64, 'base64')
+                const size = nativeImage.createFromBuffer(bytes).getSize()
+                const referenceSize = decode(references[candidate.slideIndex])
+                if (size.width !== referenceSize.width || size.height !== referenceSize.height)
+                  throw new Error('Local repair image dimensions differ')
+                // 透明整页画布只含单个复杂对象，使用已知页 EMU，不烘焙周围文字或改变层序。
+                const picture = addPicture(trial, slide, {
+                  bytes,
+                  ext: 'png',
+                  offset: {
+                    x: 0,
+                    y: 0,
+                    cx: trial.deck.size.cx,
+                    cy: trial.deck.size.cy,
+                  },
+                })
+                if (!picture) throw new Error('Could not add local repair picture')
+                slide.elements.pop()
+                slide.elements.splice(candidate.elementIndex, 1, picture)
+                slide.structureDirty = true
+              }
+              await savePptxToFile(trial, file)
+            }
+            let final = initial
+            let accepted: typeof candidates = []
+            if (candidates.length) {
+              await apply(candidates)
+              const trial = await auditOfficeLayout(file, references, decode)
+              // 独立渲染不可用或误差未下降必须回滚，不能靠栅格化次数声称成功。
+              accepted = candidates.filter(
+                (candidate) =>
+                  trial.status !== 'unavailable' &&
+                  trial.pages[candidate.slideIndex].normalizedMse <
+                    initial.pages[candidate.slideIndex].normalizedMse - 1e-8,
+              )
+              if (accepted.length === candidates.length) final = trial
+              else {
+                await apply(accepted)
+                final = await auditOfficeLayout(file, references, decode)
+              }
+            }
+            layoutStatus = final.status
+            return {
+              ...final,
+              initial,
+              attempted: candidates.length,
+              accepted: accepted.length,
+              reverted: candidates.length - accepted.length,
+              localRasterRepair: 'measured-complex-shapes-only',
+            }
+          },
+        )
+        try {
+          shell.showItemInFolder(result.path)
+        } catch {
+          /* 已核验文件保存成功，定位失败不改变结果。 */
+        }
+        return { ok: true, ...result, layoutStatus }
+      } catch (error) {
+        return { ok: false, error: String(error) }
+      }
+    },
+  )
+
+  ipcMain.handle(
+    'slides:pick-export-visual-pptx-path',
+    async (_e, defaultName: string, mode: 'image' | 'editable' = 'image') => {
+      const r = await showSaveDialogWithMemory(
+        dialog,
+        dialogParent(),
+        {
+          title:
+            mode === 'editable'
+              ? getUiLang() === 'zh'
+                ? '高保真 PPTX（可编辑）'
+                : 'High-fidelity PPTX (editable)'
+              : getUiLang() === 'zh'
+                ? '高保真 PPTX（整页图片）'
+                : 'High-fidelity PPTX (full-page images)',
+          defaultPath: defaultName,
+          filters: [{ name: 'PowerPoint', extensions: ['pptx'] }],
+        },
+        getDraftsDir(),
+      )
+      return r.canceled || !r.filePath ? null : r.filePath
+    },
+  )
 
   ipcMain.handle(
     'slides:export-visual-pptx',
     async (_e, op: ExportVisualPptxOp): Promise<ExportPdfResult> => {
       try {
-        await exportVisualPptx(op.pngsBase64, op.filePath, op.widthPx, op.heightPx)
-        return { ok: true, path: op.filePath }
+        const savedPath = await exportVisualPptx(
+          op.pngsBase64,
+          op.filePath,
+          op.widthPx,
+          op.heightPx,
+        )
+        // 导出目录可能是草稿或符号链接目录，直接定位已验证文件，避免成功后找不到。
+        try {
+          shell.showItemInFolder(savedPath)
+        } catch {
+          /* 文件已保存，定位失败不改变保存结果。 */
+        }
+        return { ok: true, path: savedPath }
       } catch (error) {
         return { ok: false, error: String(error) }
       }
@@ -4301,9 +4498,16 @@ export function buildSlidesMenu(): Menu {
         { type: 'separator' },
         // The ribbon's File tab is Windows-only, so without these macOS had no way
         // to export or print at all
+        {
+          label: getUiLang() === 'zh' ? '高保真 PPTX（可编辑）…' : 'High-fidelity PPTX (editable)…',
+          click: () => send('export-compatible-pptx'),
+        },
         { label: tm('menuExportPdf'), click: () => send('export-pdf') },
         {
-          label: getUiLang() === 'zh' ? '导出保真 PPTX…' : 'Export visual PPTX…',
+          label:
+            getUiLang() === 'zh'
+              ? '高保真 PPTX（整页图片）…'
+              : 'High-fidelity PPTX (full-page images)…',
           click: () => send('export-visual-pptx'),
         },
         { label: tm('menuExportImages'), click: () => send('export-images') },

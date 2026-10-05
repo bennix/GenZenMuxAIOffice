@@ -548,7 +548,7 @@ export function noteDocumentSwapped(): void {
   pathlessDocSavedPath = null
 }
 
-export function save(ctx: FileActionContext, saveAs: boolean, auto = false): Promise<boolean> {
+export function save(ctx: FileActionContext, saveAs: boolean, auto = false, compatible = false): Promise<boolean> {
   // A save arriving mid-flight waits for the current one instead of failing.
   // Reuse the finished pass only when it left nothing behind — judged by the
   // composite dirty check (header/section/theme edits do not set dirtyRef), plus
@@ -556,12 +556,12 @@ export function save(ctx: FileActionContext, saveAs: boolean, auto = false): Pro
   // saveOnce resolves a stale pathless snapshot via pathlessDocSavedPath, so
   // the retry can no longer create a duplicate file.
   return runSerializedSave(
-    () => saveOnce(ctx, saveAs, auto),
+    () => saveOnce(ctx, saveAs, auto, compatible),
     () => !saveAs && !ctx.saveIncompleteRef.current && !isDocDirty(ctx),
   )
 }
 
-async function saveOnce(ctx: FileActionContext, saveAs: boolean, auto: boolean): Promise<boolean> {
+async function saveOnce(ctx: FileActionContext, saveAs: boolean, auto: boolean, compatible: boolean): Promise<boolean> {
   const { doc, editor } = ctx
   if (!doc || !editor) return false
   ctx.saveInFlightRef.current = true
@@ -587,7 +587,7 @@ async function saveOnce(ctx: FileActionContext, saveAs: boolean, auto: boolean):
         !doc.filePath && doc.fileName === t('appUntitledDocx') ? deriveAutoFileName(editor) : null
       // Save As keeps the dialog; a new document's first save lands silently in the default folder
       const result = saveAs
-        ? await window.desktop.saveDocxAs(autoName ?? doc.fileName, buffer)
+        ? await window.desktop.saveDocxAs(autoName ?? doc.fileName, buffer, compatible)
         : await window.desktop.saveDocxNew(autoName ?? doc.fileName, buffer)
       if (!result.ok) {
         if (result.error) {

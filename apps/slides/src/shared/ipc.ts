@@ -957,6 +957,19 @@ export interface ExportPdfResult {
   error?: string
 }
 
+export interface CompatiblePptxSnapshot {
+  bytes: Uint8Array
+  slides: RenderSlide[]
+  candidates: { slideIndex: number; elementIndex: number; sourceId: string; xmlHash: string }[]
+}
+
+export interface CompatiblePptxExport {
+  candidates: { slideIndex: number; elementIndex: number; xmlHash: string; pngBase64: string }[]
+  filePath: string
+  bytes: Uint8Array
+  pngsBase64: string[]
+}
+
 export interface ExportVisualPptxOp {
   filePath: string
   pngsBase64: string[]
@@ -1007,6 +1020,7 @@ export type MenuCommand =
   | 'save-as'
   | 'export-pdf'
   | 'export-visual-pptx'
+  | 'export-compatible-pptx'
   | 'export-images'
   | 'print'
   | 'zoom-in'
@@ -1309,10 +1323,17 @@ export interface SlidesApi extends ConnectApi {
   exportImages: (op: ExportImagesOp) => Promise<ExportImagesResult>
   /** Export as PDF: shows the save dialog for the target path, cancel returns null */
   pickExportPdfPath: (defaultName: string) => Promise<string | null>
-  pickExportVisualPptxPath: (defaultName: string) => Promise<string | null>
+  pickExportVisualPptxPath: (
+    defaultName: string,
+    mode?: 'image' | 'editable',
+  ) => Promise<string | null>
   /** Main process printToPDF via a hidden window, written to disk */
   exportPdf: (op: ExportPdfOp) => Promise<ExportPdfResult>
   /** Fixed-layout PPTX: one full-page picture per slide, generated and validated with OfficeCLI. */
+  prepareCompatiblePptx: () => Promise<CompatiblePptxSnapshot>
+  exportCompatiblePptx: (
+    op: CompatiblePptxExport,
+  ) => Promise<ExportPdfResult & { layoutStatus?: string; reportPath?: string }>
   exportVisualPptx: (op: ExportVisualPptxOp) => Promise<ExportPdfResult>
   /** Print (system dialog; cancel counts as ok=false without an error) */
   printSlides: (op: PrintSlidesOp) => Promise<{ ok: boolean; error?: string }>

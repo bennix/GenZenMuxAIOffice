@@ -1,3 +1,4 @@
+import { publishCompatibleOffice } from '@genoffice/electron-utils'
 import { createHash, randomUUID } from 'node:crypto'
 import {
   createReadStream,
@@ -2007,7 +2008,18 @@ export function registerSheetsIpc(): void {
       throw new Error(tm('errDiskChanged'))
     }
 
-    const mutation = await writeWorkbookTo(client, session, request, targetPath)
+    const mutation = await (async () => {
+      if (request.mode !== 'save-as' && session.suggestSaveAs === undefined) {
+        return writeWorkbookTo(client, session, request, targetPath)
+      }
+      // 暂存原生公式/图表/打印设置，兼容验收失败不能先覆盖用户目标文件。
+      let result: Awaited<ReturnType<typeof writeWorkbookTo>> | undefined
+      await publishCompatibleOffice(targetPath, async path => {
+        result = await writeWorkbookTo(client, session, request, path)
+      }, { isPackaged: app.isPackaged, appPath: app.getAppPath(), resourcesPath: process.resourcesPath })
+      if (!result) throw new Error('Native workbook export produced no result')
+      return result
+    })()
 
     // The sidecar session still streams the pre-save bytes; swap it for a
     // fresh session over the saved file so future reads match the disk state.
@@ -2825,6 +2837,7 @@ function installApplicationMenu(): void {
             accelerator: 'Shift+CmdOrCtrl+S',
             click: () => sendMenuAction('save-as'),
           },
+          { label: getUiLang() === 'zh' ? '另存可编辑兼容版…' : 'Save editable compatible copy…', click: () => sendMenuAction('save-as') },
           {
             label: tm('menuExportPdf'),
             click: () => sendMenuAction('export-pdf'),

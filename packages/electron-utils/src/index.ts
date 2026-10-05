@@ -65,3 +65,12 @@ export {
   type OpenFileKind,
   type OpenFileRef,
 } from './open-files'
+
+export {
+  resolveOfficeCli,
+  invokeOfficeCli,
+  type OfficeCliRuntimeOptions,
+} from './officecli-runtime'
+export { publishCompatibleOffice } from './office-compatible-export'
+
+export { auditOfficeLayout, compareLayoutPixels, type AuditPixels, type OfficeLayoutAudit, type LayoutPageAudit, type LayoutRegion } from './office-layout-audit'

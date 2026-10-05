@@ -1016,7 +1016,7 @@ export function App() {
   )
 
   const save = useCallback(
-    (saveAs: boolean, auto = false) => saveImpl(fileCtxRef.current, saveAs, auto),
+    (saveAs: boolean, auto = false, compatible = false) => saveImpl(fileCtxRef.current, saveAs, auto, compatible),
     [],
   )
 
@@ -2550,6 +2550,9 @@ export function App() {
           break
         case 'save-as':
           void save(true)
+          break
+        case 'save-compatible':
+          void save(true, false, true)
           break
         case 'undo':
           editor?.chain().focus().undo().run()

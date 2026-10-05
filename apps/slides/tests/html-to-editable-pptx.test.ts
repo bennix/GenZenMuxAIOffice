@@ -362,3 +362,11 @@ describe('HTML to editable PPTX conversion', () => {
     ).toHaveLength(2)
   })
 })
+
+it('places the generated notes master before slide ids as required by Office schema', async () => {
+  const result = await buildEditableSlidePptx(PAGE, async () => RED_DOT)
+  const opened = await openPptx(result.bytes)
+  const xml = opened.archive.readText('ppt/presentation.xml')!
+  expect(xml.indexOf('<p:notesMasterIdLst>')).toBeGreaterThan(-1)
+  expect(xml.indexOf('<p:notesMasterIdLst>')).toBeLessThan(xml.indexOf('<p:sldIdLst>'))
+})

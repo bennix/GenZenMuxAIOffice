@@ -19,6 +19,7 @@ export const SlideThumb = React.memo(function SlideThumb({
   images,
   width = THUMB_W,
   stageRef,
+  transparent = false,
 }: {
   slide: RenderSlide
   images: Map<string, HTMLImageElement>
@@ -26,6 +27,7 @@ export const SlideThumb = React.memo(function SlideThumb({
   width?: number
   /** Get the underlying Konva Stage (for offscreen toDataURL when exporting PNG/PDF) */
   stageRef?: (stage: Konva.Stage | null) => void
+  transparent?: boolean
 }) {
   const scale = width / slide.widthPx
   const h = slide.heightPx * scale
@@ -38,13 +40,15 @@ export const SlideThumb = React.memo(function SlideThumb({
       style={{ pointerEvents: 'none' }}
     >
       <Layer scaleX={scale} scaleY={scale} listening={false}>
-        <Rect
-          x={0}
-          y={0}
-          width={slide.widthPx}
-          height={slide.heightPx}
-          {...bgFill(slide, images)}
-        />
+        {!transparent && (
+          <Rect
+            x={0}
+            y={0}
+            width={slide.widthPx}
+            height={slide.heightPx}
+            {...bgFill(slide, images)}
+          />
+        )}
         {slide.nodes.map((n) => (
           <StaticNode key={n.id} node={n} images={images} />
         ))}

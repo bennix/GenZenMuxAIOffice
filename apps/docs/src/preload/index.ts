@@ -72,8 +72,8 @@ const api: DesktopApi = {
     ipcRenderer.on('docs:teardown', listener)
     return () => ipcRenderer.removeListener('docs:teardown', listener)
   },
-  saveDocxAs: (defaultName: string, data: ArrayBuffer) =>
-    ipcRenderer.invoke('docs:save-as', defaultName, data),
+  saveDocxAs: (defaultName: string, data: ArrayBuffer, compatible = false) =>
+    ipcRenderer.invoke('docs:save-as', defaultName, data, compatible),
   saveDocxNew: (defaultName: string, data: ArrayBuffer) =>
     ipcRenderer.invoke('docs:save-new', defaultName, data),
   saveBibliography: (path: string, bibText: string) =>

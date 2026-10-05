@@ -4,6 +4,7 @@
  * thumbnails), guaranteeing the export matches what the editor shows.
  */
 import React from 'react'
+import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import type Konva from 'konva'
 import type { RenderSlide } from '@genoffice/pptx-render'
@@ -22,6 +23,7 @@ export async function renderSlidesToPngBase64(
   slides: RenderSlide[],
   images: Map<string, HTMLImageElement>,
   pixelRatio: number = EXPORT_PIXEL_RATIO,
+  transparent = false,
 ): Promise<string[]> {
   // Offscreen container: mounted outside the body viewport (display:none would give the Konva canvas zero size, unusable)
   const container = document.createElement('div')
@@ -31,16 +33,23 @@ export async function renderSlidesToPngBase64(
   const out: string[] = []
   try {
     for (const slide of slides) {
-      const stage = await new Promise<Konva.Stage>((resolve) => {
+      let captured: Konva.Stage | null = null
+      // 同步挂载避免回调等待无期限悬挂；快照使用同一个离屏根逐页替换。
+      flushSync(() =>
         root.render(
           <SlideThumb
+            transparent={transparent}
             slide={slide}
             images={images}
             width={slide.widthPx}
-            stageRef={(s) => s && resolve(s)}
+            stageRef={(stage) => {
+              captured = stage
+            }}
           />,
-        )
-      })
+        ),
+      )
+      if (!captured) throw new Error('Export stage did not mount')
+      const stage = captured as Konva.Stage
       // Wait one frame for Konva to finish batchDraw, then capture
       await new Promise((r) => requestAnimationFrame(r))
       const dataUrl = stage.toDataURL({ mimeType: 'image/png', pixelRatio })

@@ -1781,6 +1781,8 @@ export function App() {
       else if (cmd === 'save-as') void saveAs()
       // macOS has no File ribbon tab, so these only exist in the menu
       else if (cmd === 'export-pdf') void exportPdf()
+      else if (cmd === 'export-compatible-pptx')
+        void fileActions.exportCompatiblePptx(ctxRef.current)
       else if (cmd === 'export-visual-pptx') void exportVisualPptx()
       else if (cmd === 'export-images') void exportImages()
       else if (cmd === 'print') setPrintDlgOpen(true)
@@ -2514,6 +2516,7 @@ export function App() {
         onSaveAs={() => void saveAs()}
         onExportPdf={() => void exportPdf()}
         onExportVisualPptx={() => void exportVisualPptx()}
+        onExportCompatiblePptx={() => void fileActions.exportCompatiblePptx(ctxRef.current)}
         onPrint={() => setPrintDlgOpen(true)}
         onExportImages={() => void exportImages()}
         onFormat={onFormat}

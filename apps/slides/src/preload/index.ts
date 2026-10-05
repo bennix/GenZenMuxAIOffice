@@ -257,9 +257,11 @@ const api: SlidesApi = {
   exportImages: (op: ExportImagesOp) => ipcRenderer.invoke('slides:export-images', op),
   pickExportPdfPath: (defaultName: string) =>
     ipcRenderer.invoke('slides:pick-export-pdf-path', defaultName),
-  pickExportVisualPptxPath: (defaultName: string) =>
-    ipcRenderer.invoke('slides:pick-export-visual-pptx-path', defaultName),
+  pickExportVisualPptxPath: (defaultName: string, mode?: 'image' | 'editable') =>
+    ipcRenderer.invoke('slides:pick-export-visual-pptx-path', defaultName, mode),
   exportPdf: (op: ExportPdfOp) => ipcRenderer.invoke('slides:export-pdf', op),
+  prepareCompatiblePptx: () => ipcRenderer.invoke('slides:prepare-compatible-pptx'),
+  exportCompatiblePptx: (op) => ipcRenderer.invoke('slides:export-compatible-pptx', op),
   exportVisualPptx: (op: ExportVisualPptxOp) => ipcRenderer.invoke('slides:export-visual-pptx', op),
   printSlides: (op: PrintSlidesOp) => ipcRenderer.invoke('slides:print', op),
   save: () => ipcRenderer.invoke('slides:save'),

@@ -287,6 +287,7 @@ export interface Props {
   /** Export as PDF (hidden slides skipped) */
   onExportPdf: () => void
   onExportVisualPptx: () => void
+  onExportCompatiblePptx: () => void
   onPrint: () => void
   /** Export as images (one PNG per page, hidden slides skipped) */
   onExportImages: () => void
