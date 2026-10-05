@@ -91,6 +91,11 @@ jobs:
       - name: Regenerate test fixtures
         run: npm run fixtures
 
+      # OfficeCLI integration tests need a verified executable in the workspace;
+      # preparing it here keeps them independent from runner user-directory caches.
+      - name: Prepare OfficeCLI for integration tests
+        run: node tools/prepare-officecli.mjs linux
+
       # Generation is byte-deterministic (zip entry mtimes are pinned in
       # tests/helpers/build-docx.ts); a diff here means the generator and the
       # committed fixtures have drifted apart.
