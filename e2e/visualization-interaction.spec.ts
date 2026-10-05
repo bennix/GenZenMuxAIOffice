@@ -403,9 +403,22 @@ test('chart range slider and restore operate in the browser without deleting dat
         }
       })
     expect(await state()).toEqual({ start: 0, end: 100, count: 30 })
-    await page.mouse.move(78, 567)
+    const leftHandle = await page.evaluate(() => {
+      const chart = (window as any).mounted.chart
+      const model = chart.getModel().getComponent('dataZoom', 1)
+      const view = chart._componentsViews.find((item: any) => item.__model === model)
+      const transform = view._displayables.sliderGroup.getComputedTransform()
+      const root = chart.getZr().painter.getViewportRoot().getBoundingClientRect()
+      return {
+        x: root.left + transform[4] + view._handleEnds[0],
+        y: root.top + transform[5],
+      }
+    })
+    // The old fixed start point (78, 567) was left of the slider's actual
+    // bounds (about x=103..928), so the test dragged empty chart space.
+    await page.mouse.move(leftHandle.x, leftHandle.y)
     await page.mouse.down()
-    await page.mouse.move(400, 567, { steps: 20 })
+    await page.mouse.move(400, leftHandle.y, { steps: 20 })
     await page.mouse.up()
     await expect.poll(async () => (await state()).start).toBeGreaterThan(30)
     expect((await state()).count).toBe(30)
