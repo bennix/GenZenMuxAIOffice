@@ -11,6 +11,7 @@ export interface OfficeCliRuntimeOptions {
 }
 
 const VERSION = '1.0.152'
+const MAC_DEVELOPER_TEAM_ID = '5N66S29EK2'
 // Pinned upstream release assets; never execute a download without this check.
 const HASHES: Record<string, string> = {
   'officecli-mac-arm64': 'e2ed6eba5cd46d6800139f2835097828b8ccd7c8c9b679463b50e45ba2f1dbf5',
@@ -35,12 +36,55 @@ function verify(asset: string, bytes: Buffer): void {
     throw new Error(`OfficeCLI checksum mismatch: ${asset}`)
 }
 
+export function assertExpectedMacSignatureDetails(asset: string, details: string): void {
+  const identifier = details.match(/^Identifier=(.+)$/m)?.[1]
+  const teamId = details.match(/^TeamIdentifier=(.+)$/m)?.[1]
+  if (identifier !== asset || teamId !== MAC_DEVELOPER_TEAM_ID) {
+    throw new Error(
+      `OfficeCLI code signature identity mismatch: expected ${asset} from team ${MAC_DEVELOPER_TEAM_ID}`,
+    )
+  }
+}
+
+async function runCodesign(args: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('codesign', args, { shell: false, stdio: ['ignore', 'pipe', 'pipe'] })
+    let output = ''
+    child.stdout.on('data', (chunk: Buffer) => {
+      output = (output + chunk.toString()).slice(-16_000)
+    })
+    child.stderr.on('data', (chunk: Buffer) => {
+      output = (output + chunk.toString()).slice(-16_000)
+    })
+    child.once('error', reject)
+    child.once('close', (code) => {
+      if (code === 0) resolve(output)
+      else reject(new Error(`codesign ${args[0]} failed (${code}): ${output.trim()}`))
+    })
+  })
+}
+
+async function verifyPackagedMacSignature(asset: string, binaryPath: string): Promise<void> {
+  // macOS 发布签名会改变 Mach-O 字节，因此构建时已校验上游哈希，运行时改校验签名封印。
+  await runCodesign(['--verify', '--strict', binaryPath])
+  const details = await runCodesign(['--display', '--verbose=4', binaryPath])
+  assertExpectedMacSignatureDetails(asset, details)
+}
+
 export async function resolveOfficeCli(options: OfficeCliRuntimeOptions): Promise<string> {
   const asset = assetName()
   if (options.isPackaged) {
     const bundled = join(options.resourcesPath, 'officecli', asset)
     try {
-      verify(asset, await readFile(bundled))
+      const bytes = await readFile(bundled)
+      try {
+        verify(asset, bytes)
+      } catch (checksumError) {
+        if (process.platform !== 'darwin' || !asset.startsWith('officecli-mac-'))
+          throw checksumError
+        // 已签名的 macOS Mach-O 无法保留上游哈希；这里依靠代码签名封印验证完整性。
+        await verifyPackagedMacSignature(asset, bundled)
+      }
       return bundled
     } catch (error) {
       throw new Error(`Bundled OfficeCLI unavailable or invalid: ${String(error)}`, {

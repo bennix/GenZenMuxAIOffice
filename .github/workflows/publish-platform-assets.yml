@@ -6,7 +6,7 @@ on:
       release_tag:
         description: Existing release tag
         required: true
-        default: v0.6.95
+        default: v0.6.97
       windows_run_id:
         required: true
       deb_run_id:

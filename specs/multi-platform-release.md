@@ -33,6 +33,7 @@ sequenceDiagram
 
 - `codesign --verify --deep --strict`, `spctl --assess --type open`, and `stapler validate` pass for the generated DMG.
 - Notary submission status is `Accepted`.
+- Before publishing a macOS release, run the OfficeCLI packaged-runtime check against the signed app resources to ensure the Developer ID signature remains acceptable after packaging.
 - Windows installer, DEB, and RPM workflows succeed and upload artifacts for the same tag.
 - Latest release contains one version of every requested installer; download links return HTTP success.
 - Landing Page links use the same version and filenames.
