@@ -40,7 +40,7 @@ jobs:
       # Install the runtime explicitly so the integration test is reproducible
       # on GitHub-hosted images as their preinstalled runtimes change.
       - name: Setup .NET
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5 # v5.0.0
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
         with:
           dotnet-version: 10.0.x
 
@@ -172,7 +172,7 @@ jobs:
       # forwards the Electron process stdout/stderr into the CI log so launch
       # failures are diagnosable.
       - name: Setup .NET
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5 # v5.0.0
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
         with:
           dotnet-version: 10.0.x
 
