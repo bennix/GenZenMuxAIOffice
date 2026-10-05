@@ -36,7 +36,7 @@ notarization on the current macOS release).
 > Intelligence, Fudan University; macOS, Windows, Ubuntu DEB, and Linux RPM installers rebuilt for this release.
 
 Apple Silicon Mac 用户可从
-[最新正式 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.96-arm64.dmg)。
+[最新正式 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.97-arm64.dmg)。
 Windows 10/11 x64 用户可下载
 [ZenOfficeSetup-0.6.97-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.97-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
 Ubuntu 22.04/24.04 x86_64 用户可下载
