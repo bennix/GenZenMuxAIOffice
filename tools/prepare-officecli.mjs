@@ -5,12 +5,12 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const version = '1.0.152'
+const version = '1.0.154'
 const hashes = {
-  'officecli-mac-arm64': 'e2ed6eba5cd46d6800139f2835097828b8ccd7c8c9b679463b50e45ba2f1dbf5',
-  'officecli-mac-x64': '5071abef56c1d4a4d60e28ed12bc66183d8dc6a9783529c3f1a9cf6bdfe6c2dd',
-  'officecli-win-x64.exe': '047705402974c3690a4437e55f620d03afac4beba4fdd28fdb59af610a3afff2',
-  'officecli-linux-x64': 'e54d3c1d248372365f0634aac56d6f1918bd04d6e71afc792ad50e075f56cfe9',
+  'officecli-mac-arm64': 'a05c82e04bd0f283ea309f20e4092d540632438cba8ecbf192e65209f780c372',
+  'officecli-mac-x64': 'd7a63396a76f436c6bc993092c999ee1d37f985eacce2b09a3a3eba37c9baa4f',
+  'officecli-win-x64.exe': '50a57626ff7c5b11034c23368312cdafbd436cf81eb149c81dc488e027a56e7e',
+  'officecli-linux-x64': 'ac57d4d94209c21e34fc133eea2b55670e5f966a9e8e6b68f656b9410db5dbae',
 }
 const target = process.argv[2]
 const assets =

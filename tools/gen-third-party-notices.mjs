@@ -340,7 +340,7 @@ https://www.unicode.org/Public/17.0.0/ucd/EquivalentUnifiedIdeograph.txt
 out += readFileSync(join(ROOT, 'LICENSE-UNICODE.txt'), 'utf8').trim() + '\n'
 
 out += hr('5. OfficeCLI executable')
-out += `OfficeCLI v1.0.152 — Apache-2.0\nhttps://github.com/iOfficeAI/OfficeCLI\n\n`
+out += `OfficeCLI v1.0.154 — Apache-2.0\nhttps://github.com/iOfficeAI/OfficeCLI\n\n`
 out += readFileSync(join(ROOT, 'tools/licenses/OfficeCLI-NOTICE.txt'), 'utf8').trim() + '\n\n'
 out += readFileSync(join(ROOT, 'LICENSE'), 'utf8').trim() + '\n'
 
