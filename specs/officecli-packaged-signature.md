@@ -36,4 +36,7 @@ sequenceDiagram
 - The release acceptance runs the macOS integration test against the actual packaged app resources, not only a mocked signature metadata string.
 - CI prepares the pinned Linux OfficeCLI in the workspace before running OfficeCLI integration tests; those tests must not depend on runner user-directory caches.
 - Linux CI installs the .NET 10 runtime required by the framework-dependent OfficeCLI before unit/integration and Electron E2E tests.
+- Linux unit tests resolve the prepared binary from the repository's `apps/shell/build/officecli` directory, independent of Vitest's `import.meta.dirname` transform.
+- Linux Electron E2E prepares that same pinned binary after the shell build, so the app cannot silently fall back to a stale per-user cache or an unverified download.
+- The E2E runner installs the Playwright Chromium runtime required by browser-based checks; OfficeCLI export failures remain visible as failures.
 - Playwright E2E callbacks use its supported fixture destructuring signature so test discovery works consistently in CI.

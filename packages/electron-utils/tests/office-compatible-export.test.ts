@@ -6,7 +6,9 @@ import { publishCompatibleOffice } from '../src/office-compatible-export'
 import { invokeOfficeCli, resolveOfficeCli } from '../src/officecli-runtime'
 const runtime = {
   isPackaged: false,
-  appPath: resolve(import.meta.dirname, '../../../apps/shell'),
+  // npm runs workspace tests with the workspace package as cwd; anchor the app path there
+  // so Vitest's import.meta.dirname transform cannot redirect resolution to a user cache.
+  appPath: resolve(process.cwd(), '../../apps/shell'),
   resourcesPath: '',
 }
 it('validates and publishes native PPTX/DOCX/XLSX without rewriting source bytes', async () => {
