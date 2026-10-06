@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="ZenOffice — 由 ZenMux 驱动的本地 AI 文档、表格与演示文稿工作台。"
+      content="ZenOffice v0.6.100 — Word、Markdown 与 PDF 的引导式研究工作台：深度研究与科研导师报告边生成边显示，并可写回文档或发送到其他已打开文件。"
     />
     <meta name="theme-color" content="#071417" />
     <link rel="icon" type="image/svg+xml" href="zenoffice-mark.svg" />
@@ -770,6 +770,74 @@
         line-height: 1.65;
       }
 
+      .release-spotlight {
+        margin: 6px 0 8px;
+        padding: 36px 36px 32px;
+        border: 1px solid var(--ink);
+        background: rgba(255, 255, 255, 0.62);
+      }
+
+      .release-spotlight h2 {
+        max-width: 16em;
+        margin: 0 0 14px;
+        font-family: 'Iowan Old Style', 'Songti SC', Georgia, serif;
+        font-size: clamp(36px, 4.6vw, 58px);
+        font-weight: 400;
+        line-height: 0.98;
+        letter-spacing: -0.05em;
+      }
+
+      .release-spotlight > p {
+        max-width: 740px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.75;
+      }
+
+      .release-steps {
+        margin-top: 26px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-top: 1px solid var(--ink);
+      }
+
+      .release-steps article {
+        padding: 22px 22px 8px 0;
+        border-right: 1px solid var(--line);
+      }
+
+      .release-steps article:last-child {
+        padding-right: 0;
+        border-right: 0;
+      }
+
+      .release-steps article + article {
+        padding-left: 22px;
+      }
+
+      .release-steps span {
+        display: block;
+        margin-bottom: 12px;
+        color: var(--blue);
+        font-family: 'Iowan Old Style', Georgia, serif;
+        font-size: 22px;
+        font-style: italic;
+      }
+
+      .release-steps h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+        letter-spacing: -0.03em;
+      }
+
+      .release-steps p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
       .platforms {
         padding: 34px 0 72px;
       }
@@ -1382,8 +1450,24 @@
         .models,
         .platform-grid,
         .foundation,
-        .manual {
+        .manual,
+        .release-steps {
           grid-template-columns: 1fr;
+        }
+
+        .release-spotlight {
+          padding: 28px 22px 18px;
+        }
+
+        .release-steps article,
+        .release-steps article + article {
+          padding: 18px 0;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .release-steps article:last-child {
+          border-bottom: 0;
         }
 
         .manual-visual {
@@ -1566,6 +1650,7 @@
       <nav>
         <div class="wordmark"><img class="mark" src="zenoffice-mark.svg" alt="" /> ZenOffice</div>
         <div class="nav-actions">
+          <a class="nav-link" href="#whats-new">v0.6.100 研究工作台</a>
           <a class="nav-link" href="#manual">用户手册 · Manual</a>
           <a class="nav-link" href="https://github.com/bennix/GenZenMuxAIOffice"
             >Source on GitHub ↗</a
@@ -1588,7 +1673,8 @@
             <h2>让文档、表格与演示文稿，拥有同一个 AI 工作台。</h2>
             <p>
               一款独立的 macOS、Windows 与 Linux 办公应用。API Key 只保存在本机；文本生成与
-              PPT、Word 配图统一通过 ZenMux 调用。
+              PPT、Word 配图统一通过 ZenMux 调用。v0.6.100 在 Word、Markdown 与 PDF
+              中加入引导式研究工作台。
             </p>
             <div class="downloads">
               <a
@@ -1621,6 +1707,41 @@
               10/11 x64 · 暂未 Authenticode 签名，SmartScreen 可能提示未知发布者<br />Ubuntu：22.04
               / 24.04 x86_64 DEB<br />Linux：x86_64 RPM · Fedora / RHEL 兼容发行版与 openSUSE
             </div>
+          </div>
+        </section>
+
+        <section class="release-spotlight" id="whats-new" aria-label="v0.6.100 研究工作台">
+          <div class="section-kicker">v0.6.100 · Research studio</div>
+          <h2>先说明要做什么，报告边写边出现，再放进文档。</h2>
+          <p>
+            Word、Markdown 与 PDF 现在共用同一个研究工作台。一次只做一种事：深度研究，或科研导师。
+            进度从点击后就写进报告区，正式报告按段落流式出现，并直接渲染 Markdown 与
+            LaTeX。满意后写入当前文档，或发送到另一个已经打开的文件。
+          </p>
+          <div class="release-steps">
+            <article>
+              <span>01</span>
+              <h3>说明要做什么</h3>
+              <p>
+                深度研究写下具体问题，系统拆成检索问句，结合当前文档核对还缺什么证据。科研导师则选择一种技能，阅读文档；如果右边已有报告，会一起作为证据，也可以再改一版。
+              </p>
+            </article>
+            <article>
+              <span>02</span>
+              <h3>在右边看报告</h3>
+              <p>
+                拆问、检索和核对不会只停在角落状态栏。报告区立刻显示进度，随后换成流式正文。公式、列表和来源按
+                Markdown 与 LaTeX 渲染，也可以切回编辑。
+              </p>
+            </article>
+            <article>
+              <span>03</span>
+              <h3>放进文档</h3>
+              <p>
+                Word 写入正文，Markdown 插到光标处，PDF
+                记到当前页。也可以用已有的发送通路，把报告交给另一个已经打开的文件。报告完成前，放进文档的入口保持不可用。
+              </p>
+            </article>
           </div>
         </section>
 
@@ -2121,6 +2242,23 @@
               PDF；编剧入口统一放在 Word 与 Markdown，Excel 不再提供编剧工作台。
             </p>
           </article>
+          <article class="feature">
+            <span class="feature-num">40</span>
+            <h3>引导式深度研究</h3>
+            <p>
+              Word、Markdown 与 PDF
+              的研究工作台按三步引导：说明问题、看报告、放进文档。检索先拆问句，再核对缺口，并在报告末尾附上来源。进度和正文都出现在同一块报告区，Markdown
+              与 LaTeX 直接渲染。
+            </p>
+          </article>
+          <article class="feature">
+            <span class="feature-num">41</span>
+            <h3>科研导师改写</h3>
+            <p>
+              同一工作台可切换到科研导师。选择技能后，它阅读当前文档；若深度研究已经写出报告，会把报告一起当作证据再整理一版。结果可写入
+              Word 正文、Markdown 光标处或 PDF 当前页，也可发送到其他已打开文件。
+            </p>
+          </article>
         </section>
 
         <section class="native-contrast" aria-label="ZenOffice 与普通 AI 办公套壳的核心差异">
@@ -2403,6 +2541,8 @@
                 <li>中英文审稿报告</li>
                 <li>AI 配图与本地图片插入</li>
                 <li>AI 编剧：构思、人物、大纲、场景、对白、剧集策划、改编与诊断</li>
+                <li>研究工作台：深度研究拆问、检索并流式写出带来源的报告</li>
+                <li>科研导师按技能改写；报告写入正文，或发送到其他已打开文件</li>
                 <li>GB/T 9704 公文排版及 AI 起草、润色与检查</li>
                 <li>分页打印预览与系统原生打印</li>
               </ul>
@@ -2543,6 +2683,8 @@
                 <li>Markdown 转 Word</li>
                 <li>AI 附件与联网检索</li>
                 <li>AI 编剧建议稿编辑与安全追加</li>
+                <li>研究工作台与 Word 相同；报告按 Markdown 插入光标处</li>
+                <li>深度研究与科研导师的报告支持 Markdown 与 LaTeX 预览</li>
                 <li>Pandoc 兼容引用键与科研文献库</li>
                 <li>与 PDF 导出一致的分页打印预览和系统打印</li>
               </ul>
@@ -2585,6 +2727,7 @@
                 <li>委员意见、主席结论及完整报告均支持复制与 @Connect，且不会修改原 PDF</li>
                 <li>完整报告按钮整块可点击，并明确显示已复制、已发送或失败状态</li>
                 <li>PDF AI 回复可通过 @Connect 发送到 Word、Excel、PPT 或 Markdown</li>
+                <li>研究工作台：报告流式显示，可记到当前页，或发送到其他已打开文件</li>
                 <li>普通附件在本机解析，失败重试时保留原附件</li>
                 <li>页眉、页脚与自动页码</li>
                 <li>功能区移除编辑文字、编辑图片和公式插入入口</li>
