@@ -273,6 +273,28 @@ export function DesignTab({
           <button
             className="rb-big"
             disabled={!hasDoc}
+            title="Deep Searcher · 拆解问题、检索来源并写报告"
+            onClick={() => document.dispatchEvent(new Event('zenoffice:open-deep-research'))}
+          >
+            <span className="rb-big-icon">
+              <IconTheme size={BIG} />
+            </span>
+            <span>深度研究</span>
+          </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
+            title="Supervisor Skills · 选题、论文结构、审稿与回复"
+            onClick={() => document.dispatchEvent(new Event('zenoffice:open-supervisor'))}
+          >
+            <span className="rb-big-icon">
+              <IconTheme size={BIG} />
+            </span>
+            <span>科研导师</span>
+          </button>
+          <button
+            className="rb-big"
+            disabled={!hasDoc}
             title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
             onClick={() => document.dispatchEvent(new Event('zenoffice:open-less-ai-tone'))}
           >

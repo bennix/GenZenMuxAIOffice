@@ -54,5 +54,7 @@ export {
   type ShapeGalleryShape,
 } from './shape-gallery'
 export { ScreenwritingStudio } from './ScreenwritingStudio'
+export { ResearchStudio, type ResearchStudioMode } from './ResearchStudio'
+export { documentResearchMaterial } from './document-research-material'
 export { LessAiToneStudio } from './LessAiToneStudio'
 export { screenplayParagraphs } from './screenwriting'

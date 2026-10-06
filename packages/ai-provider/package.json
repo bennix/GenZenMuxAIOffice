@@ -7,7 +7,10 @@
   "description": "Multi-provider LLM streaming + one-shot chat client (Claude/Gemini/DeepSeek/OpenAI/custom), shared by AI Docs and future apps (Excel / PPT)",
   "exports": {
     ".": "./src/index.ts",
-    "./screenwriting": "./src/screenwriting.ts"
+    "./screenwriting": "./src/screenwriting.ts",
+    "./deep-research": "./src/deep-research.ts",
+    "./supervisor": "./src/supervisor.ts",
+    "./research-skill": "./src/research-skill.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

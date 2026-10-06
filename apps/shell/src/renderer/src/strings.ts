@@ -4,6 +4,8 @@ export const strings = {
     // Sidebar navigation
     navRecent: '最近',
     navStarred: '收藏',
+    navDeepResearch: '深度研究',
+    navSupervisor: '科研导师',
     navCloud: 'ZenMux Projects',
     cloudSubtitle: '在网页端用 ZenMux AI 创建的项目。编辑在浏览器中继续——点击任意项目即可打开。',
     cloudSearchPlaceholder: '搜索 {n} 个项目…',
@@ -167,6 +169,8 @@ export const strings = {
   en: {
     navRecent: 'Recent',
     navStarred: 'Starred',
+    navDeepResearch: 'Deep Research',
+    navSupervisor: 'Research Mentor',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Projects created on the web with ZenMux AI. Editing continues in your browser — click any project to open it.',
@@ -327,6 +331,8 @@ export const strings = {
     // Sidebar navigation
     navRecent: '最近使用',
     navStarred: 'お気に入り',
+    navDeepResearch: '深層リサーチ',
+    navSupervisor: '研究メンター',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Web で ZenMux AI を使って作成したプロジェクト。編集はブラウザで続行します。クリックで開きます。',
@@ -501,6 +507,8 @@ export const strings = {
     // Sidebar navigation
     navRecent: '최근 사용',
     navStarred: '즐겨찾기',
+    navDeepResearch: '심층 연구',
+    navSupervisor: '연구 멘토',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'ZenMux AI로 웹에서 만든 프로젝트입니다. 편집은 브라우저에서 계속됩니다. 프로젝트를 클릭하면 열립니다.',
@@ -671,6 +679,8 @@ export const strings = {
     // Sidebar navigation
     navRecent: 'Récents',
     navStarred: 'Favoris',
+    navDeepResearch: 'Recherche approfondie',
+    navSupervisor: 'Mentor de recherche',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       "Projets créés sur le web avec ZenMux AI. L'édition continue dans votre navigateur — cliquez sur un projet pour l'ouvrir.",
@@ -845,6 +855,8 @@ export const strings = {
     // Sidebar navigation
     navRecent: 'Zuletzt verwendet',
     navStarred: 'Favoriten',
+    navDeepResearch: 'Tiefenrecherche',
+    navSupervisor: 'Forschungsmentor',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Mit ZenMux AI im Web erstellte Projekte. Die Bearbeitung läuft im Browser weiter – klicken Sie auf ein Projekt, um es zu öffnen.',
@@ -1022,6 +1034,8 @@ export const strings = {
     // Sidebar navigation
     navRecent: 'Recientes',
     navStarred: 'Destacados',
+    navDeepResearch: 'Investigación profunda',
+    navSupervisor: 'Mentor de investigación',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Proyectos creados en la web con ZenMux AI. La edición continúa en tu navegador: haz clic en un proyecto para abrirlo.',
@@ -1198,6 +1212,8 @@ export const strings = {
     // Sidebar navigation
     navRecent: 'ล่าสุด',
     navStarred: 'รายการโปรด',
+    navDeepResearch: 'การวิจัยเชิงลึก',
+    navSupervisor: 'ที่ปรึกษาวิจัย',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'โปรเจกต์ที่สร้างบนเว็บด้วย ZenMux AI แก้ไขต่อได้ในเบราว์เซอร์ — คลิกโปรเจกต์เพื่อเปิด',
@@ -1367,6 +1383,8 @@ export const strings = {
     // Sidebar navigation
     navRecent: 'Terbaru',
     navStarred: 'Berbintang',
+    navDeepResearch: 'Riset mendalam',
+    navSupervisor: 'Mentor riset',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Proyek yang dibuat di web dengan ZenMux AI. Pengeditan berlanjut di browser — klik proyek untuk membukanya.',
@@ -1539,6 +1557,8 @@ export const strings = {
     // Sidebar navigation
     navRecent: 'Недавние',
     navStarred: 'Избранное',
+    navDeepResearch: 'Глубокое исследование',
+    navSupervisor: 'Научный наставник',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Проекты, созданные в вебе с ZenMux AI. Редактирование продолжается в браузере — нажмите на проект, чтобы открыть его.',
@@ -1711,6 +1731,8 @@ export const strings = {
     // Sidebar navigation
     navRecent: 'الأخيرة',
     navStarred: 'المفضلة',
+    navDeepResearch: 'بحث معمّق',
+    navSupervisor: 'مرشد بحثي',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'مشاريع أُنشئت على الويب باستخدام ZenMux AI. يستمر التحرير في المتصفح — انقر على أي مشروع لفتحه.',
@@ -1880,6 +1902,8 @@ export const strings = {
   pt: {
     navRecent: 'Recentes',
     navStarred: 'Favoritos',
+    navDeepResearch: 'Pesquisa profunda',
+    navSupervisor: 'Mentor de pesquisa',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Projetos criados na web com o ZenMux AI. A edição continua no navegador — clique em um projeto para abri-lo.',
@@ -2043,6 +2067,8 @@ export const strings = {
   it: {
     navRecent: 'Recenti',
     navStarred: 'Preferiti',
+    navDeepResearch: 'Ricerca approfondita',
+    navSupervisor: 'Mentore di ricerca',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Progetti creati sul web con ZenMux AI. La modifica continua nel browser: fai clic su un progetto per aprirlo.',
@@ -2206,6 +2232,8 @@ export const strings = {
   pl: {
     navRecent: 'Ostatnie',
     navStarred: 'Ulubione',
+    navDeepResearch: 'Dogłębne badanie',
+    navSupervisor: 'Mentor badawczy',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Projekty utworzone w sieci za pomocą ZenMux AI. Edycja jest kontynuowana w przeglądarce — kliknij projekt, aby go otworzyć.',
@@ -2368,6 +2396,8 @@ export const strings = {
   nl: {
     navRecent: 'Recent',
     navStarred: 'Favorieten',
+    navDeepResearch: 'Diepgaand onderzoek',
+    navSupervisor: 'Onderzoeksmentor',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Projecten gemaakt op het web met ZenMux AI. Bewerken gaat verder in je browser — klik op een project om het te openen.',
@@ -2531,6 +2561,8 @@ export const strings = {
   ms: {
     navRecent: 'Terkini',
     navStarred: 'Berbintang',
+    navDeepResearch: 'Penyelidikan mendalam',
+    navSupervisor: 'Mentor penyelidikan',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'Projek yang dicipta di web dengan ZenMux AI. Penyuntingan diteruskan dalam pelayar — klik projek untuk membukanya.',
@@ -2693,6 +2725,8 @@ export const strings = {
   he: {
     navRecent: 'אחרונים',
     navStarred: 'מועדפים',
+    navDeepResearch: 'מחקר מעמיק',
+    navSupervisor: 'מנטור מחקר',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'פרויקטים שנוצרו באינטרנט עם ZenMux AI. העריכה נמשכת בדפדפן — לחצו על פרויקט כדי לפתוח אותו.',
@@ -2851,6 +2885,8 @@ export const strings = {
   hi: {
     navRecent: 'हाल के',
     navStarred: 'तारांकित',
+    navDeepResearch: 'गहन शोध',
+    navSupervisor: 'शोध मेंटर',
     navCloud: 'ZenMux Projects',
     cloudSubtitle:
       'ZenMux AI के साथ वेब पर बनाए गए प्रोजेक्ट। संपादन ब्राउज़र में जारी रहता है — खोलने के लिए किसी प्रोजेक्ट पर क्लिक करें।',
@@ -3014,6 +3050,8 @@ export const strings = {
   'zh-TW': {
     navRecent: '最近',
     navStarred: '收藏',
+    navDeepResearch: '深度研究',
+    navSupervisor: '科研導師',
     navCloud: 'ZenMux Projects',
     cloudSubtitle: '在網頁端用 ZenMux AI 建立的專案。編輯在瀏覽器中繼續——點擊任意專案即可開啟。',
     cloudSearchPlaceholder: '搜尋 {n} 個專案…',

@@ -17,6 +17,7 @@ import sendEnterOn from '../assets/send-enter-on.png'
 import sendEnterOff from '../assets/send-enter-off.png'
 import sendStop from '../assets/send-stop.png'
 import { createPdfSkill } from './pdf-skill'
+import { createDocumentResearchSkill } from '@genoffice/ai-provider/research-skill'
 import { createFilesSkill } from './files-skill'
 import { mergeAttachmentResult } from './attachment-state'
 import type { PdfAiRegionContext } from './region-context'
@@ -215,6 +216,26 @@ export function AiPanel({
       transport: createElectronTransport(() => settingsRef.current!),
       skill: composeSkills('pdf+files', '', [
         createPdfSkill(deps),
+        createDocumentResearchSkill(
+          {
+            readDocument: async () => {
+              const index = await apiRef.current.searchIndex()
+              if (!index) return ''
+              return index
+                .map((page, i) => `[Page ${i + 1}]\n${page.text}`)
+                .join('\n\n')
+                .slice(0, 12000)
+            },
+            search: async (query) => (await window.pdfApi.webSearch(query, 4)).results,
+            send: async (prompt, signal) => {
+              if (signal.aborted) throw new DOMException('已停止。', 'AbortError')
+              const settings = settingsRef.current
+              if (!settings) return { ok: false, error: '请先配置 AI。' }
+              return window.pdfApi.aiChat({ settings, ...prompt })
+            },
+          },
+          { writeBack: 'chat' },
+        ),
         createFilesSkill(() => availableAttachmentsRef.current),
       ]),
       systemSuffix: () => aiLangDirective(langRef.current),

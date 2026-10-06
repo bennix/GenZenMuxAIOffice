@@ -86,8 +86,8 @@ export interface HomeApi {
   newSheet(opts?: { projectId?: string }): Promise<void>
   /** open a slides tab at its start screen (open-a-pptx) */
   newSlide(opts?: { projectId?: string }): Promise<void>
-  /** open a blank markdown editor tab */
-  newMarkdown(opts?: { projectId?: string }): Promise<void>
+  /** open a blank markdown editor tab; studio opens the research workspace */
+  newMarkdown(opts?: { projectId?: string; studio?: 'research' | 'supervisor' }): Promise<void>
   /** drop entries from the recent list (does not touch the files) */
   removeRecent(paths: string[]): Promise<void>
   /** reveal the file in Finder / Explorer */

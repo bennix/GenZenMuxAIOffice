@@ -1350,6 +1350,51 @@ export function Home() {
             <span className="nav-label">{t('navStarred')}</span>
             <span className="nav-count">{navCounts.starred}</span>
           </button>
+          <button
+            className="nav-item"
+            onClick={() =>
+              void window.aiOffice.newMarkdown({
+                ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
+                studio: 'research',
+              })
+            }
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.2" stroke="currentColor" strokeWidth="1.3" />
+              <path
+                d="M10.2 10.2L13.2 13.2"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="nav-label">{t('navDeepResearch')}</span>
+          </button>
+          <button
+            className="nav-item"
+            onClick={() =>
+              void window.aiOffice.newMarkdown({
+                ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
+                studio: 'supervisor',
+              })
+            }
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M3 3.2h7.2A2.8 2.8 0 0 1 13 6v6.2H5.8A2.8 2.8 0 0 1 3 9.4V3.2z"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M5.2 6.2h5.2M5.2 8.4h3.4"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="nav-label">{t('navSupervisor')}</span>
+          </button>
         </nav>
 
         {/* project sidebar */}

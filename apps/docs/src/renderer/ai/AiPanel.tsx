@@ -7,6 +7,7 @@ import {
   createResearchSkill,
   type AgentImage,
 } from '@genoffice/agent-core'
+import { createDocumentResearchSkill } from '@genoffice/ai-provider/research-skill'
 import type { AiSettings, AttachmentAddResult, AttachmentMeta } from '../../shared/ipc'
 import { ATTACHMENT_IMAGE_EXTS } from '../../shared/ipc'
 import type { PmNode } from '../editor/convert'
@@ -18,7 +19,12 @@ import { DOCS_AGENT_MAX_TURNS, DOCS_CONTINUE_INSTRUCTION } from './continuation'
 import { createFilesSkill } from './files-skill'
 import { createElectronTransport } from './transport'
 import { useI18n, t as tModule, aiLangDirective, type StringKey } from '../i18n/locale'
-import { ConnectButton, copyTextToClipboard, Markdown } from '@genoffice/ui'
+import {
+  ConnectButton,
+  copyTextToClipboard,
+  documentResearchMaterial,
+  Markdown,
+} from '@genoffice/ui'
 import { removeConnectCommand } from '@genoffice/electron-utils/connect'
 import { appendLocalMemoryContext } from '@genoffice/project-store/knowledge-context'
 import { AiComposer, AiTypingIndicator } from '@genoffice/ui'
@@ -556,6 +562,14 @@ export function AiPanel({
       maxTurns: DOCS_AGENT_MAX_TURNS,
       skill: composeSkills('docs+files', '', [
         createResearchSkill(),
+        createDocumentResearchSkill({
+          readDocument: () => documentResearchMaterial(editorRef.current, true),
+          search: async (query) => (await window.desktop.webSearch(query, 4)).results,
+          send: async (prompt, signal) => {
+            if (signal.aborted) throw new DOMException('已停止。', 'AbortError')
+            return window.desktop.aiChat({ settings: settingsRef.current, ...prompt })
+          },
+        }),
         createDocsSkill(
           () => editorRef.current,
           numIds,

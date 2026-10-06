@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactElement, ReactNode } from 'react'
 import { AgentLoop, composeSkills, createResearchSkill } from '@genoffice/agent-core'
+import { createDocumentResearchSkill } from '@genoffice/ai-provider/research-skill'
 import type { AgentImage } from '@genoffice/agent-core'
 import type { AiSettings } from '@genoffice/ai-provider'
 import {
@@ -8,6 +9,7 @@ import {
   AiTypingIndicator,
   ConnectButton,
   copyTextToClipboard,
+  documentResearchMaterial,
   Markdown,
 } from '@genoffice/ui'
 import { removeConnectCommand } from '@genoffice/electron-utils/connect'
@@ -179,6 +181,19 @@ export function AiPanel({
         createResearchSkill(),
         createMarkdownSkill(() => depsRef.current.getEditor()),
         createSearchSkill(),
+        createDocumentResearchSkill({
+          readDocument: () => {
+            const editor = depsRef.current.getEditor()
+            return editor ? documentResearchMaterial(editor, true) : ''
+          },
+          search: async (query) => (await window.markdownApi.webSearch(query, 4)).results,
+          send: async (prompt, signal) => {
+            if (signal.aborted) throw new DOMException('已停止。', 'AbortError')
+            const settings = settingsRef.current
+            if (!settings) return { ok: false, error: '请先配置 AI。' }
+            return window.markdownApi.aiChat({ settings, ...prompt })
+          },
+        }),
         createFilesSkill(() => availableAttachmentsRef.current),
       ]),
       captureSnapshot: () => depsRef.current.getSnapshot(),

@@ -816,7 +816,10 @@ function grantAndTrack(wc: WebContents, openPath?: string | null): void {
   })
 }
 
-export function createMarkdownView(openPath?: string | null): WebContentsView {
+export function createMarkdownView(
+  openPath?: string | null,
+  studio?: 'research' | 'supervisor',
+): WebContentsView {
   registerMarkdownIpc()
   const view = new WebContentsView({
     webPreferences: {
@@ -827,8 +830,11 @@ export function createMarkdownView(openPath?: string | null): WebContentsView {
     },
   })
   grantAndTrack(view.webContents, openPath)
-  if (runtime.rendererUrl) void view.webContents.loadURL(runtime.rendererUrl)
-  else if (runtime.rendererFile) void view.webContents.loadFile(runtime.rendererFile)
+  if (runtime.rendererUrl) {
+    void view.webContents.loadURL(studio ? `${runtime.rendererUrl}#${studio}` : runtime.rendererUrl)
+  } else if (runtime.rendererFile) {
+    void view.webContents.loadFile(runtime.rendererFile, studio ? { hash: studio } : undefined)
+  }
   return view
 }
 

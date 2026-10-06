@@ -4,6 +4,23 @@ import { Markdown } from './Markdown'
 import { stripNestedMathDelimiters } from './latex'
 
 describe('Markdown', () => {
+  it('renders safe markdown links and drops unsafe urls', () => {
+    const html = renderToStaticMarkup(
+      <Markdown text={'见 [依据](https://example.com/a) 与 [坏](javascript:alert(1))'} />,
+    )
+    expect(html).toContain('href="https://example.com/a"')
+    expect(html).toContain('target="_blank"')
+    expect(html).toContain('>依据</a>')
+    expect(html).toContain('[坏](javascript:alert(1))')
+    expect(html).not.toContain('href="javascript:')
+  })
+
+  it('joins a link label that was wrapped onto the next line', () => {
+    const html = renderToStaticMarkup(<Markdown text={'[依据：E1、\nE2](https://example.com/a)'} />)
+    expect(html).toContain('href="https://example.com/a"')
+    expect(html).toContain('依据：E1、 E2')
+  })
+
   it('renders a GFM table as semantic table markup', () => {
     const html = renderToStaticMarkup(
       <Markdown text={'| 页码 | 内容 |\n| :--- | ---: |\n| 1 | **封面** |\n| 2 | 痛点 |'} />,

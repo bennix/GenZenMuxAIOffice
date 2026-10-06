@@ -24,7 +24,14 @@ import { SlashMenu, type SlashMenuHandle } from './components/SlashMenu'
 import { TableMenu } from './components/TableMenu'
 import { EquationDialog, type MarkdownEquationTarget } from './components/EquationDialog'
 import { MermaidDialog } from './components/MermaidDialog'
-import { ScreenwritingStudio, LessAiToneStudio, screenplayParagraphs, streamPromptText } from '@genoffice/ui'
+import {
+  ScreenwritingStudio,
+  LessAiToneStudio,
+  ResearchStudio,
+  documentResearchMaterial,
+  screenplayParagraphs,
+  streamPromptText,
+} from '@genoffice/ui'
 import { WechatExportDialog } from './components/WechatExportDialog'
 import { AiReviewCommitteeModal, documentImages } from './components/AiReviewCommitteeModal'
 import { AiPanel, ZenMuxMark, type AiPreset, type MarkdownAiDeps } from './ai/AiPanel'
@@ -99,6 +106,12 @@ export default function App() {
   const [equationTarget, setEquationTarget] = useState<MarkdownEquationTarget | undefined>()
   const [mermaidOpen, setMermaidOpen] = useState(false)
   const [screenwritingOpen, setScreenwritingOpen] = useState(false)
+  const [researchMode, setResearchMode] = useState<'research' | 'supervisor'>(() =>
+    window.location.hash === '#supervisor' ? 'supervisor' : 'research',
+  )
+  const [researchOpen, setResearchOpen] = useState(
+    () => window.location.hash === '#research' || window.location.hash === '#supervisor',
+  )
   const [lessAiToneOpen, setLessAiToneOpen] = useState(false)
   const [infographicOpen, setInfographicOpen] = useState(false)
   const [mermaidTab, setMermaidTab] = useState<'pretty' | 'editorial' | 'wechat'>('pretty')
@@ -572,6 +585,14 @@ export default function App() {
         onReview={() => setReviewOpen(true)}
         onEssayReview={() => setEssayReviewOpen(true)}
         onScreenwriting={() => setScreenwritingOpen(true)}
+        onDeepResearch={() => {
+          setResearchMode('research')
+          setResearchOpen(true)
+        }}
+        onSupervisor={() => {
+          setResearchMode('supervisor')
+          setResearchOpen(true)
+        }}
         onLessAiTone={() => setLessAiToneOpen(true)}
         onTranslate={(language) => {
           const selection = editor && editor.state.selection.from !== editor.state.selection.to
@@ -707,6 +728,38 @@ export default function App() {
             if (!response.ok) throw new Error(response.error || 'AI 生成失败。')
             return response.content || ''
           }}
+        />
+      )}
+      {researchOpen && editor && (
+        <ResearchStudio
+          mode={researchMode}
+          onMode={setResearchMode}
+          getDocumentVersion={() => editor.state.doc}
+          initialSource={documentResearchMaterial(editor)}
+          onClose={() => setResearchOpen(false)}
+          connect={window.markdownApi}
+          onInsert={(text) =>
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(editor.state.doc.content.size, text, { contentType: 'markdown' })
+              .run()
+          }
+          generate={async (prompt) => {
+            const settings = await window.markdownApi.getAiSettings()
+            const response = await window.markdownApi.aiChat({ settings, ...prompt })
+            if (!response.ok) throw new Error(response.error || 'AI 生成失败。')
+            return response.content || ''
+          }}
+          search={async (query, signal) => {
+            if (signal.aborted) throw new DOMException('已停止。', 'AbortError')
+            const found = await window.markdownApi.webSearch(query, 4)
+            if (signal.aborted) throw new DOMException('已停止。', 'AbortError')
+            return found.results
+          }}
+          stream={(prompt, onDelta, signal) =>
+            streamPromptText(window.markdownApi, prompt, onDelta, signal)
+          }
         />
       )}
       {lessAiToneOpen && editor && (

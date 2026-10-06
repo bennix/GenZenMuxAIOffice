@@ -423,6 +423,7 @@ export const AI_CHANNELS = {
   streamChunk: 'ai:stream-chunk',
   streamCancel: 'ai:stream-cancel',
   imageSearch: 'ai:image-search',
+  webSearch: 'ai:web-search',
   fetchImage: 'ai:fetch-image',
 } as const
 
@@ -470,6 +471,16 @@ export interface PdfApi extends ConnectApi {
   exportImages(request: ExportImagesRequest): Promise<ExportImagesResult>
   /** Web image search for AI tools (app-wide ai:image-search handler) */
   imageSearch(query: string, maxResults?: number): Promise<ImageSearchResponse>
+  /** Web search for deep research (app-wide ai:web-search handler) */
+  webSearch(
+    query: string,
+    maxResults?: number,
+  ): Promise<{
+    results: Array<{ title: string; url: string; snippet: string; publishedAt?: string }>
+    answer?: string
+    method: string
+    error?: string
+  }>
   /** Download an image URL in the main process (SSRF-guarded, avoids CORS); null on failure */
   fetchImage(url: string): Promise<{ base64: string; mime: string } | null>
   /** AI image generation via ZenMux; returns a downloadable URL or an error message */

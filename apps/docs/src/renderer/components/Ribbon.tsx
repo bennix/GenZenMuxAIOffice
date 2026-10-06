@@ -1,6 +1,13 @@
 import { ArtFlowStudio } from './ArtFlowStudio'
 import { GongwenStudio } from './GongwenStudio'
-import { ScreenwritingStudio, LessAiToneStudio, screenplayParagraphs, streamPromptText } from '@genoffice/ui'
+import {
+  ScreenwritingStudio,
+  LessAiToneStudio,
+  ResearchStudio,
+  documentResearchMaterial,
+  screenplayParagraphs,
+  streamPromptText,
+} from '@genoffice/ui'
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { ChainedCommands, Editor } from '@tiptap/core'
@@ -738,6 +745,8 @@ function RibbonInner({
   const [artFlowMounted, setArtFlowMounted] = useState(false)
   const [gongwenOpen, setGongwenOpen] = useState(false)
   const [screenwritingOpen, setScreenwritingOpen] = useState(false)
+  const [researchMode, setResearchMode] = useState<'research' | 'supervisor'>('research')
+  const [researchOpen, setResearchOpen] = useState(false)
   const [lessAiToneOpen, setLessAiToneOpen] = useState(false)
   useEffect(() => {
     const openArt = () => {
@@ -746,15 +755,27 @@ function RibbonInner({
     }
     const openGongwen = () => setGongwenOpen(true)
     const openScreenwriting = () => setScreenwritingOpen(true)
+    const openResearch = () => {
+      setResearchMode('research')
+      setResearchOpen(true)
+    }
+    const openSupervisor = () => {
+      setResearchMode('supervisor')
+      setResearchOpen(true)
+    }
     const openLessAiTone = () => setLessAiToneOpen(true)
     document.addEventListener('zenoffice:open-less-ai-tone', openLessAiTone)
     document.addEventListener('zenoffice:open-screenwriting', openScreenwriting)
+    document.addEventListener('zenoffice:open-deep-research', openResearch)
+    document.addEventListener('zenoffice:open-supervisor', openSupervisor)
     document.addEventListener('zenoffice:open-loveart', openArt)
     document.addEventListener('zenoffice:open-gongwen', openGongwen)
     return () => {
       document.removeEventListener('zenoffice:open-loveart', openArt)
       document.removeEventListener('zenoffice:open-gongwen', openGongwen)
       document.removeEventListener('zenoffice:open-screenwriting', openScreenwriting)
+      document.removeEventListener('zenoffice:open-deep-research', openResearch)
+      document.removeEventListener('zenoffice:open-supervisor', openSupervisor)
       document.removeEventListener('zenoffice:open-less-ai-tone', openLessAiTone)
     }
   }, [])
@@ -1546,6 +1567,41 @@ function RibbonInner({
             if (!response.ok) throw new Error(response.error || 'AI 生成失败。')
             return response.content || ''
           }}
+        />
+      )}
+      {researchOpen && (
+        <ResearchStudio
+          mode={researchMode}
+          onMode={setResearchMode}
+          getDocumentVersion={() => editor.state.doc}
+          initialSource={documentResearchMaterial(editor)}
+          onClose={() => setResearchOpen(false)}
+          connect={window.desktop}
+          onInsert={(text) =>
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(
+                editor.state.doc.content.size,
+                screenplayParagraphs(text, 'docParagraph'),
+              )
+              .run()
+          }
+          generate={async (prompt) => {
+            const settings = await window.desktop.getAiSettings()
+            const response = await window.desktop.aiChat({ settings, ...prompt })
+            if (!response.ok) throw new Error(response.error || 'AI 生成失败。')
+            return response.content || ''
+          }}
+          search={async (query, signal) => {
+            if (signal.aborted) throw new DOMException('已停止。', 'AbortError')
+            const found = await window.desktop.webSearch(query, 4)
+            if (signal.aborted) throw new DOMException('已停止。', 'AbortError')
+            return found.results
+          }}
+          stream={(prompt, onDelta, signal) =>
+            streamPromptText(window.desktop, prompt, onDelta, signal)
+          }
         />
       )}
       {lessAiToneOpen && (

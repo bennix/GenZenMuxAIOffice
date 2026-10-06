@@ -310,8 +310,8 @@ export class TabManager {
     return id
   }
 
-  openMarkdownTab(openPath?: string): string {
-    const view = createMarkdownView(openPath)
+  openMarkdownTab(openPath?: string, studio?: 'research' | 'supervisor'): string {
+    const view = createMarkdownView(openPath, openPath ? undefined : studio)
     const id = `t${this.nextId++}`
     this.shellWindow.contentView.addChildView(view)
     view.setVisible(false)

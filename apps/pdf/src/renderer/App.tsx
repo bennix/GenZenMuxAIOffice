@@ -12,6 +12,7 @@ import { GlobalWorkerOptions, TextLayer, getDocument } from 'pdfjs-dist/legacy/b
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
 import { AiPanel, ZenMuxMark } from './ai/AiPanel'
+import { streamPromptText } from '@genoffice/ui'
 import { layoutRegionCaptures, splitSelectionAcrossPages } from './ai/region-context'
 import type { PageRegionSlice, PdfAiRegionContext } from './ai/region-context'
 import type { PdfAiDeps } from './ai/tools'
@@ -38,6 +39,7 @@ import type { OutlineNode } from './OutlinePanel'
 import { printPdf } from './print'
 import { PropertiesDialog } from './PropertiesDialog'
 import { PdfReviewCommitteeModal } from './PdfReviewCommitteeModal'
+import { PdfResearchStudio } from './PdfResearchStudio'
 import { SignatureDialog, fileToCanvas } from './SignatureDialog'
 import type { SignatureData } from './SignatureDialog'
 import { StampDialog } from './StampDialog'
@@ -1140,6 +1142,7 @@ export default function App() {
   /** One-shot prompt pushed by the ribbon AI buttons; the panel auto-runs it (docs preset pattern) */
   const [aiPreset, setAiPreset] = useState<{ text: string; nonce: number } | null>(null)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [researchOpen, setResearchOpen] = useState(false)
   const [aiRegionSelecting, setAiRegionSelecting] = useState(false)
   const [aiRegionDraft, setAiRegionDraft] = useState<PageRegionSlice[]>([])
   const [aiRegionContext, setAiRegionContext] = useState<PdfAiRegionContext | null>(null)
@@ -4439,6 +4442,22 @@ export default function App() {
                     </span>
                     <span>{lang === 'zh' || lang === 'zh-TW' ? 'AI 审稿' : 'AI Review'}</span>
                   </button>
+                  <button
+                    className="rb-big ai-entry"
+                    data-tip={
+                      lang === 'zh' || lang === 'zh-TW'
+                        ? '用这份 PDF 做深度研究，报告可记到当前页'
+                        : 'Deep research using this PDF'
+                    }
+                    onClick={() => setResearchOpen(true)}
+                  >
+                    <span className="rb-big-icon">
+                      <span className="ai-feature-icon" aria-hidden="true">
+                        研
+                      </span>
+                    </span>
+                    <span>{lang === 'zh' || lang === 'zh-TW' ? '深度研究' : 'Deep Research'}</span>
+                  </button>
                 </div>
               </div>
               <div className="ribbon-sep" />
@@ -6143,6 +6162,62 @@ export default function App() {
               language={lang}
               getSearchIndex={getSearchIndex}
               onClose={() => setReviewOpen(false)}
+            />
+          )}
+          {researchOpen && doc && (
+            <PdfResearchStudio
+              getSearchIndex={getSearchIndex}
+              getDocumentVersion={() => doc}
+              onClose={() => setResearchOpen(false)}
+              generate={async (prompt) => {
+                const settings = await window.pdfApi.getAiSettings()
+                const response = await window.pdfApi.aiChat({ settings, ...prompt })
+                if (!response.ok) throw new Error(response.error || 'AI 生成失败。')
+                return response.content || ''
+              }}
+              search={async (query, signal) => {
+                if (signal.aborted) throw new DOMException('已停止。', 'AbortError')
+                if (typeof window.pdfApi.webSearch !== 'function') {
+                  throw new Error('当前窗口还没有网页搜索，请完全退出后重新运行 npm run dev')
+                }
+                try {
+                  const found = await window.pdfApi.webSearch(query, 4)
+                  if (signal.aborted) throw new DOMException('已停止。', 'AbortError')
+                  if (found?.error && !found.results?.length) throw new Error(found.error)
+                  return found?.results ?? []
+                } catch (cause) {
+                  if (cause instanceof DOMException && cause.name === 'AbortError') throw cause
+                  const message = cause instanceof Error ? cause.message : String(cause)
+                  if (message.includes('No handler registered')) {
+                    throw new Error('网页搜索还是旧进程，请完全退出后重新运行 npm run dev')
+                  }
+                  throw cause instanceof Error ? cause : new Error(message)
+                }
+              }}
+              stream={(prompt, onDelta, signal) =>
+                streamPromptText(window.pdfApi, prompt, onDelta, signal)
+              }
+              onInsert={(text) => {
+                if (readOnly) throw new Error('这份 PDF 是只读的，不能写入注释。')
+                if (curOrigIdx < 0) throw new Error('没有可写入的页面。')
+                const contents =
+                  text.length > 8000 ? `${text.slice(0, 8000)}\n\n…（注释已截断）` : text
+                pushUndo()
+                setDrawings((prev) => [
+                  ...prev,
+                  {
+                    id: newId(),
+                    input: {
+                      kind: 'note',
+                      pageIndex: curOrigIdx,
+                      color: drawColor,
+                      at: [36, Math.max(36, pageGeom(curOrigIdx).ph - 36)],
+                      contents,
+                    },
+                  },
+                ])
+                return true
+              }}
             />
           )}
         </div>

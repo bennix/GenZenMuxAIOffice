@@ -1829,9 +1829,9 @@ function newSlideTab(): void {
   }
 }
 
-function newMarkdownTab(): void {
+function newMarkdownTab(studio?: 'research' | 'supervisor'): void {
   try {
-    tabManager?.openMarkdownTab()
+    tabManager?.openMarkdownTab(undefined, studio)
   } catch (err) {
     surfaceNewTabError(err)
   }
@@ -1953,12 +1953,17 @@ function registerHomeIpc(): void {
     newSlideTab()
   })
 
-  ipcMain.handle(HOME_CHANNELS.newMarkdown, (_event, opts?: { projectId?: string }) => {
-    if (opts?.projectId && opts.projectId !== 'default') {
-      pendingNewFileProject.set('markdown', opts.projectId)
-    }
-    newMarkdownTab()
-  })
+  ipcMain.handle(
+    HOME_CHANNELS.newMarkdown,
+    (_event, opts?: { projectId?: string; studio?: string }) => {
+      if (opts?.projectId && opts.projectId !== 'default') {
+        pendingNewFileProject.set('markdown', opts.projectId)
+      }
+      const studio =
+        opts?.studio === 'research' || opts?.studio === 'supervisor' ? opts.studio : undefined
+      newMarkdownTab(studio)
+    },
+  )
 
   ipcMain.handle(HOME_CHANNELS.removeRecent, (_event, paths: unknown) => {
     removeRecentFiles(stringPaths(paths))

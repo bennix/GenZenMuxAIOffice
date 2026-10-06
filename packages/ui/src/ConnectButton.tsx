@@ -191,7 +191,7 @@ export function ConnectButton({
               </button>
             ))}
           </div>,
-          document.body,
+          rootRef.current?.closest('dialog') ?? document.body,
         )}
     </span>
   )

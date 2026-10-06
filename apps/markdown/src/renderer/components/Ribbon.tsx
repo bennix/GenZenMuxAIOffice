@@ -39,6 +39,8 @@ interface Props {
   onReview: () => void
   onEssayReview: () => void
   onScreenwriting: () => void
+  onDeepResearch: () => void
+  onSupervisor: () => void
   onLessAiTone: () => void
   aiOpen: boolean
   onToggleAi: () => void
@@ -166,6 +168,8 @@ export function Ribbon({
   onReview,
   onEssayReview,
   onScreenwriting,
+  onDeepResearch,
+  onSupervisor,
   onLessAiTone,
   aiOpen,
   onToggleAi,
@@ -361,6 +365,30 @@ export function Ribbon({
                 <span className="ai-feature-icon">✎</span>
               </span>
               <span>AI 编剧</span>
+            </button>
+            <button
+              type="button"
+              className="rb-big ai-entry"
+              disabled={off}
+              onClick={onDeepResearch}
+              aria-label="深度研究"
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon">研</span>
+              </span>
+              <span>深度研究</span>
+            </button>
+            <button
+              type="button"
+              className="rb-big ai-entry"
+              disabled={off}
+              onClick={onSupervisor}
+              aria-label="科研导师"
+            >
+              <span className="rb-big-icon">
+                <span className="ai-feature-icon">导</span>
+              </span>
+              <span>科研导师</span>
             </button>
             <button
               type="button"

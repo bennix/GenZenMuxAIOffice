@@ -9,7 +9,22 @@ import { renderLatexToHtml } from './latex'
  */
 
 const INLINE_RE =
-  /(`[^`\n]+`|\$\$[^$\n]+?\$\$|\$[^$\n]+?\$|\\\([^\n]+?\\\)|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)/g
+  /(\[[^\]\n]+\]\((?:https?:\/\/|mailto:)[^)\s]+\)|`[^`\n]+`|\$\$[^$\n]+?\$\$|\$[^$\n]+?\$|\\\([^\n]+?\\\)|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)/g
+
+/** AI replies often wrap a link label onto the next line. Join that into one link. */
+function joinBrokenMarkdownLinks(text: string): string {
+  return text
+    .split(/(```[\s\S]*?```|~~~[\s\S]*?~~~)/g)
+    .map((part, index) =>
+      index % 2 === 1
+        ? part
+        : part.replace(
+            /\[(?:[^[\]\n]|\n(?!\n)){0,500}\]\((?:https?:\/\/|mailto:)[^)\s]+\)/g,
+            (match) => match.replace(/\s*\n\s*/g, ' '),
+          ),
+    )
+    .join('')
+}
 
 function renderMath(tex: string, displayMode: boolean, key: number): ReactNode {
   try {
@@ -34,7 +49,15 @@ function renderInline(text: string): ReactNode[] {
     const i = m.index ?? 0
     if (i > last) out.push(text.slice(last, i))
     const tok = m[0] ?? ''
-    if (tok.startsWith('`')) out.push(<code key={key++}>{tok.slice(1, -1)}</code>)
+    if (tok.startsWith('[')) {
+      const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(tok)
+      const href = link?.[2] ?? ''
+      out.push(
+        <a key={key++} href={href} target="_blank" rel="noreferrer">
+          {renderInline(link?.[1] ?? tok)}
+        </a>,
+      )
+    } else if (tok.startsWith('`')) out.push(<code key={key++}>{tok.slice(1, -1)}</code>)
     else if (tok.startsWith('$$')) out.push(renderMath(tok.slice(2, -2), true, key++))
     else if (tok.startsWith('$')) out.push(renderMath(tok.slice(1, -1), false, key++))
     else if (tok.startsWith('\\(')) out.push(renderMath(tok.slice(2, -2), false, key++))
@@ -222,7 +245,7 @@ function parseBlocks(text: string): MdBlock[] {
 }
 
 export function Markdown({ text }: { text: string }): React.JSX.Element {
-  const normalizedText = normalizeAiMarkdownText(text)
+  const normalizedText = joinBrokenMarkdownLinks(normalizeAiMarkdownText(text))
   return (
     <div className="ai-md">
       {parseBlocks(normalizedText).map((b, i) => {

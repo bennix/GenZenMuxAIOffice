@@ -53,6 +53,57 @@
 .screenwriting-studio small {
   overflow-wrap: anywhere;
 }
+.research-sources {
+  margin: 0;
+  padding-left: 18px;
+  max-height: 140px;
+  overflow: auto;
+  color: var(--text-secondary);
+}
+.research-sources a {
+  color: var(--accent);
+}
+.research-report-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.research-report {
+  min-height: 280px;
+  max-height: 480px;
+  overflow: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.6;
+}
+.research-report-empty {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.research-report a {
+  color: var(--accent);
+}
+.screenwriting-studio button.research-connect {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--surface);
+}
+.research-report .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
 @media (max-width: 700px) {
   .screenwriting-columns {
     grid-template-columns: 1fr;

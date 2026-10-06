@@ -31,6 +31,9 @@ describe('PDF AI review committee', () => {
   it('exposes a PDF ribbon entry and mounts the read-only report modal', () => {
     expect(app).toContain('<IconAiReview />')
     expect(app).toContain('setReviewOpen(true)')
+    expect(app).toContain('setResearchOpen(true)')
+    expect(app).toContain('<PdfResearchStudio')
+    expect(app).toContain("kind: 'note'")
     expect(app).toContain('<PdfReviewCommitteeModal')
     expect(app).toContain('getSearchIndex={getSearchIndex}')
   })
