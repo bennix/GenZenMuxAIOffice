@@ -73,4 +73,14 @@ export {
 } from './officecli-runtime'
 export { publishCompatibleOffice } from './office-compatible-export'
 
-export { auditOfficeLayout, compareLayoutPixels, type AuditPixels, type OfficeLayoutAudit, type LayoutPageAudit, type LayoutRegion } from './office-layout-audit'
+export {
+  auditOfficeLayout,
+  compareLayoutPixels,
+  type AuditPixels,
+  type OfficeLayoutAudit,
+  type LayoutPageAudit,
+  type LayoutRegion,
+} from './office-layout-audit'
+
+export { installLibreOfficeWithProgress } from './libreoffice-install-progress'
+export { resolveLayoutExecutable } from './office-layout-audit'

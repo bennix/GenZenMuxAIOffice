@@ -1,4 +1,9 @@
-import { auditOfficeLayout, publishCompatibleOffice } from '@genoffice/electron-utils'
+import {
+  auditOfficeLayout,
+  publishCompatibleOffice,
+  installLibreOfficeWithProgress,
+  resolveLayoutExecutable,
+} from '@genoffice/electron-utils'
 /**
  * ZenOffice Slides main process — pptx parsing/render-tree building/edit application/saving all live
  * here (Node side). The renderer only gets plain-data RenderSlide; edit intents are sent back
@@ -27,7 +32,7 @@ import { exportVisualPptx } from './officecli-visual-export'
 import { copyFile, readFile, writeFile, rm, stat, mkdir, open } from 'node:fs/promises'
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
-import { userInfo } from 'node:os'
+import { homedir, userInfo } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import {
   aboutMenuLabel,
@@ -3964,7 +3969,31 @@ export function registerSlidesIpc(): void {
               const image = nativeImage.createFromBuffer(png)
               return { ...image.getSize(), data: image.toBitmap() }
             }
-            const initial = await auditOfficeLayout(file, references, decode)
+            let initial = await auditOfficeLayout(file, references, decode)
+            if (initial.status === 'unavailable') {
+              const soffice = await resolveLayoutExecutable('soffice', [
+                join(homedir(), 'Applications/LibreOffice.app/Contents/MacOS/soffice'),
+                '/Applications/LibreOffice.app/Contents/MacOS/soffice',
+                '/opt/homebrew/bin/soffice',
+                ...(process.env.ProgramFiles
+                  ? [join(process.env.ProgramFiles, 'LibreOffice', 'program', 'soffice.exe')]
+                  : []),
+              ])
+              const available = await new Promise<boolean>((resolve) => {
+                execFile(soffice, ['--version'], { timeout: 15_000 }, (error) => resolve(!error))
+              })
+              if (!available) {
+                const installed = await installLibreOfficeWithProgress(
+                  dialogParent(),
+                  getUiLang().startsWith('zh'),
+                )
+                if (!installed)
+                  throw new Error(
+                    'LibreOffice installation failed or was canceled; please retry after installation',
+                  )
+                initial = await auditOfficeLayout(file, references, decode)
+              }
+            }
             const candidates = (op.candidates ?? []).filter((candidate) => {
               const element =
                 snapshot.deck.slides[candidate.slideIndex]?.elements[candidate.elementIndex]

@@ -1,7 +1,7 @@
 import { promisify } from 'node:util'
 import { execFile } from 'node:child_process'
 import { access, mkdtemp, readFile, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { basename, extname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -81,7 +81,10 @@ export function compareLayoutPixels(
   }
 }
 
-async function executable(command: string, candidates: string[]): Promise<string> {
+export async function resolveLayoutExecutable(
+  command: string,
+  candidates: string[],
+): Promise<string> {
   for (const candidate of candidates) {
     try {
       await access(candidate)
@@ -105,7 +108,8 @@ export async function auditOfficeLayout(
     if (!references.length || references.length > 500)
       throw new Error('No valid source page references')
     directory = await mkdtemp(join(tmpdir(), 'office-layout-'))
-    const soffice = await executable('soffice', [
+    const soffice = await resolveLayoutExecutable('soffice', [
+      join(homedir(), 'Applications/LibreOffice.app/Contents/MacOS/soffice'),
       '/Applications/LibreOffice.app/Contents/MacOS/soffice',
       '/opt/homebrew/bin/soffice',
       '/usr/bin/soffice',
@@ -113,11 +117,14 @@ export async function auditOfficeLayout(
         ? [join(process.env.ProgramFiles, 'LibreOffice', 'program', 'soffice.exe')]
         : []),
     ])
-    const poppler = await executable('pdftoppm', [
+    const poppler = await resolveLayoutExecutable('pdftoppm', [
       '/opt/homebrew/bin/pdftoppm',
       '/usr/bin/pdftoppm',
     ])
-    const pdfinfo = await executable('pdfinfo', ['/opt/homebrew/bin/pdfinfo', '/usr/bin/pdfinfo'])
+    const pdfinfo = await resolveLayoutExecutable('pdfinfo', [
+      '/opt/homebrew/bin/pdfinfo',
+      '/usr/bin/pdfinfo',
+    ])
     await run(
       soffice,
       [
