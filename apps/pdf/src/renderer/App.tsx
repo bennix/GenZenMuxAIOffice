@@ -6189,9 +6189,11 @@ export default function App() {
                   if (cause instanceof DOMException && cause.name === 'AbortError') throw cause
                   const message = cause instanceof Error ? cause.message : String(cause)
                   if (message.includes('No handler registered')) {
-                    throw new Error('网页搜索还是旧进程，请完全退出后重新运行 npm run dev')
+                    throw new Error('网页搜索还是旧进程，请完全退出后重新运行 npm run dev', {
+                      cause,
+                    })
                   }
-                  throw cause instanceof Error ? cause : new Error(message)
+                  throw cause instanceof Error ? cause : new Error(message, { cause })
                 }
               }}
               stream={(prompt, onDelta, signal) =>

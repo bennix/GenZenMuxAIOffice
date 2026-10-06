@@ -44,7 +44,9 @@ export async function loadSupervisorSkill(
     )
   } catch (cause) {
     if (signal?.aborted) throw cause
-    throw new Error('科研技能下载失败。请刷新 PDF 页面后再试；若仍失败，检查能否访问 GitHub。')
+    throw new Error('科研技能下载失败。请刷新 PDF 页面后再试；若仍失败，检查能否访问 GitHub。', {
+      cause,
+    })
   }
   if (!response.ok) throw new Error(`科研技能加载失败（${response.status}），请重试。`)
   const content = await response.text()

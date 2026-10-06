@@ -53,6 +53,72 @@
 .screenwriting-studio small {
   overflow-wrap: anywhere;
 }
+.research-steps {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+.research-steps li {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+}
+.research-steps li.is-current {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--accent-soft, var(--hover));
+}
+.research-modes {
+  display: flex;
+  gap: 8px;
+}
+.research-modes button[aria-selected='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft, var(--hover));
+}
+.research-hint,
+.research-next p,
+.research-actions-note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.research-next {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.research-material summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.research-material textarea {
+  width: 100%;
+  margin-top: 8px;
+}
+.research-guide {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+}
+.research-guide li + li {
+  margin-top: 8px;
+}
+.research-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.research-actions-note {
+  margin-right: auto;
+}
 .research-sources {
   margin: 0;
   padding-left: 18px;

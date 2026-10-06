@@ -82,6 +82,9 @@ export function ResearchStudio({
     dialog.current?.showModal()
   }, [])
   const shown = result || log
+  const step = busy ? 2 : result.trim() ? 3 : 1
+  const taskEntry = SUPERVISOR_TASKS.find(([id]) => id === task)
+  const sourceReady = source.trim().length > 0
 
   useEffect(() => {
     const box = editing ? reportRef.current : previewRef.current
@@ -232,10 +235,7 @@ export function ResearchStudio({
       <header>
         <div>
           <strong>研究工作台</strong>
-          <p>
-            使用当前选区，没有选区时使用全文。检索和导师结果插入 Word 或 Markdown 文档末尾 ·
-            沿用当前 AI 模型
-          </p>
+          <p>按下面三步做。报告出来后，可以{insertLabel}，或发送到已经打开的其他文件。</p>
         </div>
         {busy ? (
           <button onClick={() => abortRef.current?.abort()}>停止</button>
@@ -243,73 +243,113 @@ export function ResearchStudio({
           <button onClick={onClose}>返回文档</button>
         )}
       </header>
+      <ol className="research-steps" aria-label="使用步骤">
+        <li className={step === 1 ? 'is-current' : undefined}>1. 说明要做什么</li>
+        <li className={step === 2 ? 'is-current' : undefined}>2. 在右边看报告</li>
+        <li className={step === 3 ? 'is-current' : undefined}>3. 放进文档</li>
+      </ol>
       <div className="screenwriting-columns">
         <fieldset disabled={busy}>
-          <label>
-            工作方式
-            <select
-              value={mode}
-              onChange={(event) => onMode(event.target.value as ResearchStudioMode)}
+          <div className="research-modes" role="tablist" aria-label="工作方式">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'research'}
+              onClick={() => onMode('research')}
             >
-              <option value="research">深度研究</option>
-              <option value="supervisor">科研导师</option>
-            </select>
-          </label>
-          <label>
-            研究问题
-            <textarea
-              rows={3}
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              placeholder="想弄清的问题，例如：某种方法相对现有工作的缺口是什么"
-            />
-          </label>
-          <button disabled={!question.trim()} onClick={() => void research()}>
-            开始深度检索
-          </button>
-          {queries.length > 0 && (
-            <ul className="research-sources">
-              {queries.map((query) => (
-                <li key={query}>{query}</li>
-              ))}
-            </ul>
+              深度研究
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'supervisor'}
+              onClick={() => onMode('supervisor')}
+            >
+              科研导师
+            </button>
+          </div>
+          <p className="research-hint">
+            {mode === 'research'
+              ? '写一个具体问题。检索会拆成几个问句，结合当前文档，在右边写成报告。'
+              : '选一种导师技能。它会阅读当前文档；如果右边已有报告，会一起作为证据。'}
+          </p>
+          {mode === 'research' ? (
+            <>
+              <label>
+                研究问题
+                <textarea
+                  rows={3}
+                  value={question}
+                  onChange={(event) => setQuestion(event.target.value)}
+                  placeholder="例如：这种方法相对现有工作，缺的是什么？"
+                />
+              </label>
+              <button disabled={!question.trim()} onClick={() => void research()}>
+                开始深度检索
+              </button>
+              {queries.length > 0 && (
+                <ul className="research-sources">
+                  {queries.map((query) => (
+                    <li key={query}>{query}</li>
+                  ))}
+                </ul>
+              )}
+              {result.trim() && (
+                <div className="research-next">
+                  <p>报告已经在右边。可以把它放进文档，也可以换成导师再改一版。</p>
+                  <button type="button" onClick={() => onMode('supervisor')}>
+                    用导师改写
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <label>
+                导师技能
+                <select
+                  value={task}
+                  onChange={(event) => setTask(event.target.value as SupervisorTask)}
+                >
+                  {SUPERVISOR_TASKS.map(([id, label]) => (
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {taskEntry && <p className="research-hint">{taskEntry[2]}</p>}
+              <label>
+                补充要求（可选）
+                <textarea
+                  rows={2}
+                  value={instruction}
+                  onChange={(event) => setInstruction(event.target.value)}
+                  placeholder="受众、篇幅，或希望导师重点看的地方。不填也可以。"
+                />
+              </label>
+              <button
+                disabled={!instruction.trim() && !source.trim() && !result.trim()}
+                onClick={() => void applySkill()}
+              >
+                用导师技能整理
+              </button>
+              <small>首次使用会从 GitHub 加载该技能。来源：{SUPERVISOR_SOURCE}</small>
+            </>
           )}
-          <label>
-            导师技能
-            <select
-              value={task}
-              onChange={(event) => setTask(event.target.value as SupervisorTask)}
-            >
-              {SUPERVISOR_TASKS.map(([id, label]) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            补充要求
+          <details className="research-material">
+            <summary>
+              {sourceReady
+                ? `文档资料已读入 ${source.trim().length} 字，点开可修改`
+                : '还没有读入文档文字，点开可粘贴'}
+            </summary>
             <textarea
-              rows={2}
-              value={instruction}
-              onChange={(event) => setInstruction(event.target.value)}
-              placeholder="受众、篇幅、必须保留的结论，或希望导师重点看的地方"
+              rows={8}
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+              aria-label="当前选区或全文"
             />
-          </label>
-          <label>
-            当前选区或全文（可编辑，作为私人资料）
-            <textarea rows={8} value={source} onChange={(event) => setSource(event.target.value)} />
-          </label>
-          <button
-            disabled={!instruction.trim() && !source.trim() && !result.trim()}
-            onClick={() => void applySkill()}
-          >
-            用导师技能整理
-          </button>
-          <small>
-            导师技能首次使用时从 GitHub 加载 SKILL.md。来源：{SUPERVISOR_SOURCE}（固定版本
-            207bc6f）。 深度检索使用当前的网页搜索，并把打开的文档当作私人资料。
-          </small>
+          </details>
         </fieldset>
         <fieldset>
           <div className="research-report-head">
@@ -335,9 +375,11 @@ export function ResearchStudio({
               {shown.trim() ? (
                 <Markdown text={shown} />
               ) : (
-                <p className="research-report-empty">
-                  深度检索的报告会出现在这里，也可以再用导师技能改写。
-                </p>
+                <ol className="research-guide">
+                  <li>在左边写下问题，或切到「科研导师」选一种技能。</li>
+                  <li>点左边的按钮。进度和报告都会出现在这里。</li>
+                  <li>满意后，再{insertLabel}，或发送到其他已打开的文件。</li>
+                </ol>
               )}
             </div>
           )}
@@ -352,7 +394,10 @@ export function ResearchStudio({
               ))}
             </ul>
           )}
-          <div className="screenwriting-actions">
+          <div className="research-actions">
+            <span className="research-actions-note">
+              {result.trim() ? '报告已完成，选择放进哪里' : '报告完成后才能放进文档'}
+            </span>
             {connect && (
               <ConnectButton
                 api={connect}
