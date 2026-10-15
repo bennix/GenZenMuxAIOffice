@@ -2,7 +2,7 @@
 
 **ZenSuite | Commercial licensing, enterprise procurement and controlled-IP acquisition**
 
-Document version: 1.1 | Revised: 15 October 2026 | Language: English
+Document version: 1.1.1 | Revised: 15 October 2026 | Language: English
 
 **Commercial contact:** Xu Zhiping (bennix), [macdevsh@gmail.com](mailto:macdevsh@gmail.com)
 
@@ -241,7 +241,7 @@ Complete every field or mark it not applicable. This Schedule must be signed wit
 | MyIME | https://github.com/bennix/MyIME |
 | Astra AI Browser | https://github.com/bennix/AstraAIBrowser |
 
-**Associated Academic & Theoretical IP - background reference.** *General World Models: The Physics of Generative Video*, Zhiping Xu, Apress / Springer Nature, 2026; print ISBN 9798868831430 (979-8-8688-3143-0); electronic ISBN 979-8-8688-3144-7. Publisher reference: https://link.springer.com/book/10.1007/979-8-8688-3144-7.
+**Associated Academic & Theoretical IP - background reference.** *General World Models: The Physics of Generative Video*, Zhiping Xu, Apress / Springer Nature, 2026; print ISBN 9798868831430 (979-8-8688-3143-0); electronic ISBN 979-8-8688-3144-7. Publisher product page: [https://link.springer.com/book/10.1007/979-8-8688-3144-7](https://link.springer.com/book/10.1007/979-8-8688-3144-7). Persistent DOI: [https://doi.org/10.1007/979-8-8688-3144-7](https://doi.org/10.1007/979-8-8688-3144-7).
 
 **Grant scope.** The Licensor identifies this monograph as an associated theoretical reference for ZenSuite spatial-temporal modeling and multimodal generative-engine design. A publication citation does not establish that every product implements the book's concepts, prove ownership of general scientific theories, or imply endorsement by Apress or Springer Nature. The publisher agreement, author-retained rights, permissions and any included manuscript, figures, teaching materials or companion code must be identified in the Controlled-asset register before reproduction, sublicensing or transfer. No book publishing rights, publisher marks, third-party illustrations or exclusive rights over general principles are conveyed by this reference alone. Any specifically licensed author-controlled material requires a separately identified grant and acceptance deliverable.
 
