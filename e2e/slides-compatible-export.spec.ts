@@ -5,6 +5,8 @@ import { join } from 'node:path'
 import { launchShell, closeAndSaveVideo, waitForPageWithUrl } from './helpers'
 
 test('compatible PPT export preserves the editing session and publishes a visual audit report', async () => {
+  // Export polling allows two minutes; the test also needs time to launch and close Electron.
+  test.setTimeout(180_000)
   const directory = await mkdtemp(join(tmpdir(), 'compatible-e2e-'))
   const launched = await launchShell({
     onboardingSeen: true,
