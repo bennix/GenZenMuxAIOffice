@@ -1,8 +1,13 @@
 # ZenOffice
 
+> **License / 许可:** Original code authored by bennix: **GPL-3.0-only**.
+> Upstream and third-party material retain their original terms and notices.
+> See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md) for the current licensing scope.
+
+
 **The world's first full-featured open-source AI Office suite.**
 
-[![License: Apache-2.0](https://img.shields.io/github/license/bennix/GenZenMuxAIOffice)](LICENSE)
+[![License: GPL-3.0-only](https://img.shields.io/github/license/bennix/GenZenMuxAIOffice)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/bennix/GenZenMuxAIOffice)](https://github.com/bennix/GenZenMuxAIOffice/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/bennix/GenZenMuxAIOffice/total)](https://github.com/bennix/GenZenMuxAIOffice/releases)
 [![GitHub stars](https://img.shields.io/github/stars/bennix/GenZenMuxAIOffice?style=flat)](https://github.com/bennix/GenZenMuxAIOffice/stargazers)
@@ -18,7 +23,8 @@ layer.
 
 This repository is a derivative of the upstream
 [`genspark-ai/genoffice`](https://github.com/genspark-ai/genoffice) project and
-retains its Apache-2.0 license. This branch replaces the AI integration with
+preserves the upstream Apache-2.0 terms and notices. Original code authored by
+bennix in this branch is GPL-3.0-only (see LICENSING.md). This branch replaces the AI integration with
 ZenMux, adds encrypted local API-key/model settings, cross-editor AI workflows
 and source-preserving message copy, expands equations, Mermaid, review and
 spreadsheet-analysis features, and provides rebuilt macOS, Windows, Ubuntu DEB, and Linux RPM releases.
@@ -229,7 +235,8 @@ editor didn't touch survives the round trip untouched.
 ## FAQ
 
 **Is ZenOffice free?**
-Yes. ZenOffice is free and open-source under the Apache-2.0 license — no
+Yes. ZenOffice is free and open-source. Original code authored by bennix is
+GPL-3.0-only; upstream and third-party components retain their own terms. There is no
 trial, no paid tier for the apps themselves.
 
 **Can ZenOffice open Microsoft Word, Excel, and PowerPoint files?**
@@ -286,9 +293,11 @@ Caladea, Noto CJK subsets) are OFL/Apache.
 
 ## License
 
-ZenOffice is licensed under the [Apache License 2.0](LICENSE), with one
-exception: the upstream `ee/` directory retains the separate terms stated in
-[its license](ee/LICENSE).
+Original code authored by bennix is licensed under [GPL-3.0-only](LICENSE).
+See [LICENSING.md](LICENSING.md) for scope. Upstream GenOffice code retains its
+[Apache-2.0 terms and copyright notice](LICENSES/previous-root-LICENSE.txt).
+The upstream `ee/` directory retains the separate terms stated in
+[its license](ee/LICENSE); this GPL declaration does not relicense that directory.
 
 The upstream GenOffice and Genspark names and logos are trademarks of
 Mainfunc, Inc. ZenOffice uses its own name and visual identity for this
