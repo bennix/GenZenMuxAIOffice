@@ -103,6 +103,7 @@ export function registerPdfEnginesIpc(access: {
                 (typeof cause === 'string' && /^[A-Z_]+$/.test(cause) ? cause : '')
               throw new Error(
                 `保真翻译无法连接 AI 服务（${settings.provider} / ${config.model}）${code ? `：${code}` : ''}。请检查设置中的服务地址、网络连接和系统代理；若连接超时请稍后重试。原 PDF 未修改。`,
+                { cause: error },
               )
             }
             if (!response.ok || !response.content)
@@ -142,7 +143,7 @@ export function registerPdfEnginesIpc(access: {
   )
   ipcMain.handle(PDF_CHANNELS.craftOpen, (e, path: string, id: string, password?: string) => {
     granted(e.sender, path)
-    return job(e.sender, id, async (signal, report) => {
+    return job(e.sender, id, async (signal, _report) => {
       const root = await mkdtemp(join(app.getPath('temp'), 'zenoffice-pdfcraft-'))
       const copy = join(root, basename(path))
       await copyFile(path, copy)

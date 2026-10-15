@@ -2,7 +2,7 @@ import { MissingPdfFontError } from './pdf-font-error'
 import { readFileSync } from 'node:fs'
 import { PDFDict, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } from 'pdf-lib'
 import { fontCoversText, missingFontCharacters } from './font-cmap'
-import { findNimbusRomanFont, bundledFontPath, pickBundledFallback } from './font-bundle'
+import { findNimbusRomanFont, bundledFontPath } from './font-bundle'
 import { fontFamilyKey, findSystemFont, isTruetype } from './font-locate'
 import { identityCffCharset, subsetTtf } from './font-subset'
 import { pdfiumWasmPath } from './wasm-path'
@@ -128,35 +128,6 @@ export function loadPdfium(): Promise<Pdfium> {
     return m
   })()
   return pdfiumPromise
-}
-
-/** Fallback fonts for rebuilt runs, first readable file wins; must be single-face sfnt (no .ttc) */
-const FALLBACK_FONTS = [
-  bundledFontPath('NotoSansSC-Regular.otf'),
-  bundledFontPath('NotoSans-Regular.ttf'),
-  '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
-  'C:\\Windows\\Fonts\\arialuni.ttf',
-  '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-]
-
-let fallbackFontBytes: Buffer | null | undefined
-
-function loadFallbackFont(text = ''): Buffer {
-  const bundled = pickBundledFallback(text)
-  if (bundled) return bundled
-  if (fallbackFontBytes === undefined) {
-    fallbackFontBytes = null
-    for (const p of FALLBACK_FONTS) {
-      try {
-        fallbackFontBytes = readFileSync(p)
-        break
-      } catch {
-        /* try next */
-      }
-    }
-  }
-  if (!fallbackFontBytes) throw new Error('no fallback font available for text editing')
-  return fallbackFontBytes
 }
 
 export type EditFontStyle = 'regular' | 'bold' | 'italic' | 'bolditalic'

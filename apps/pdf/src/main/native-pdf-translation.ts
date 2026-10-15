@@ -165,6 +165,7 @@ export async function translateNativePdf(
           if (!(error instanceof MissingPdfFontError))
             throw new Error(
               `第 ${pi + 1} 页第 ${p.paragraph} 段布局预检失败：${error instanceof Error ? error.message : String(error)}`,
+              { cause: error },
             )
           missingFont = error.message
           progress(`第 ${pi + 1} 页第 ${p.paragraph} 段字体检查：${missingFont}`)
