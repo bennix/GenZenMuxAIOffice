@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Xu Zhiping. All rights reserved.
+// Xu Zhiping's original contributions and modifications only.
+// Pre-existing upstream code retains its original copyright and license terms.
+// See the repository LICENSING.md and applicable upstream license notices.
+
 /**
  * Byte-exact scanner for word/document.xml.
  *

@@ -19,3 +19,14 @@ releases and grants remain governed by the terms under which they were issued.
 
 The GPL-3.0-only declaration above governs bennix-authored code in this revision
 where older project-level documentation or package metadata states otherwise.
+
+## Commercial licensing inquiries
+
+Original code authored by Xu Zhiping (bennix) is available under GPL-3.0-only.
+For a separate commercial agreement covering rights Xu Zhiping controls,
+contact [macdevsh@gmail.com](mailto:macdevsh@gmail.com).
+GPL commercial use remains permitted subject to its terms. Enterprise deployment
+or SaaS use alone does not require purchasing a commercial license.
+Any alternative license requires a separate written agreement; upstream and
+third-party rights and separately licensed directories are excluded unless
+expressly covered by authorization from their respective rights holders.

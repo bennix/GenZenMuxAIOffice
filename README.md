@@ -293,6 +293,14 @@ Caladea, Noto CJK subsets) are OFL/Apache.
 
 ## License
 
+### Dual Licensing
+
+- **Open Source**: Original code authored by Xu Zhiping (bennix) is licensed under **GNU General Public License v3.0 only (GPL-3.0-only)** for personal, academic, open-source, and commercial usage, subject to the applicable GPL terms. See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md).
+- **Commercial License**: For enterprise deployment, SaaS embedding, or proprietary integration where you seek permission beyond the GPL terms for code Xu Zhiping has the right to license, please contact [macdevsh@gmail.com](mailto:macdevsh@gmail.com) to discuss a separate commercial license agreement.
+
+The GPL permits commercial use; enterprise or SaaS use alone does not require a commercial license. A separate commercial agreement applies only when agreed in writing and only to rights the licensor controls. Upstream and third-party code, dependencies, assets, and separately licensed directories retain their own terms; this offer does not grant proprietary rights to them or waive their requirements.
+
+
 Original code authored by bennix is licensed under [GPL-3.0-only](LICENSE).
 See [LICENSING.md](LICENSING.md) for scope. Upstream GenOffice code retains its
 [Apache-2.0 terms and copyright notice](LICENSES/previous-root-LICENSE.txt).
