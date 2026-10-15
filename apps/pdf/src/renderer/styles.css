@@ -3685,7 +3685,7 @@ button {
   color: var(--text);
 }
 .pdf-engine-studio::backdrop {
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--color-bg-overlay);
 }
 .pdf-engine-studio header,
 .pdf-engine-studio nav {

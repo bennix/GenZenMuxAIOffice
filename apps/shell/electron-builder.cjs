@@ -264,6 +264,11 @@ const config = {
       { target: 'zip', arch: includeMacX64 ? ['arm64', 'x64'] : ['arm64'] },
     ],
     category: 'public.app-category.productivity',
+    // Non-executable assets are sealed by their containing bundle; signing each
+    // separately creates hundreds of unnecessary timestamp requests.
+    signIgnore: [
+      '\\.(pak|dat|bin|asar|wasm|otf|ttf|woff2?|png|jpe?g|gif|ico|icns|pdf|zip|mp3|mp4|map)$',
+    ],
     hardenedRuntime: true,
     gatekeeperAssess: false,
     entitlements: 'build/entitlements.mac.plist',
