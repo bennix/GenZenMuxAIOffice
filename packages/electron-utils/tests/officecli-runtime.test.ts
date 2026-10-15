@@ -31,3 +31,15 @@ if (process.platform === 'darwin' && process.env.GENOFFICE_TEST_PACKAGED_RESOURC
     expect(binary).toMatch(/officecli\/officecli-mac-arm64$/)
   })
 }
+
+it.skipIf(process.platform === 'win32')(
+  'disables self-updates in the pinned helper process',
+  async () => {
+    const { invokeOfficeCli } = await import('../src/officecli-runtime')
+    const output = await invokeOfficeCli('/bin/sh', [
+      '-c',
+      'printf "%s:%s" "$OFFICECLI_SKIP_UPDATE" "$OFFICECLI_RESIDENT_FLUSH"',
+    ])
+    expect(output).toBe('1:each')
+  },
+)

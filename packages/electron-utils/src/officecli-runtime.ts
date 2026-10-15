@@ -149,7 +149,8 @@ export function invokeOfficeCli(binary: string, args: string[]): Promise<string>
     const child = spawn(binary, args, {
       shell: false,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, OFFICECLI_RESIDENT_FLUSH: 'each' },
+      // The pinned helper must never replace itself or invalidate the app signature.
+      env: { ...process.env, OFFICECLI_RESIDENT_FLUSH: 'each', OFFICECLI_SKIP_UPDATE: '1' },
     })
     let stdout = ''
     let stderr = ''
