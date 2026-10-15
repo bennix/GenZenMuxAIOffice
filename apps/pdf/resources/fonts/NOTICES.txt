@@ -1,4 +1,4 @@
-Built-in PDF edit fonts (SIL Open Font License 1.1). These files are bundled
+Built-in PDF edit fonts (SIL OFL 1.1 except Nimbus Roman; see below). These files are bundled
 with ZenOffice so text rebuilds do not depend on which fonts the OS has installed.
 
 Liberation Fonts 2.1.5
@@ -16,3 +16,12 @@ The fonts, including any derivative works, may be bundled and embedded with
 this software provided they remain under OFL and reserved names are not used
 by derivatives. Documents created using the fonts are not required to stay
 under OFL.
+
+Nimbus Roman (URW Base35)
+  Copyright URW Software, URW Design & Development; maintained by Artifex Software.
+  Unmodified font files, AGPL-3.0 with the document embedding exception.
+  Full terms: NimbusRoman-LICENSE.txt and NimbusRoman-COPYING.txt in this directory.
+  Corresponding source (exact revision; includes editable Type 1 fonts and metrics):
+  https://github.com/ArtifexSoftware/urw-base35-fonts/tree/3c0ba3b5687632dfc66526544a4e811fe0ec0cd9
+  Legacy NimbusRomNo9L face names map to this same Nimbus Roman family.
+  Nimbus Roman covers Western text; it does not contain Chinese glyphs.

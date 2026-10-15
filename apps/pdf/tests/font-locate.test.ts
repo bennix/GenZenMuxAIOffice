@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { fontCoversText } from '../src/main/font-cmap'
-import { findSystemFont } from '../src/main/font-locate'
+import { findSystemFont, fontFamilyKey } from '../src/main/font-locate'
 import { hasPingFang } from './pingfang'
 
 describe('findSystemFont', () => {
@@ -64,5 +64,20 @@ describe('findSystemFont', () => {
 
   it('returns null when nothing matches', () => {
     expect(findSystemFont('NoSuchFont-Zzz', 'No Such Family At All')).toBeNull()
+  })
+})
+
+describe('PDF font family names', () => {
+  it('removes subset and style suffixes without cross-family aliases', () => {
+    expect(fontFamilyKey('ABCDEF+Arial-BoldItalicMT')).toBe(fontFamilyKey('Arial'))
+    expect(fontFamilyKey('NotoSansSC-Regular')).toBe(fontFamilyKey('Noto Sans SC'))
+    expect(fontFamilyKey('ABCDEF+NimbusRomNo9L-Regu')).toBe(fontFamilyKey('NimbusRoman-Regular'))
+    expect(fontFamilyKey('NimbusRomNo9L-MediItal')).toBe(fontFamilyKey('NimbusRoman-BoldItalic'))
+    expect(fontFamilyKey('Arial')).not.toBe(fontFamilyKey('Helvetica'))
+  })
+  it('resolves a subset name to its installed original face', () => {
+    if (!hasPingFang) return
+    expect(findSystemFont('ABCDEF+PingFangSC-Regular', '')).not.toBeNull()
+    expect(findSystemFont('PingFangSC-Unknown', 'PingFangSC-Bold')).not.toBeNull()
   })
 })

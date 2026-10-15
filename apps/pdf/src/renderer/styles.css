@@ -1524,6 +1524,31 @@ button {
   font-size: 12px;
 }
 
+.pdf-textedit-leading {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.pdf-textedit-leading input {
+  width: 52px;
+  padding: 2px 3px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.pdf-translate-language {
+  display: block;
+  margin: 10px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 .pdf-textedit-fontsel {
   max-width: 130px;
   padding: 2px 4px;
@@ -3647,4 +3672,122 @@ button {
     36px/1.3 'STIX Two Math',
     'Cambria Math',
     serif;
+}
+
+.pdf-engine-studio {
+  width: min(1180px, 94vw);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+.pdf-engine-studio::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+.pdf-engine-studio header,
+.pdf-engine-studio nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pdf-engine-studio h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.pdf-engine-studio p {
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.pdf-engine-studio button {
+  padding: 7px 12px;
+  margin: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+}
+.pdf-engine-studio button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.pdf-engine-studio input,
+.pdf-engine-studio select,
+.pdf-engine-studio textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+}
+.pdf-engine-studio input[type='checkbox'] {
+  width: auto;
+}
+.pdf-engine-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+.pdf-engine-studio label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+}
+.pdf-engine-studio pre {
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  padding: 10px;
+  border: 1px solid var(--border);
+}
+.pdf-engine-workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 16px;
+}
+.pdf-engine-preview {
+  max-height: 65vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+}
+.pdf-engine-preview img,
+.pdf-engine-result img {
+  width: 100%;
+  height: auto;
+}
+.pdf-engine-controls {
+  min-width: 0;
+}
+.pdf-engine-all-tools {
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  padding-top: 12px;
+}
+.pdf-engine-error {
+  border: 1px solid currentColor;
+  padding: 10px;
+}
+@media (max-width: 780px) {
+  .pdf-engine-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pdf-translation-progress pre {
+  max-height: 160px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

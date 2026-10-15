@@ -33,6 +33,10 @@ const LIBERATION_FILES = [
 ]
 
 const DIRECT = [
+  ...['Regular', 'Bold', 'Italic', 'BoldItalic'].map((style) => [
+    `NimbusRoman-${style}.otf`,
+    `https://raw.githubusercontent.com/ArtifexSoftware/urw-base35-fonts/3c0ba3b5687632dfc66526544a4e811fe0ec0cd9/fonts/NimbusRoman-${style}.otf`,
+  ]),
   [
     'NotoSans-Regular.ttf',
     'https://github.com/notofonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf',

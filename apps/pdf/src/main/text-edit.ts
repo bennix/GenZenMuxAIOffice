@@ -1,8 +1,9 @@
+import { MissingPdfFontError } from './pdf-font-error'
 import { readFileSync } from 'node:fs'
 import { PDFDict, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } from 'pdf-lib'
-import { fontCoversText } from './font-cmap'
-import { findAliasedBundledFont, bundledFontPath, pickBundledFallback } from './font-bundle'
-import { findSystemFont, isTruetype } from './font-locate'
+import { fontCoversText, missingFontCharacters } from './font-cmap'
+import { findNimbusRomanFont, bundledFontPath, pickBundledFallback } from './font-bundle'
+import { fontFamilyKey, findSystemFont, isTruetype } from './font-locate'
 import { identityCffCharset, subsetTtf } from './font-subset'
 import { pdfiumWasmPath } from './wasm-path'
 import type { TextEditFailure, TextEditInput, TextEditValidation } from '../shared/ipc'
@@ -189,6 +190,12 @@ const EDIT_FONT_PATHS: Record<string, Record<EditFontStyle, string[]>> = {
       '/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf',
     ],
   },
+  'nimbus-roman': {
+    regular: [bundledFontPath('NimbusRoman-Regular.otf')],
+    bold: [bundledFontPath('NimbusRoman-Bold.otf')],
+    italic: [bundledFontPath('NimbusRoman-Italic.otf')],
+    bolditalic: [bundledFontPath('NimbusRoman-BoldItalic.otf')],
+  },
   times: {
     regular: [
       '/System/Library/Fonts/Supplemental/Times New Roman.ttf',
@@ -288,7 +295,19 @@ const EDIT_FONT_PATHS: Record<string, Record<EditFontStyle, string[]>> = {
 
 const editFontCache = new Map<string, Buffer | null>()
 
-function loadEditFont(id: string, style: EditFontStyle = 'regular'): Buffer | null {
+const documentFonts = new Map<string, Buffer>()
+export function registerDocumentFont(id: string, bytes: Buffer): void {
+  if (bytes.length > 64 * 1024 * 1024 || bytes.length < 12) throw new Error('Invalid font size')
+  if (!fontCoversText(bytes, ' ')) throw new Error('Font has no usable Unicode character map')
+  documentFonts.set(id, bytes)
+}
+export function unregisterDocumentFont(id: string): void {
+  documentFonts.delete(id)
+}
+
+export function loadEditFont(id: string, style: EditFontStyle = 'regular'): Buffer | null {
+  const custom = documentFonts.get(id)
+  if (custom) return custom
   const key = `${id}#${style}`
   let cached = editFontCache.get(key)
   if (cached === undefined) {
@@ -308,7 +327,7 @@ function loadEditFont(id: string, style: EditFontStyle = 'regular'): Buffer | nu
 }
 
 function findReplacementFont(psName: string, family: string): Buffer | null {
-  return findSystemFont(psName, family) ?? findAliasedBundledFont(psName, family)
+  return findSystemFont(psName, family) ?? findNimbusRomanFont(psName, family)
 }
 
 /** Edit-font ids that resolve to a readable font file on this machine */
@@ -961,6 +980,8 @@ async function rebuildFontBytes(
   edit: TextEditInput,
   newText: string,
 ): Promise<Buffer> {
+  const subset = (bytes: Buffer, text: string) =>
+    edit.embedFullFont ? Promise.resolve(bytes) : subsetTtf(bytes, text)
   const drawn = newText.replace(/\n/g, '')
   const style: EditFontStyle =
     edit.newBold && edit.newItalic
@@ -976,7 +997,7 @@ async function rebuildFontBytes(
       const chosen = loadEditFont(edit.newFont, s)
       if (chosen && fontCoversText(chosen, drawn)) {
         try {
-          return identityCffCharset(await subsetTtf(chosen, drawn))
+          return identityCffCharset(await subset(chosen, drawn))
         } catch {
           /* charset not rewritable: try the next style */
         }
@@ -1014,7 +1035,7 @@ async function rebuildFontBytes(
         }
         if (sys && fontCoversText(sys, drawn)) {
           try {
-            return identityCffCharset(await subsetTtf(sys, drawn))
+            return identityCffCharset(await subset(sys, drawn))
           } catch {
             /* charset not rewritable: degrade to the base face below */
           }
@@ -1041,67 +1062,33 @@ async function rebuildFontBytes(
       const sys = findReplacementFont(ps, family)
       if (sys && fontCoversText(sys, drawn)) {
         try {
-          return identityCffCharset(await subsetTtf(sys, drawn))
+          return identityCffCharset(await subset(sys, drawn))
         } catch {
           /* charset not rewritable: fall back */
         }
       }
     }
   }
-  // If the original face is unavailable (common for PDFs authored with Cambria,
-  // Minion, corporate fonts, or renamed subset fonts), do not immediately flatten
-  // it to the regular sans-serif Unicode fallback. Pick the closest bundled/system
-  // edit face by the original font's family class and style first. This cannot make
-  // an unavailable proprietary face magically identical, but it preserves the
-  // document's serif/mono character and bold/italic shape instead of producing the
-  // conspicuous Arial-Regular replacement that prompted this fix.
-  let fallback: Buffer | null = null
-  if (font) {
-    const ps = fontString(m, (b, l) => m._FPDFFont_GetBaseFontName(font, b, l)).replace(
-      /^[A-Z]{6}\+/,
-      '',
+  const source = font
+    ? fontString(m, (b, l) => m._FPDFFont_GetBaseFontName(font, b, l))
+    : '未知字体'
+  if (edit.newFont) {
+    const chosen = loadEditFont(edit.newFont, style) ?? loadEditFont(edit.newFont)
+    const missing = chosen ? missingFontCharacters(chosen, drawn) : []
+    const detail = missing
+      .slice(0, 12)
+      .map(
+        (ch) =>
+          `${JSON.stringify(ch)} U+${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}`,
+      )
+      .join('、')
+    throw new MissingPdfFontError(
+      `所选字体 ${edit.newFont} 无法覆盖当前文字${detail ? `，缺少：${detail}` : '或字库无法加载'}；未应用修改。`,
     )
-    const family = fontString(m, (b, l) => m._FPDFFont_GetFamilyName(font, b, l))
-    const name = `${ps} ${family}`.toLowerCase()
-    const fallbackStyle: EditFontStyle =
-      /bold|semibold|demi|black|heavy/.test(name) && /italic|oblique/.test(name)
-        ? 'bolditalic'
-        : /bold|semibold|demi|black|heavy/.test(name)
-          ? 'bold'
-          : /italic|oblique/.test(name)
-            ? 'italic'
-            : 'regular'
-    const fallbackFamily = /courier|mono|consol|typewriter|code/.test(name)
-      ? 'courier'
-      : /times|serif|cambria|georgia|garamond|palatino|minion|baskerville|didot|song|ming|simsun|宋|明/.test(
-            name,
-          )
-        ? 'times'
-        : 'arial'
-    for (const s of fallbackStyle === 'regular'
-      ? (['regular'] as const)
-      : ([fallbackStyle, 'regular'] as const)) {
-      const candidate = loadEditFont(fallbackFamily, s)
-      if (candidate && fontCoversText(candidate, drawn)) {
-        fallback = candidate
-        break
-      }
-    }
-    if (!fallback) {
-      const kind =
-        fallbackFamily === 'times' ? 'serif' : fallbackFamily === 'courier' ? 'mono' : 'sans'
-      const bundled = pickBundledFallback(drawn, kind)
-      if (bundled && fontCoversText(bundled, drawn)) fallback = bundled
-    }
   }
-  fallback ??= loadFallbackFont(drawn)
-  // Chars beyond even the fallback face (emoji, rare CJK extensions) would embed as
-  // missing glyphs and then fail read-back verification, blocking the whole save —
-  // reject this one edit instead (it is reported as skipped, everything else saves)
-  if (!fontCoversText(fallback, drawn)) {
-    throw new Error('the replacement contains characters no available font can draw')
-  }
-  return identityCffCharset(await subsetTtf(fallback, drawn))
+  throw new MissingPdfFontError(
+    `缺少原字体 ${source} 的完整字库或所需字符。本机未找到可用的同族字体，请在“字体与段落工作台”查看下载建议、安装原字体，或明确选择替换字体；未应用修改。`,
+  )
 }
 
 /** Original object whose style should seed newly typed characters. The old code
@@ -1449,6 +1436,7 @@ async function rebuildRun(
       fontSize =
         edit.newFontSize !== undefined && edit.newFontSize > 0 ? edit.newFontSize : edit.fontSize
     }
+    if (edit.horizontalScale !== undefined) matrix[0] = edit.horizontalScale / 100
     const hasColor = m._FPDFPageObj_GetFillColor(
       styleAnchor.obj,
       colPtr,
@@ -1471,7 +1459,12 @@ async function rebuildRun(
     // everything" and take the full-redraw path; so does a rotated/skewed matrix
     // (the cursor walk below only models horizontal text).
     const styleOverride =
-      edit.newFontSize !== undefined || edit.newFont !== undefined || edit.newBold || edit.newItalic
+      edit.newFontSize !== undefined ||
+      edit.newFont !== undefined ||
+      edit.newBold ||
+      edit.newItalic ||
+      edit.characterSpacing !== undefined ||
+      edit.horizontalScale !== undefined
     const axisAligned =
       Math.abs(matrix[1]!) < 1e-4 && Math.abs(matrix[2]!) < 1e-4 && matrix[0]! > 0 && matrix[3]! > 0
     const keeps =
@@ -1555,6 +1548,17 @@ async function rebuildRun(
         lineStart += line.length + 1
         if (!line) continue
         const drop = lineIdx * lineHeight
+        if (edit.characterSpacing !== undefined) {
+          let x = baseX + (edit.lineXOffsets?.[lineIdx] ?? 0)
+          let ci = 0
+          for (const ch of line) {
+            makeSeg(ch, x, baseY - drop, lineColors?.[ci] ?? null)
+            x +=
+              (advanceEm(ch.codePointAt(0)!) ?? 0.5) * fontSize * matrix[0]! + edit.characterSpacing
+            ci += ch.length
+          }
+          continue
+        }
         for (const seg of segmentLine(line, lineColors, advanceEm)) {
           if (!seg.text) continue
           // Segment offset is a text-space advance: map it through the matrix's x axis
@@ -2079,6 +2083,222 @@ export function verifyTextEdits(
         }
       }
       return failures
+    })
+  })
+}
+
+export interface NativeTextRun {
+  text: string
+  rect: [number, number, number, number]
+  x: number
+  y: number
+  size: number
+  font: string
+  rotated: boolean
+}
+export interface NativeTextPage {
+  width: number
+  height: number
+  runs: NativeTextRun[]
+  imageRects?: [number, number, number, number][]
+}
+
+/** Geometry and source font names from the same engine that writes edits. */
+export function inspectNativePdf(bytes: Uint8Array): Promise<NativeTextPage[]> {
+  return chainPdfium(async () => {
+    const m = await loadPdfium()
+    return withDocument(m, bytes, async (doc) => {
+      const pages: NativeTextPage[] = []
+      const matrix = m._malloc(24),
+        size = m._malloc(4),
+        bounds = m._malloc(16)
+      try {
+        for (let pi = 0; pi < m._FPDF_GetPageCount(doc); pi++) {
+          const page = m._FPDF_LoadPage(doc, pi),
+            textPage = m._FPDFText_LoadPage(page)
+          try {
+            const runs = collectTextObjects(m, page, textPage)
+              .filter((r) => r.text.trim())
+              .map((run): NativeTextRun => {
+                m._FPDFPageObj_GetMatrix(run.obj, matrix)
+                m._FPDFTextObj_GetFontSize(run.obj, size)
+                const mat = Array.from(m.HEAPF32.subarray(matrix >> 2, (matrix >> 2) + 6))
+                return {
+                  text: run.text,
+                  rect: run.bounds,
+                  x: run.bounds[0],
+                  y: mat[5]!,
+                  size: Math.abs(m.HEAPF32[size >> 2]! * Math.hypot(mat[2]!, mat[3]!)),
+                  font: fontString(m, (b, l) => m._FPDFFont_GetBaseFontName(run.font, b, l)),
+                  rotated: Math.abs(mat[1]!) > 1e-4 || mat[0]! <= 0 || mat[3]! <= 0,
+                }
+              })
+            const imageRects: [number, number, number, number][] = []
+            for (let i = 0; i < m._FPDFPage_CountObjects(page); i++) {
+              const object = m._FPDFPage_GetObject(page, i)
+              if (m._FPDFPageObj_GetType(object) !== 3) continue
+              if (m._FPDFPageObj_GetBounds(object, bounds, bounds + 4, bounds + 8, bounds + 12))
+                imageRects.push(
+                  Array.from(m.HEAPF32.subarray(bounds >> 2, (bounds >> 2) + 4)) as [
+                    number,
+                    number,
+                    number,
+                    number,
+                  ],
+                )
+            }
+            pages.push({
+              imageRects,
+              width: m._FPDF_GetPageWidthF(page),
+              height: m._FPDF_GetPageHeightF(page),
+              runs,
+            })
+          } finally {
+            m._FPDFText_ClosePage(textPage)
+            m._FPDF_ClosePage(page)
+          }
+        }
+      } finally {
+        m._free(matrix)
+        m._free(size)
+        m._free(bounds)
+      }
+      return pages
+    })
+  })
+}
+
+export interface NativeParagraphPlan {
+  edit: TextEditInput
+  sourceFont: string
+  actualFont: string
+  sourceFontRetained: boolean
+  overflow: boolean
+  lineWidths: number[]
+  rect: [number, number, number, number]
+}
+/** Font selection, line measurement and save all use rebuildFontBytes, never a browser substitute. */
+export function planNativeParagraph(
+  bytes: Uint8Array,
+  input: TextEditInput,
+  options: {
+    width: number
+    maxHeight: number
+    autoFit?: boolean
+    align?: 'left' | 'center' | 'right' | 'justify'
+    preserveFont?: boolean
+  },
+): Promise<NativeParagraphPlan> {
+  return chainPdfium(async () => {
+    const { wrapTextMeasured } = await import('../renderer/text-wrap')
+    const m = await loadPdfium()
+    return withDocument(m, bytes, async (doc) => {
+      const page = m._FPDF_LoadPage(doc, input.pageIndex),
+        textPage = m._FPDFText_LoadPage(page)
+      const widthPtr = m._malloc(4)
+      try {
+        const matched = matchEdit(collectTextObjects(m, page, textPage), input)
+        if (!matched || 'reason' in matched)
+          throw new Error(matched?.reason || 'Text paragraph not found')
+        const anchor = rebuildAnchor(matched.matches, input.newText)
+        const sourceFont = fontString(m, (b, l) => m._FPDFFont_GetBaseFontName(anchor.font, b, l))
+        if (
+          input.newFont &&
+          documentFonts.has(input.newFont) &&
+          !fontCoversText(documentFonts.get(input.newFont)!, input.newText)
+        )
+          throw new MissingPdfFontError('Selected font does not contain all replacement characters')
+        const fontBytes = await rebuildFontBytes(m, anchor.font, input, input.newText)
+        const pointer = m._malloc(fontBytes.length)
+        m.HEAPU8.set(fontBytes, pointer)
+        const font = m._FPDFText_LoadFont(
+          doc,
+          pointer,
+          fontBytes.length,
+          isTruetype(fontBytes) ? FPDF_FONT_TRUETYPE : FPDF_FONT_TYPE1,
+          1,
+        )
+        m._free(pointer)
+        if (!font) throw new Error('Cannot load the paragraph font')
+        const actualFont = fontString(m, (b, l) => m._FPDFFont_GetBaseFontName(font, b, l))
+        const sourceFontRetained = fontFamilyKey(sourceFont) === fontFamilyKey(actualFont)
+        if (options.preserveFont && !input.newFont && !sourceFontRetained)
+          throw new MissingPdfFontError(
+            `源字体 ${sourceFont} 缺少所需字符，请明确选择完整字体；未应用修改 / Load a full font to preserve this paragraph`,
+          )
+        const advance = new Map<number, number>()
+        for (const ch of input.newText.replace(/\n/g, '')) {
+          const cp = ch.codePointAt(0)!
+          if (!advance.has(cp)) {
+            if (!m._FPDFFont_GetGlyphWidth(font, cp, 1, widthPtr))
+              throw new Error(`Cannot measure character ${ch}`)
+            advance.set(cp, m.HEAPF32[widthPtr >> 2]!)
+          }
+        }
+        let size = input.newFontSize ?? input.fontSize
+        let leading = input.lineLeading ?? size * 1.2
+        const scale = (input.horizontalScale ?? 100) / 100,
+          spacing = input.characterSpacing ?? 0
+        if (!(size > 0 && options.width > 0 && leading > 0 && scale > 0))
+          throw new Error('Invalid paragraph dimensions')
+        const measure = (s: string) =>
+          [...s].reduce((n, ch) => n + (advance.get(ch.codePointAt(0)!) ?? 0) * size * scale, 0) +
+          Math.max(0, [...s].length - 1) * spacing
+        let lines = input.newText
+          .split('\n')
+          .flatMap((p) => (p ? wrapTextMeasured(p, options.width, measure) : ['']))
+        const minSize = Math.max(6, size * 0.7)
+        while (
+          options.autoFit &&
+          ((lines.length - 1) * leading + size > options.maxHeight ||
+            lines.some((l) => measure(l) > options.width + 0.1)) &&
+          size > minSize
+        ) {
+          const ratio = (size - 0.5) / size
+          size -= 0.5
+          leading *= ratio
+          lines = input.newText
+            .split('\n')
+            .flatMap((p) => (p ? wrapTextMeasured(p, options.width, measure) : ['']))
+        }
+        const widths = lines.map(measure)
+        const origin = input.origin ?? [input.rect[0], input.rect[3] - input.fontSize * 0.8]
+        const height = (lines.length - 1) * leading + size
+        const edit: TextEditInput = {
+          ...input,
+          newText: lines.join('\n'),
+          newFontSize: size === input.fontSize ? input.newFontSize : size,
+          origin,
+          lineLeading: leading,
+          lineXOffsets: widths.map((w) =>
+            options.align === 'center'
+              ? Math.max(0, (options.width - w) / 2)
+              : options.align === 'right'
+                ? Math.max(0, options.width - w)
+                : 0,
+          ),
+        }
+        // Justification is made explicit as character spacing per line by the workbench,
+        // while the shared writer keeps the exact source width for ordinary alignment.
+        return {
+          edit,
+          sourceFont,
+          actualFont,
+          sourceFontRetained,
+          overflow: height > options.maxHeight + 0.2 || widths.some((w) => w > options.width + 0.2),
+          lineWidths: widths,
+          rect: [
+            origin[0],
+            origin[1] - (lines.length - 1) * leading - size * 0.25,
+            origin[0] + Math.max(...widths, 0),
+            origin[1] + size,
+          ],
+        }
+      } finally {
+        m._free(widthPtr)
+        m._FPDFText_ClosePage(textPage)
+        m._FPDF_ClosePage(page)
+      }
     })
   })
 }

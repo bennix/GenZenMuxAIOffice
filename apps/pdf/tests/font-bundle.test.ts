@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { fontCoversText } from '../src/main/font-cmap'
 import {
   bundledFontsDir,
+  findNimbusRomanFont,
   findAliasedBundledFont,
   loadBundledFont,
   pickBundledFallback,
@@ -9,6 +10,23 @@ import {
 import { listEditFonts } from '../src/main/text-edit'
 
 describe('bundled edit fonts', () => {
+  it('ships the same Nimbus Roman family for all legacy face names', () => {
+    for (const [legacy, style] of [
+      ['NimbusRomNo9L-Regu', 'Regular'],
+      ['NimbusRomNo9L-Medi', 'Bold'],
+      ['NimbusRomNo9L-ReguItal', 'Italic'],
+      ['NimbusRomNo9L-MediItal', 'BoldItalic'],
+    ]) {
+      const bytes = findNimbusRomanFont(`ABCDEF+${legacy}`)
+      expect(bytes).not.toBeNull()
+      expect(bytes!.equals(loadBundledFont(`NimbusRoman-${style}.otf`)!)).toBe(true)
+      expect(fontCoversText(bytes!, 'Résumé € 123')).toBe(true)
+      expect(fontCoversText(bytes!, '中文')).toBe(false)
+    }
+    expect(findNimbusRomanFont('UnrelatedRoman-Regular')).toBeNull()
+    expect(listEditFonts()).toContain('nimbus-roman')
+  })
+
   it('ships Liberation Serif and Noto Serif SC', () => {
     expect(bundledFontsDir()).not.toBe('')
     const times = loadBundledFont('LiberationSerif-Regular.ttf')

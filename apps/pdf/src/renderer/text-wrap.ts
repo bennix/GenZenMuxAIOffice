@@ -78,7 +78,16 @@ export function wrapText(
   cssFamily: string,
   cssStyle = '',
 ): string[] {
-  const w = (s: string) => measurePt(s, fontSizePt, cssFamily, cssStyle)
+  return wrapTextMeasured(text, widthPt, (s) => measurePt(s, fontSizePt, cssFamily, cssStyle))
+}
+
+/** Shared by the native editor; measurement uses the actual embedded PDF font. */
+export function wrapTextMeasured(
+  text: string,
+  widthPt: number,
+  w: (text: string) => number,
+): string[] {
+  if (!(widthPt > 0)) throw new Error('Paragraph width must be positive')
   const units = tokenize(text.trim())
   const lines: string[] = []
   let line = ''

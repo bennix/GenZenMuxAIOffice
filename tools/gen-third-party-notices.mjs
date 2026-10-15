@@ -329,6 +329,12 @@ out += sub('SIL Open Font License 1.1 — full text')
 out +=
   readFileSync(join(ROOT, 'apps/docs/src/renderer/fonts/LICENSE-OFL.txt'), 'utf8').trim() + '\n'
 
+out += sub('Nimbus Roman — AGPL-3.0 with document embedding exception')
+out +=
+  'Unmodified URW Base35 fonts, maintained by Artifex Software.\nCorresponding source: https://github.com/ArtifexSoftware/urw-base35-fonts/tree/3c0ba3b5687632dfc66526544a4e811fe0ec0cd9\n'
+for (const name of ['NimbusRoman-LICENSE.txt', 'NimbusRoman-COPYING.txt'])
+  out += readFileSync(join(ROOT, 'apps/pdf/resources/fonts', name), 'utf8').trim() + '\n'
+
 out += hr('4. Unicode Character Database data')
 out += `
 apps/pdf/src/shared/radicals.ts contains a generated mapping derived from

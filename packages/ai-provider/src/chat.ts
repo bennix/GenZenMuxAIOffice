@@ -9,8 +9,9 @@ async function chatAnthropic(
   system: string,
   user: string,
   baseUrl = 'https://api.anthropic.com',
+  request: typeof fetch = fetch,
 ): Promise<AiChatResponse> {
-  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/v1/messages`, {
+  const response = await request(`${baseUrl.replace(/\/$/, '')}/v1/messages`, {
     method: 'POST',
     signal: wd.signal,
     headers: {
@@ -49,9 +50,10 @@ async function chatGemini(
   system: string,
   user: string,
   baseUrl = 'https://generativelanguage.googleapis.com/v1beta',
+  request: typeof fetch = fetch,
 ): Promise<AiChatResponse> {
   const url = `${baseUrl.replace(/\/$/, '')}/models/${config.model}:generateContent`
-  const response = await fetch(url, {
+  const response = await request(url, {
     method: 'POST',
     signal: wd.signal,
     headers: {
@@ -86,6 +88,7 @@ async function chatOpenAiCompatible(
   system: string,
   user: string,
   images: AiImageReference[] = [],
+  request: typeof fetch = fetch,
 ): Promise<AiChatResponse> {
   const userContent = images.length
     ? [
@@ -96,7 +99,7 @@ async function chatOpenAiCompatible(
         })),
       ]
     : user
-  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
+  const response = await request(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
     signal: wd.signal,
     headers: {
@@ -148,6 +151,7 @@ export async function chatForProvider(
   system: string,
   user: string,
   signal?: AbortSignal,
+  request: typeof fetch = fetch,
 ): Promise<AiChatResponse> {
   // non-streaming: the server generates the full answer before the headers arrive,
   // so the connect phase gets the long budget; the body read then gets the idle budget
@@ -155,19 +159,35 @@ export async function chatForProvider(
   return wd.guard(() => {
     switch (provider) {
       case 'zenmux':
-        return chatOpenAiCompatible(wd, resolveZenmuxBaseUrl(config), config, system, user)
+        return chatOpenAiCompatible(
+          wd,
+          resolveZenmuxBaseUrl(config),
+          config,
+          system,
+          user,
+          [],
+          request,
+        )
       case 'genspark':
         if (config.model.startsWith('claude')) {
-          return chatAnthropic(wd, config, system, user, GENSPARK_LLM_BASE_URLS.anthropic)
+          return chatAnthropic(wd, config, system, user, GENSPARK_LLM_BASE_URLS.anthropic, request)
         }
         if (config.model.startsWith('gemini')) {
-          return chatGemini(wd, config, system, user, GENSPARK_LLM_BASE_URLS.gemini)
+          return chatGemini(wd, config, system, user, GENSPARK_LLM_BASE_URLS.gemini, request)
         }
-        return chatOpenAiCompatible(wd, GENSPARK_LLM_BASE_URLS.openai, config, system, user)
+        return chatOpenAiCompatible(
+          wd,
+          GENSPARK_LLM_BASE_URLS.openai,
+          config,
+          system,
+          user,
+          [],
+          request,
+        )
       case 'anthropic':
-        return chatAnthropic(wd, config, system, user)
+        return chatAnthropic(wd, config, system, user, undefined, request)
       case 'gemini':
-        return chatGemini(wd, config, system, user)
+        return chatGemini(wd, config, system, user, undefined, request)
       case 'deepseek':
       case 'openai':
         return chatOpenAiCompatible(
@@ -176,6 +196,8 @@ export async function chatForProvider(
           config,
           system,
           user,
+          [],
+          request,
         )
       case 'custom':
         if (!config.baseUrl)
@@ -183,7 +205,7 @@ export async function chatForProvider(
             ok: false as const,
             error: 'A custom provider requires a Base URL',
           })
-        return chatOpenAiCompatible(wd, config.baseUrl, config, system, user)
+        return chatOpenAiCompatible(wd, config.baseUrl, config, system, user, [], request)
       default:
         return Promise.resolve({ ok: false as const, error: `Unknown provider: ${provider}` })
     }

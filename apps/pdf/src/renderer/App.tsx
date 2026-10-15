@@ -39,6 +39,7 @@ import type { OutlineNode } from './OutlinePanel'
 import { printPdf } from './print'
 import { PropertiesDialog } from './PropertiesDialog'
 import { PdfReviewCommitteeModal } from './PdfReviewCommitteeModal'
+import { PdfEngineStudio } from './PdfEngineStudio'
 import { PdfResearchStudio } from './PdfResearchStudio'
 import { SignatureDialog, fileToCanvas } from './SignatureDialog'
 import type { SignatureData } from './SignatureDialog'
@@ -858,6 +859,8 @@ interface TextDraft {
   value: string
   /** Style overrides; undefined = keep the run's original size/color */
   size?: number
+  /** Explicit paragraph leading in PDF points */
+  lineLeading?: number
   /** CSS hex like '#d32f2f' */
   color?: string
   /** Selection-level colors, one hex per code unit of value; '' = base (color ?? original).
@@ -1167,6 +1170,7 @@ export default function App() {
   const [textEdits, setTextEdits] = useState<LocalTextEdit[]>([])
   const [editTextMode, setEditTextMode] = useState(false)
   const [textDraft, setTextDraft] = useState<TextDraft | null>(null)
+  const [engineStudio, setEngineStudio] = useState<'translation' | 'craft' | null>(null)
   /** Current draft for async callbacks (block-probe fallback runs after renders) */
   const textDraftRef = useRef<TextDraft | null>(null)
   textDraftRef.current = textDraft
@@ -2348,6 +2352,9 @@ export default function App() {
           editId: fold?.editId,
           foldedIds: fold && fold.foldedIds.length > 0 ? fold.foldedIds : undefined,
           foldBase: fold?.value,
+          lineLeading: fold?.editId
+            ? textEdits.find((e) => e.id === fold.editId)?.input.lineLeading
+            : undefined,
           backdrop: sampleTextBackdrop(fallbackSpan),
           block: {
             leftPt: block.rect[0],
@@ -2650,7 +2657,7 @@ export default function App() {
         d.sourceFontCss ??
         getComputedStyle(document.body).fontFamily
       const cssStyle = `${d.italic ? 'italic ' : ''}${d.bold ? 'bold' : ''}`.trim()
-      lineLeading = d.block.lineHeight * (size / d.fontSize)
+      lineLeading = d.lineLeading ?? d.block.lineHeight * (size / d.fontSize)
       const wrapped = d.value
         .split('\n')
         .flatMap((p) => (p.trim() ? wrapText(p, d.block!.widthPt, size, css, cssStyle) : []))
@@ -2705,6 +2712,7 @@ export default function App() {
       d.font === undefined &&
       d.bold === undefined &&
       d.italic === undefined &&
+      d.lineLeading === undefined &&
       !draftColors
     )
       return null
@@ -2715,6 +2723,7 @@ export default function App() {
       d.font === prevFont &&
       d.bold === prevBold &&
       d.italic === prevItalic &&
+      (d.lineLeading === undefined || d.lineLeading === existing?.input.lineLeading) &&
       colorRunsEqual(cmpRuns, prevRuns)
     )
       return null
@@ -2729,6 +2738,7 @@ export default function App() {
       d.font === undefined &&
       d.bold === undefined &&
       d.italic === undefined &&
+      d.lineLeading === undefined &&
       hexRuns.length === 0
     ) {
       // Reverted back to the original — the pending edit(s) are moot
@@ -4642,6 +4652,39 @@ export default function App() {
               </div>
               <div className="ribbon-sep" />
               <div className="ribbon-group">
+                <div className="ribbon-group-items">
+                  <button
+                    className="rb-big"
+                    disabled={!filePath || saveState === 'saving'}
+                    data-tip={t('pdfTranslateHint')}
+                    onMouseDown={armSkipDraftBlur}
+                    onClick={() =>
+                      void (async () => {
+                        if (await save()) setEngineStudio('translation')
+                      })()
+                    }
+                  >
+                    <span className="rb-big-icon">文</span>
+                    {t('pdfTranslateKeepLayout')}
+                  </button>
+                  <button
+                    className="rb-big"
+                    disabled={readOnly || !filePath || saveState === 'saving'}
+                    data-tip={t('pdfParagraphPrecisionHint')}
+                    onMouseDown={armSkipDraftBlur}
+                    onClick={() =>
+                      void (async () => {
+                        if (await save()) setEngineStudio('craft')
+                      })()
+                    }
+                  >
+                    <span className="rb-big-icon">¶</span>
+                    {t('pdfParagraphPrecision')}
+                  </button>
+                </div>
+              </div>
+              <div className="ribbon-sep" />
+              <div className="ribbon-group">
                 <div
                   ref={textStyleRibbonRef}
                   className="ribbon-group-items rb-font-group"
@@ -5355,7 +5398,8 @@ export default function App() {
                                 // wrap count (in the block's own leading, plus headroom for
                                 // the preview/commit measurement gap)
                                 const leadPx = blk
-                                  ? blk.lineHeight * (sizePt / textDraft.fontSize) * scale
+                                  ? (textDraft.lineLeading ??
+                                      blk.lineHeight * (sizePt / textDraft.fontSize)) * scale
                                   : fs * 1.2
                                 const wrapCount = blk
                                   ? lines.reduce(
@@ -5462,6 +5506,33 @@ export default function App() {
                                           }
                                           onChange={(e) => applyDraftSize(Number(e.target.value))}
                                         />
+                                        {blk && (
+                                          <label className="pdf-textedit-leading">
+                                            <span>{t('pdfLineSpacing')}</span>
+                                            <input
+                                              type="number"
+                                              min={1}
+                                              max={200}
+                                              step={0.5}
+                                              value={
+                                                Math.round(
+                                                  (textDraft.lineLeading ??
+                                                    blk.lineHeight *
+                                                      ((textDraft.size ?? textDraft.fontSize) /
+                                                        textDraft.fontSize)) * 10,
+                                                ) / 10
+                                              }
+                                              aria-label={t('pdfLineSpacing')}
+                                              onChange={(e) => {
+                                                const n = Number(e.target.value)
+                                                if (n >= 1)
+                                                  setTextDraft((d) =>
+                                                    d?.block ? { ...d, lineLeading: n } : d,
+                                                  )
+                                              }}
+                                            />
+                                          </label>
+                                        )}
                                         <button
                                           className={`pdf-textedit-toggle${textDraft.bold ? ' active' : ''}`}
                                           data-tip={t('texteditBold')}
@@ -6156,6 +6227,17 @@ export default function App() {
               <span className="zoom-value">{Math.round(scale * 100)}%</span>
             </div>
           </footer>
+          {engineStudio && filePath && (
+            <PdfEngineStudio
+              mode={engineStudio}
+              path={filePath}
+              initialPage={currentPage}
+              zh={zhUi}
+              password={passwordRef.current}
+              onOpen={openPath}
+              onClose={() => setEngineStudio(null)}
+            />
+          )}
           {reviewOpen && (
             <PdfReviewCommitteeModal
               doc={doc}

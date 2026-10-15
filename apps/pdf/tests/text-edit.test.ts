@@ -60,9 +60,11 @@ describe('applyTextEdits', () => {
     expect(await extractText(out)).toBe('Total revenue was 5100 dollars')
   })
 
-  it('rebuilds the run with an embedded subset font for chars outside the original', async () => {
+  it('embeds an explicitly chosen Chinese font for chars outside the original', async () => {
     const f = await makeFixture('Amount due 500')
-    const out = await applyAll(f.bytes, [edit(f, 'Amount due 500', '应付金额 900 元')])
+    const out = await applyAll(f.bytes, [
+      { ...edit(f, 'Amount due 500', '应付金额 900 元'), newFont: 'noto-sc' },
+    ])
     expect(await extractText(out)).toBe('应付金额 900 元')
     // Subset embedding must not balloon the file (a full CJK font is ~20MB)
     expect(out.length).toBeLessThan(200 * 1024)
@@ -230,23 +232,22 @@ describe('applyTextEdits', () => {
     // missing glyphs and abort the save at read-back verification — skip the edit instead
     const result = await applyTextEdits(f.bytes, [edit(f, 'Amount due 500', 'Pay 🦄 now')])
     expect(result.skipped).toHaveLength(1)
-    expect(result.skipped[0]!.reason).toContain('no available font')
+    expect(result.skipped[0]!.reason).toContain('请在“字体与段落工作台”查看下载建议')
     expect(result.bytes).toBe(f.bytes)
   })
 
-  it('falls back to the default font for unknown or CJK-incompatible font requests', async () => {
-    if (!existsSync('/System/Library/Fonts/Supplemental/Arial Unicode.ttf')) return
+  it('rejects missing original or explicitly requested fonts without changing the document', async () => {
     const f = await makeFixture('Amount due 500')
-    // Unknown id and a CJK replacement with a Latin-only face both take the fallback path
-    const out = await applyAll(f.bytes, [
-      { ...edit(f, 'Amount due 500', '应付金额 900 元'), newFont: 'arial' },
-    ])
-    expect(await extractText(out)).toBe('应付金额 900 元')
-    const f2 = await makeFixture('Simple line')
-    const out2 = await applyAll(f2.bytes, [
-      { ...edit(f2, 'Simple line', 'Replaced line'), newFont: 'no-such-font' },
-    ])
-    expect(await extractText(out2)).toBe('Replaced line')
+    for (const change of [
+      edit(f, 'Amount due 500', '应付金额 900 元'),
+      { ...edit(f, 'Amount due 500', 'Replaced line'), newFont: 'no-such-font' },
+    ]) {
+      const result = await applyTextEdits(f.bytes, [change])
+      expect(result.skipped).toHaveLength(1)
+      expect(result.skipped[0]!.reason).toContain('字体')
+      expect(result.bytes).toBe(f.bytes)
+      expect(await extractText(result.bytes)).toBe('Amount due 500')
+    }
   })
 
   it('stacks newline-separated lines one leading apart', async () => {
@@ -1061,4 +1062,44 @@ describe('text-first rescue (multi-object lines)', () => {
     ])
     expect(results[0]!.reason).toMatch(/could not be located/)
   })
+})
+
+it('rebuilds a legacy NimbusRomNo9L face with the bundled same-family font', async () => {
+  const { PDFDict, PDFName } = await import('pdf-lib')
+  const { planNativeParagraph } = await import('../src/main/text-edit')
+  const fixture = await makeFixture('Amount due 500')
+  const pdf = await PDFDocument.load(fixture.bytes)
+  for (const [, object] of pdf.context.enumerateIndirectObjects()) {
+    if (
+      object instanceof PDFDict &&
+      object.get(PDFName.of('BaseFont'))?.toString() === '/Helvetica'
+    )
+      object.set(PDFName.of('BaseFont'), PDFName.of('NimbusRomNo9L-Regu'))
+  }
+  const source = await pdf.save()
+  const plan = await planNativeParagraph(
+    source,
+    edit(fixture, 'Amount due 500', 'Amount due 900 €'),
+    { width: 400, maxHeight: 50, preserveFont: true, autoFit: false },
+  )
+  expect(plan.sourceFontRetained).toBe(true)
+  expect(plan.actualFont).toMatch(/NimbusRoman/i)
+  const result = await applyAll(source, [plan.edit])
+  expect(await extractText(result)).toBe('Amount due 900 €')
+})
+
+it('reports the Unicode character missing from an explicitly selected font as a recoverable font error', async () => {
+  const { planNativeParagraph } = await import('../src/main/text-edit')
+  const { MissingPdfFontError } = await import('../src/main/pdf-font-error')
+  const f = await makeFixture('Amount due 500')
+  const request = planNativeParagraph(
+    f.bytes,
+    {
+      ...edit(f, 'Amount due 500', '中文 🦄'),
+      newFont: 'noto-sc',
+    },
+    { width: 400, maxHeight: 50, autoFit: false },
+  )
+  await expect(request).rejects.toBeInstanceOf(MissingPdfFontError)
+  await expect(request).rejects.toThrow('U+1F984')
 })

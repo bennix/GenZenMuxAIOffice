@@ -194,3 +194,43 @@ describe('chatForProvider', () => {
     expect(result).toEqual({ ok: false, error: 'AI returned an empty response' })
   })
 })
+
+describe('injected main-process transport', () => {
+  it.each([
+    ['zenmux', 'gpt-test'],
+    ['custom', 'gpt-test'],
+    ['openai', 'gpt-test'],
+    ['deepseek', 'deepseek-chat'],
+    ['anthropic', 'claude-test'],
+    ['gemini', 'gemini-test'],
+    ['genspark', 'claude-test'],
+    ['genspark', 'gemini-test'],
+    ['genspark', 'gpt-test'],
+  ] as const)('uses the supplied transport for %s / %s', async (provider, model) => {
+    const transport = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: 'translated' } }],
+          content: [{ type: 'text', text: 'translated' }],
+          candidates: [{ content: { parts: [{ text: 'translated' }] } }],
+        }),
+        { headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+    const result = await chatForProvider(
+      provider,
+      {
+        apiKey: 'test',
+        model,
+        baseUrl: 'https://example.test/v1',
+      },
+      'system',
+      'text',
+      undefined,
+      transport,
+    )
+    expect(result).toEqual({ ok: true, content: 'translated' })
+    expect(transport).toHaveBeenCalledOnce()
+    expect(transport.mock.calls[0]?.[1].signal).toBeInstanceOf(AbortSignal)
+  })
+})

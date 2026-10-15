@@ -1,5 +1,10 @@
 export const strings = {
   zh: {
+    pdfTranslateKeepLayout: 'AI 保版翻译',
+    pdfTranslateHint: '使用系统 AI 翻译整篇或指定页，保留公式与版式并输出双语 PDF',
+    pdfParagraphPrecision: '段落精排',
+    pdfParagraphPrecisionHint: '打开原生字体与段落工作台：原字体、完整字库、精排和全部 PDF 工具',
+    pdfLineSpacing: '行距（pt）',
     ribbonTabHome: '开始',
     ribbonTabAnnotate: '注释',
     ribbonTabEdit: '编辑',
@@ -180,6 +185,13 @@ export const strings = {
     propModified: '修改时间',
   },
   en: {
+    pdfTranslateKeepLayout: 'AI layout-preserving translation',
+    pdfTranslateHint:
+      'Translate whole PDFs or selected pages with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Paragraph typography',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'Home',
     ribbonTabAnnotate: 'Annotate',
     ribbonTabEdit: 'Edit',
@@ -362,6 +374,13 @@ export const strings = {
     propModified: 'Modified',
   },
   ja: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'ホーム',
     ribbonTabAnnotate: '注釈',
     ribbonTabEdit: '編集',
@@ -544,6 +563,13 @@ export const strings = {
     propModified: '更新日時',
   },
   ko: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: '홈',
     ribbonTabAnnotate: '주석',
     ribbonTabEdit: '편집',
@@ -726,6 +752,13 @@ export const strings = {
     propModified: '수정한 날짜',
   },
   fr: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'Accueil',
     ribbonTabAnnotate: 'Annoter',
     ribbonTabEdit: 'Édition',
@@ -912,6 +945,13 @@ export const strings = {
     propModified: 'Modifié le',
   },
   de: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'Start',
     ribbonTabAnnotate: 'Anmerken',
     ribbonTabEdit: 'Bearbeiten',
@@ -1097,6 +1137,11 @@ export const strings = {
     propModified: 'Geändert',
   },
   es: {
+    pdfTranslateKeepLayout: 'Traducción IA con diseño conservado',
+    pdfTranslateHint: 'Traduce el párrafo actual y conserva su posición, fuente y espaciado',
+    pdfParagraphPrecision: 'Tipografía del párrafo',
+    pdfParagraphPrecisionHint: 'Haz clic en un párrafo para ajustar fuente, tamaño e interlineado',
+    pdfLineSpacing: 'Interlineado (pt)',
     ribbonTabHome: 'Inicio',
     ribbonTabAnnotate: 'Anotar',
     ribbonTabEdit: 'Editar',
@@ -1282,6 +1327,13 @@ export const strings = {
     propModified: 'Modificado',
   },
   th: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'หน้าแรก',
     ribbonTabAnnotate: 'คำอธิบายประกอบ',
     ribbonTabEdit: 'แก้ไข',
@@ -1464,6 +1516,13 @@ export const strings = {
     propModified: 'แก้ไขเมื่อ',
   },
   id: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'Beranda',
     ribbonTabAnnotate: 'Anotasi',
     ribbonTabEdit: 'Edit',
@@ -1648,6 +1707,13 @@ export const strings = {
     propModified: 'Diubah',
   },
   ru: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'Главная',
     ribbonTabAnnotate: 'Аннотирование',
     ribbonTabEdit: 'Правка',
@@ -1833,6 +1899,13 @@ export const strings = {
     propModified: 'Изменён',
   },
   ar: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'الشريط الرئيسي',
     ribbonTabAnnotate: 'تعليق توضيحي',
     ribbonTabEdit: 'تحرير',
@@ -2015,6 +2088,13 @@ export const strings = {
     propModified: 'تاريخ التعديل',
   },
   pt: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'Página Inicial',
     ribbonTabAnnotate: 'Anotar',
     ribbonTabEdit: 'Editar',
@@ -2199,6 +2279,13 @@ export const strings = {
     propModified: 'Modificado',
   },
   it: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'Home',
     ribbonTabAnnotate: 'Annota',
     ribbonTabEdit: 'Modifica',
@@ -2386,6 +2473,13 @@ export const strings = {
     propModified: 'Modificato',
   },
   pl: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'Narzędzia główne',
     ribbonTabAnnotate: 'Adnotacje',
     ribbonTabEdit: 'Edycja',
@@ -2571,6 +2665,13 @@ export const strings = {
     propModified: 'Zmodyfikowano',
   },
   nl: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'Start',
     ribbonTabAnnotate: 'Annoteren',
     ribbonTabEdit: 'Bewerken',
@@ -2756,6 +2857,13 @@ export const strings = {
     propModified: 'Gewijzigd',
   },
   ms: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'Laman Utama',
     ribbonTabAnnotate: 'Anotasi',
     ribbonTabEdit: 'Edit',
@@ -2940,6 +3048,13 @@ export const strings = {
     propModified: 'Diubah suai',
   },
   he: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'בית',
     ribbonTabAnnotate: 'הערות',
     ribbonTabEdit: 'עריכה',
@@ -3120,6 +3235,13 @@ export const strings = {
     propModified: 'עודכן',
   },
   hi: {
+    pdfTranslateKeepLayout: 'AI layout translation',
+    pdfTranslateHint:
+      'Translate whole PDFs with system AI; preserve formulas and produce bilingual PDFs',
+    pdfParagraphPrecision: 'Fonts & paragraphs',
+    pdfParagraphPrecisionHint:
+      'Open the native workbench for embedded fonts, font import, paragraph typography and all PDF tools',
+    pdfLineSpacing: 'Line spacing (pt)',
     ribbonTabHome: 'होम',
     ribbonTabAnnotate: 'एनोटेट',
     ribbonTabEdit: 'संपादन',
@@ -3302,6 +3424,11 @@ export const strings = {
     propModified: 'संशोधन समय',
   },
   'zh-TW': {
+    pdfTranslateKeepLayout: 'AI 保版翻譯',
+    pdfTranslateHint: '翻譯目前段落，並保留原段落位置、字型設定與行距',
+    pdfParagraphPrecision: '段落精排',
+    pdfParagraphPrecisionHint: '點選段落後可調整字型、字級與行距',
+    pdfLineSpacing: '行距（pt）',
     ribbonTabHome: '常用',
     ribbonTabAnnotate: '註解',
     ribbonTabEdit: '編輯',

@@ -205,3 +205,19 @@ export function pickBundledFallback(
   }
   return null
 }
+
+/** Nimbus Roman's legacy PostScript names refer to the same URW family. */
+export function findNimbusRomanFont(psName: string, family = ''): Buffer | null {
+  const name = norm(psName) || norm(family)
+  const key = /^(?:nimbusromno9l|nimbusroman)(.*)$/.exec(name)
+  if (
+    !key ||
+    !/^(?:regu|regular|medi|bold|ital|italic|oblique|bolditalic|mediital|reguital)*$/.test(key[1]!)
+  )
+    return null
+  const bold = /medi|bold/.test(key[1]!)
+  const italic = /ital|oblique/.test(key[1]!)
+  return loadBundledFont(
+    `NimbusRoman-${bold ? (italic ? 'BoldItalic' : 'Bold') : italic ? 'Italic' : 'Regular'}.otf`,
+  )
+}

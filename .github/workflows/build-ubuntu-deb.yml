@@ -61,7 +61,7 @@ jobs:
 
       - name: Build Ubuntu package
         working-directory: apps/shell
-        run: npx electron-builder --linux deb --x64 --publish never
+        run: npx electron-builder --linux deb AppImage --x64 --publish never
 
       - name: Verify DEB and bundled Linux sidecar
         shell: bash
@@ -81,12 +81,16 @@ jobs:
           file "$sidecar" | grep 'ELF 64-bit.*x86-64'
           file "$app_binary" | grep 'ELF 64-bit.*x86-64'
           test -x "$sidecar"
+          test -s apps/shell/release/ZenOffice-$(node -p "require('./apps/shell/package.json').version").AppImage
           sha256sum "$deb_file"
 
       - name: Upload verified Ubuntu DEB artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: zenoffice-ubuntu-deb-${{ inputs.release_tag }}
-          path: apps/shell/release/zenoffice_*_amd64.deb
+          path: |
+            apps/shell/release/zenoffice_*_amd64.deb
+            apps/shell/release/ZenOffice-*.AppImage
+            apps/shell/release/latest-linux.yml
           if-no-files-found: error
           retention-days: 7

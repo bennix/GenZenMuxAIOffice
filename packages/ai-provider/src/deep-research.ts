@@ -137,11 +137,9 @@ export async function runDeepResearch(input: {
   signal?: AbortSignal
   chat: (prompt: string, signal: AbortSignal) => Promise<string>
   /** Streams the final report. Sub-queries and reflection stay one-shot. */
-  streamReport?: (
-    prompt: string,
-    signal: AbortSignal,
-    onDelta: (text: string) => void,
-  ) => Promise<string>
+  streamReport?:
+    | ((prompt: string, signal: AbortSignal, onDelta: (text: string) => void) => Promise<string>)
+    | undefined
   onReportDelta?: (text: string) => void
   search: (query: string, signal: AbortSignal) => Promise<ResearchHit[]>
   onEvent?: (event: DeepResearchEvent) => void

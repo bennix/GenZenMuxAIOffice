@@ -111,7 +111,7 @@ export function installLibreOffice(
         .filter(Boolean)
       for (const message of messages) {
         const match = /(?:^|\s)(\d{1,3}(?:\.\d+)?)%/.exec(message)
-        const parsed = match ? Number.parseFloat(match[1]) : undefined
+        const parsed = match ? Number.parseFloat(match[1]!) : undefined
         const percent = parsed !== undefined && parsed >= 0 && parsed <= 100 ? parsed : undefined
         onProgress?.({ message, ...(percent === undefined ? {} : { percent }) })
       }
@@ -149,7 +149,7 @@ async function installMacFromOfficialDownload(
     const listing = await fetch(root, { signal: AbortSignal.timeout(30_000) })
     if (!listing.ok) throw new Error(`Official download index: HTTP ${listing.status}`)
     const versions = [...(await listing.text()).matchAll(/href="(\d+\.\d+\.\d+)\/"/g)].map(
-      (m) => m[1],
+      (m) => m[1]!,
     )
     versions.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
     const version = versions.at(-1)

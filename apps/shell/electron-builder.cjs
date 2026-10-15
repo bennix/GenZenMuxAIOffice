@@ -43,6 +43,11 @@ for (const rel of [
   '../../node_modules/@embedpdf/pdfium/dist/pdfium.wasm',
   '../pdf/node_modules/harfbuzzjs/hb-subset.wasm',
   '../pdf/resources/fonts/LiberationSerif-Regular.ttf',
+  ...['Regular', 'Bold', 'Italic', 'BoldItalic'].map(
+    (style) => `../pdf/resources/fonts/NimbusRoman-${style}.otf`,
+  ),
+  '../pdf/resources/fonts/NimbusRoman-LICENSE.txt',
+  '../pdf/resources/fonts/NimbusRoman-COPYING.txt',
   '../pdf/resources/fonts/NotoSerifSC-Regular.otf',
 ]) {
   if (!existsSync(join(__dirname, rel))) {

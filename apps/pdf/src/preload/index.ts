@@ -11,6 +11,22 @@ import type { PdfApi, UiTheme } from '../shared/ipc'
 
 const api: PdfApi = {
   ...imageShareBridge(ipcRenderer),
+  engineCancel: (id) => ipcRenderer.invoke(PDF_CHANNELS.engineCancel, id),
+  onEngineProgress: (handler) => {
+    const listener = (_e: Electron.IpcRendererEvent, progress: Parameters<typeof handler>[0]) =>
+      handler(progress)
+    ipcRenderer.on(PDF_CHANNELS.engineProgress, listener)
+    return () => ipcRenderer.removeListener(PDF_CHANNELS.engineProgress, listener)
+  },
+  translateDocument: (path, options, id) =>
+    ipcRenderer.invoke(PDF_CHANNELS.translateDocument, path, options, id),
+  craftOpen: (path, id, password) => ipcRenderer.invoke(PDF_CHANNELS.craftOpen, path, id, password),
+  craftCall: (tool, args) => ipcRenderer.invoke(PDF_CHANNELS.craftCall, tool, args),
+  craftSave: () => ipcRenderer.invoke(PDF_CHANNELS.craftSave),
+  craftPickPath: (kind) => ipcRenderer.invoke(PDF_CHANNELS.craftPickPath, kind),
+  craftFiles: () => ipcRenderer.invoke(PDF_CHANNELS.craftFiles),
+  craftExport: (path) => ipcRenderer.invoke(PDF_CHANNELS.craftExport, path),
+  craftClose: () => ipcRenderer.invoke(PDF_CHANNELS.craftClose),
   listConnectTargets: () => ipcRenderer.invoke('connect:list-targets'),
   sendConnect: (targetId, text) => ipcRenderer.invoke('connect:send', targetId, text),
   listOpenFiles: () => ipcRenderer.invoke('tabs:open-files'),

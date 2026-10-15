@@ -1,3 +1,4 @@
+import type { PdfEnginesApi } from './pdf-engines'
 import type { Lang } from '@genoffice/i18n'
 import type { ConnectApi } from '@genoffice/electron-utils/connect'
 import type {
@@ -10,6 +11,16 @@ import type {
 
 export const PDF_CHANNELS = {
   consumePending: 'pdf:consume-pending',
+  engineCancel: 'pdf:engine-cancel',
+  engineProgress: 'pdf:engine-progress',
+  translateDocument: 'pdf:translate-document',
+  craftOpen: 'pdf:craft-open',
+  craftCall: 'pdf:craft-call',
+  craftSave: 'pdf:craft-save',
+  craftPickPath: 'pdf:craft-pick-path',
+  craftClose: 'pdf:craft-close',
+  craftFiles: 'pdf:craft-files',
+  craftExport: 'pdf:craft-export',
   readFile: 'pdf:read-file',
   save: 'pdf:save',
   validateTextEdits: 'pdf:validate-text-edits',
@@ -179,6 +190,9 @@ export interface TextEditInput {
   /** Baseline-to-baseline step between '\n' lines in PDF pt (paragraph edits pass the
       block's original leading); absent = fontSize × 1.2. Ignored for fragment matches. */
   lineLeading?: number
+  characterSpacing?: number
+  horizontalScale?: number
+  embedFullFont?: boolean
   /** Per-'\n'-line horizontal offset from origin.x in PDF pt — centered/right-aligned
       paragraph reflow places each line at its own x. Missing entries mean 0; ignored
       for fragment matches. */
@@ -222,6 +236,7 @@ export interface TextEditValidation {
     ship — the subsetter cannot read .ttc collections, which rules out the macOS CJK faces.
     Availability is machine-dependent: the main process reports the usable subset. */
 export const EDIT_FONTS = [
+  { id: 'nimbus-roman', label: 'Nimbus Roman（内置西文）', css: "'Nimbus Roman', serif" },
   { id: 'arial', label: 'Arial', css: "Arial, 'Helvetica Neue', sans-serif" },
   {
     id: 'times',
@@ -442,7 +457,7 @@ export interface ImageSearchResponse {
 }
 
 /** API exposed by preload to the renderer (window.pdfApi) */
-export interface PdfApi extends ConnectApi {
+export interface PdfApi extends ConnectApi, PdfEnginesApi {
   /** Take the pdf path pending for this view (queued at tab creation); null if none */
   consumePending(): Promise<string | null>
   /** Read pdf bytes. Only paths granted to this view are allowed */

@@ -54,7 +54,7 @@ export async function installLibreOfficeWithProgress(
   const progressWindow = new BrowserWindow({
     width: 680,
     height: 470,
-    parent,
+    ...(parent ? { parent } : {}),
     modal: Boolean(parent),
     show: false,
     resizable: false,

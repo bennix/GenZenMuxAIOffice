@@ -37,6 +37,7 @@ import type {
   ValidateTextEditsRequest,
 } from '../shared/ipc'
 import { extractPagesBytes, insertPdfBytes, protectPdfToPath, savePdfToPath } from './save-pdf'
+import { registerPdfEnginesIpc } from './pdf-engines-ipc'
 import { registerPdfAttachmentIpc } from './attachments-ipc'
 
 const tDlg = createI18n({
@@ -382,6 +383,12 @@ function registerPdfIpc(): void {
   if (ipcRegistered) return
   ipcRegistered = true
   registerPdfAttachmentIpc()
+  registerPdfEnginesIpc({
+    has: (id, path) => allowedByWc.get(id)?.has(path) ?? false,
+    grant: (id, path) => {
+      allowedByWc.get(id)?.add(path)
+    },
+  })
 
   ipcMain.handle(PDF_CHANNELS.consumePending, (e) => openPathByWc.get(e.sender.id) ?? null)
 

@@ -80,3 +80,14 @@ export function fontCoversText(font: Buffer, text: string): boolean {
     return false
   }
 }
+
+/** Unique missing Unicode characters, for actionable diagnostics without losing text. */
+export function missingFontCharacters(font: Buffer, text: string): string[] {
+  const chars = [...new Set([...text.replace(/[\r\n]/g, '')])]
+  try {
+    const sub = cmapSubtable(font)
+    return sub ? chars.filter((ch) => !hasGlyph(font, sub, ch.codePointAt(0)!)) : chars
+  } catch {
+    return chars
+  }
+}

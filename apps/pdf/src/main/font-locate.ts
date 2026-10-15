@@ -15,6 +15,15 @@ const norm = (s: string) =>
     .toLowerCase()
     .replace(/[\s\-_]/g, '')
 
+/** Strip PDF subset prefixes and face styles, without aliasing unrelated families. */
+export const fontFamilyKey = (name: string): string =>
+  norm(name.replace(/^[A-Z]{6}\+/, ''))
+    .replace(/^nimbusromno9l(?:reguital|mediital|regu|medi)?$/, 'nimbusroman')
+    .replace(
+      /(?:semibold|extrabold|bold|italic|oblique|regular|medium|light|thin|heavy|black|psmt|mt|w[1-9])+$/g,
+      '',
+    )
+
 function fontDirs(): string[] {
   switch (process.platform) {
     case 'darwin':
@@ -246,9 +255,14 @@ const REGULARISH = ['regular', 'medium', 'w3', 'w4']
  */
 export function findSystemFont(psName: string, family: string): Buffer | null {
   index ??= buildIndex()
-  let face = psName ? index.byPs.get(norm(psName)) : undefined
+  let face = psName ? index.byPs.get(norm(psName.replace(/^[A-Z]{6}\+/, ''))) : undefined
   if (!face && family) {
-    const candidates = index.byFamily.get(norm(family))
+    const key = fontFamilyKey(family)
+    const candidates =
+      index.byFamily.get(norm(family)) ??
+      [...index.byFamily]
+        .filter(([name]) => fontFamilyKey(name) === key)
+        .flatMap(([, faces]) => faces)
     if (candidates?.length) {
       const want = styleTokens(psName)
       // Token-level comparison, not substring: a wanted "bold" must not also credit
