@@ -106,6 +106,10 @@ describe('applyTextEdits', () => {
   })
 
   it('keeps a mixed-style lead-in and inherits the edited body style', async () => {
+    // Keeping Times requires the original family installed; replacement fonts are
+    // tested separately and intentionally reset paragraph-wide formatting.
+    const { findSystemFont } = await import('../src/main/font-locate')
+    if (!findSystemFont('Times-Roman', 'Times')) return
     const doc = await PDFDocument.create()
     const page = doc.addPage([595, 842])
     const leadFont = await doc.embedFont(StandardFonts.TimesRomanBold)
@@ -414,6 +418,7 @@ describe('applyTextEdits', () => {
         oldText: 'Change me now',
         newText: 'Changed now me',
         fontSize: 14,
+        newFont: 'arial',
       },
     ])
     const text = await extractText(out)
@@ -499,6 +504,7 @@ describe('block edits (paragraph rebuild)', () => {
         rect: [55, 655, 320, 718],
         oldText: 'first line of text second line follows third line ends here',
         newText: 'first line of text\nsecond line follows\nthird line ends here',
+        newFont: 'arial',
         fontSize: 12,
         newColor: [200, 0, 0],
         origin: [60, 700],
@@ -524,6 +530,7 @@ describe('block edits (paragraph rebuild)', () => {
         // Rewrapped to two lines: the old line seams now sit inside a line and
         // must come out as spaces, not glued words
         newText: 'first line of text second line follows\nthird line ends here',
+        newFont: 'arial',
         fontSize: 12,
         newColor: [0, 128, 0],
         origin: [60, 700],
@@ -549,6 +556,7 @@ describe('block edits (paragraph rebuild)', () => {
         rect: [55, 655, 320, 718],
         oldText: 'first line of text second line follows third line ends here',
         newText: 'centered one\ncentered two',
+        newFont: 'arial',
         fontSize: 12,
         newColor: [0, 0, 200],
         origin: [60, 700],
@@ -829,7 +837,7 @@ describe('validateTextEdits', () => {
   it('returns a null reason for edits that would apply and a reason for those that would not', async () => {
     const f = await makeFixture('Validated content')
     const results = await validateTextEdits(f.bytes, [
-      edit(f, 'Validated content', 'New content'),
+      { ...edit(f, 'Validated content', 'New content'), newFont: 'arial' },
       edit(f, 'Never was here', 'X'),
       { ...edit(f, 'Validated content', 'X'), pageIndex: 7 },
     ])
@@ -837,7 +845,9 @@ describe('validateTextEdits', () => {
     expect(results[1]!.reason).toMatch(/could not be located/)
     expect(results[2]!.reason).toMatch(/page does not exist/)
     // Dry run: the document still applies the same edit afterwards
-    const out = await applyAll(f.bytes, [edit(f, 'Validated content', 'New content')])
+    const out = await applyAll(f.bytes, [
+      { ...edit(f, 'Validated content', 'New content'), newFont: 'arial' },
+    ])
     expect(await extractText(out)).toBe('New content')
   })
 
