@@ -388,7 +388,12 @@ export default function App() {
                 throw new Error('正文已变化，请重新读取后再修改')
               if (typeof request.text !== 'string' || request.text.length > 200_000)
                 throw new Error('正文超出限制')
-              current.chain().setContent(request.text, { contentType: 'markdown' }).run()
+              current
+                .chain()
+                .setContent(repairOverescapedMarkdown(stripLegacyFencedDivs(request.text)), {
+                  contentType: 'markdown',
+                })
+                .run()
               markDirty()
             } else if (request.action === 'save') {
               if (!filePathRef.current) throw new Error('请先在界面保存未命名文档')

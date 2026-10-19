@@ -13,6 +13,19 @@ function createEditor(): Editor {
 }
 
 describe('Markdown equation integration', () => {
+  it('renders doubled LaTeX arrows in an escaped checklist item', () => {
+    const editor = createEditor()
+    const markdown = repairOverescapedMarkdown(
+      String.raw`- \[ \] 自然语言描述是否完整包含了“输入处理 $\\to$ 核心变换 $\\to$ 输出返回”全流程？`,
+    )
+    editor.commands.setContent(markdown, { contentType: 'markdown' })
+    const json = JSON.stringify(editor.getJSON())
+    expect(json.match(/"type":"inlineEquation"/g)).toHaveLength(2)
+    expect(editor.view.dom.querySelectorAll('.katex')).toHaveLength(2)
+    expect(editor.view.dom.textContent).not.toContain('$')
+    editor.destroy()
+  })
+
   it('parses standard inline LaTeX delimiters into equation nodes', () => {
     const editor = createEditor()
     const parsed = editor.markdown!.parse(

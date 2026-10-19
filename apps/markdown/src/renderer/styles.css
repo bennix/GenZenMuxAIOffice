@@ -2437,10 +2437,9 @@ body {
 }
 
 .md-equation-inline {
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
   margin: 0 2px;
-  vertical-align: middle;
+  vertical-align: baseline;
 }
 
 .md-equation-block {

@@ -2,6 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { normalizeAiMarkdownText } from '../src/markdown-normalize'
 
 describe('normalizeAiMarkdownText', () => {
+  it('repairs escaped bold labels whose closer leaked into inline code', () => {
+    expect(
+      normalizeAiMarkdownText(String.raw`> \*\*函数 1：` + '`update_dict(d, key, value)**`'),
+    ).toBe('> **函数 1：`update_dict(d, key, value)`**')
+    const code = '```markdown\n' + String.raw`> \*\*函数 1：` + '`update_dict(d)**`\n```'
+    expect(normalizeAiMarkdownText(code)).toBe(code)
+    expect(normalizeAiMarkdownText('示例 `value**`')).toBe('示例 `value**`')
+  })
+
   it('normalizes the overescaped formulas found in a saved review file', () => {
     const markdown = String.raw`第 3.2 节将关键点坐标定义为 (R\_{t-1}\\in\\mathbb{R}^{N\_q\\times3})，但式（13）写为
 $$

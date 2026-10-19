@@ -1,3 +1,5 @@
+import { renderLatexToHtml } from '@genoffice/ui'
+
 /** Print-theme CSS: mirrors the editor typography so the PDF matches the canvas */
 const PRINT_CSS = `
 * { box-sizing: border-box; }
@@ -19,17 +21,19 @@ ul, ol { padding-left: 1.6em; margin: 0.6em 0; }
 li > p { margin: 0.15em 0; }
 blockquote { margin: 0.8em 0; padding: 0.1em 1em; border-left: 3px solid #d0d5db; color: #57606a; }
 code { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 0.875em; background: rgba(129,139,152,0.14); border-radius: 4px; padding: 0.15em 0.35em; }
-pre { background: #f6f8fa; border: 1px solid #e4e7eb; border-radius: 8px; padding: 12px 16px; margin: 0.8em 0; white-space: pre-wrap; break-inside: avoid; }
+pre { background: #f6f8fa; border: 1px solid #e4e7eb; border-radius: 8px; padding: 12px 16px; margin: 0.8em 0; white-space: pre-wrap; overflow-wrap: anywhere; break-inside: auto; }
 pre code { background: none; padding: 0; font-size: 0.85em; line-height: 1.6; }
 hr { border: none; border-top: 2px solid #e4e7eb; margin: 1.6em 0; }
 a { color: #0a69da; }
 img { max-width: 100%; height: auto; }
 .tableWrapper { margin: 0.8em 0; }
-table { border-collapse: collapse; width: 100%; margin: 0; break-inside: avoid; }
-.md-equation-inline { display: inline-flex; vertical-align: middle; margin: 0 2px; }
+table { border-collapse: collapse; width: 100%; margin: 0; }
+.md-equation-inline { display: inline-block; vertical-align: baseline; margin: 0 2px; }
 .md-equation-block { display: block; margin: 1em 0; padding: 0.5em; overflow: visible; text-align: center; break-inside: avoid; }
-.md-equation .katex-html { display: none; }
-.md-equation .katex-mathml { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
+.md-equation math { font-family: math; }
+tr { break-inside: avoid; }
+thead { display: table-header-group; }
+p { orphans: 2; widows: 2; }
 th, td { border: 1px solid #d0d5db; padding: 6px 10px; vertical-align: top; text-align: start; }
 th > p, td > p { margin: 0; }
 th { background: #f6f8fa; font-weight: 600; }
@@ -52,6 +56,24 @@ export function buildPrintHtml(editorRoot: HTMLElement, title: string): string {
 
   // editor-only code block chrome (language picker + copy button) must not print
   for (const bar of clone.querySelectorAll('.md-codeblock-bar')) bar.remove()
+
+  // Native MathML prints without the editor's KaTeX CSS/webfonts. Re-render
+  // serialized nodes too: their HTML intentionally stores the editable TeX.
+  for (const equation of clone.querySelectorAll<HTMLElement>('.md-equation')) {
+    const latex = equation.dataset.latex ?? equation.getAttribute('title')
+    if (latex !== null && latex !== undefined) {
+      equation.innerHTML = renderLatexToHtml(
+        latex,
+        equation.classList.contains('md-equation-block'),
+      )
+    }
+    const math = equation.querySelector('math')
+    if (math) {
+      // TeX annotations are source metadata, not another visible formula.
+      for (const annotation of math.querySelectorAll('annotation')) annotation.remove()
+      equation.replaceChildren(math)
+    }
+  }
 
   const escapedTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;')
   return [

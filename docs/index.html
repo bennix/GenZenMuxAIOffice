@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="ZenOffice v0.6.102 — PDF 逐段保版翻译与字体段落工作台：内置中西文字库，保留公式图表，空间不足或单段错误时保留原文并附译文 Memo，输出单语、双语 PDF 和逐段日志。"
+      content="ZenOffice v0.6.103 — Markdown 公式预览与 PDF 导出修复：LaTeX 渲染为可打印公式，修正加粗标记与公式对齐，改善长代码块和表格分页；内置 PDF 保版翻译与字体段落工作台。"
     />
     <meta name="theme-color" content="#071417" />
     <link rel="icon" type="image/svg+xml" href="zenoffice-mark.svg" />
@@ -1650,14 +1650,14 @@
       <nav>
         <div class="wordmark"><img class="mark" src="zenoffice-mark.svg" alt="" /> ZenOffice</div>
         <div class="nav-actions">
-          <a class="nav-link" href="#whats-new">v0.6.102 PDF 翻译</a>
+          <a class="nav-link" href="#whats-new">v0.6.103 公式修复</a>
           <a class="nav-link" href="#manual">用户手册 · Manual</a>
           <a class="nav-link" href="https://github.com/bennix/GenZenMuxAIOffice"
             >Source on GitHub ↗</a
           >
           <a
             class="nav-link nav-download"
-            href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.102-x64.exe"
+            href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.103-x64.exe"
             >Windows 下载 ↓</a
           >
         </div>
@@ -1679,31 +1679,31 @@
             <div class="downloads">
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.102-arm64.dmg"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.103-arm64.dmg"
               >
                 下载 macOS DMG <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.102-x64.exe"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.103-x64.exe"
               >
                 下载 Windows x64 <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice-0.6.102.x86_64.rpm"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice-0.6.103.x86_64.rpm"
               >
                 下载 Linux RPM <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice_0.6.102_amd64.deb"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice_0.6.103_amd64.deb"
               >
                 下载 Ubuntu DEB <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.102.AppImage"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.103.AppImage"
               >
                 下载 Linux AppImage <b>↓</b>
               </a>
@@ -1717,35 +1717,40 @@
           </div>
         </section>
 
-        <section class="release-spotlight" id="whats-new" aria-label="v0.6.102 PDF 翻译与段落编辑">
-          <div class="section-kicker">v0.6.102 · PDF translation &amp; typography</div>
-          <h2>逐段翻译 PDF，保留公式和图表。</h2>
+        <section
+          class="release-spotlight"
+          id="whats-new"
+          aria-label="v0.6.103 Markdown 公式与 PDF 导出修复"
+        >
+          <div class="section-kicker">v0.6.103 · Markdown &amp; PDF rendering</div>
+          <h2>公式正确显示，也正确打印。</h2>
           <p>
-            新增整篇保版翻译与字体段落工作台。使用系统所选 AI，译文逐段写入并校验，生成单语与双语
-            PDF；不依赖 Python，无需首次安装外部工具。
+            Markdown 预览与 PDF 导出统一处理 LaTeX
+            公式。修正箭头显示为原始命令、加粗标记错位，以及长代码块与表格的分页问题。
           </p>
           <div class="release-steps">
             <article>
               <span>01</span>
-              <h3>字库随应用内置</h3>
+              <h3>公式随 PDF 一起导出</h3>
               <p>
-                内置 Nimbus Roman 四种字形及 Noto
-                中文字体。按目标语言推荐译文字体，保留原字号和行距；也可严格保留源字体。
+                行内与独立公式导出为自包含
+                MathML，无需网络加载公式样式或字体。支持箭头、分数、根式、上下标等常用数学表达。
               </p>
             </article>
             <article>
               <span>02</span>
-              <h3>放不下，原文留下</h3>
+              <h3>预览与输入保持一致</h3>
               <p>
-                译文溢出或字库缺字时保留原文，在原处附完整译文
-                Memo。段落定位、写入或校验失败会记录原因并跳过，继续处理后续内容。
+                统一处理重复转义的
+                LaTeX，修正加粗结束标记误入代码片段的旧内容，调整行内公式基线；普通代码保持原样。
               </p>
             </article>
             <article>
               <span>03</span>
-              <h3>每段都有处理记录</h3>
+              <h3>长内容自然分页</h3>
               <p>
-                日志显示原文、译文和公式保留记录，导出文本日志与翻译报告。网络临时故障最多自动重试五次；修复临时路径误判及重复段落定位。
+                长代码块和表格允许跨页，表头重复显示，减少整块避让造成的大片留白。继续提供 PDF
+                保版翻译、内置字库与译文 Memo 批注。
               </p>
             </article>
           </div>
@@ -1754,7 +1759,7 @@
         <section class="platforms" id="downloads" aria-label="平台下载">
           <div class="platforms-head">
             <h2>选择你的平台。</h2>
-            <div class="release-version">LATEST · v0.6.102</div>
+            <div class="release-version">LATEST · v0.6.103</div>
           </div>
           <div class="platform-grid">
             <article class="platform-card">
@@ -1766,8 +1771,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.102-arm64.dmg"
-                >下载 macOS v0.6.102 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.103-arm64.dmg"
+                >下载 macOS v0.6.103 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1778,8 +1783,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.102-x64.exe"
-                >下载 Windows v0.6.102 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOfficeSetup-0.6.103-x64.exe"
+                >下载 Windows v0.6.103 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1791,8 +1796,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice-0.6.102.x86_64.rpm"
-                >下载 Linux RPM v0.6.102 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice-0.6.103.x86_64.rpm"
+                >下载 Linux RPM v0.6.103 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1804,8 +1809,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice_0.6.102_amd64.deb"
-                >下载 Ubuntu v0.6.102 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/zenoffice_0.6.103_amd64.deb"
+                >下载 Ubuntu v0.6.103 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1816,8 +1821,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.102.AppImage"
-                >下载 AppImage v0.6.102 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/latest/download/ZenOffice-0.6.103.AppImage"
+                >下载 AppImage v0.6.103 <b>↓</b></a
               >
             </article>
           </div>
@@ -2109,8 +2114,9 @@
             <h3>可配置 AI 网关</h3>
             <p>
               ZenMux
-              <code>https://zenmux.ai/api/v1</code> 仍是默认通道；高级用户也可在设置中保存其他
-              OpenAI-compatible Base URL。API Key 继续仅在本机持久保存并于界面遮罩显示。
+              <code>https://zenmux.ai/api/v1</code>
+              仍是默认通道；高级用户也可在设置中保存其他 OpenAI-compatible Base URL。API Key
+              继续仅在本机持久保存并于界面遮罩显示。
             </p>
           </article>
           <article class="feature">
@@ -2139,15 +2145,17 @@
             <p>
               Word、Excel、PowerPoint、Markdown 与 PDF 的新增功能统一跟随“设置 → 通用语言”。
               信息图、AI 审稿、作文评阅、科研文献、翻译、图表、SQL、数据分析、
-              <code>@Connect</code> 与公式图片识别不再误用系统语言，切换后即可获得一致的界面文案。
+              <code>@Connect</code>
+              与公式图片识别不再误用系统语言，切换后即可获得一致的界面文案。
             </p>
           </article>
           <article class="feature">
             <span class="feature-num">27</span>
             <h3>AI 输入用 @ 引用已打开文件</h3>
             <p>
-              在 Word、Excel、PowerPoint、Markdown 或 PDF 的 AI 输入框键入 <code>@</code>， 即可选择
-              ZenOffice 中其他已打开且已保存的文件，并通过统一附件链路作为当前问题的上下文。
+              在 Word、Excel、PowerPoint、Markdown 或 PDF 的 AI 输入框键入
+              <code>@</code>， 即可选择 ZenOffice
+              中其他已打开且已保存的文件，并通过统一附件链路作为当前问题的上下文。
               列表、空状态与错误提示同步支持 19 种应用语言。
             </p>
           </article>
@@ -2165,7 +2173,8 @@
             <span class="feature-num">29</span>
             <h3>第三方 Excel 文件自动修复显示范围</h3>
             <p>
-              对实际包含名单、数据列和格式，却把工作表有效区域错误声明为 <code>A1</code>
+              对实际包含名单、数据列和格式，却把工作表有效区域错误声明为
+              <code>A1</code>
               的导出文件，ZenOffice 会核验真实单元格范围并完整显示内容，不再只剩标题或空白网格；
               原有中文字体、边框、行高与列宽保持不变。
             </p>
@@ -2608,7 +2617,8 @@
                 <li>SQL 高亮、多语句、选中/当前语句调试、错误定位与结果回填</li>
                 <li>AI 生成/解释/修复 SQL 与安全只读执行</li>
                 <li>
-                  示例下载：<a href="samples/零售订单数据库.xlsx" download>零售订单数据库 ↓</a> ·
+                  示例下载：<a href="samples/零售订单数据库.xlsx" download>零售订单数据库 ↓</a>
+                  ·
                   <a href="samples/科研项目数据库.xlsx" download>科研项目数据库 ↓</a>
                 </li>
                 <li>AI 右对齐格式兼容，避免批量应用失败</li>

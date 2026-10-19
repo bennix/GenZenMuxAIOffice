@@ -34,6 +34,14 @@ export function normalizeAiMarkdownText(text: string): string {
         return normalized
       }
 
+      // Older AI output placed a bold closer inside a code span, e.g.
+      // \*\*函数：`update_dict(d)**`. Only repair this unmistakable
+      // paragraph-prefix signature; ordinary code containing ** stays literal.
+      line = line.replace(
+        /^((?:\s*>\s*)*(?:[-*]\s+)?)(?:\\\*){2}([^`\n]*?)`([^`\n]*?)\*\*`(?=\s*$|[，。；：])/u,
+        '$1**$2`$3`**',
+      )
+
       line = transformOutsideInlineCode(line, (plain) =>
         plain
           .replace(/\u200B|\u200C|\u200D|\u2060|\uFEFF/g, '')
