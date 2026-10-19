@@ -36,7 +36,10 @@ test('compatible PPT export preserves the editing session and publishes a visual
     await page.evaluate((value) => window.slidesApi.htmlToPptx([value], 960, 'replace'), html)
     const before = await page.evaluate(() => window.slidesApi.isDirty())
     const target = join(directory, 'compatible.pptx')
-    await launched.app.evaluate(({ dialog, webContents }, filePath) => {
+    await launched.app.evaluate(({ dialog, webContents, shell }, filePath) => {
+      // Verify the saved file below without opening a desktop file manager.
+      // On headless Linux xdg-open can launch a browser that holds Electron's pipes open.
+      shell.showItemInFolder = () => {}
       dialog.showSaveDialog = (async () => ({
         canceled: false,
         filePath,
