@@ -4,7 +4,6 @@
 > Upstream and third-party material retain their original terms and notices.
 > See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md) for the current licensing scope.
 
-
 **The world's first full-featured open-source AI Office suite.**
 
 [![License: GPL-3.0-only](https://img.shields.io/github/license/bennix/GenZenMuxAIOffice)](LICENSE)
@@ -299,7 +298,6 @@ Caladea, Noto CJK subsets) are OFL/Apache.
 - **Commercial License**: For enterprise deployment, SaaS embedding, or proprietary integration where you seek permission beyond the GPL terms for code Xu Zhiping has the right to license, please contact [macdevsh@gmail.com](mailto:macdevsh@gmail.com) to discuss a separate commercial license agreement.
 
 The GPL permits commercial use; enterprise or SaaS use alone does not require a commercial license. A separate commercial agreement applies only when agreed in writing and only to rights the licensor controls. Upstream and third-party code, dependencies, assets, and separately licensed directories retain their own terms; this offer does not grant proprietary rights to them or waive their requirements.
-
 
 Original code authored by bennix is licensed under [GPL-3.0-only](LICENSE).
 See [LICENSING.md](LICENSING.md) for scope. Upstream GenOffice code retains its
