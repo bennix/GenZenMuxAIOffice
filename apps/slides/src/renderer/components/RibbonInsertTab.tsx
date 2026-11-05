@@ -61,6 +61,7 @@ export function RibbonInsertTab({ rb }: { rb: RibbonTabCtx }) {
     onInsertField,
     onInsertIcon,
     onInsertImage,
+    onOpenAiMaterials,
     onInsertInfographic,
     onInsertMedia,
     onInsertModel3d,
@@ -215,6 +216,22 @@ export function RibbonInsertTab({ rb }: { rb: RibbonTabCtx }) {
       </Group>
       <div className="ribbon-sep" />
       <Group label={t('ribbonGroupImages')}>
+        <button
+          className="rb-big"
+          disabled={!hasDoc || !onOpenAiMaterials}
+          onClick={onOpenAiMaterials}
+          data-tip={
+            lang === 'zh' || lang === 'zh-TW'
+              ? '生成图片或视频，并插入当前幻灯片'
+              : 'Create images or video and insert into the current slide'
+          }
+        >
+          <span className="rb-big-icon">
+            <IconPicture size={BIG} />
+          </span>
+          <span>{lang === 'zh' || lang === 'zh-TW' ? 'AI 素材' : 'AI assets'}</span>
+        </button>
+
         <button
           className="rb-big"
           disabled={!hasDoc}

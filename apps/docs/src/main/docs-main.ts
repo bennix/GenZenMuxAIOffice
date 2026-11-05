@@ -1,3 +1,4 @@
+import { registerAiNetworkIpc } from '@genoffice/electron-utils'
 import { publishCompatibleOffice } from '@genoffice/electron-utils'
 import { generateGongwen, type GongwenRequest } from '@genoffice/gongwen'
 import { createHash } from 'node:crypto'
@@ -2608,6 +2609,7 @@ export async function runAiChat(request: AiChatRequest, signal?: AbortSignal) {
 }
 
 export function registerAiIpc(): void {
+  registerAiNetworkIpc()
   ipcMain.handle('ai:get-settings', () => readAiSettings())
 
   ipcMain.handle('ai:set-settings', (_event, settings: AiSettings) => {

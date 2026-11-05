@@ -1,3 +1,4 @@
+import { registerAiNetworkIpc } from '@genoffice/electron-utils'
 /**
  * AI IPC for the slides main process, extracted from slides-main.ts:
  * settings persistence, the streaming proxy (main process does the networking
@@ -56,6 +57,7 @@ function writeJson(path: string, value: unknown): void {
 const activeAiStreams = new Map<string, AbortController>()
 
 export function registerAiIpc(): void {
+  registerAiNetworkIpc()
   ipcMain.handle('ai:get-settings', (): AiSettings => {
     const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(AI_SETTINGS_PATH(), {})
     const restored = restoreAiSettingsFromDisk(stored, safeStorage)

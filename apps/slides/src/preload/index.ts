@@ -112,6 +112,11 @@ const api: SlidesApi = {
   openPptxPath: (path, fitWidthPx) => ipcRenderer.invoke('slides:open-path', path, fitWidthPx),
   consumePendingOpen: (fitWidthPx) => ipcRenderer.invoke('slides:consume-pending-open', fitWidthPx),
   newBlank: (fitWidthPx) => ipcRenderer.invoke('slides:new-blank', fitWidthPx),
+  sourceRead: (name) => ipcRenderer.invoke('slides:source-read', name),
+  sourceCheck: (pagesHtml) => ipcRenderer.invoke('slides:source-check', pagesHtml),
+  sourcePublish: (request) => ipcRenderer.invoke('slides:source-publish', request),
+  sourceImportAsset: (name, dataUrl) =>
+    ipcRenderer.invoke('slides:source-import-asset', name, dataUrl),
   htmlToPptx: (
     pagesHtml: string[],
     fitWidthPx: number,
@@ -403,3 +408,9 @@ installDocumentDropBridge({
   openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
 })
 import { imageShareBridge } from '@genoffice/electron-utils/connect'
+
+contextBridge.exposeInMainWorld('aiNetwork', {
+  fetch: (request: { id: string; url: string; method: string; headers: [string, string][]; body?: Uint8Array }) => ipcRenderer.invoke('ai-network:fetch', request),
+  cancel: (id: string) => ipcRenderer.send('ai-network:cancel', id),
+  fetchAsset: (url: string) => ipcRenderer.invoke('ai-network:asset', url),
+})

@@ -49,6 +49,14 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin({ exclude: ['@genoffice/electron-utils'] })],
   },
   renderer: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(here, 'src/renderer/index.html'),
+          loveart: resolve(here, 'src/renderer/loveart.html'),
+        },
+      },
+    },
     resolve: { alias: workspaceAlias },
     plugins: [react()],
     server: {

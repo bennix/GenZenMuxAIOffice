@@ -84,3 +84,15 @@ export {
 
 export { installLibreOfficeWithProgress } from './libreoffice-install-progress'
 export { resolveLayoutExecutable } from './office-layout-audit'
+
+export {
+  installAdaptiveAiNetwork,
+  getAiNetworkStatus,
+  getAiNetworkPreferences,
+  setAiNetworkPreferences,
+  resetAiNetwork,
+  validateAiNetworkPreferences,
+  prepareAiNetworkSession,
+} from './adaptive-ai-network'
+
+export { registerAiNetworkIpc } from './ai-network-ipc'

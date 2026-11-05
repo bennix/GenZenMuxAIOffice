@@ -180,3 +180,9 @@ installDocumentDropBridge({
   openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
 })
 import { imageShareBridge } from '@genoffice/electron-utils/connect'
+
+contextBridge.exposeInMainWorld('aiNetwork', {
+  fetch: (request: { id: string; url: string; method: string; headers: [string, string][]; body?: Uint8Array }) => ipcRenderer.invoke('ai-network:fetch', request),
+  cancel: (id: string) => ipcRenderer.send('ai-network:cancel', id),
+  fetchAsset: (url: string) => ipcRenderer.invoke('ai-network:asset', url),
+})

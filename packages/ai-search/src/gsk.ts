@@ -1,3 +1,4 @@
+import { aiFetch as fetch } from '@genoffice/ai-provider'
 /**
  * Wrapper around gsk (Genspark CLI, @genspark/cli) — search / image generation /
  * media analysis / upload / transcription.

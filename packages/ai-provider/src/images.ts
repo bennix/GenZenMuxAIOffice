@@ -1,3 +1,4 @@
+import { aiFetch as fetch } from './network'
 import type { AiGeneratedImage, AiImageGenerateOptions } from './types'
 
 const VERTEX_BASE_URL = 'https://zenmux.ai/api/vertex-ai/v1'

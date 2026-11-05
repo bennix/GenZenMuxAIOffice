@@ -1,3 +1,4 @@
+import { installAdaptiveAiNetwork } from '@genoffice/electron-utils'
 import { publishCompatibleOffice } from '@genoffice/electron-utils'
 import { createHash, randomUUID } from 'node:crypto'
 import {
@@ -2014,9 +2015,17 @@ export function registerSheetsIpc(): void {
       }
       // 暂存原生公式/图表/打印设置，兼容验收失败不能先覆盖用户目标文件。
       let result: Awaited<ReturnType<typeof writeWorkbookTo>> | undefined
-      await publishCompatibleOffice(targetPath, async path => {
-        result = await writeWorkbookTo(client, session, request, path)
-      }, { isPackaged: app.isPackaged, appPath: app.getAppPath(), resourcesPath: process.resourcesPath })
+      await publishCompatibleOffice(
+        targetPath,
+        async (path) => {
+          result = await writeWorkbookTo(client, session, request, path)
+        },
+        {
+          isPackaged: app.isPackaged,
+          appPath: app.getAppPath(),
+          resourcesPath: process.resourcesPath,
+        },
+      )
       if (!result) throw new Error('Native workbook export produced no result')
       return result
     })()
@@ -2192,6 +2201,7 @@ export function registerSheetsIpc(): void {
 let aiIpcRegistered = false
 
 export function registerSheetsAiIpc(): void {
+  installAdaptiveAiNetwork()
   if (aiIpcRegistered) return
   aiIpcRegistered = true
 
@@ -2837,7 +2847,10 @@ function installApplicationMenu(): void {
             accelerator: 'Shift+CmdOrCtrl+S',
             click: () => sendMenuAction('save-as'),
           },
-          { label: getUiLang() === 'zh' ? '另存可编辑兼容版…' : 'Save editable compatible copy…', click: () => sendMenuAction('save-as') },
+          {
+            label: getUiLang() === 'zh' ? '另存可编辑兼容版…' : 'Save editable compatible copy…',
+            click: () => sendMenuAction('save-as'),
+          },
           {
             label: tm('menuExportPdf'),
             click: () => sendMenuAction('export-pdf'),
@@ -2912,43 +2925,7 @@ export {
  * otherwise the system proxy is read via session.resolveProxy() after app ready.
  */
 async function applyMainProcessProxy(): Promise<void> {
-  const setDispatcher = async (proxyUrl: string) => {
-    // spawned gsk CLI children do their own fetch and never see the
-    // dispatcher below — forward the proxy to them via env
-    try {
-      const { ProxyAgent, setGlobalDispatcher } = await import('undici')
-      setGlobalDispatcher(new ProxyAgent(proxyUrl))
-      // strip user:pass credentials before logging
-      console.log('[proxy] main-process fetch via', proxyUrl.replace(/\/\/[^@/]*@/, '//***@'))
-    } catch (e) {
-      console.warn('[proxy] failed to set ProxyAgent:', e)
-    }
-  }
-  const envProxy =
-    process.env.HTTPS_PROXY ||
-    process.env.https_proxy ||
-    process.env.HTTP_PROXY ||
-    process.env.http_proxy ||
-    process.env.ALL_PROXY ||
-    process.env.all_proxy
-  if (envProxy) {
-    await setDispatcher(envProxy)
-    return
-  }
-  try {
-    await app.whenReady()
-    // PAC/rule proxies answer per-host: probe the host the login flow, the
-    // ZenMux LLM proxy and the gsk CLI actually target
-    const resolved = await electronSession.defaultSession.resolveProxy('https://zenmux.ai/api/v1')
-    const m = /PROXY\s+([^;]+)/i.exec(resolved || '')
-    if (m?.[1]) {
-      await setDispatcher(`http://${m[1].trim()}`)
-    } else {
-      console.log('[proxy] system proxy = DIRECT, no dispatcher set')
-    }
-  } catch (e) {
-    console.warn('[proxy] resolveProxy failed:', e)
-  }
+  installAdaptiveAiNetwork()
 }
 
 export function startSheetsStandalone(): void {

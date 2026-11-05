@@ -1,3 +1,4 @@
+import { aiFetch as fetch } from './network'
 // Shared by the document UI and MCP; no renderer dependencies.
 export const SCREENWRITING_REVISION = '560237cd280cafb96d15d2cf3a71ff6a8ce47756'
 export const SCREENWRITING_SOURCE = 'https://github.com/jtydhr88/screenwriting-skills'

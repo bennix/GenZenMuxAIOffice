@@ -1,3 +1,4 @@
+import { aiFetch as fetch } from './network'
 import type { AgentMessage, AgentToolCall, AgentToolDef } from '@genoffice/agent-core'
 import { httpBodyDetail } from './http-error'
 import { GENSPARK_LLM_BASE_URLS, resolveZenmuxBaseUrl } from './providers'

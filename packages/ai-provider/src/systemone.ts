@@ -1,3 +1,4 @@
+import { aiFetch as fetch } from './network'
 import { httpBodyDetail } from './http-error'
 import { resolveZenmuxBaseUrl } from './providers'
 

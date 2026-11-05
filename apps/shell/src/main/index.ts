@@ -1,3 +1,4 @@
+import { registerAiNetworkIpc } from './ai-network-ipc'
 import { execSync, spawn } from 'node:child_process'
 import { ToolRegistry } from '@genoffice/mcp-server'
 import { registerApplicationTools } from '@genoffice/mcp-server/application-tools'
@@ -2709,42 +2710,11 @@ function installDockMenu(): void {
   )
 }
 
-// On mainland-China networks the main process's Node fetch (undici) bypasses the system proxy,
-// so direct calls to overseas LLM/image-search APIs time out or get region-blocked (403).
-// Prefer proxy env vars (terminal launch); a packaged app launched from Finder inherits no shell
-// env vars, so fall back to the system HTTP proxy. The renderer uses Chromium's system proxy and
-// is unaffected. Same bootstrap as slides-main startSlidesStandalone.
-// awaited by login IPC so the first status probe / login click cannot race the proxy resolution
+// Initialize the shared adaptive AI transport without blocking application startup.
 let _proxyBootstrap: Promise<void> = Promise.resolve()
 
 async function installMainProcessProxy(): Promise<void> {
-  let proxyUrl = [
-    process.env.HTTPS_PROXY,
-    process.env.https_proxy,
-    process.env.HTTP_PROXY,
-    process.env.http_proxy,
-    process.env.ALL_PROXY,
-    process.env.all_proxy,
-  ].find((v) => v && /^https?:\/\//.test(v))
-  if (!proxyUrl) {
-    try {
-      // PAC/rule proxies answer per-host: probe the ZenMux API used by AI requests.
-      const resolved = await session.defaultSession.resolveProxy('https://zenmux.ai/api/v1')
-      const m = /PROXY\s+([^;\s]+)/.exec(resolved)
-      if (m) proxyUrl = `http://${m[1]}`
-    } catch {
-      /* no system proxy */
-    }
-  }
-  if (!proxyUrl) return
-  try {
-    const { ProxyAgent, setGlobalDispatcher } = await import('undici')
-    setGlobalDispatcher(new ProxyAgent(proxyUrl))
-    // strip user:pass credentials before logging
-    console.log('[proxy] main-process fetch via', proxyUrl.replace(/\/\/[^@/]*@/, '//***@'))
-  } catch (e) {
-    console.warn('[proxy] failed to set ProxyAgent:', e)
-  }
+  registerAiNetworkIpc()
 }
 
 // ---- lifecycle (the shell is the only owner) ----

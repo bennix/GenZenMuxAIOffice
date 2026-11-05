@@ -18,6 +18,7 @@ export interface EditableHtmlNode {
   color?: string
   fontFace?: string
   fontSize?: number
+  textRole?: 'title' | 'body' | 'caption' | 'footer'
   bold?: boolean
   italic?: boolean
   underline?: boolean
@@ -44,6 +45,81 @@ export interface EditableHtmlPage {
   height: number
   background?: string
   nodes: EditableHtmlNode[]
+}
+
+/** Minimum readable size in the authored canvas, independent of preview zoom. */
+export function minimumTextPx(node: EditableHtmlNode, pageHeight: number): number {
+  const base =
+    node.textRole === 'title'
+      ? 36
+      : node.textRole === 'body'
+        ? 28
+        : node.textRole === 'footer'
+          ? 16
+          : node.textRole === 'caption'
+            ? 20
+            : 24
+  // Never enlarge an already small legacy label as a side effect of fitting.
+  return Math.min(node.fontSize || base, (base * pageHeight) / 720)
+}
+
+export interface SlideBuildIssue {
+  code: 'small-text' | 'canvas-overflow' | 'container-overflow'
+  nodeIndex: number
+  message: string
+}
+
+/** Shared by slides_check and editable PPTX export; never hide defects by clipping. */
+export function checkEditableSlide(page: EditableHtmlPage): SlideBuildIssue[] {
+  const nodes = fitTextInsideDecorations(page.nodes, page.width, page.height)
+  const shapes = nodes.filter(isDecorShape)
+  const issues: SlideBuildIssue[] = []
+  nodes.forEach((node, nodeIndex) => {
+    if (node.kind !== 'text' || !node.text?.trim()) return
+    const floor =
+      ((node.textRole === 'footer'
+        ? 16
+        : node.textRole === 'caption'
+          ? 20
+          : node.textRole === 'title'
+            ? 36
+            : node.textRole === 'body'
+              ? 28
+              : 18) *
+        page.height) /
+      720
+    if ((node.fontSize || 18) < floor - 0.1)
+      issues.push({
+        code: 'small-text',
+        nodeIndex,
+        message: `Text ${nodeIndex + 1}: increase font to at least ${Math.ceil(floor)}px; shorten or split content instead of shrinking.`,
+      })
+    if (
+      node.x < -1 ||
+      node.y < -1 ||
+      node.x + node.w > page.width + 1 ||
+      node.y + node.h > page.height + 1
+    )
+      issues.push({
+        code: 'canvas-overflow',
+        nodeIndex,
+        message: `Text ${nodeIndex + 1}: text extends beyond the slide; reflow or split the page.`,
+      })
+    const container = pickContainer(node, shapes, page.width, page.height)
+    if (
+      container &&
+      (node.y + node.h > container.y + container.h + 2 ||
+        node.x + node.w > container.x + container.w + 2 ||
+        node.x < container.x - 2 ||
+        node.y < container.y - 2)
+    )
+      issues.push({
+        code: 'container-overflow',
+        nodeIndex,
+        message: `Text ${nodeIndex + 1}: text extends beyond its card; enlarge the card or split content, preserving readable type.`,
+      })
+  })
+  return issues
 }
 
 export type HtmlImageLoader = (src: string) => Promise<string | null>
@@ -233,7 +309,7 @@ export function fitTextInsideDecorations(
     const needed = text.w - grow + widen
     let scale = 1
     if (unwrap > 0 && room + 1 < needed) {
-      scale = Math.max(0.72, room / needed)
+      scale = Math.min(1, Math.max(0.85, minimumTextPx(text, pageHeight) / font, room / needed))
       text.fontSize = Math.max(10, Math.round(font * scale * 10) / 10)
       if (text.lineHeight) text.lineHeight = Math.round(text.lineHeight * scale * 10) / 10
     }
@@ -306,11 +382,18 @@ export function fitTextInsideDecorations(
     if (still <= 3) continue
     const used = Math.max(1, contentBottomNow - contentTop)
     const avail = Math.max(1, shape.y + shape.h - Math.min(pad.b, 12) - contentTop)
-    const scale = Math.min(1, avail / used)
+    const fontFloorScale = Math.max(
+      ...members.map((text) => minimumTextPx(text, pageHeight) / (text.fontSize || 18)),
+    )
+    const scale = Math.min(1, Math.max(fontFloorScale, avail / used))
     for (const text of members) {
       text.y = contentTop + (text.y - contentTop) * scale
       text.h *= scale
-      if (text.fontSize) text.fontSize = Math.max(6, Math.round(text.fontSize * scale * 10) / 10)
+      if (text.fontSize)
+        text.fontSize = Math.max(
+          minimumTextPx(text, pageHeight),
+          Math.round(text.fontSize * scale * 10) / 10,
+        )
       if (text.lineHeight)
         text.lineHeight = Math.round((text.lineHeight || text.fontSize || 18) * scale * 10) / 10
     }

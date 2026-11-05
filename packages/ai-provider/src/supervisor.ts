@@ -1,3 +1,4 @@
+import { aiFetch as fetch } from './network'
 // Academic research skills loaded like the screenwriting studio.
 // Source: https://github.com/HKUSTDial/Supervisor-Skills
 export const SUPERVISOR_REVISION = '207bc6f7a1aa107e544099c2c7cc86816fba9628'

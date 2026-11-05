@@ -1,3 +1,4 @@
+import { prepareAiNetworkSession } from '@genoffice/electron-utils'
 import { app, net, shell } from 'electron'
 import type { BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
@@ -371,16 +372,34 @@ export function checkForUpdatesNow(channel: UpdateChannel): Promise<UpdateCheckR
 
 const RELEASES_API = 'https://api.github.com/repos/bennix/GenZenMuxAIOffice/releases'
 
+function checkUsingConfiguredNetwork() {
+  if (!autoUpdater.netSession) return autoUpdater.checkForUpdates()
+  return prepareAiNetworkSession(autoUpdater.netSession, RELEASES_API + '/latest').then(() =>
+    autoUpdater.checkForUpdates(),
+  )
+}
+function downloadUsingConfiguredNetwork() {
+  if (!autoUpdater.netSession) return autoUpdater.downloadUpdate()
+  return prepareAiNetworkSession(autoUpdater.netSession, RELEASES_API + '/latest').then(() =>
+    autoUpdater.downloadUpdate(),
+  )
+}
+
 /** Read the published tag when the updater feed is missing (mac builds ship latest.yml but not latest-mac.yml). */
 async function latestReleaseTag(channel: UpdateChannel): Promise<string> {
   const endpoint = channel === 'beta' ? `${RELEASES_API}?per_page=20` : `${RELEASES_API}/latest`
-  const response = await net.fetch(endpoint, {
+  if (autoUpdater.netSession) await prepareAiNetworkSession(autoUpdater.netSession, endpoint)
+  const fetchUpdate =
+    autoUpdater.netSession?.fetch.bind(autoUpdater.netSession) ?? net.fetch.bind(net)
+  const response = await fetchUpdate(endpoint, {
     headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'ZenOffice-Updater' },
   })
   if (!response.ok) throw new Error(`GitHub returned ${response.status}`)
   const payload: unknown = await response.json()
   const release = Array.isArray(payload)
-    ? payload.find((item) => item && typeof item === 'object' && !(item as { draft?: boolean }).draft)
+    ? payload.find(
+        (item) => item && typeof item === 'object' && !(item as { draft?: boolean }).draft,
+      )
     : payload
   const tag =
     release &&
@@ -407,11 +426,14 @@ async function performUpdateCheck(channel: UpdateChannel): Promise<UpdateCheckRe
   try {
     if (updaterActive) {
       try {
-        const result = await autoUpdater.checkForUpdates()
+        const result = await checkUsingConfiguredNetwork()
         const latestVersion = result?.updateInfo?.version
         if (latestVersion) return releaseResult(currentVersion, latestVersion)
       } catch (error) {
-        log('updater feed failed, using the GitHub release tag:', error instanceof Error ? error.message : error)
+        log(
+          'updater feed failed, using the GitHub release tag:',
+          error instanceof Error ? error.message : error,
+        )
       }
     }
     return releaseResult(currentVersion, await latestReleaseTag(channel))
@@ -465,7 +487,7 @@ export function applyUpdateChannel(channel: UpdateChannel): void {
   // back off since a beta user switching to stable must not downgrade
   autoUpdater.allowDowngrade = false
   log('channel switched:', channel)
-  autoUpdater.checkForUpdates().catch((err) => log('check failed:', err?.message ?? err))
+  checkUsingConfiguredNetwork().catch((err) => log('check failed:', err?.message ?? err))
 }
 
 export function initAutoUpdater(
@@ -524,7 +546,7 @@ export function initAutoUpdater(
       if (downloadInFlight || downloadComplete) return
       downloadInFlight = true
       pushUpdateState({ phase: 'downloading', percent: 0 })
-      autoUpdater.downloadUpdate().catch((err) => {
+      downloadUsingConfiguredNetwork().catch((err) => {
         log('download failed:', err?.message ?? err)
         failDownload()
       })
@@ -598,7 +620,7 @@ export function initAutoUpdater(
   })
 
   const check = (): void => {
-    autoUpdater.checkForUpdates().catch((err) => log('check failed:', err?.message ?? err))
+    checkUsingConfiguredNetwork().catch((err) => log('check failed:', err?.message ?? err))
   }
   setTimeout(check, FIRST_CHECK_DELAY_MS)
   setInterval(check, RECHECK_INTERVAL_MS)

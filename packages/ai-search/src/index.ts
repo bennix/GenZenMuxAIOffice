@@ -1,3 +1,4 @@
+import { aiFetch as fetch } from '@genoffice/ai-provider'
 /**
  * Search utilities (main process) — Serper Google API first, with DuckDuckGo as the
  * last resort. The Serper/DuckDuckGo logic mirrors an earlier

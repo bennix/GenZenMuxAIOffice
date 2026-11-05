@@ -1,3 +1,4 @@
+import { aiServiceFetch as fetch } from './network'
 import { chatCompletion } from './zenmux'
 import { useSettings } from '../store/settingsStore'
 

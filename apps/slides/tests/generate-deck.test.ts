@@ -265,6 +265,43 @@ describe('generate_deck lands pages while generating + retries', () => {
     },
   })
 
+  it('publishes each completed page before requesting the next page', async () => {
+    const { access, getPages } = makeAccess()
+    const generate = access.generatePageCloud!
+    access.generatePageCloud = async (args) => {
+      expect(getPages()).toBe(args.pageIndex - 1)
+      return generate(args)
+    }
+    await createSlidesSkill(access).executeTool(deckCall(3))
+    expect(getPages()).toBe(3)
+  })
+
+  it('regenerates a layout-rejected page with compiler feedback before moving on', async () => {
+    const { access, getPages } = makeAccess()
+    const land = access.generateFromHtml!
+    const generate = access.generatePageCloud!
+    let rejected = false
+    let repaired = false
+    access.generateFromHtml = async (...args) => {
+      if (!rejected) {
+        rejected = true
+        return { ok: false, error: 'Slide layout check failed: Text 1 overflows its card' }
+      }
+      return land(...args)
+    }
+    access.generatePageCloud = async (args) => {
+      if (args.brief.includes('Text 1 overflows its card')) repaired = true
+      if (args.pageIndex === 2) {
+        expect(repaired).toBe(true)
+        expect(getPages()).toBe(1)
+      }
+      return generate(args)
+    }
+    await createSlidesSkill(access).executeTool(deckCall(2))
+    expect(getPages()).toBe(2)
+    expect(repaired).toBe(true)
+  })
+
   it('a page fails once but retry succeeds → all pages still land', async () => {
     // Page 2 fails once at first; the second (retry) attempt succeeds
     const { access, getPages } = makeAccess({ failAttempts: { 2: 1 } })

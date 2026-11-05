@@ -1,3 +1,4 @@
+import type { AiNetworkPreferences, AiNetworkStatus } from '@genoffice/ai-provider'
 import type { UpdateChannel } from './update-api'
 import type { AiSettings } from '@genoffice/ai-provider'
 
@@ -66,6 +67,12 @@ export interface RecentPage {
 }
 
 export interface HomeApi {
+  getAiNetworkSettings(): Promise<{ preferences: AiNetworkPreferences; status: AiNetworkStatus }>
+  setAiNetworkSettings(
+    preferences: AiNetworkPreferences,
+  ): Promise<{ preferences: AiNetworkPreferences; status: AiNetworkStatus }>
+  checkAiNetwork(): Promise<{ ok: boolean; httpStatus?: number; status: AiNetworkStatus }>
+
   /** unified recents across document types, newest first (paged) */
   recents(query?: RecentQuery): Promise<RecentPage>
   /** starred files (independent of the recent list), newest first (paged) */

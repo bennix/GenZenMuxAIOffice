@@ -1,3 +1,4 @@
+import { aiServiceFetch as fetch } from './network'
 import { normalizeVideoOptions, videoCapabilities, type VideoSettings } from './videoModels'
 // ZenMux client — OpenAI-compatible REST. See REQUIREMENTS.md §4.
 // ⚠️ Endpoint shapes target the OpenAI contract; verify against ZenMux live docs and

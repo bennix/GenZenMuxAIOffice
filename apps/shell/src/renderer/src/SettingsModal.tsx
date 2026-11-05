@@ -1,3 +1,4 @@
+import { NetworkSettings } from './NetworkSettings'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useI18n } from './locale'
@@ -35,10 +36,11 @@ const CHANNEL_OPTIONS = [
   { value: 'beta', labelKey: 'channelBeta' },
 ] as const satisfies readonly { value: 'stable' | 'beta'; labelKey: StringKey }[]
 
-type SectionId = 'account' | 'ai' | 'knowledge' | 'general' | 'about'
+type SectionId = 'account' | 'ai' | 'network' | 'knowledge' | 'general' | 'about'
 
 const SECTIONS: readonly { id: SectionId; labelKey?: StringKey }[] = [
   { id: 'ai' },
+  { id: 'network' },
   { id: 'knowledge' },
   { id: 'general', labelKey: 'setSecGeneral' },
   { id: 'about', labelKey: 'setSecAbout' },
@@ -404,11 +406,24 @@ export function SettingsModal({
                 onClick={() => selectSection(s.id)}
               >
                 <SectionIcon id={s.id} />
-                {s.labelKey ? t(s.labelKey) : s.id === 'knowledge' ? knowledgeLabel : aiLabel}
+                {s.id === 'network'
+                  ? isChinese
+                    ? '网络与代理'
+                    : 'Network & proxy'
+                  : s.id === 'about'
+                    ? isChinese
+                      ? '关于与在线更新'
+                      : 'About & updates'
+                    : s.labelKey
+                      ? t(s.labelKey)
+                      : s.id === 'knowledge'
+                        ? knowledgeLabel
+                        : aiLabel}
               </button>
             ))}
           </nav>
           <div className="set-pane">
+            {section === 'network' && <NetworkSettings zh={isChinese} />}
             {section === 'account' && (
               <>
                 <h3 className="set-pane-title">{t('setSecAccount')}</h3>
@@ -1030,7 +1045,22 @@ export function SettingsModal({
             )}
             {section === 'about' && (
               <>
-                <h3 className="set-pane-title">{t('setSecAbout')}</h3>
+                <h3 className="set-pane-title">
+                  {isChinese ? '关于与在线更新' : 'About & online updates'}
+                </h3>
+                <button
+                  className="set-btn"
+                  disabled={updateCheck.status === 'checking'}
+                  onClick={runUpdateCheck}
+                >
+                  {updateCheck.status === 'checking'
+                    ? isChinese
+                      ? '正在检查更新…'
+                      : 'Checking for updates…'
+                    : isChinese
+                      ? '检查在线更新'
+                      : 'Check for updates'}
+                </button>
                 <Field label={t('versionLabel')} value={appVersion || '—'} />
                 <div
                   className={`set-update-check ${updateCheck.status}`}

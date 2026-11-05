@@ -1,4 +1,4 @@
-import { insertOfficeImage } from '../office-bridge'
+import { insertOfficeImage, insertOfficeVideo } from '../office-bridge'
 import { useRef, useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import type { Card } from '../types'
@@ -412,7 +412,27 @@ export default function AssetCard({ card, scale, onBranchStart }: AssetCardProps
                 }
               }}
             >
-              {inserting ? '插入中…' : '插入文档'}
+              {inserting ? '插入中…' : window.loveArtOffice?.insertLabel || '插入文档'}
+            </button>
+          )}
+          {card.type === 'video' && src && window.loveArtOffice?.insertVideo && (
+            <button
+              className="btn-accent"
+              disabled={inserting}
+              onClick={async () => {
+                setInserting(true)
+                setInsertStatus('')
+                try {
+                  await insertOfficeVideo(src)
+                  setInsertStatus('视频已插入 PPT')
+                } catch (error) {
+                  setInsertStatus(error instanceof Error ? error.message : String(error))
+                } finally {
+                  setInserting(false)
+                }
+              }}
+            >
+              {inserting ? '插入中…' : window.loveArtOffice.insertLabel || '插入当前幻灯片'}
             </button>
           )}
           {card.type === 'image' && src && window.loveArtOffice?.listImageTargets && (

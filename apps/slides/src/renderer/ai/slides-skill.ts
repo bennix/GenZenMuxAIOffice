@@ -70,6 +70,7 @@ export type DeckProgressEvent =
 
 /** Panel/skill access point to the currently open deck (refs provided by App, stay fresh across renders). */
 export interface DeckAccess {
+  chooseDeckStyle?(topic: string, signal?: AbortSignal): Promise<string | null>
   getSlides(): RenderSlide[]
   getCurrent(): number
   getSelectedIds(): string[]
@@ -214,6 +215,10 @@ export interface ClarifyQuestion {
 
 const AGENT_SYSTEM_PROMPT = `You are the AI assistant inside ZenOffice Slides (a slide editor), helping users improve and generate presentations.
 
+Source-deck workflow: when authoring reusable HTML slide sources, use slides_import_asset for local bitmap data, author complete HTML pages, run slides_check, repair every reported issue, then slides_publish. Existing decks must first be read with slides_read_source and published using that exact revision; never retry a conflict with a guessed revision. The returned path is an editable PPTX and sourcePath is deck.json. These tools do not replace the currently open presentation. Use the existing generation workflow when the user wants the open deck changed.
+At 1280×720 use body text 28–36px, titles 46–58px, captions 20–24px, and explicit footer roles for 16–18px footnotes. Preserve a 32px bottom margin and 16px card padding. Use data-pptx-role on text. Never use clipping, ellipsis or tiny fonts to make dense content pass checks: simplify layout or split it across pages, preserving facts.
+
+
 ## Most important tool-selection principles (judge the scenario before acting)
 - **Creating a whole new deck (from scratch)** → first gather material (web_search) and images (image_search), then call **generate_deck**. With many pages, prefer **passing topic + approx_pages + context (the real material you found)** and let the system plan internally + generate page by page + display page by page (**you don't hand-write dozens of pages, and no pages get missed / arguments truncated**). For few pages where you already know each page, you may pass core_hook+style+pages directly.
 - **Adding 1 page or a few pages to an existing deck** → generate_deck(pages: briefs for just the new pages, insert_mode:"append"). Write each page's brief in detail (real content/data per region + layout); first look at the existing pages (get_deck_context) and pass a style description matching them so new pages stay consistent. **Even a single new page goes through this cloud generation; don't fall back to native tools and build a crude page**.
@@ -341,6 +346,47 @@ function toEditParagraphs(raw: unknown): EditParagraph[] | null {
 }
 
 const TOOLS: AgentToolDef[] = [
+  {
+    name: 'slides_check',
+    description:
+      'Compile HTML slides with the editor compiler without changing the open deck. Reject unreadable text, card/canvas overflow and missing images. Repair reported issues before publishing.',
+    inputSchema: {
+      type: 'object',
+      properties: { pagesHtml: { type: 'array', items: { type: 'string' } } },
+      required: ['pagesHtml'],
+    },
+  },
+  {
+    name: 'slides_read_source',
+    description:
+      'Read a saved source deck and its current revision, including external HTML changes. Use this revision when publishing an update.',
+    inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
+  },
+  {
+    name: 'slides_publish',
+    description:
+      'Compile and save a source deck as decks/<name>/deck.json, slides/*.html, assets/ and an editable PPTX. The same quality gate as slides_check runs before saving. For updates provide the exact revision from slides_read_source; omit only when creating a new deck. Does not replace the currently open presentation.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        pagesHtml: { type: 'array', items: { type: 'string' } },
+        expectedRevision: { type: 'string' },
+      },
+      required: ['name', 'pagesHtml'],
+    },
+  },
+  {
+    name: 'slides_import_asset',
+    description:
+      'Import PNG/JPEG/WebP data into a source deck assets folder. Supply a data URL. Use the returned canonical dataUrl in HTML so preview and compilation share the same image bytes.',
+    inputSchema: {
+      type: 'object',
+      properties: { name: { type: 'string' }, dataUrl: { type: 'string' } },
+      required: ['name', 'dataUrl'],
+    },
+  },
+
   {
     name: 'get_deck_context',
     description:
@@ -1716,6 +1762,34 @@ async function executeTool(
 ) {
   const slides = access.getSlides()
   switch (call.name) {
+    case 'slides_check':
+    case 'slides_read_source':
+    case 'slides_publish':
+    case 'slides_import_asset': {
+      const pagesHtml = Array.isArray(call.input.pagesHtml) ? call.input.pagesHtml.map(String) : []
+      const name = String(call.input.name ?? '')
+      const result =
+        call.name === 'slides_check'
+          ? await window.slidesApi.sourceCheck(pagesHtml)
+          : call.name === 'slides_read_source'
+            ? await window.slidesApi.sourceRead(name)
+            : call.name === 'slides_import_asset'
+              ? await window.slidesApi.sourceImportAsset(name, String(call.input.dataUrl ?? ''))
+              : await window.slidesApi.sourcePublish({
+                  name,
+                  pagesHtml,
+                  expectedRevision:
+                    typeof call.input.expectedRevision === 'string'
+                      ? call.input.expectedRevision
+                      : null,
+                })
+      return {
+        output: JSON.stringify(result),
+        mutated: false,
+        summary: result.ok ? call.name : `${call.name}: ${result.error}`,
+      }
+    }
+
     case 'get_deck_context':
       return {
         output: buildDeckOutline(slides, access.getCurrent(), access.getSelectedIds()),
@@ -2348,7 +2422,7 @@ async function executeTool(
 
     case 'plan_deck': {
       const coreHook = String(call.input.core_hook ?? '').trim()
-      const style = String(call.input.style ?? '').trim()
+      let style = String(call.input.style ?? '').trim()
       const pages = Array.isArray(call.input.pages) ? call.input.pages : []
       if (!coreHook || !style || pages.length === 0) {
         return fail(t('aiFailPlan'), 'plan_deck requires core_hook + style + non-empty pages')
@@ -2491,11 +2565,10 @@ async function executeTool(
       const insertMode: 'replace' | 'append' =
         call.input.insert_mode === 'append' ? 'append' : 'replace'
       const PLAN_BATCH = 12 // Per-batch planning cap (kept slightly conservative against truncation)
-      const GEN_BATCH = 2 // Per-page generation concurrency (opus large output + proxy concurrent streams time out easily; lowered to 2, stability first)
       const BACKOFF_MS = access.retryBackoffMs ?? 2000 // Retry backoff base (rate limits/overload are mostly transient; immediate retries would hit them again)
 
       let coreHook = String(call.input.core_hook ?? '').trim()
-      const style = String(call.input.style ?? '').trim()
+      let style = String(call.input.style ?? '').trim()
       const pages: Array<Record<string, unknown>> = Array.isArray(call.input.pages)
         ? (call.input.pages as Array<Record<string, unknown>>)
         : []
@@ -2543,6 +2616,12 @@ async function executeTool(
       })
       if (cancelled()) return cancelResult(0, 0)
 
+      if (!styleSkill && !style && access.chooseDeckStyle) {
+        const selected = await access.chooseDeckStyle(topic || coreHook || 'Presentation', signal)
+        if (selected === null || cancelled()) return cancelResult(0, 0)
+        style = selected
+      }
+
       const needStyleGen =
         !styleSkill && access.generateStyleSkill && (topic || pages.length === 0 || !style)
       if (needStyleGen) {
@@ -2569,6 +2648,7 @@ async function executeTool(
         })
       }
       if (!styleSkill) styleSkill = style // Fallback: use the user-passed style, or empty
+      if (style.startsWith('Selected design:')) styleSkill += `\n${style}`
 
       // ── Step 1: plan the outline — without pages, plan in-tool from topic (batched recursion over PLAN_BATCH; layouts chosen per the Style Skill).
       const approxForProgress = Math.max(
@@ -2806,7 +2886,11 @@ async function executeTool(
         pages: [...pageProgressItems],
       })
 
-      const genOne = async (p: Record<string, unknown>, pageIndex: number) => {
+      const genOne = async (
+        p: Record<string, unknown>,
+        pageIndex: number,
+        repairError?: string,
+      ) => {
         // Mark as running
         pageProgressItems[pageIndex - 1] = {
           ...pageProgressItems[pageIndex - 1]!,
@@ -2829,7 +2913,7 @@ async function executeTool(
         let lastErr = ''
         // One retry, then the page is skipped (marked failed in the progress card and the
         // final summary) and the rest of the deck keeps generating.
-        for (let attempt = 0; attempt < 2; attempt++) {
+        for (let attempt = 0; attempt < (repairError ? 1 : 2); attempt++) {
           if (cancelled()) return null
           if (attempt > 0 && BACKOFF_MS > 0) await new Promise((r) => setTimeout(r, BACKOFF_MS))
           const res = await access.generatePageCloud!({
@@ -2838,7 +2922,11 @@ async function executeTool(
             coreHook,
             style: styleSkill,
             title: String(p.title ?? ''),
-            brief: String(p.brief ?? ''),
+            brief:
+              String(p.brief ?? '') +
+              (repairError
+                ? `\nThe previous slide failed layout validation: ${repairError}\nRebuild this page with fewer words, readable fonts and all text inside its containers. Preserve the key facts. Do not shrink fonts or clip overflow.`
+                : ''),
             layout: String(p.layout ?? ''),
             images,
             ...(pageContext ? { context: pageContext } : {}),
@@ -2864,7 +2952,17 @@ async function executeTool(
           const html = htmlByIndex[nextToLand] as string
           if (html.length > 0) {
             const m: 'replace' | 'append' = firstDone ? 'append' : insertMode
-            const r = await access.generateFromHtml!([html], m, deckName)
+            let r = await access.generateFromHtml!([html], m, deckName)
+            // Repeating the same invalid HTML cannot fix typography or overflow.
+            // Feed the compiler's concrete findings into one bounded regeneration.
+            if (!r.ok && r.error?.includes('Slide layout check failed') && !cancelled()) {
+              const repaired = await genOne(pages[nextToLand], nextToLand + 1, r.error)
+              if (cancelled()) return
+              if (repaired) {
+                htmlByIndex[nextToLand] = repaired
+                r = await access.generateFromHtml!([repaired], m, deckName)
+              }
+            }
             if (r.ok) {
               if (r.fallbackReason) {
                 degraded.push(nextToLand)
@@ -2902,30 +3000,25 @@ async function executeTool(
         }
       }
 
-      for (let start = 0; start < total; start += GEN_BATCH) {
+      // Complete and publish one slide before starting the next streaming request.
+      // This keeps the visible deck in sync and avoids waiting for a batch partner.
+      for (let idx = 0; idx < total; idx++) {
         if (cancelled()) break
-        const batchIdxs = []
-        for (let k = start; k < Math.min(start + GEN_BATCH, total); k++) batchIdxs.push(k)
-        const results = await Promise.all(
-          batchIdxs.map(async (idx) => ({ idx, html: await genOne(pages[idx], idx + 1) })),
-        )
+        const html = await genOne(pages[idx], idx + 1)
         if (cancelled()) break
-        for (const { idx, html } of results) {
-          if (html && html.length > 0) {
-            htmlByIndex[idx] = html
-            const audit = auditPageHtml(html)
-            if (audit) auditWarns.push(`page ${idx + 1} ${audit}`)
-          } else {
-            htmlByIndex[idx] = '' // Empty-string placeholder; doesn't block subsequent landings
-            genFailed.push(idx)
-            pageProgressItems[idx] = {
-              ...pageProgressItems[idx]!,
-              status: 'error',
-              error: pageErrors[idx],
-            }
+        if (html && html.length > 0) {
+          htmlByIndex[idx] = html
+          const audit = auditPageHtml(html)
+          if (audit) auditWarns.push(`page ${idx + 1} ${audit}`)
+        } else {
+          htmlByIndex[idx] = ''
+          genFailed.push(idx)
+          pageProgressItems[idx] = {
+            ...pageProgressItems[idx]!,
+            status: 'error',
+            error: pageErrors[idx],
           }
         }
-        // Batch generated → immediately land everything that can land (frontend shows pages one by one)
         await flushLanded()
       }
       if (!cancelled()) await flushLanded() // Finalize

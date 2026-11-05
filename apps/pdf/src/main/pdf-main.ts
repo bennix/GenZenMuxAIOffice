@@ -1,3 +1,4 @@
+import { installAdaptiveAiNetwork } from '@genoffice/electron-utils'
 import { existsSync } from 'node:fs'
 import { readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
@@ -741,3 +742,5 @@ export function startPdfStandalone(): void {
   })
   app.on('window-all-closed', () => app.quit())
 }
+
+installAdaptiveAiNetwork()

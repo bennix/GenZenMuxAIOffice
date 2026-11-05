@@ -1,3 +1,4 @@
+import { aiFetch as fetch } from '@genoffice/ai-provider'
 /// SSRF gate for main-process fetches whose target is influenced by untrusted
 /// input — most importantly AI tool calls, where a poisoned web-search result
 /// can steer the model into requesting an internal address. Every hop of a

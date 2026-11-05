@@ -49,6 +49,18 @@ export function installDocumentDropBridge(options: {
   }
   const onDrop = (event: DragEvent): void => {
     if (!event.dataTransfer) return
+    // Capture runs before React's attachment handler. Let marked zones own
+    // their drops, including descendants and composed/shadow event paths.
+    if (
+      event
+        .composedPath()
+        .some(
+          (node) =>
+            typeof (node as Element).hasAttribute === 'function' &&
+            (node as Element).hasAttribute('data-ai-attachment-drop'),
+        )
+    )
+      return
     const paths = droppedOfficeDocumentPaths(event.dataTransfer.files, options.getPathForFile)
     if (paths.length === 0) return
     event.preventDefault()

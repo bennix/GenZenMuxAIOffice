@@ -137,6 +137,9 @@ const homeApi: HomeApi = {
     if (channel !== 'stable' && channel !== 'beta') throw new Error('Invalid update channel.')
     await ipcRenderer.invoke(HOME_CHANNELS.setUpdateChannel, channel)
   },
+  getAiNetworkSettings: () => ipcRenderer.invoke('ai-network:get-settings'),
+  setAiNetworkSettings: (preferences) => ipcRenderer.invoke('ai-network:set-settings', preferences),
+  checkAiNetwork: () => ipcRenderer.invoke('ai-network:check'),
   async checkForUpdates() {
     const result: unknown = await ipcRenderer.invoke(HOME_CHANNELS.checkForUpdates)
     return result as UpdateCheckResult
@@ -336,4 +339,17 @@ contextBridge.exposeInMainWorld('aiOfficeTabs', tabsApi)
 installDocumentDropBridge({
   getPathForFile: (file) => webUtils.getPathForFile(file),
   openPaths: (paths) => ipcRenderer.send(DOCUMENT_DROP_CHANNEL, paths),
+})
+
+// Requests stay in the main process so all AI features use the same adaptive route.
+contextBridge.exposeInMainWorld('aiNetwork', {
+  fetch: (request: {
+    id: string
+    url: string
+    method: string
+    headers: [string, string][]
+    body?: Uint8Array
+  }) => ipcRenderer.invoke('ai-network:fetch', request),
+  cancel: (id: string) => ipcRenderer.send('ai-network:cancel', id),
+  status: () => ipcRenderer.invoke('ai-network:status'),
 })

@@ -1,0 +1,40 @@
+.slide-material-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 40%);
+}
+.slide-material-studio {
+  width: calc(100vw - 48px);
+  height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+.slide-material-studio > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 20px;
+}
+.slide-material-studio p {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+.slide-material-studio iframe {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+}
+.slide-material-studio button {
+  padding: 8px 16px;
+  white-space: nowrap;
+}

@@ -946,6 +946,7 @@ export function AiPanel({
 
   return (
     <aside
+      data-ai-attachment-drop="true"
       ref={asideRef}
       style={{ width: '100%' }}
       className={`ai-panel${dragOver ? ' ai-panel-dragover' : ''}${resizing ? ' ai-panel-resizing' : ''}`}

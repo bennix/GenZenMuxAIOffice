@@ -1,3 +1,5 @@
+export { aiFetch, setAiFetch, isAiFetchConfigured, createAdaptiveAiFetch } from './network'
+export type { AiRoute, AiNetworkStatus, AiNetworkPreferences } from './network'
 export type {
   AiChatRequest,
   AiChatResponse,

@@ -1,3 +1,4 @@
+import { AiMaterialStudio } from './components/AiMaterialStudio'
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type {
   GroupRenderNode,
@@ -293,6 +294,8 @@ export function App() {
   } | null>(null)
   const { lang } = useI18n()
   const [slides, setSlides] = useState<RenderSlide[]>([])
+  const [materialsMounted, setMaterialsMounted] = useState(false)
+  const [materialsOpen, setMaterialsOpen] = useState(false)
   const [path, setPath] = useState<string | null>(null)
   /** AiPanel reset key: incremented only on applyOpen (open/new file), not on draft path updates */
   const [aiPanelKey, setAiPanelKey] = useState(0)
@@ -1011,40 +1014,57 @@ export function App() {
     if (kind) void insertActions.insertShapeAt(ctxRef.current, kind, rect)
   }, [])
   const insertImage = useCallback(() => insertActions.insertImage(ctxRef.current), [])
-  useEffect(
-    () =>
-      window.slidesApi.onSharedImage(async (dataUrl) => {
-        const ctx = ctxRef.current
-        if (!ctx.slide) throw new Error('请先打开演示文稿。')
-        const image = new Image()
-        image.src = dataUrl
-        await image.decode()
-        if (ctxRef.current.slide !== ctx.slide) throw new Error('幻灯片已切换，请重新分享。')
-        const scale = Math.min(
-          1,
-          (ctx.slide.widthPx * 0.76) / image.naturalWidth,
-          (ctx.slide.heightPx * 0.68) / image.naturalHeight,
-        )
-        const width = Math.max(1, Math.round(image.naturalWidth * scale))
-        const height = Math.max(1, Math.round(image.naturalHeight * scale))
-        const result = await window.slidesApi.addImageBytes({
-          slideIndex: ctx.current,
-          base64: dataUrl.split(',')[1]!,
-          ext: dataUrl.startsWith('data:image/png;') ? 'png' : 'jpg',
-          xPx: Math.round((ctx.slide.widthPx - width) / 2),
-          yPx: Math.round((ctx.slide.heightPx - height) / 2),
-          wPx: width,
-          hPx: height,
-          fitWidthPx: FIT_WIDTH,
-          name: 'ArtFlow 图片',
-        })
-        if (!result || 'error' in result) throw new Error('PPT 图片插入失败。')
-        ctx.applySlide(ctx.current, result.slide)
-        ctx.setSelectedIds([result.sourceId])
-        ctx.setDirty(true)
-      }),
-    [],
-  )
+  const insertMaterialImage = useCallback(async (dataUrl: string) => {
+    const ctx = ctxRef.current
+    if (!ctx.slide) throw new Error('请先打开演示文稿。')
+    const image = new Image()
+    image.src = dataUrl
+    await image.decode()
+    if (ctxRef.current.slide !== ctx.slide) throw new Error('幻灯片已切换，请重新分享。')
+    const scale = Math.min(
+      1,
+      (ctx.slide.widthPx * 0.76) / image.naturalWidth,
+      (ctx.slide.heightPx * 0.68) / image.naturalHeight,
+    )
+    const width = Math.max(1, Math.round(image.naturalWidth * scale))
+    const height = Math.max(1, Math.round(image.naturalHeight * scale))
+    const result = await window.slidesApi.addImageBytes({
+      slideIndex: ctx.current,
+      base64: dataUrl.split(',')[1]!,
+      ext: dataUrl.startsWith('data:image/png;') ? 'png' : 'jpg',
+      xPx: Math.round((ctx.slide.widthPx - width) / 2),
+      yPx: Math.round((ctx.slide.heightPx - height) / 2),
+      wPx: width,
+      hPx: height,
+      fitWidthPx: FIT_WIDTH,
+      name: 'ArtFlow 图片',
+    })
+    if (!result || 'error' in result) throw new Error('PPT 图片插入失败。')
+    ctx.applySlide(ctx.current, result.slide)
+    ctx.setSelectedIds([result.sourceId])
+    ctx.setDirty(true)
+    setMaterialsOpen(false)
+  }, [])
+  useEffect(() => window.slidesApi.onSharedImage(insertMaterialImage), [insertMaterialImage])
+  const insertMaterialVideo = useCallback(async (dataUrl: string) => {
+    const ctx = ctxRef.current
+    if (!ctx.slide) throw new Error('请先打开演示文稿。')
+    const match = /^data:video\/mp4;base64,([A-Za-z0-9+/=\s]+)$/.exec(dataUrl)
+    if (!match || dataUrl.length > 86_000_000) throw new Error('请选择 64 MB 以内的 MP4 视频。')
+    const result = await window.slidesApi.addMediaBytes({
+      slideIndex: ctx.current,
+      kind: 'video',
+      base64: match[1]!,
+      ext: 'mp4',
+      fitWidthPx: FIT_WIDTH,
+      name: 'AI 素材视频',
+    })
+    if (!result) throw new Error('PPT 视频插入失败。')
+    ctx.applySlide(ctx.current, result.slide)
+    ctx.setSelectedIds([result.sourceId])
+    ctx.setDirty(true)
+    setMaterialsOpen(false)
+  }, [])
 
   const onBackground = useCallback(
     (color: string, allSlides: boolean) =>
@@ -2502,6 +2522,14 @@ export function App() {
   return (
     <div className="app">
       <ToastHost />
+      {materialsMounted && (
+        <AiMaterialStudio
+          open={materialsOpen}
+          onClose={() => setMaterialsOpen(false)}
+          onInsertImage={insertMaterialImage}
+          onInsertVideo={insertMaterialVideo}
+        />
+      )}
       <Ribbon
         hasDoc={!!slide}
         deckEmpty={deckEmpty}
@@ -2533,6 +2561,10 @@ export function App() {
         onInsert={(kind) => void insertElement(kind)}
         onPickShape={pickShape}
         onInsertImage={() => void insertImage()}
+        onOpenAiMaterials={() => {
+          setMaterialsMounted(true)
+          setMaterialsOpen(true)
+        }}
         onInsertInfographic={() => {
           setInfographicEditTarget(null)
           setInfographicOpen(true)

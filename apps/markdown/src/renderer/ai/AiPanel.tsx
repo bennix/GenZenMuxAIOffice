@@ -533,6 +533,7 @@ export function AiPanel({
 
   return (
     <aside
+      data-ai-attachment-drop="true"
       ref={asideRef}
       className={`copilot${resizing ? ' ai-panel-resizing' : ''}${dragOver ? ' ai-panel-dragover' : ''}`}
       style={{ width: '100%' }}

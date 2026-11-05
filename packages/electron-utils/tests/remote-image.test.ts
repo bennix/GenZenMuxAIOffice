@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fetchRemoteImage, remoteImageHeaders } from '../src/remote-image'
 
+// Keep downloader unit tests independent of the machine's proxy/DNS setup.
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
+}))
+
 const png = () => new Response('img', { status: 200 })
 
 describe('remoteImageHeaders', () => {

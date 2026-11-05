@@ -1,3 +1,4 @@
+import { aiFetch, isAiFetchConfigured } from '@genoffice/ai-provider'
 /**
  * GenOffice's own Genspark identity: device-code login (office_addin_auth,
  * app_type=genoffice) minting a gsk API key named "genoffice" — the key_name
@@ -43,6 +44,7 @@ let cachedFetch: typeof fetch | undefined
  * (verified against a header-echo server).
  */
 function resolveFetch(): typeof fetch {
+  if (isAiFetchConfigured()) return aiFetch
   if (cachedFetch) return cachedFetch
   let impl: typeof fetch = (...args) => fetch(...args)
   if (process.versions.electron) {

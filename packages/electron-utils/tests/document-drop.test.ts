@@ -32,3 +32,39 @@ describe('document drop routing', () => {
     ])
   })
 })
+
+it('leaves nested AI attachment drops to the local handler but opens ordinary document drops', async () => {
+  const { installDocumentDropBridge } = await import('../src/document-drop')
+  const handlers = new Map<string, EventListener>()
+  const calls: string[][] = []
+  const target = {
+    addEventListener: (name: string, handler: EventListener) => handlers.set(name, handler),
+    removeEventListener: (name: string) => handlers.delete(name),
+  } as unknown as Window
+  const dispose = installDocumentDropBridge({
+    target,
+    getPathForFile: () => '/tmp/lesson.pdf',
+    openPaths: (paths) => calls.push([...paths]),
+  })
+  let intercepted = false
+  const event = (path: unknown[]) =>
+    ({
+      dataTransfer: { files: [{}] },
+      composedPath: () => path,
+      preventDefault: () => {
+        intercepted = true
+      },
+      stopImmediatePropagation: () => {
+        intercepted = true
+      },
+    }) as unknown as Event
+  const zone = { hasAttribute: (name: string) => name === 'data-ai-attachment-drop' }
+  handlers.get('drop')!(event([{}, zone, target]))
+  expect(calls).toEqual([])
+  expect(intercepted).toBe(false)
+  handlers.get('drop')!(event([{}, target]))
+  expect(calls).toEqual([['/tmp/lesson.pdf']])
+  expect(intercepted).toBe(true)
+  dispose()
+  expect(handlers.size).toBe(0)
+})

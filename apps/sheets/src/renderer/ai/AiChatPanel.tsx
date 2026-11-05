@@ -438,6 +438,7 @@ export function AiChatPanel({
 
   return (
     <aside
+      data-ai-attachment-drop="true"
       ref={asideRef}
       className={`copilot${dragOver ? ' ai-panel-dragover' : ''}${resizing ? ' ai-panel-resizing' : ''}`}
       onDragOver={(e) => {

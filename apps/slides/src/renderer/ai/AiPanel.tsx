@@ -1,3 +1,6 @@
+import { liveDraftPreview } from './live-draft'
+import { DeckStylePicker } from './DeckStylePicker'
+import { DESIGN_REVIEW_RULES } from './design-system'
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import {
   AgentLoop,
@@ -379,6 +382,8 @@ export function AiPanel({
   const { lang, t } = useI18n()
   const [input, setInput] = useState('')
   const [showBeautify, setShowBeautify] = useState(false)
+  const [designTopic, setDesignTopic] = useState<string | null>(null)
+  const designResolver = useRef<((style: string | null) => void) | null>(null)
   const [connectNonce, setConnectNonce] = useState(0)
   const [busy, setBusy] = useState(false)
   const [chat, setChat] = useState<ChatEntry[]>([])
@@ -617,6 +622,9 @@ export function AiPanel({
   }
 
   // Resolved when the user submits/cancels; the AI takes the answer and continues.
+  const [liveDrafts, setLiveDrafts] = useState<
+    Record<string, { label: string; chars: number; preview: string }>
+  >({})
   const [activeClarify, setActiveClarify] = useState<ClarifyQuestion[] | null>(null)
   const clarifyResolverRef = useRef<((r: { answers: string; cancelled?: boolean }) => void) | null>(
     null,
@@ -751,10 +759,19 @@ export function AiPanel({
         }
         const requestId = crypto.randomUUID()
         let buf = ''
+        let lastPaint = 0
+        const slide = /^Slide (\d+) of (\d+)/.exec(user)
+        const label = slide ? `正在生成第 ${slide[1]} / ${slide[2]} 页` : '正在生成大纲或设计草稿'
+        setLiveDrafts((prev) => ({ ...prev, [requestId]: { label, chars: 0, preview: '' } }))
         let settled = false
         const finish = (r: LlmResult, cancelUpstream = false) => {
           if (settled) return
           settled = true
+          setLiveDrafts((prev) => {
+            const next = { ...prev }
+            delete next[requestId]
+            return next
+          })
           clearTimeout(to)
           signal?.removeEventListener('abort', onAbort)
           unsub()
@@ -787,8 +804,16 @@ export function AiPanel({
         const unsub = window.slidesApi.onAiStream((chunk) => {
           if (chunk.requestId !== requestId) return
           armTimeout() // any chunk (including pings) proves the turn is alive
-          if (chunk.type === 'delta') buf += chunk.text ?? ''
-          else if (chunk.type === 'done')
+          if (chunk.type === 'delta') {
+            buf += chunk.text ?? ''
+            const now = Date.now()
+            if (lastPaint === 0 || now - lastPaint >= 200) {
+              lastPaint = now
+              const chars = buf.length
+              const preview = liveDraftPreview(buf)
+              setLiveDrafts((prev) => ({ ...prev, [requestId]: { label, chars, preview } }))
+            }
+          } else if (chunk.type === 'done')
             finish(
               buf.trim()
                 ? { ok: true, text: buf }
@@ -959,6 +984,8 @@ export function AiPanel({
       // beyond the ZenMux key saved in Settings.
       generatePageCloud: async (args) => {
         const system =
+          DESIGN_REVIEW_RULES +
+          '\n' +
           'You are a world-class presentation designer and HTML author. Create exactly one polished presentation slide as a complete, self-contained HTML document. ' +
           'Output HTML only: no Markdown, no code fence, no explanation. The viewport is exactly 1280x720. ' +
           'Use semantic HTML and inline CSS in a <style> tag. The body must be margin:0, width:1280px, height:720px, overflow:hidden. ' +
@@ -968,6 +995,7 @@ export function AiPanel({
           'Use only system fonts. Keep text separate from its background card so both remain independently editable. ' +
           'Paint back to front: emit background blocks and cards before their contents, then images/diagrams, then labels and text. Never place a large filled shape over smaller content. Use explicit z-index for intentional overlays; keep all marked elements as direct children of body so their layers share one stacking context. ' +
           'Keep every visible element inside the canvas. Size each text box so a soft wrap never leaves only the last 1–4 characters on their own line; widen the box (and its card, pill, or banner) or shorten the copy instead. Every text run must sit fully inside its decorative shape, including the last line, with at least 16px of padding — a line must not hang out under the shape. Use a projection-readable type scale: cover title 56-72px, page title 46-58px, subtitle 32-40px, ordinary body 28-36px, and chart/table labels or captions 20-24px. Only footers and page numbers may be 15-18px. ' +
+          'Mark text with data-pptx-role="title", "body", "caption", or "footer". Layout checks reject small text and card/canvas overflow before publishing. Reserve 32px at the bottom of the slide and at least 16px inside cards. Do not hide overflow or use ellipsis to conceal content. ' +
           'Never make ordinary body text smaller than 28px to make content fit. Prefer 3-5 concise points per content slide with generous line spacing; if the brief is dense, preserve its facts with tighter wording and a clearer hierarchy instead of tiny type. Use strong contrast. ' +
           'Use the supplied image URLs exactly when useful; use object-fit:cover and a graceful CSS color block when an image cannot load. ' +
           'Preserve all supplied facts, names, and figures; never invent precise data.'
@@ -998,6 +1026,24 @@ export function AiPanel({
       // ── In-tool planning: given topic+page count, the LLM produces a structured outline (batched recursion scheduled by the skill).
       // Fixes "missing pages at the input side" at the root: the main agent doesn't hand-write dozens of pages of pages JSON.
       // In-tool independent Style Skill generation: one focused LLM call thinking only about the design system.
+      chooseDeckStyle: (topic, signal) =>
+        new Promise<string | null>((resolve) => {
+          designResolver.current?.(null)
+          if (signal?.aborted) {
+            resolve(null)
+            return
+          }
+          const finish = (value: string | null) => {
+            signal?.removeEventListener('abort', abort)
+            designResolver.current = null
+            setDesignTopic(null)
+            resolve(value)
+          }
+          const abort = () => finish(null)
+          designResolver.current = finish
+          signal?.addEventListener('abort', abort, { once: true })
+          setDesignTopic(topic)
+        }),
       generateStyleSkill: async (a) => {
         const sys =
           'You are a professional deck visual designer. Given the presentation topic and style preferences, produce a complete Style Skill (visual style guide). Output strictly in the structure below, only the Style Skill content, no explanations/markdown/code fences.\n\n' +
@@ -1022,7 +1068,13 @@ export function AiPanel({
         const q = a.questionnaire ? `\nUser questionnaire answers: ${a.questionnaire}` : ''
         const hint = a.styleHint ? `\nStyle preference: ${a.styleHint}` : ''
         const userMsg = `Topic and style preferences: ${a.topic}${hint}${q}\nOutput the Style Skill.`
-        const r = await runLlmOnce(sys, userMsg, undefined, true, a.signal)
+        const r = await runLlmOnce(
+          sys + '\n' + DESIGN_REVIEW_RULES,
+          userMsg,
+          undefined,
+          true,
+          a.signal,
+        )
         return r.ok && r.text
           ? { ok: true, styleSkill: r.text.trim() }
           : { ok: false, error: r.error ?? tGlobal('aiErrEmptyOutput') }
@@ -1030,13 +1082,15 @@ export function AiPanel({
       planDeckOutline: async (a) => {
         // style is already produced independently by generateStyleSkill; this function only outputs core_hook + per-page outlines (layout chosen per the Style Skill).
         const sys =
+          DESIGN_REVIEW_RULES +
+          '\n' +
           'You are a professional deck planner. Given the confirmed design style, plan the content page by page. Output only one JSON object, no explanations/markdown/code fences.\n' +
           'Format: {"core_hook":"...","pages":[{"title":"","type":"cover|content|data|closing","brief":"","layout":"","image_queries":[]}]}\n' +
           '\n' +
           '## core_hook\n' +
           "The deck's narrative anchor: one sentence, with tension, containing a number or counter-intuitive contrast, at most 20 characters.\n" +
           '\n' +
-          "## layout (choose from the Style Skill's per-page-type variant library; content pages within one deck must not repeat the same variant)\n" +
+          "## layout (choose from the Style Skill's per-page-type variant library; choose variants by content; avoid monotonous repetition but reuse a fitting layout)\n" +
           'cover: cover_typography_hero (huge pure typography) | cover_dark_minimal (dark background, centered large title) | cover_split_color (side-by-side color blocks) | cover_full_image_overlay (full-bleed photo + dark overlay) | cover_magazine (magazine-style large title + partial imagery) | cover_split_image (text left, image right)\n' +
           'content: left_text_right_image | three_column_cards | hero_big_number | two_column_comparison | timeline_horizontal | full_image_text_overlay\n' +
           'data: kpi_cards_row | chart_with_insight | two_by_two_grid\n' +
@@ -1651,6 +1705,7 @@ export function AiPanel({
 
   /** Finish pending survey cards as "skipped" (called on stop/new conversation, avoiding leftover cards and orphan promises) */
   const dismissClarify = () => {
+    designResolver.current?.(null)
     clarifyResolverRef.current?.({ answers: '', cancelled: true })
     clarifyResolverRef.current = null
     setActiveClarify(null)
@@ -1663,7 +1718,13 @@ export function AiPanel({
   }
 
   // Abort a QC pass still running when the panel unmounts (new file / panel remount by key)
-  useEffect(() => () => qcAbortRef.current?.abort(), [])
+  useEffect(
+    () => () => {
+      qcAbortRef.current?.abort()
+      designResolver.current?.(null)
+    },
+    [],
+  )
 
   const retry = () =>
     runWith(lastInstructionRef.current, lastDisplayTextRef.current, {
@@ -1792,6 +1853,7 @@ export function AiPanel({
 
   return (
     <aside
+      data-ai-attachment-drop="true"
       ref={asideRef}
       style={{ width: '100%' }}
       className={`ai-panel${dragOver ? ' ai-panel-dragover' : ''}${resizing ? ' ai-panel-resizing' : ''}`}
@@ -1844,6 +1906,13 @@ export function AiPanel({
       </div>
 
       <div ref={logRef} className="ai-chat" onScroll={onLogScroll}>
+        {designTopic !== null && (
+          <DeckStylePicker
+            topic={designTopic}
+            onChoose={(style) => designResolver.current?.(style)}
+            onCancel={() => designResolver.current?.(null)}
+          />
+        )}
         {showBeautify && (
           <BeautifySuggestions
             page={current + 1}
@@ -1942,9 +2011,20 @@ export function AiPanel({
               )}
               {entry.role === 'assistant' && !entry.text && entry.streaming ? (
                 <span className="ai-typing-row">
-                  <AiTypingIndicator
-                    label={entry.tools?.length ? t('aiContinuing') : t('aiThinking')}
-                  />
+                  {activeClarify ? (
+                    '等待你确认需求，提交后继续生成'
+                  ) : (
+                    <AiTypingIndicator
+                      key={Object.keys(liveDrafts).length ? 'draft' : 'reply'}
+                      label={
+                        Object.keys(liveDrafts).length
+                          ? '正在接收生成内容'
+                          : entry.tools?.length
+                            ? t('aiContinuing')
+                            : t('aiThinking')
+                      }
+                    />
+                  )}
                 </span>
               ) : entry.role === 'assistant' ? (
                 <Markdown text={entry.text} />
@@ -1970,6 +2050,30 @@ export function AiPanel({
               {entry.error && (
                 <div className="ai-msg-error">{t('aiMsgError', { error: entry.error })}</div>
               )}
+              {i === chat.length - 1 &&
+                Object.entries(liveDrafts).map(([id, draft]) => (
+                  <section key={id} aria-label={draft.label} style={{ marginTop: 12 }}>
+                    <strong>{draft.label}</strong>
+                    <div>
+                      {draft.chars
+                        ? `已实时接收 ${draft.chars} 字符`
+                        : '已发出请求，等待模型首段内容…'}
+                    </div>
+                    {draft.preview && (
+                      <pre
+                        style={{
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'anywhere',
+                          maxHeight: 180,
+                          overflow: 'auto',
+                          font: 'inherit',
+                        }}
+                      >
+                        {draft.preview}
+                      </pre>
+                    )}
+                  </section>
+                ))}
               {entry.deckProgress && <DeckProgressCard progress={entry.deckProgress} />}
               {showToolbar && (
                 <div className="ai-msg-toolbar">

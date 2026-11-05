@@ -1,3 +1,4 @@
+import { DESIGN_REVIEW_RULES } from './design-system'
 /**
  * Post-generation layout QC: each cloud-generated page gets one focused vision pass —
  * screenshot + element inventory → a restricted agent fixes objective layout defects
@@ -128,7 +129,7 @@ export function createSlideFixSkill(access: DeckAccess): AgentSkill {
   const full = createSlidesSkill(access)
   return {
     id: 'slides-qc',
-    systemPrompt: QC_SYSTEM_PROMPT,
+    systemPrompt: QC_SYSTEM_PROMPT + '\n' + DESIGN_REVIEW_RULES,
     tools: full.tools.filter((tool) => QC_TOOL_ALLOWLIST.has(tool.name)),
     executeTool: full.executeTool,
   }

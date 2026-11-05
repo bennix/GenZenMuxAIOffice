@@ -1,3 +1,4 @@
+import type { SourceDeckRequest, SourceDeckResult } from './source-deck'
 /**
  * slides main-process <-> renderer IPC contract (Phase 3: open/save/edit, AI not included yet).
  *
@@ -1051,6 +1052,10 @@ export interface SlidesApi extends ConnectApi {
    *  mode="insert_at" inserts a new page at atIndex from single-page HTML (later pages shift back, undoable, insertedIndex = that page's index);
    *  when the pipeline fails it falls back to element-level mode, fallbackReason explains why;
    *  deckName = the deck name AI derived from user input, used as the filename when saving a new draft (falls back to timestamp naming) */
+  sourceRead: (name: string) => Promise<SourceDeckResult>
+  sourceCheck: (pagesHtml: string[]) => Promise<SourceDeckResult>
+  sourcePublish: (request: SourceDeckRequest) => Promise<SourceDeckResult>
+  sourceImportAsset: (name: string, dataUrl: string) => Promise<SourceDeckResult>
   htmlToPptx: (
     pagesHtml: string[],
     fitWidthPx: number,
