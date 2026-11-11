@@ -78,3 +78,62 @@ for (const kind of ['word', 'markdown'] as const) {
     }
   })
 }
+
+for (const kind of ['word', 'markdown'] as const) {
+  test(`${kind}: structured polish preserves comparison symbols and supports undo`, async () => {
+    const launched = await launchShell({
+      onboardingSeen: true,
+      recordVideo: false,
+      lang: 'zh',
+      videoDir: `tone-writeback-${kind}`,
+    })
+    const { app, page } = launched
+    try {
+      if (kind === 'word') await page.locator('.quick-card').first().click()
+      else await page.locator('.quick-card', { hasText: 'AI Markdown' }).click()
+      const doc = await waitForPageWithUrl(app, kind === 'word' ? 'docs/out' : 'markdown/out')
+      const editor = doc.locator('.ProseMirror').first()
+      await editor.click()
+      await doc.keyboard.type('说白了，a < b 且 c > d。')
+      await app.evaluate(({ ipcMain }) => {
+        ipcMain.removeHandler('ai:get-settings')
+        ipcMain.handle('ai:get-settings', () => ({
+          providers: { zenmux: { apiKey: 'test-only', model: 'test' } },
+        }))
+        ipcMain.removeHandler('ai:stream')
+        ipcMain.handle('ai:stream', (event, request) => {
+          const input = JSON.parse(request.messages[0].text)
+          const text = JSON.stringify({
+            segments: input.segments
+              .map((segment: { id: number; text: string }) => ({
+                id: segment.id,
+                text: segment.text.replace('说白了，', ''),
+              }))
+              .reverse(),
+          })
+          event.sender.send('ai:stream-chunk', {
+            requestId: request.requestId,
+            type: 'delta',
+            text,
+          })
+          event.sender.send('ai:stream-chunk', { requestId: request.requestId, type: 'done' })
+        })
+      })
+      await doc.getByRole('button', { name: 'AI 检测 / 去 AI 味', exact: true }).click()
+      const studio = doc.getByRole('dialog', { name: '去 AI 味工作台' })
+      await studio.getByRole('button', { name: '下一步', exact: true }).click()
+      await studio.getByRole('button', { name: '开始润色', exact: true }).click()
+      await expect(studio.getByRole('button', { name: '应用选中修改' })).toBeEnabled()
+      await expect(studio.getByRole('alert')).toHaveCount(0)
+      await expect(editor).toContainText('说白了，')
+      await studio.getByRole('button', { name: '应用选中修改' }).click()
+      await expect(editor).toContainText('a < b 且 c > d。')
+      await expect(editor).not.toContainText('说白了')
+      await editor.click()
+      await doc.keyboard.press('ControlOrMeta+z')
+      await expect(editor).toContainText('说白了，')
+    } finally {
+      await closeAndSaveVideo(launched, `tone-writeback-${kind}`)
+    }
+  })
+}
