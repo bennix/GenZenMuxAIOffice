@@ -8,3 +8,5 @@
 适用于 Word 与 Markdown 的去 AI 味工作台。
 
 验证：全工作区类型检查、测试、生产构建及 preload 检查通过。4 项 Word/Markdown 实际操作回归通过，覆盖结构化流式返回、比较符号写回、逐条预览和撤销恢复。
+
+发布验证：Windows、Linux DEB/AppImage/RPM 构建通过。macOS Apple Silicon 与 Intel 应用及 DMG 均已签名、通过 Apple 公证，stapler 验证和 Gatekeeper 检查通过。Windows 安装包未签署 Authenticode。
