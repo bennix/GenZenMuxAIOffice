@@ -39,9 +39,18 @@ for (const kind of ['word', 'markdown'] as const) {
       })
       await entry.click()
       const studio = doc.getByRole('dialog', { name: '去 AI 味工作台' })
+      await studio.getByRole('button', { name: '下一步', exact: true }).click()
+      await studio.locator('summary').filter({ hasText: '只检查，不润色 / 局部修改' }).click()
       await studio.getByRole('button', { name: '仅检测原文', exact: true }).click()
-      await expect(studio.getByRole('region', { name: '处理前检测', exact: true })).toContainText('44.4%')
-      if (kind === 'markdown') await studio.getByLabel('检测方式', { exact: true }).selectOption('ai')
+      await expect(studio.getByRole('region', { name: '处理前检测', exact: true })).toContainText(
+        '44.4%',
+      )
+      await studio.getByRole('button', { name: '上一步', exact: true }).click()
+      if (kind === 'markdown') {
+        await studio.locator('summary').filter({ hasText: '高级选项：检测方式与改写规则' }).click()
+        await studio.getByLabel('检测方式', { exact: true }).selectOption('ai')
+      }
+      await studio.locator('summary').filter({ hasText: '只检查，不润色 / 局部修改' }).click()
       await studio.getByRole('button', { name: '检测并局部修改', exact: true }).click()
       await expect(studio.getByRole('region', { name: '处理前检测', exact: true })).toContainText(
         '44.4%',

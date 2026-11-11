@@ -291,7 +291,7 @@ export function Ribbon({
           type="button"
           className="tone-quick-entry"
           disabled={off}
-          title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
+          title="引导式去 AI 味：通用中文与学术论文，生成建议后逐条审阅"
           onMouseDown={(event) => event.preventDefault()}
           onClick={onLessAiTone}
         >
@@ -301,7 +301,7 @@ export function Ribbon({
           type="button"
           className="tone-quick-entry"
           disabled={off}
-          title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
+          title="引导式去 AI 味：通用中文与学术论文，生成建议后逐条审阅"
           onMouseDown={(event) => event.preventDefault()}
           onClick={onLessAiTone}
         >

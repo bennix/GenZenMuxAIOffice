@@ -1668,7 +1668,7 @@ function RibbonInner({
           type="button"
           className="tone-quick-entry"
           disabled={!hasDoc}
-          title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
+          title="引导式去 AI 味：通用中文与学术论文，生成建议后逐条审阅"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => setLessAiToneOpen(true)}
         >
@@ -1678,7 +1678,7 @@ function RibbonInner({
           type="button"
           className="tone-quick-entry"
           disabled={!hasDoc}
-          title="按 Humanizer-zh 润色选中的中文，去掉空话并保留事实"
+          title="引导式去 AI 味：通用中文与学术论文，生成建议后逐条审阅"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => setLessAiToneOpen(true)}
         >

@@ -5,6 +5,46 @@ import { LESS_AI_TONE_SKILL } from './less-ai-tone-skill'
 import { TONE_PROFILES, type ToneProfile } from './tone-profiles'
 import { HUMANIZER_ZH_SKILL } from './humanizer-zh-skill'
 
+export type AcademicToneOptions = {
+  kind: 'paper' | 'abstract' | 'rebuttal' | 'proposal'
+  venue: string
+  focus: 'clarity' | 'evidence' | 'voice'
+}
+
+/** Reject changed scholarly tokens before suggestions can be applied. */
+export function parseAcademicHumanize(raw: string, segments: ToneSegment[]): ToneChange[] {
+  const parts = (segments.length > 1 ? raw.split(/\n*<<<SEG>>>\n*/) : [raw]).map((part) =>
+    part.trim(),
+  )
+  if (parts.length !== segments.length) throw new Error('改写遗漏了原文片段。')
+  const changes: ToneChange[] = []
+  for (const [index, segment] of segments.entries()) {
+    const after = parts[index]!
+    if (!after || /<\/?[a-z][^>]*>/i.test(after)) throw new Error('改写结果格式无效。')
+    const numbers = (value: string) => value.match(/\d+(?:[.,]\d+)*(?:%|％)?/g) ?? []
+    if (JSON.stringify(numbers(segment.text)) !== JSON.stringify(numbers(after)))
+      throw new Error('改写改动了数字或数字顺序，已拒绝。')
+    if (after !== segment.text)
+      changes.push({
+        id: segment.id,
+        before: segment.text,
+        after,
+        rule: 1,
+        from: segment.from,
+        to: segment.from + segment.text.length,
+      })
+  }
+  const tokens = (text: string) =>
+    text.match(
+      /\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$\$[\s\S]*?\$\$|\$[^$\n]+\$|\\(?:cite\w*|ref|eqref)\*?(?:\[[^\]]*\])*\{[^}]*\}|\[[^\]\n]*\d[^\]\n]*\]|\([^()\n]*\b(?:19|20)\d{2}[a-z]?[^()\n]*\)/g,
+    ) ?? []
+  for (const change of changes) {
+    if (JSON.stringify(tokens(change.before)) !== JSON.stringify(tokens(change.after)))
+      throw new Error('改写改动了公式或引用，已拒绝。原文未修改。')
+  }
+  return changes
+}
+
 export type ToneEditor = Pick<Editor, 'state' | 'schema' | 'view' | 'isEditable'>
 
 export const TONE_RULES = [
@@ -162,14 +202,21 @@ export const HUMANIZE_SYSTEM = `你在做中文润色。按 Humanizer-zh 编辑�
 
 ${HUMANIZER_ZH_SKILL}`
 
-export function humanizeRequest(segments: ToneSegment[], style: string): { system: string; user: string } {
+export function humanizeRequest(
+  segments: ToneSegment[],
+  style: string,
+): { system: string; user: string } {
   if (!segments.length) throw new Error('没有可处理的正文，请选择普通文字。')
   if (segments.reduce((sum, segment) => sum + segment.text.length, 0) > 16000)
     throw new Error('本次最多处理 16000 字，请选择较短的选区分次处理。')
   if (style.length > 3000) throw new Error('风格参考最多 3000 字。')
   const marked = segments.length > 1
-  const source = marked ? segments.map((segment) => segment.text).join(`\n${SEGMENT_MARK}\n`) : segments[0]!.text
-  const user = style.trim() ? `写作样本：\n${style.trim()}\n\n待润色中文：\n${source}` : `待润色中文：\n${source}`
+  const source = marked
+    ? segments.map((segment) => segment.text).join(`\n${SEGMENT_MARK}\n`)
+    : segments[0]!.text
+  const user = style.trim()
+    ? `写作样本：\n${style.trim()}\n\n待润色中文：\n${source}`
+    : `待润色中文：\n${source}`
   const system = marked
     ? `${HUMANIZE_SYSTEM}\n\n正文有 ${segments.length} 段，段与段之间是单独一行 ${SEGMENT_MARK}。最终版本必须保留同样数量的分隔行，不要合并或拆开这些段。`
     : HUMANIZE_SYSTEM
@@ -178,9 +225,9 @@ export function humanizeRequest(segments: ToneSegment[], style: string): { syste
 
 export function parseHumanize(raw: string, segments: ToneSegment[]): ToneChange[] {
   const marked = segments.length > 1
-  const parts = (marked ? raw.trim().split(new RegExp(`\\n*${SEGMENT_MARK}\\n*`)) : [raw.trim()]).map(
-    (part) => part.trim(),
-  )
+  const parts = (
+    marked ? raw.trim().split(new RegExp(`\\n*${SEGMENT_MARK}\\n*`)) : [raw.trim()]
+  ).map((part) => part.trim())
   if (parts.length !== segments.length) throw new Error('改写没有按原有段落交回，原文未修改。')
   return humanizeChanges(segments, parts)
 }

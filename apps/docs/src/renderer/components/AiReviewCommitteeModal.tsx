@@ -45,6 +45,7 @@ export function AiReviewCommitteeModal({
       ),
     [mode],
   )
+  const [step, setStep] = useState<0 | 1 | 2>(0)
   const [profileId, setProfileId] = useState(
     mode === 'composition' ? 'zhongkao-composition' : 'science',
   )
@@ -66,7 +67,10 @@ export function AiReviewCommitteeModal({
   useEffect(() => {
     const count = profile.members.length + 1
     setRoleModels((current) => {
-      const next = Array.from({ length: count }, (_, index) => current[index]?.trim() || defaultModel)
+      const next = Array.from(
+        { length: count },
+        (_, index) => current[index]?.trim() || defaultModel,
+      )
       if (next.length === current.length && next.every((model, index) => model === current[index]))
         return current
       return next
@@ -82,6 +86,7 @@ export function AiReviewCommitteeModal({
 
   const start = async () => {
     if (!hasKey || running) return
+    setStep(2)
     setRunning(true)
     setCopied(false)
     setMembers([])
@@ -165,10 +170,16 @@ export function AiReviewCommitteeModal({
             </h2>
             <p>
               {chineseUi
-                ? mode === 'composition'
-                  ? '3 名分项评委 + 1 名主席，按考试或竞赛标准评分、定位问题并生成保留原意的完整润色稿。全部通过 ZenMux。'
-                  : '3 名独立委员 + 1 名委员会主席，可为每个角色指定 ZenMux 模型名。学术类可检索真实文献核验创新性。网络可能影响结果。'
-                : '3 independent reviewers + 1 chair. Name a ZenMux model for each role. Network or proxy conditions may affect AI.'}
+                ? [
+                    '选择一个适合你的评审模板。',
+                    '已为你准备好默认设置，确认后即可开始。',
+                    '先看综合建议，再按需要查看详细意见。',
+                  ][step]
+                : [
+                    'Choose a review template.',
+                    'Ready with recommended defaults.',
+                    'Read the summary, then explore details.',
+                  ][step]}
             </p>
           </div>
           <button
@@ -181,83 +192,104 @@ export function AiReviewCommitteeModal({
           </button>
         </div>
 
+        <nav className="ai-review-steps" aria-label="操作进度">
+          {(chineseUi
+            ? ['选择模板', '确认开始', '查看报告']
+            : ['Template', 'Confirm', 'Report']
+          ).map((label, index) => (
+            <span key={label} aria-current={step === index ? 'step' : undefined}>
+              {index + 1} · {label}
+            </span>
+          ))}
+        </nav>
         <div className="ai-review-options">
-          <p>
-            {chineseUi
-              ? '确认当前文档 → 选择审稿标准 → 审阅报告。不会自动改写正文。'
-              : 'Confirm document → choose criteria → review report. The source is not rewritten automatically.'}
-          </p>
-          <label>
-            {chineseUi
-              ? mode === 'composition'
-                ? '作文标准'
-                : '审稿类型'
-              : mode === 'composition'
-                ? 'Writing standard'
-                : 'Review type'}
-            <select
-              value={profileId}
-              disabled={running}
-              onChange={(e) => setProfileId(e.target.value)}
-            >
-              {profileOptions.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {chineseUi ? item.labelZh : item.labelEn}
-                </option>
-              ))}
-            </select>
-          </label>
-          {mode === 'review' && supportsLiteratureReview(profile) && (
-            <label className="ai-review-literature-toggle">
-              <input
-                type="checkbox"
-                checked={literatureEnabled}
-                disabled={running}
-                onChange={(event) => setLiteratureEnabled(event.target.checked)}
-              />
-              <span>{chineseUi ? '文献核验创新性' : 'Verify novelty with literature'}</span>
-            </label>
+          {step === 0 && (
+            <>
+              <div
+                className="ai-review-template-grid"
+                role="group"
+                aria-label={chineseUi ? '选择评审模板' : 'Review templates'}
+              >
+                {profileOptions.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={profileId === item.id}
+                    onClick={() => setProfileId(item.id)}
+                  >
+                    {chineseUi ? item.labelZh : item.labelEn}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
-          <label>
-            {chineseUi ? '意见语言' : 'Report language'}
-            <select
-              value={language}
-              disabled={running}
-              onChange={(e) => setLanguage(e.target.value as ReviewLanguage)}
-            >
-              {LANGUAGE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <ReviewRoleModels
-            label={chineseUi ? '各角色模型' : 'Model for each role'}
-            roles={roleLabels}
-            values={roleModels}
-            suggestions={modelSuggestions}
-            disabled={running}
-            onChange={(index, value) =>
-              setRoleModels((current) => current.map((item, i) => (i === index ? value : item)))
-            }
-          />
-          <button
-            className="btn-primary"
-            disabled={running || !hasKey}
-            onClick={() => void start()}
-          >
-            {running
-              ? chineseUi
-                ? '委员会审阅中…'
-                : 'Committee reviewing…'
-              : chineseUi
-                ? mode === 'composition'
-                  ? '开始评价与润色'
-                  : '开始严格审稿'
-                : 'Start strict review'}
-          </button>
-          {(chair?.content || members.some((member) => member.content)) && (
+          {step === 1 && (
+            <>
+              <p>
+                {chineseUi
+                  ? `将按「${profile.labelZh}」评审当前文档，并给出问题定位和修改建议。`
+                  : `Review the current document using ${profile.labelEn}.`}
+              </p>
+              <details>
+                <summary>
+                  {chineseUi ? '高级选项（通常无需修改）' : 'Advanced options (optional)'}
+                </summary>
+                {mode === 'review' && supportsLiteratureReview(profile) && (
+                  <label className="ai-review-literature-toggle">
+                    <input
+                      type="checkbox"
+                      checked={literatureEnabled}
+                      disabled={running}
+                      onChange={(event) => setLiteratureEnabled(event.target.checked)}
+                    />
+                    <span>{chineseUi ? '文献核验创新性' : 'Verify novelty with literature'}</span>
+                  </label>
+                )}
+                <label>
+                  {chineseUi ? '意见语言' : 'Report language'}
+                  <select
+                    value={language}
+                    disabled={running}
+                    onChange={(e) => setLanguage(e.target.value as ReviewLanguage)}
+                  >
+                    {LANGUAGE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <ReviewRoleModels
+                  label={chineseUi ? '各角色模型' : 'Model for each role'}
+                  roles={roleLabels}
+                  values={roleModels}
+                  suggestions={modelSuggestions}
+                  disabled={running}
+                  onChange={(index, value) =>
+                    setRoleModels((current) =>
+                      current.map((item, i) => (i === index ? value : item)),
+                    )
+                  }
+                />
+              </details>
+              <button
+                className="btn-primary"
+                disabled={running || !hasKey}
+                onClick={() => void start()}
+              >
+                {running
+                  ? chineseUi
+                    ? '委员会审阅中…'
+                    : 'Committee reviewing…'
+                  : chineseUi
+                    ? mode === 'composition'
+                      ? '开始评价与润色'
+                      : '开始严格审稿'
+                    : 'Start strict review'}
+              </button>
+            </>
+          )}
+          {step === 2 && (chair?.content || members.some((member) => member.content)) && (
             <button className="btn-ghost" onClick={() => void copyReport()}>
               {copied
                 ? chineseUi
@@ -277,17 +309,37 @@ export function AiReviewCommitteeModal({
               : 'Configure a ZenMux API key in Settings first.'}
           </div>
         )}
-        <div className="ai-review-results">
-          {chair && <ReviewCard member={chair} featured />}
-          {members.map((member, index) => (
-            <ReviewCard key={`${member.role}-${index}`} member={member} />
-          ))}
-          {!chair && members.length === 0 && (
-            <div className="ai-review-empty">
-              {chineseUi
-                ? '委员将审阅正文、LaTeX/OMML 公式、表格，以及可读取的图片、图表和图形。'
-                : 'Reviewers inspect text, LaTeX/OMML equations, tables, and available images, charts, and shapes.'}
-            </div>
+        {step === 2 && (
+          <div className="ai-review-results">
+            {chair && <ReviewCard member={chair} featured />}
+            {members.map((member, index) => (
+              <details key={`${member.role}-${index}`}>
+                <summary>
+                  {member.role} ·{' '}
+                  {member.status === 'done' ? (chineseUi ? '已完成' : 'Done') : member.status}
+                </summary>
+                <ReviewCard member={member} />
+              </details>
+            ))}
+            {!chair && members.length === 0 && (
+              <div className="ai-review-empty">
+                {chineseUi
+                  ? '委员将审阅正文、LaTeX/OMML 公式、表格，以及可读取的图片、图表和图形。'
+                  : 'Reviewers inspect text, LaTeX/OMML equations, tables, and available images, charts, and shapes.'}
+              </div>
+            )}
+          </div>
+        )}
+        <div className="ai-review-wizard-nav">
+          {step > 0 && (
+            <button disabled={running} onClick={() => setStep(step === 2 ? 1 : 0)}>
+              {chineseUi ? '上一步' : 'Back'}
+            </button>
+          )}
+          {step === 0 && (
+            <button className="btn-primary" onClick={() => setStep(1)}>
+              {chineseUi ? '下一步' : 'Next'}
+            </button>
           )}
         </div>
       </div>
