@@ -9,6 +9,7 @@ import {
   detectTone,
   humanizeChanges,
   humanizeTone,
+  parseHumanize,
   previewTone,
   toneCoverage,
   validateToneChanges,
@@ -129,18 +130,56 @@ describe('less AI tone edits', () => {
     expect(generate.mock.calls[0]![0].system).toContain('硬性边界')
     expect(JSON.parse(generate.mock.calls[0]![0].user).segments[0].text).toBe('预算不足。')
   })
+  it('accepts comparison symbols and structured segments without losing formatting or undo', () => {
+    const editor = editorFixture()
+    const snapshot = captureToneSource(editor, 'document')
+    const result = {
+      segments: [...snapshot.segments]
+        .reverse()
+        .map((segment) => ({
+          id: segment.id,
+          text: segment.text.replace('说白了，', '条件 a < b 且 c > d 时，'),
+        })),
+    }
+    const changes = parseHumanize(JSON.stringify(result), snapshot.segments)
+    expect(changes).toHaveLength(1)
+    applyToneChanges(editor, snapshot, changes)
+    expect(editor.state.doc.textContent).toContain('a < b 且 c > d')
+    expect(editor.state.doc.nodeAt(changes[0]!.from)?.marks[0]?.type.name).toBe('bold')
+    undo(editor.state, editor.view.dispatch)
+    expect(editor.state.doc.eq(snapshot.doc)).toBe(true)
+  })
+  it('accepts fenced JSON and unchanged text, but rejects missing segments and markup', () => {
+    const segments = [{ id: 7, from: 1, text: '结果可能改善。', context: 'paragraph' }]
+    expect(
+      parseHumanize(
+        '```json\n' + JSON.stringify({ segments: [{ id: 7, text: '结果可能改善。' }] }) + '\n```',
+        segments,
+      ),
+    ).toEqual([])
+    expect(() =>
+      parseHumanize(JSON.stringify({ segments: [{ id: 8, text: '结果可能改善。' }] }), segments),
+    ).toThrow('对应')
+    expect(() => humanizeChanges(segments, [''])).toThrow('第 1 个片段')
+    expect(() => humanizeChanges(segments, ['<p>结果可能改善。</p>'])).toThrow('HTML')
+  })
   it('rewrites each paragraph and refuses a result that changes numbers', async () => {
     const segments = [
       { id: 0, from: 1, text: '这个方案至关重要，效率提升了 20%。', context: 'paragraph' },
       { id: 1, from: 40, text: '总而言之，团队完成了优化。', context: 'paragraph' },
     ]
-    const generate = vi.fn().mockResolvedValue('方案把效率提高了 20%。\n<<<SEG>>>\n团队把流程改完了。')
+    const generate = vi
+      .fn()
+      .mockResolvedValue('方案把效率提高了 20%。\n<<<SEG>>>\n团队把流程改完了。')
     const changes = await humanizeTone(generate, segments, '')
-    expect(changes.map((change) => change.after)).toEqual(['方案把效率提高了 20%。', '团队把流程改完了。'])
+    expect(changes.map((change) => change.after)).toEqual([
+      '方案把效率提高了 20%。',
+      '团队把流程改完了。',
+    ])
     expect(generate.mock.calls[0]![0].system).toContain('Humanizer-zh')
     expect(generate.mock.calls[0]![0].system).toContain('只交付最终版本')
-    expect(() => humanizeChanges(segments, ['方案把效率提高了 30%。', '团队把流程改完了。'])).toThrow(
-      '数字',
-    )
+    expect(() =>
+      humanizeChanges(segments, ['方案把效率提高了 30%。', '团队把流程改完了。']),
+    ).toThrow('数字')
   })
 })

@@ -210,25 +210,49 @@ export function humanizeRequest(
   if (segments.reduce((sum, segment) => sum + segment.text.length, 0) > 16000)
     throw new Error('本次最多处理 16000 字，请选择较短的选区分次处理。')
   if (style.length > 3000) throw new Error('风格参考最多 3000 字。')
-  const marked = segments.length > 1
-  const source = marked
-    ? segments.map((segment) => segment.text).join(`\n${SEGMENT_MARK}\n`)
-    : segments[0]!.text
-  const user = style.trim()
-    ? `写作样本：\n${style.trim()}\n\n待润色中文：\n${source}`
-    : `待润色中文：\n${source}`
-  const system = marked
-    ? `${HUMANIZE_SYSTEM}\n\n正文有 ${segments.length} 段，段与段之间是单独一行 ${SEGMENT_MARK}。最终版本必须保留同样数量的分隔行，不要合并或拆开这些段。`
-    : HUMANIZE_SYSTEM
-  return { system, user }
+  return {
+    system: `${HUMANIZE_SYSTEM}\n\n应用输出协议优先：只输出 JSON 对象 {"segments":[{"id":原片段编号,"text":"改写后的完整文字"}]}。每个输入片段必须恰好返回一次，包括不需要修改的片段。片段是独立格式范围，不一定是整段；不得跨片段移动内容。不要输出 HTML、Markdown 围栏、说明或 <<<SEG>>> 分隔符。正文中的比较符号保留。`,
+    user: JSON.stringify({
+      styleReference: style,
+      segments: segments.map(({ id, text, context }) => ({ id, text, context })),
+    }),
+  }
 }
 
 export function parseHumanize(raw: string, segments: ToneSegment[]): ToneChange[] {
-  const marked = segments.length > 1
-  const parts = (
-    marked ? raw.trim().split(new RegExp(`\\n*${SEGMENT_MARK}\\n*`)) : [raw.trim()]
-  ).map((part) => part.trim())
-  if (parts.length !== segments.length) throw new Error('改写没有按原有段落交回，原文未修改。')
+  const normalized = raw
+    .trim()
+    .replace(/^```(?:json|text|plaintext)?\s*\n([\s\S]*?)\n```$/, '$1')
+    .trim()
+  if (normalized.startsWith('{')) {
+    let value: { segments?: Array<{ id: number; text: string }> }
+    try {
+      value = JSON.parse(normalized)
+    } catch {
+      throw new Error('模型返回的改写数据不完整，请重试。原文未修改。')
+    }
+    if (
+      !Array.isArray(value.segments) ||
+      value.segments.length !== segments.length ||
+      value.segments.some(
+        (item) => !item || !Number.isInteger(item.id) || typeof item.text !== 'string',
+      ) ||
+      new Set(value.segments.map((item) => item.id)).size !== segments.length
+    )
+      throw new Error('模型返回的文字片段缺失或重复，请重试。原文未修改。')
+    return humanizeChanges(
+      segments,
+      segments.map((segment) => {
+        const item = value.segments!.find((candidate) => candidate.id === segment.id)
+        if (!item) throw new Error('模型返回的文字无法对应原文片段，请重试。原文未修改。')
+        return item.text
+      }),
+    )
+  }
+  // Compatibility with older models that still return the former text protocol.
+  const parts = normalized.split(new RegExp(`\\n*${SEGMENT_MARK}\\n*`)).map((part) => part.trim())
+  if (parts.length !== segments.length)
+    throw new Error('改写没有按原有片段交回，请重试。原文未修改。')
   return humanizeChanges(segments, parts)
 }
 
@@ -246,7 +270,14 @@ export function humanizeChanges(segments: ToneSegment[], parts: string[]): ToneC
   const changes: ToneChange[] = []
   for (const [index, segment] of segments.entries()) {
     const after = parts[index]!.replace(/\r/g, '').trim()
-    if (!after || /[<>]/.test(after)) throw new Error('改写结果无法写回文档，原文未修改。')
+    if (!after) throw new Error(`模型未返回第 ${index + 1} 个片段的正文，请重试。原文未修改。`)
+    if (after.includes(SEGMENT_MARK))
+      throw new Error('模型把分段标记混入了正文，请重试。原文未修改。')
+    // Written with schema.text(), never interpreted as HTML. Comparison symbols
+    // are valid text; only newly introduced markup is a protocol error.
+    const tags = (value: string): string[] => value.match(/<\/?[a-z][^>]*>/gi) ?? []
+    if (tags(after).some((tag) => !tags(segment.text).includes(tag)))
+      throw new Error('模型返回了 HTML 标签而非正文，请重试。原文未修改。')
     const numbers = (text: string) => (text.match(/\d+(?:[.,]\d+)*(?:%|％)?/g) ?? []).sort()
     if (JSON.stringify(numbers(segment.text)) !== JSON.stringify(numbers(after)))
       throw new Error('改写改动了数字，已拒绝。原文未修改。')
@@ -260,7 +291,6 @@ export function humanizeChanges(segments: ToneSegment[], parts: string[]): ToneC
       to: segment.from + segment.text.length,
     })
   }
-  if (!changes.length) throw new Error('改写结果与原文相同。')
   return changes
 }
 

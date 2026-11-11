@@ -132,14 +132,18 @@ export function LessAiToneStudio({
       if (editor.state.doc !== snapshot.doc) throw new Error('文档已变化，请重新打开工作台。')
       setStatus('正在生成中文润色建议…')
       const request = humanizeRequest(snapshot.segments, style)
-      const raw = stream ? await stream(request, setDraft, abort.signal) : await generate(request)
+      const raw = stream ? await stream(request, () => {}, abort.signal) : await generate(request)
       if (abort.signal.aborted) return
       const next = parseHumanize(raw, snapshot.segments)
       setStep(2)
       setChanges(next)
       setSelected(next.map((_, index) => index))
       setDraft('')
-      setStatus('建议已生成，请在第 3 步逐条核对，再应用选中修改。原文尚未修改。')
+      setStatus(
+        next.length
+          ? '建议已生成，请核对后应用选中修改。原文尚未修改。'
+          : '检查完成，原文已通顺，无须修改。',
+      )
     } catch (cause) {
       if (abort.signal.aborted) return
       setError(cause instanceof Error ? cause.message : String(cause))
