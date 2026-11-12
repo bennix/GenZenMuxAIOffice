@@ -10,3 +10,5 @@
 补充验证：全工作区类型检查、生产构建与 preload 检查通过；单元测试通过（本机 Node 测试关闭实验性 Web Storage，避免与 jsdom 冲突）。已直接启动签名后的 Apple Silicon 应用验证教材封面。
 
 检查说明：全仓库 CI lint 仍有 3 处既有问题（Sheets/Shell 未使用导入、Slides prefer-const），不属于本次 PDF 修改；本次修改的文件 lint 通过。
+
+云端集成检查：57 项通过、2 项跳过，另有 3 项未通过（关于页自动更新、MCP 写作上下文、Slides 兼容导出）。这些检查未涉及本次 PDF 渲染路径，不能据此宣称全仓库 CI 全绿。Windows、Linux RPM、DEB/AppImage 的独立构建与包校验均通过。
