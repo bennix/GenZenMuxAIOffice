@@ -167,6 +167,10 @@ interface PageSize {
 type FitMode = 'width' | 'page' | null
 
 const DOC_OPTS = {
+  // macOS compatibility mode uses V8 --jitless, which removes WebAssembly.
+  // Keep PDF.js text/image extraction on the bundled JavaScript codecs;
+  // page rasterization uses the main-process PDFium engine in this mode.
+  useWasm: typeof globalThis.WebAssembly !== 'undefined',
   cMapUrl: `${ASSET_BASE}cmaps/`,
   cMapPacked: true,
   standardFontDataUrl: `${ASSET_BASE}standard_fonts/`,
@@ -211,14 +215,42 @@ function useVisibleSet(
   }
 }
 
+/** Keep image decoding out of jitless renderer workers on macOS compatibility mode. */
+async function renderCompatibilityPage(
+  canvas: HTMLCanvasElement,
+  path: string,
+  pageNo: number,
+  width: number,
+  height: number,
+  rotationDelta: number,
+): Promise<void> {
+  const png = await window.pdfApi.pagePreviewPng({
+    path,
+    pageIndex: pageNo - 1,
+    excludeRects: [],
+    clip: { x: 0, y: 0, width, height },
+    pxWidth: canvas.width,
+    rotate: rotationDelta / 90,
+  })
+  if (!png) throw new Error('Page rendering failed')
+  const image = new Image()
+  image.src = `data:image/png;base64,${png}`
+  await image.decode()
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('Canvas unavailable')
+  context.drawImage(image, 0, 0, canvas.width, canvas.height)
+}
+
 /** Single page: renders canvas + text layer (select/copy) when visible, released once off-viewport */
 function PdfPage({
   doc,
+  path,
   pageNo,
   scale,
   rotationDelta,
   visible,
 }: {
+  path: string
   doc: PDFDocumentProxy
   pageNo: number
   scale: number
@@ -230,6 +262,7 @@ function PdfPage({
   useEffect(() => {
     const holder = holderRef.current
     if (!visible || !holder) return
+    holder.textContent = '正在加载页面… / Loading page…'
     let cancelled = false
     let renderTask: RenderTask | null = null
     void (async () => {
@@ -243,15 +276,29 @@ function PdfPage({
       canvas.height = Math.floor(viewport.height * dpr)
       canvas.style.width = `${Math.floor(viewport.width)}px`
       canvas.style.height = `${Math.floor(viewport.height)}px`
-      renderTask = page.render({
-        canvas,
-        viewport,
-        transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined,
-      })
-      try {
+      let rendered = false
+      if (!DOC_OPTS.useWasm) {
+        const base = page.getViewport({ scale: 1, rotation: (page.rotate + rotationDelta) % 360 })
+        rendered = await renderCompatibilityPage(
+          canvas,
+          path,
+          pageNo,
+          base.width,
+          base.height,
+          rotationDelta,
+        ).then(
+          () => true,
+          () => false,
+        )
+      }
+      if (cancelled) return
+      if (!rendered) {
+        renderTask = page.render({
+          canvas,
+          viewport,
+          transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined,
+        })
         await renderTask.promise
-      } catch {
-        return // cancelled
       }
       if (cancelled) return
       const textDiv = document.createElement('div')
@@ -267,13 +314,17 @@ function PdfPage({
       } catch {
         /* cancelled */
       }
-    })()
+    })().catch(() => {
+      if (!cancelled)
+        holder.textContent =
+          '页面加载失败，请重新打开文件。 / Unable to render page. Please reopen the file.'
+    })
     return () => {
       cancelled = true
       renderTask?.cancel()
       holder.replaceChildren()
     }
-  }, [doc, pageNo, scale, rotationDelta, visible])
+  }, [doc, path, pageNo, scale, rotationDelta, visible])
   return <div ref={holderRef} className="pdf-page-content" />
 }
 
@@ -326,11 +377,13 @@ function MarkupOverlay({
  *  visible thumb once; while dragging the canvas just CSS-stretches. */
 function PdfThumb({
   doc,
+  path,
   pageNo,
   rotationDelta,
   visible,
   rasterW,
 }: {
+  path: string
   doc: PDFDocumentProxy
   pageNo: number
   rotationDelta: number
@@ -355,11 +408,33 @@ function PdfThumb({
       canvas.width = Math.floor(viewport.width * dpr)
       canvas.height = Math.floor(viewport.height * dpr)
       try {
-        await page.render({
-          canvas,
-          viewport,
-          transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined,
-        }).promise
+        let rendered = false
+        if (!DOC_OPTS.useWasm) {
+          const base = page.getViewport({ scale: 1, rotation })
+          // Render into a detached canvas so obsolete requests cannot paint a newer thumbnail.
+          const target = document.createElement('canvas')
+          target.width = canvas.width
+          target.height = canvas.height
+          rendered = await renderCompatibilityPage(
+            target,
+            path,
+            pageNo,
+            base.width,
+            base.height,
+            rotationDelta,
+          ).then(
+            () => true,
+            () => false,
+          )
+          if (!cancelled && rendered) canvas.getContext('2d')?.drawImage(target, 0, 0)
+        }
+        if (cancelled) return
+        if (!rendered)
+          await page.render({
+            canvas,
+            viewport,
+            transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined,
+          }).promise
       } catch {
         renderedKeyRef.current = null
       }
@@ -367,7 +442,7 @@ function PdfThumb({
     return () => {
       cancelled = true
     }
-  }, [doc, pageNo, rotationDelta, visible, rasterW])
+  }, [doc, path, pageNo, rotationDelta, visible, rasterW])
   // Reset the cache key when the doc changes (save reload); re-render next time it's visible
   useEffect(() => {
     renderedKeyRef.current = null
@@ -4951,6 +5026,7 @@ export default function App() {
                         style={{ aspectRatio: `${size.width} / ${size.height}` }}
                       >
                         <PdfThumb
+                          path={filePath}
                           doc={doc}
                           pageNo={origIdx + 1}
                           rotationDelta={rotDelta(origIdx)}
@@ -5040,6 +5116,7 @@ export default function App() {
                         }
                       >
                         <PdfPage
+                          path={filePath}
                           doc={doc}
                           pageNo={origIdx + 1}
                           scale={scale}
