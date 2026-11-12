@@ -12,3 +12,5 @@
 检查说明：全仓库 CI lint 仍有 3 处既有问题（Sheets/Shell 未使用导入、Slides prefer-const），不属于本次 PDF 修改；本次修改的文件 lint 通过。
 
 云端集成检查：57 项通过、2 项跳过，另有 3 项未通过（关于页自动更新、MCP 写作上下文、Slides 兼容导出）。这三项在上一版主线 CI（run 42977977285）中也失败，并非本次新增；全仓库 CI 尚未全绿。Windows、Linux RPM、DEB/AppImage 的独立构建与包校验均通过。
+
+发布验证：macOS Apple Silicon 与 Intel 应用及 DMG 均已通过 Apple 公证；签名、公证票据和 Gatekeeper 检查通过，两个架构的更新 ZIP 与 SHA-512 清单一致。Windows 安装包未签署 Authenticode。
