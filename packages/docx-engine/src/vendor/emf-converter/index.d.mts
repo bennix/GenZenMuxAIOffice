@@ -15,6 +15,9 @@
  * Configuration options for EMF/WMF conversion.
  */
 interface EmfConvertOptions {
+    /** OOXML display size for non-placeable WMF files without physical bounds. */
+    displayWidthPx?: number;
+    displayHeightPx?: number;
     /** Maximum output width in pixels. */
     maxWidth?: number;
     /** Maximum output height in pixels. */

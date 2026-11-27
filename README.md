@@ -40,7 +40,9 @@ notarization on the current macOS release).
 > AI adaptation and modifications by Zhiping Xu, College of Computer Science and Artificial
 > Intelligence, Fudan University; macOS, Windows, Ubuntu DEB, and Linux RPM installers rebuilt for this release.
 
-### v0.6.107
+### v0.6.108
+
+- **Word 排版与公式**：修复混合分栏文稿和旧 MathType 公式显示；共用系统公式编辑器，转换前提示保留原件；公式图片可连同标题、编号和前后文添加到 AI 提问草稿。
 
 - **PDF 图片显示修复**：修复 macOS 兼容模式下教材图片页长时间空白，加速封面和缩略图显示，并提供加载提示。
 
@@ -51,13 +53,13 @@ notarization on the current macOS release).
 - **四平台**：Apple Silicon Mac、Intel Mac、Windows，以及 Linux DEB/RPM/AppImage。
 
 Apple Silicon Mac 用户可从
-[最新正式 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOffice-0.6.107-arm64.dmg)。
+[最新正式 Release 下载 Developer ID 签名并已完成 Apple 公证的 DMG](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOffice-0.6.108-arm64.dmg)。
 Windows 10/11 x64 用户可下载
-[ZenOfficeSetup-0.6.107-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOfficeSetup-0.6.107-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
+[ZenOfficeSetup-0.6.108-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOfficeSetup-0.6.108-x64.exe)；当前 Windows 安装包未做 Authenticode 签名，SmartScreen 可能显示“未知发布者”。
 Ubuntu 22.04/24.04 x86_64 用户可下载
-[zenoffice_0.6.107_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/zenoffice_0.6.107_amd64.deb)。
+[zenoffice_0.6.108_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/zenoffice_0.6.108_amd64.deb)。
 Fedora、RHEL、Rocky Linux、AlmaLinux 与 openSUSE x86_64 用户可下载
-[zenoffice-0.6.107.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/zenoffice-0.6.107.x86_64.rpm)。
+[zenoffice-0.6.108.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/zenoffice-0.6.108.x86_64.rpm)。
 AI 功能依赖网络，网络或代理状态可能影响可用性、速度与生成结果。
 
 [![Meet ZenOffice — the world's first full-featured open-source AI Office (video)](https://img.youtube.com/vi/B2pLdMX95v4/maxresdefault.jpg)](https://www.youtube.com/watch?v=B2pLdMX95v4)
@@ -124,12 +126,12 @@ AI 功能依赖网络，网络或代理状态可能影响可用性、速度与�
 
 | Platform                                                | Requirements                                  | Download                                                                                                                                |
 | ------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **macOS** — Apple Silicon (arm64)                       | macOS 11+                                     | [ZenOffice-0.6.107-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOffice-0.6.107-arm64.dmg)       |
-| **macOS** — Intel (x64)                                 | macOS 11+                                     | [ZenOffice-0.6.107.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOffice-0.6.107.dmg)                   |
-| **Windows** (x64)                                       | Windows 10/11; unsigned, SmartScreen may warn | [ZenOfficeSetup-0.6.107-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOfficeSetup-0.6.107-x64.exe) |
-| **Ubuntu** — DEB (amd64)                                | Ubuntu 22.04/24.04 x86_64                     | [zenoffice_0.6.107_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/zenoffice_0.6.107_amd64.deb)       |
-| **Linux RPM** — Fedora / RHEL / Rocky / Alma / openSUSE | x86_64, glibc 2.34+ (RHEL-compatible 9+)      | [zenoffice-0.6.107.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/zenoffice-0.6.107.x86_64.rpm)     |
-| **Linux** — AppImage — other distributions              | x86_64, glibc 2.34+, FUSE 2                   | [ZenOffice-0.6.107.AppImage](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOffice-0.6.107.AppImage)         |
+| **macOS** — Apple Silicon (arm64)                       | macOS 11+                                     | [ZenOffice-0.6.108-arm64.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOffice-0.6.108-arm64.dmg)       |
+| **macOS** — Intel (x64)                                 | macOS 11+                                     | [ZenOffice-0.6.108.dmg](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOffice-0.6.108.dmg)                   |
+| **Windows** (x64)                                       | Windows 10/11; unsigned, SmartScreen may warn | [ZenOfficeSetup-0.6.108-x64.exe](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOfficeSetup-0.6.108-x64.exe) |
+| **Ubuntu** — DEB (amd64)                                | Ubuntu 22.04/24.04 x86_64                     | [zenoffice_0.6.108_amd64.deb](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/zenoffice_0.6.108_amd64.deb)       |
+| **Linux RPM** — Fedora / RHEL / Rocky / Alma / openSUSE | x86_64, glibc 2.34+ (RHEL-compatible 9+)      | [zenoffice-0.6.108.x86_64.rpm](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/zenoffice-0.6.108.x86_64.rpm)     |
+| **Linux** — AppImage — other distributions              | x86_64, glibc 2.34+, FUSE 2                   | [ZenOffice-0.6.108.AppImage](https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOffice-0.6.108.AppImage)         |
 
 All builds come from `main`. The current macOS DMG is Developer ID signed and Apple-notarized; the Windows installer is not Authenticode-signed.
 Published installers are on this project's [Releases](https://github.com/bennix/GenZenMuxAIOffice/releases) page.
@@ -140,14 +142,14 @@ The deb installs with apt — it pulls in the dependencies and adds ZenOffice
 to the applications menu:
 
 ```bash
-sudo apt install ./zenoffice_0.6.107_amd64.deb
+sudo apt install ./zenoffice_0.6.108_amd64.deb
 ```
 
 On Fedora / RHEL-family / openSUSE, install the rpm instead:
 
 ```bash
-sudo dnf install ./zenoffice-0.6.107.x86_64.rpm     # Fedora / RHEL / Rocky / Alma
-sudo zypper install ./zenoffice-0.6.107.x86_64.rpm  # openSUSE
+sudo dnf install ./zenoffice-0.6.108.x86_64.rpm     # Fedora / RHEL / Rocky / Alma
+sudo zypper install ./zenoffice-0.6.108.x86_64.rpm  # openSUSE
 ```
 
 The AppImage instead runs in place: install the FUSE 2 runtime
@@ -155,8 +157,8 @@ The AppImage instead runs in place: install the FUSE 2 runtime
 make the file executable, then run it:
 
 ```bash
-chmod +x GenOffice-0.6.107.AppImage
-./GenOffice-0.6.107.AppImage
+chmod +x GenOffice-0.6.108.AppImage
+./GenOffice-0.6.108.AppImage
 ```
 
 ## Apps

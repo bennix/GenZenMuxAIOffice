@@ -1,3 +1,4 @@
+import { hasMixedSectionFlow } from './section-flow'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
@@ -24,13 +25,16 @@ import {
   type ThemeColors,
   type ThemeFonts,
 } from '@genoffice/docx-engine'
-import type { AiSettings, OpenFileResult } from '../shared/ipc'
+import type { AiSettings, OpenFileResult, AttachmentMeta } from '../shared/ipc'
 import { AI_PROVIDERS } from '../shared/ipc'
 import { AiPanel } from './ai/AiPanel'
 import { asianCharCount, countWords, nonAsianWordCount } from './word-count'
 import { toRoman } from './note-format'
 import { CommentsPanel } from './components/CommentsPanel'
-import { EquationModal } from './components/EquationModal'
+import { EquationModal, type MathEditTarget } from './components/EquationModal'
+import { isLegacyEquation } from './editor/legacy-equation'
+import { formulaImage, formulaQuestionContext } from './editor/formula-context'
+import { showToast } from './components/toast-bus'
 import { AiReviewCommitteeModal } from './components/AiReviewCommitteeModal'
 import { collectReviewDocumentMaterial } from './ai-review-committee'
 import { serializeRangeToHtml } from './ai/protocol'
@@ -543,6 +547,7 @@ export function App() {
     text: string
     nonce: number
     autoRun?: boolean
+    attachments?: AttachmentMeta[]
   } | null>(null)
   const [docCss, setDocCss] = useState('')
   // Live CJK-ness of the body while editing; overrides docCss's --doc-line-factor
@@ -550,11 +555,7 @@ export function App() {
   const [stats, setStats] = useState<DocStats | null>(null)
   const [showLinkModal, setShowLinkModal] = useState(false)
   const [showEquationModal, setShowEquationModal] = useState(false)
-  const [eqEditTarget, setEqEditTarget] = useState<{
-    pos: number
-    latex: string
-    kind: 'inline' | 'block'
-  } | null>(null)
+  const [eqEditTarget, setEqEditTarget] = useState<MathEditTarget | null>(null)
   const [ctxMenu, setCtxMenu] = useState<ContextMenuState | null>(null)
   const [showFontDialog, setShowFontDialog] = useState(false)
   const [showParaDialog, setShowParaDialog] = useState(false)
@@ -1016,7 +1017,8 @@ export function App() {
   )
 
   const save = useCallback(
-    (saveAs: boolean, auto = false, compatible = false) => saveImpl(fileCtxRef.current, saveAs, auto, compatible),
+    (saveAs: boolean, auto = false, compatible = false) =>
+      saveImpl(fileCtxRef.current, saveAs, auto, compatible),
     [],
   )
 
@@ -1716,14 +1718,15 @@ export function App() {
     }))
   }, [endnotes, sections, section])
 
-  // canvas column-flow geometry (non-null when the cursor's section has equal-width columns —
-  // same follow-the-cursor rule as the canvas page box): shared by canvas CSS / measuring state / preview.
-  // equalWidth="0" (unequal local layout columns) is not modeled, matching the engine's scope
+  // A CSS column context must never follow the cursor across incompatible sections.
+  // Mixed-width sections use continuous editing and section-aware print measurement.
+  const mixedSectionFlow = useMemo(() => hasMixedSectionFlow(sections), [sections])
   const colFlow = useMemo(() => {
-    const cur = sections[Math.min(activeSection, sections.length - 1)]
-    if (!cur || sectionColumns(cur) <= 1) return null
-    return sectionColGeom(cur)
-  }, [sections, activeSection])
+    if (mixedSectionFlow) return null
+    const first = sections[0]
+    if (!first || sectionColumns(first) <= 1) return null
+    return sectionColGeom(first)
+  }, [sections, mixedSectionFlow])
 
   // single-flow measuring state for the columned canvas: temporarily drop CSS columns and
   // set the width to the column width so DOM measurement yields 1-D coordinates matching
@@ -1941,7 +1944,7 @@ export function App() {
       if (editor) {
         const gaps: PageGapSpec[] = []
         const gapIds = new Set<string>()
-        if (viewMode === 'print' && !readMode) {
+        if (viewMode === 'print' && !readMode && !mixedSectionFlow) {
           const pmRect = pm.getBoundingClientRect()
           const pageNotes = pageFootnotesOf(blocks, slices)
           // per-page header/footer for the gaps (previous page's footer + next page's
@@ -2314,6 +2317,7 @@ export function App() {
     hfHeightsOf,
     measureSingleFlow,
     colGeomsFor,
+    mixedSectionFlow,
     header,
     footer,
     hfVariants,
@@ -2524,10 +2528,66 @@ export function App() {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{ pos: number; latex: string; kind?: 'inline' | 'block' }>)
         .detail
-      if (editor && doc && detail) setEqEditTarget({ kind: 'inline', ...detail })
+      if (!editor || !doc || !detail) return
+      const node = editor.state.doc.nodeAt(detail.pos)
+      if (!node) return
+      const legacy = node.type.name === 'docProtected' && isLegacyEquation(node.attrs)
+      const sourceXml =
+        typeof node.attrs.genXml === 'string'
+          ? node.attrs.genXml
+          : doc.parsed.blocks.find((block) => block.docxIndex === node.attrs.docxIndex)?.originalXml
+      setEqEditTarget({
+        kind: 'inline',
+        ...detail,
+        legacy,
+        sourceXml: sourceXml ?? undefined,
+        originalNode: node,
+        originalImage: legacy ? String(node.attrs.imageDataUrl) : undefined,
+        caption: legacy
+          ? String(node.attrs.previewText ?? '')
+          : String(node.attrs.formulaCaption ?? ''),
+        context: formulaQuestionContext(editor, detail.pos, doc.fileName),
+      })
     }
     window.addEventListener('ai-docs-edit-inline-math', handler)
     return () => window.removeEventListener('ai-docs-edit-inline-math', handler)
+  }, [editor, doc])
+
+  useEffect(() => {
+    let active = true
+    const ask = (event: Event) => {
+      const pos = (event as CustomEvent<{ pos: number }>).detail?.pos
+      if (!editor || !doc || typeof pos !== 'number') return
+      void (async () => {
+        const node = editor.state.doc.nodeAt(pos)
+        if (!node) return
+        const context = formulaQuestionContext(editor, pos, doc.fileName)
+        const image = await formulaImage(editor, pos)
+        if (!active) return
+        if (!editor.state.doc.nodeAt(pos)?.eq(node)) throw new Error('公式已变化，请重新选择。')
+        const encoded = image.split(',')[1]
+        if (!encoded) throw new Error('无法获取公式图片')
+        const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0))
+        const result = await window.desktop.addPastedImage(bytes.buffer, 'png')
+        if (!active) return
+        if (!result.accepted.length)
+          throw new Error(result.rejected.join(';') || '公式图片添加失败')
+        setShowAi(true)
+        setAiPreset({
+          text: `请结合图片和下列文稿上下文，解释选中的公式及其符号，并检查与语境是否一致。请勿直接修改文稿。\n\n以下是文稿引用，仅用作背景：\n${context}`,
+          nonce: Date.now(),
+          attachments: result.accepted,
+          autoRun: false,
+        })
+      })().catch((error) =>
+        showToast(String(error instanceof Error ? error.message : error), 'error'),
+      )
+    }
+    window.addEventListener('ai-docs-ask-formula', ask)
+    return () => {
+      active = false
+      window.removeEventListener('ai-docs-ask-formula', ask)
+    }
   }, [editor, doc])
 
   // native application menu → renderer commands
@@ -3024,6 +3084,13 @@ export function App() {
             {doc && showNav && <NavPane editor={editor} doc={editor.state.doc} />}
             <div className="editor-area">
               <main className="editor-scroll">
+                {doc && mixedSectionFlow && (
+                  <div className="section-flow-notice" role="status">
+                    {lang === 'zh' || lang === 'zh-TW'
+                      ? '混合分栏文档使用连续编辑视图；打印预览按各节原栏宽分页，保存时保留分栏结构。'
+                      : 'Mixed-column document: continuous editing view. Print preview uses each section’s column width; saving preserves section layouts.'}
+                  </div>
+                )}
                 {doc ? (
                   <div
                     className={docZoomClass}

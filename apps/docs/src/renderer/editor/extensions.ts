@@ -1,3 +1,4 @@
+import { isLegacyEquation } from './legacy-equation'
 import { Editor, Extension, Node } from '@tiptap/core'
 import type { ChainedCommands, RawCommands } from '@tiptap/core'
 import { UndoRedo } from '@tiptap/extensions'
@@ -33,7 +34,7 @@ import {
   textHasCjk,
 } from '../line-metrics'
 import { noteMarkText } from '../note-format'
-import { t } from '../i18n/locale'
+import { t, getLang } from '../i18n/locale'
 import {
   ommlToMathML,
   patchMathTokens,
@@ -1481,6 +1482,7 @@ export const DocProtected = Node.create({
       textboxes: { default: null as TextboxDisplay[] | null },
       /** editable OMML leaf tokens; formula structure remains protected */
       formulaDisplay: { default: null as FormulaDisplay | null },
+      formulaCaption: { default: null as string | null },
       /** embedded chart data model; cached texts/numbers editable, structure protected */
       chartDisplay: { default: null as ChartDisplay | null },
       /** display-only SmartArt degrade (precomputed diagram drawing shapes) */
@@ -1887,6 +1889,9 @@ function protectedDomSpec(node: PmNode): DomSpec {
       attrs,
       moveHandleSpec(t('editorMoveEquation')),
       renderFormulaSpec(formulaDisplay as FormulaDisplay),
+      ...(node.attrs.formulaCaption
+        ? [['span', { class: 'doc-equation-caption' }, String(node.attrs.formulaCaption)]]
+        : []),
     ]
   }
   if ((chartDisplay as ChartDisplay | null)?.series?.length) {
@@ -1937,14 +1942,26 @@ function protectedDomSpec(node: PmNode): DomSpec {
   const oleCaption = label === 'Embedded object' ? oleTypeLabel(node.attrs.oleProgId) : null
   if (imageDataUrl && blockType === 'passthrough') {
     attrs.class += ' doc-protected-ole'
+    attrs.title = oleCaption ?? String(label)
+    const align = node.attrs.imageAlign
+    attrs.style = `${attrs.style ?? ''};justify-content:${align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start'}`
     return [
       'div',
       attrs,
       [
         'span',
         { class: 'doc-ole-wrap' },
-        ['img', { src: String(imageDataUrl), class: 'doc-ole-img' }],
+        [
+          'img',
+          {
+            src: String(imageDataUrl),
+            class: 'doc-ole-img',
+            ...(node.attrs.imageWidthPx ? { width: Number(node.attrs.imageWidthPx) } : {}),
+            style: 'height:auto',
+          },
+        ],
       ],
+      ...(previewText ? [['span', { class: 'doc-ole-suffix' }, String(previewText)]] : []),
       ['span', { class: 'doc-protected-label' }, oleCaption ?? String(label)],
     ]
   }
@@ -2213,32 +2230,62 @@ function wireFormulaLatexEdit(
   getPos: () => number | undefined,
 ): (() => void) | null {
   const formula = getNode().attrs.formulaDisplay as FormulaDisplay | null
-  if (!formula?.latex) return null
-  const host = dom.querySelector('.doc-formula-wrap') ?? dom
-  const button = document.createElement('button')
-  button.className = 'doc-formula-edit'
-  button.title = t('editorEditFormulaLatex')
-  button.textContent = t('editorEdit')
-  button.setAttribute('contenteditable', 'false')
-  button.addEventListener('mousedown', (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-  })
-  button.addEventListener('click', (e) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const legacy = isLegacyEquation(getNode().attrs)
+  if (!formula && !legacy) return null
+  const controls = document.createElement('span')
+  controls.className = 'doc-formula-controls'
+  controls.setAttribute('contenteditable', 'false')
+  const edit = () => {
     const pos = getPos()
-    const latex = (getNode().attrs.formulaDisplay as FormulaDisplay | null)?.latex
-    if (typeof pos === 'number' && latex) {
-      window.dispatchEvent(
-        new CustomEvent('ai-docs-edit-inline-math', {
-          detail: { pos, latex, kind: 'block' },
-        }),
-      )
-    }
-  })
-  host.appendChild(button)
-  return () => button.remove()
+    if (typeof pos !== 'number') return
+    const latex = (getNode().attrs.formulaDisplay as FormulaDisplay | null)?.latex ?? ''
+    window.dispatchEvent(
+      new CustomEvent('ai-docs-edit-inline-math', {
+        detail: { pos, latex, kind: 'block' },
+      }),
+    )
+  }
+  const addButton = (label: string, title: string, action: () => void) => {
+    const button = document.createElement('button')
+    button.className = 'doc-formula-action'
+    button.textContent = label
+    button.title = title
+    button.setAttribute('aria-label', title)
+    button.addEventListener('mousedown', (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+    })
+    button.addEventListener('click', (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      action()
+    })
+    controls.appendChild(button)
+  }
+  addButton(t('editorEdit'), t('editorEditFormulaLatex'), edit)
+  addButton(
+    'AI',
+    getLang().startsWith('zh')
+      ? '向 AI 提问（附公式图片和上下文）'
+      : 'Ask AI with equation image and context',
+    () => {
+      const pos = getPos()
+      if (typeof pos === 'number')
+        window.dispatchEvent(new CustomEvent('ai-docs-ask-formula', { detail: { pos } }))
+    },
+  )
+  const doubleClick = (event: MouseEvent) => {
+    if (!legacy || (event.target as HTMLElement).closest('button')) return
+    event.preventDefault()
+    event.stopPropagation()
+    edit()
+  }
+  dom.appendChild(controls)
+  if (legacy) dom.addEventListener('dblclick', doubleClick)
+  return () => {
+    controls.remove()
+    dom.removeEventListener('dblclick', doubleClick)
+  }
 }
 
 /** Edit OMML leaf tokens while keeping formula structure outside the editor. */

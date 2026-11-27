@@ -274,7 +274,7 @@ interface AiPanelProps {
   /** fallback numbering ids for documents created from the blank template */
   numIdFallback?: NumIds | null
   /** preset instruction pushed from the ribbon or start screen; autoRun sends it immediately */
-  preset?: { text: string; nonce: number; autoRun?: boolean } | null
+  preset?: { text: string; nonce: number; autoRun?: boolean; attachments?: AttachmentMeta[] } | null
   /** false shows only the collapsed rail; the component stays mounted so panel state survives */
   open?: boolean
   /** expand from the collapsed rail */
@@ -686,8 +686,15 @@ export function AiPanel({
 
   useEffect(() => {
     if (!preset) return
-    if (preset.autoRun) runWith(preset.text)
+    if (preset.autoRun) runWith(preset.text, preset.text, preset.attachments)
     else {
+      if (preset.attachments?.length) {
+        if (attachmentsRef.current.length + preset.attachments.length > 5) {
+          setAttachNotice(t('aiTooManyImages', { max: 5 }))
+          return
+        }
+        mergeAttachments({ accepted: preset.attachments, rejected: [] })
+      }
       setInput(preset.text)
       inputRef.current?.focus()
     }

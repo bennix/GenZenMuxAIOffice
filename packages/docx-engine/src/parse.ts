@@ -4091,8 +4091,13 @@ async function extractDiagramDrawing(
 async function oleDisplay(
   xml: string,
   ctx: BuildContext,
-): Promise<Pick<Block, 'imageDataUrl' | 'oleProgId'>> {
-  const out: Pick<Block, 'imageDataUrl' | 'oleProgId'> = {}
+): Promise<
+  Pick<Block, 'imageDataUrl' | 'oleProgId' | 'imageWidthPx' | 'imageHeightPx' | 'imageAlign'>
+> {
+  const out: Pick<
+    Block,
+    'imageDataUrl' | 'oleProgId' | 'imageWidthPx' | 'imageHeightPx' | 'imageAlign'
+  > = vmlImageMeta(xml)
   const progId = /<o:OLEObject[^>]*ProgID="([^"]+)"/.exec(xml)?.[1]
   if (progId) out.oleProgId = progId
   const path = relPartPath(ctx, /<v:imagedata[^>]*r:id="([^"]+)"/.exec(xml)?.[1])
@@ -4100,7 +4105,21 @@ async function oleDisplay(
   if (file && path) {
     const mime = IMAGE_MIME[path.split('.').pop()?.toLowerCase() ?? '']
     if (isMetafileMime(mime)) {
-      const converted = await metafileToDataUrl(await file.async('arraybuffer'), mime)
+      const displaySize =
+        out.imageWidthPx && out.imageHeightPx
+          ? { width: out.imageWidthPx, height: out.imageHeightPx }
+          : undefined
+      const bytes = await file.async('arraybuffer')
+      // Some DOC converters omit ProgID, while the packaged preview identifies MathType.
+      if (
+        !out.oleProgId &&
+        new TextDecoder('latin1')
+          .decode(new Uint8Array(bytes).subarray(0, 4096))
+          .includes('MathType')
+      ) {
+        out.oleProgId = 'MathType'
+      }
+      const converted = await metafileToDataUrl(bytes, mime, displaySize)
       if (converted) out.imageDataUrl = converted
     } else if (mime) {
       out.imageDataUrl = `data:${mime};base64,${await file.async('base64')}`

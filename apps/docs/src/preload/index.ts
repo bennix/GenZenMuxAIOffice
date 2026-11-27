@@ -108,6 +108,7 @@ const api: DesktopApi = {
   fetchImage: (url: string) => ipcRenderer.invoke('ai:fetch-image', url),
   pickAttachments: () => ipcRenderer.invoke('files:pick'),
   addAttachmentPaths: (paths: string[]) => ipcRenderer.invoke('files:add', paths),
+  captureFormulaImage: (rect) => ipcRenderer.invoke('docs:capture-formula-image', rect),
   addPastedImage: (data: ArrayBuffer, ext: string) =>
     ipcRenderer.invoke('files:add-pasted-image', data, ext),
   readAttachment: (path: string, offset: number, maxChars: number) =>
@@ -182,7 +183,13 @@ installDocumentDropBridge({
 import { imageShareBridge } from '@genoffice/electron-utils/connect'
 
 contextBridge.exposeInMainWorld('aiNetwork', {
-  fetch: (request: { id: string; url: string; method: string; headers: [string, string][]; body?: Uint8Array }) => ipcRenderer.invoke('ai-network:fetch', request),
+  fetch: (request: {
+    id: string
+    url: string
+    method: string
+    headers: [string, string][]
+    body?: Uint8Array
+  }) => ipcRenderer.invoke('ai-network:fetch', request),
   cancel: (id: string) => ipcRenderer.send('ai-network:cancel', id),
   fetchAsset: (url: string) => ipcRenderer.invoke('ai-network:asset', url),
 })

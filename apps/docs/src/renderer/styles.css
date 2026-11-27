@@ -8011,3 +8011,61 @@ tr > .page-gap-cut {
 .ai-review-options details { width: 100%; }
 .ai-review-options summary, .ai-review-results summary { cursor: pointer; padding: 8px 0; }
 .ai-review-wizard-nav { display: flex; gap: 12px; justify-content: flex-end; padding: 16px 22px; }
+
+.section-flow-notice {
+  max-width: 794px;
+  margin: 8px auto;
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* OLE preview pictures belong to the document, not to an oversized placeholder card. */
+.doc-protected-ole {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+.doc-protected-ole .doc-ole-img { margin-bottom: 0; }
+.doc-protected-ole .doc-protected-label { display: none; }
+.doc-ole-suffix { white-space: pre-wrap; }
+
+.doc-formula-controls {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  z-index: 2;
+}
+.doc-protected-ole { position: relative; }
+.doc-protected:hover > .doc-formula-controls,
+.doc-protected.ProseMirror-selectednode > .doc-formula-controls,
+.doc-formula-controls:focus-within { opacity: 1; }
+.doc-formula-action {
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+}
+.equation-source-preview {
+  padding: 10px;
+  margin-bottom: 10px;
+  background: var(--docs-paper);
+  border: 1px solid var(--border);
+}
+.equation-source-preview img { display: block; max-width: 100%; max-height: 180px; object-fit: contain; margin-bottom: 8px; }
+.equation-conversion-warning { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.5; margin: 10px 0; }
+.equation-context-preview { margin: 8px 0; font-size: 12px; }
+.equation-context-preview pre { white-space: pre-wrap; max-height: 160px; overflow: auto; }
+.doc-equation-caption { white-space: pre-wrap; }
+.pv-page .doc-formula-controls { display: none; }
+@media print { .doc-formula-controls { display: none; } }

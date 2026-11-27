@@ -6,6 +6,16 @@
  */
 
 const SYMBOL: Record<number, string> = {
+  // ASCII punctuation retains its shape in Adobe Symbol encoding.
+  ...Object.fromEntries(
+    Array.from('!#%&()+,./0123456789:;<=>?[]_{|}', (ch) => [ch.charCodeAt(0), ch]),
+  ),
+  0x2a: '∗',
+  0x2d: '−',
+  0x40: '≅',
+  0x5c: '∴',
+  0x5e: '⊥',
+  0x7e: '∼',
   // Greek (Adobe Symbol layout: Latin letter position -> Greek letter)
   0x41: 'Α',
   0x42: 'Β',
@@ -93,6 +103,29 @@ const SYMBOL: Record<number, string> = {
   0xda: '∨',
   0xe5: '∑',
   0xf2: '∫',
+  // Extensible delimiters: MathType paints these pieces at separate positions.
+  0xe6: '⎛',
+  0xe7: '⎜',
+  0xe8: '⎝',
+  0xe9: '⎡',
+  0xea: '⎢',
+  0xeb: '⎣',
+  0xec: '⎧',
+  0xed: '⎨',
+  0xee: '⎩',
+  0xef: '⎪',
+  0xf3: '⌠',
+  0xf4: '⎮',
+  0xf5: '⌡',
+  0xf6: '⎞',
+  0xf7: '⎟',
+  0xf8: '⎠',
+  0xf9: '⎤',
+  0xfa: '⎥',
+  0xfb: '⎦',
+  0xfc: '⎫',
+  0xfd: '⎬',
+  0xfe: '⎭',
 }
 
 const WINGDINGS: Record<number, string> = {

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Editor } from '@tiptap/core'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { replaceEquationXml } from '../editor/legacy-equation'
 import { latexToOmml, ommlToMathML } from '@genoffice/docx-engine'
 import { cleanRecognizedLatex, formulaRecognitionRequest } from '@genoffice/ai-provider'
 import { FormulaImageRecognition, type FormulaImageData } from '@genoffice/ui'
@@ -61,6 +63,12 @@ export interface MathEditTarget {
   pos: number
   latex: string
   kind: 'inline' | 'block'
+  legacy?: boolean
+  sourceXml?: string
+  originalImage?: string
+  context?: string
+  caption?: string
+  originalNode?: ProseMirrorNode
 }
 
 /** MathML preview (returns null with an error message when the LaTeX is invalid) */
@@ -89,30 +97,81 @@ export function EquationModal({
   const { lang, t } = useI18n()
   const modalKeys = useModalKeys(onClose)
   const [latex, setLatex] = useState(editTarget?.latex ?? '')
+  const [conversionAccepted, setConversionAccepted] = useState(false)
+  const [recognizing, setRecognizing] = useState(false)
+  const [error, setError] = useState('')
+  const zh = lang === 'zh' || lang === 'zh-TW'
   const [inline, setInline] = useState(editTarget?.kind === 'inline')
   const preview = useMemo(() => previewOf(latex), [latex])
-  const canInsert = preview !== null && 'mathml' in preview
+  const canInsert =
+    preview !== null &&
+    'mathml' in preview &&
+    !recognizing &&
+    (!editTarget?.legacy || conversionAccepted)
 
   const recognizeImage = async (image: FormulaImageData) => {
     const settings = await window.desktop.getAiSettings()
-    const response = await window.desktop.aiChat(formulaRecognitionRequest(settings, image))
+    const request = formulaRecognitionRequest(settings, image)
+    if (editTarget?.context)
+      request.user += `\n\n文稿上下文（仅用于识别符号，请勿改写原公式）：\n${editTarget.context}`
+    const response = await window.desktop.aiChat(request)
     if (!response.ok) throw new Error(response.error || 'ZenMux formula recognition failed')
     const recognized = cleanRecognizedLatex(response.content ?? '')
     if (!recognized) throw new Error('ZenMux returned no formula')
     setLatex(recognized)
   }
 
+  const recognizeCurrent = async () => {
+    const match = /^data:(image\/[^;]+);base64,(.+)$/.exec(editTarget?.originalImage ?? '')
+    if (!match) return
+    setRecognizing(true)
+    setError('')
+    try {
+      await recognizeImage({ mime: match[1], base64: match[2] })
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setRecognizing(false)
+    }
+  }
+
   const insert = () => {
     if (!canInsert || !editor.isEditable) return
+    setError('')
     if (editTarget) {
       const node = editor.state.doc.nodeAt(editTarget.pos)
+      if (!node || (editTarget.originalNode && !node.eq(editTarget.originalNode))) {
+        setError(
+          zh
+            ? '公式已变化，请关闭后重新选择。'
+            : 'The equation changed. Close and select it again.',
+        )
+        return
+      }
       if (editTarget.kind === 'inline' && node?.type.name === 'docInlineMath') {
         const next = inlineEquationNodeJson(latex)
         editor.view.dispatch(editor.state.tr.setNodeMarkup(editTarget.pos, undefined, next.attrs))
       } else if (editTarget.kind === 'block' && node?.type.name === 'docProtected') {
         // rebuilt from LaTeX: the block loses its original anchor and saves as
         // freshly generated OMML (that is the point of a full re-edit)
-        const next = editor.schema.nodeFromJSON(equationBlockJson(latex))
+        const json = equationBlockJson(latex)
+        if (editTarget.sourceXml) {
+          try {
+            json.attrs!.genXml = replaceEquationXml(editTarget.sourceXml, latex)
+          } catch (reason) {
+            setError(reason instanceof Error ? reason.message : String(reason))
+            return
+          }
+        } else if (editTarget.legacy) {
+          setError(
+            zh
+              ? '无法定位原始对象；文稿未修改。'
+              : 'Original object unavailable; document unchanged.',
+          )
+          return
+        }
+        if (editTarget.caption) json.attrs!.formulaCaption = editTarget.caption
+        const next = editor.schema.nodeFromJSON(json)
         editor.view.dispatch(
           editor.state.tr.replaceWith(editTarget.pos, editTarget.pos + node.nodeSize, next),
         )
@@ -133,7 +192,39 @@ export function EquationModal({
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="modal equation-modal">
-        <h2>{t('appInsertEquation')}</h2>
+        <h2>{editTarget ? t('editorEditFormulaLatex') : t('appInsertEquation')}</h2>
+        {editTarget?.originalImage && (
+          <div className="equation-source-preview">
+            <img src={editTarget.originalImage} alt={zh ? '原公式' : 'Original equation'} />
+            <button
+              className="btn-ghost"
+              disabled={recognizing}
+              onClick={() => void recognizeCurrent()}
+            >
+              {recognizing
+                ? zh
+                  ? '正在识别…'
+                  : 'Recognizing…'
+                : zh
+                  ? 'AI 识别当前公式'
+                  : 'Recognize this equation with AI'}
+            </button>
+          </div>
+        )}
+        {editTarget?.legacy && (
+          <label className="equation-conversion-warning">
+            <input
+              type="checkbox"
+              checked={conversionAccepted}
+              onChange={(event) => setConversionAccepted(event.target.checked)}
+            />
+            <span>
+              {zh
+                ? '我已了解：应用后将转换为系统公式。保存前可撤销；保存并重新打开后，无法还原为原 MathType 嵌入对象，请保留原文件。'
+                : 'I understand: applying converts this object to a native equation. Undo is available before saving; after saving and reopening, the original MathType object cannot be restored. Keep the original file.'}
+            </span>
+          </label>
+        )}
         <label>
           LaTeX
           <input
@@ -156,6 +247,30 @@ export function EquationModal({
           )}
         </div>
         <FormulaImageRecognition language={lang} onRecognize={recognizeImage} />
+        {error && (
+          <p className="equation-preview-error" role="alert">
+            {error}
+          </p>
+        )}
+        {editTarget?.context && (
+          <details className="equation-context-preview">
+            <summary>{zh ? '查看文稿上下文' : 'Document context'}</summary>
+            <pre>{editTarget.context}</pre>
+          </details>
+        )}
+        {editTarget && (
+          <button
+            className="btn-ghost"
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent('ai-docs-ask-formula', { detail: { pos: editTarget.pos } }),
+              )
+              onClose()
+            }}
+          >
+            {zh ? '将公式图片和上下文添加到 AI 对话' : 'Add equation image and context to AI chat'}
+          </button>
+        )}
         {!editTarget && (
           <label className="equation-inline-toggle">
             <input type="checkbox" checked={inline} onChange={(e) => setInline(e.target.checked)} />

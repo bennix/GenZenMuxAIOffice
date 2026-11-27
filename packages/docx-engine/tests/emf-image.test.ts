@@ -38,6 +38,15 @@ describe('metafileToDataUrl routing', () => {
     expect(convertEmfToDataUrl).toHaveBeenLastCalledWith(expect.any(ArrayBuffer), { dpiScale: 2 })
   })
 
+  it('passes the original shape dimensions for non-placeable equation WMFs', async () => {
+    await metafileToDataUrl(new Uint8Array([1, 2, 3]), 'image/wmf', { width: 272, height: 20 })
+    expect(convertWmfToDataUrl).toHaveBeenLastCalledWith(expect.any(ArrayBuffer), {
+      dpiScale: 2,
+      displayWidthPx: 272,
+      displayHeightPx: 20,
+    })
+  })
+
   it('routes wmf mimes to convertWmfToDataUrl', async () => {
     for (const mime of ['image/wmf', 'image/x-wmf']) {
       expect(await metafileToDataUrl(new Uint8Array([1, 2, 3]), mime)).toBe(

@@ -166,6 +166,12 @@ export type MenuCommand =
 export type UiTheme = 'light' | 'dark' | 'system'
 
 export interface DesktopApi extends ConnectApi {
+  captureFormulaImage(rect: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }): Promise<string>
   onMcpRequest(handler: (request: WordMcpRequest) => void): () => void
   sendMcpResult(result: WordMcpResult): void
   generateGongwen(request: {

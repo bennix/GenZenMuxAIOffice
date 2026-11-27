@@ -1,3 +1,4 @@
+import { hasMixedSectionFlow, measureSectionWidths } from '../section-flow'
 import { useEffect, useMemo, useState } from 'react'
 import { printPaginationPreview } from '../print-preview'
 import type {
@@ -227,6 +228,8 @@ export function PaginationPreview({
     const factor = zoom / 100
     // switch the columned canvas to the single-flow measuring state (CSS columns off, width = column width), matching engine column-flow coordinates
     if (colFlow) pm.classList.add('measuring-columns')
+    const mixedFlow = hasMixedSectionFlow(sections)
+    const restoreWidths = mixedFlow ? measureSectionWidths(pm, sections) : () => {}
     try {
       const origin = pm.getBoundingClientRect().top + canvasMTop * factor
       const { blocks, totalHeight } = measureBlocks(pm, origin, factor)
@@ -271,7 +274,7 @@ export function PaginationPreview({
         })
         const geoms = sectionGeoms(live, hfHs)
         // when the canvas column CSS is inactive, measure as full-width single flow; the geometry drops column flow to match
-        if (!colFlow) for (const g of geoms) if (g.cols) g.cols = undefined
+        if (!colFlow && !mixedFlow) for (const g of geoms) if (g.cols) g.cols = undefined
         computed = sliceWithLineSplit(blocks, geoms, flowH, factor, blockMetaOf)
       } else {
         const contentH =
@@ -330,6 +333,7 @@ export function PaginationPreview({
         setHtml(Array.from(pm.children, (c) => cloneBlockHtml(c as HTMLElement)).join(''))
       }
     } finally {
+      restoreWidths()
       if (colFlow) pm.classList.remove('measuring-columns')
     }
     // snapshot: measure once on open; deps intentionally empty

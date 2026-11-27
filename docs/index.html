@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="ZenOffice v0.6.107 — 修复 PDF 教材图片页空白，加速封面与缩略图显示；保留引导式润色与学术评审。支持 Apple Silicon、Intel Mac、Windows 与 Linux。"
+      content="ZenOffice v0.6.108 — 修复 Word 混合分栏和旧公式显示；共用公式编辑器，支持携公式图片与上下文向 AI 提问。支持 Apple Silicon、Intel Mac、Windows 与 Linux。"
     />
     <meta name="theme-color" content="#071417" />
     <link rel="icon" type="image/svg+xml" href="zenoffice-mark.svg" />
@@ -1650,14 +1650,14 @@
       <nav>
         <div class="wordmark"><img class="mark" src="zenoffice-mark.svg" alt="" /> ZenOffice</div>
         <div class="nav-actions">
-          <a class="nav-link" href="#whats-new">v0.6.107 PDF 显示修复</a>
+          <a class="nav-link" href="#whats-new">v0.6.108 Word 公式更新</a>
           <a class="nav-link" href="#manual">用户手册 · Manual</a>
           <a class="nav-link" href="https://github.com/bennix/GenZenMuxAIOffice"
             >Source on GitHub ↗</a
           >
           <a
             class="nav-link nav-download"
-            href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOfficeSetup-0.6.107-x64.exe"
+            href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOfficeSetup-0.6.108-x64.exe"
             >Windows 下载 ↓</a
           >
         </div>
@@ -1679,31 +1679,31 @@
             <div class="downloads">
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOffice-0.6.107-arm64.dmg"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOffice-0.6.108-arm64.dmg"
               >
                 下载 macOS DMG <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOfficeSetup-0.6.107-x64.exe"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOfficeSetup-0.6.108-x64.exe"
               >
                 下载 Windows x64 <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/zenoffice-0.6.107.x86_64.rpm"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/zenoffice-0.6.108.x86_64.rpm"
               >
                 下载 Linux RPM <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/zenoffice_0.6.107_amd64.deb"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/zenoffice_0.6.108_amd64.deb"
               >
                 下载 Ubuntu DEB <b>↓</b>
               </a>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOffice-0.6.107.AppImage"
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOffice-0.6.108.AppImage"
               >
                 下载 Linux AppImage <b>↓</b>
               </a>
@@ -1717,34 +1717,27 @@
           </div>
         </section>
 
-        <section class="release-spotlight" id="whats-new" aria-label="v0.6.107 PDF 显示修复">
-          <div class="section-kicker">v0.6.107 · PDF rendering fix</div>
-          <h2>教材图片，正常显示。</h2>
+        <section class="release-spotlight" id="whats-new" aria-label="v0.6.108 Word 公式更新">
+          <div class="section-kicker">v0.6.108 · Word equations and context</div>
+          <h2>公式编辑，带上语境。</h2>
           <p>
-            修复 macOS 兼容模式下部分 PDF
-            图片页长时间空白的问题。封面与缩略图加速显示，保留文字选择，并增加加载与失败提示。
+            修复 Word 混合单栏与双栏文稿的显示和打印布局，改善旧 MathType 公式的括号、分数线和编号显示。
           </p>
           <div class="release-steps">
             <article>
               <span>01</span>
-              <h3>少填写，直接选模板</h3>
-              <p>日常文章、论文、摘要、审稿回复、研究申请；高级设置默认收起，先看当前一步。</p>
+              <h3>共用公式编辑器</h3>
+              <p>双击旧公式，查看原图，通过 LaTeX 或 AI 图片识别转成系统公式；应用前预览。</p>
             </article>
             <article>
               <span>02</span>
-              <h3>完整学术润色流程</h3>
-              <p>
-                Academic Humanizer
-                六层规则：审查表达与证据、补充依据、生成改写及修改报告，保留学术语体。
-              </p>
+              <h3>带上下文向 AI 提问</h3>
+              <p>附上公式图片、文稿名、标题、公式编号和前后段落，先进入提问草稿，确认后发送。</p>
             </article>
             <article>
               <span>03</span>
-              <h3>审阅后再应用</h3>
-              <p>
-                Word 与 Markdown
-                展示逐条修改对照，由作者确认。学术评审先展示综合建议，再展开委员意见。
-              </p>
+              <h3>转换前明确确认</h3>
+              <p>转换并保存重开后无法还原原 MathType 嵌入对象。界面提示保留原件，确认后才允许应用。</p>
             </article>
           </div>
         </section>
@@ -1752,7 +1745,7 @@
         <section class="platforms" id="downloads" aria-label="平台下载">
           <div class="platforms-head">
             <h2>选择你的平台。</h2>
-            <div class="release-version">LATEST · v0.6.107</div>
+            <div class="release-version">LATEST · v0.6.108</div>
           </div>
           <div class="platform-grid">
             <article class="platform-card">
@@ -1764,8 +1757,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOffice-0.6.107-arm64.dmg"
-                >下载 macOS v0.6.107 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOffice-0.6.108-arm64.dmg"
+                >下载 macOS v0.6.108 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1774,8 +1767,8 @@
               <p>适用于 Intel Mac，与 Apple Silicon 版使用相同版本的功能和文件格式。</p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOffice-0.6.107.dmg"
-                >下载 Intel Mac v0.6.107 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOffice-0.6.108.dmg"
+                >下载 Intel Mac v0.6.108 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1786,8 +1779,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOfficeSetup-0.6.107-x64.exe"
-                >下载 Windows v0.6.107 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOfficeSetup-0.6.108-x64.exe"
+                >下载 Windows v0.6.108 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1799,8 +1792,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/zenoffice-0.6.107.x86_64.rpm"
-                >下载 Linux RPM v0.6.107 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/zenoffice-0.6.108.x86_64.rpm"
+                >下载 Linux RPM v0.6.108 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1812,8 +1805,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/zenoffice_0.6.107_amd64.deb"
-                >下载 Ubuntu v0.6.107 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/zenoffice_0.6.108_amd64.deb"
+                >下载 Ubuntu v0.6.108 <b>↓</b></a
               >
             </article>
             <article class="platform-card">
@@ -1824,8 +1817,8 @@
               </p>
               <a
                 class="download"
-                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.107/ZenOffice-0.6.107.AppImage"
-                >下载 AppImage v0.6.107 <b>↓</b></a
+                href="https://github.com/bennix/GenZenMuxAIOffice/releases/download/v0.6.108/ZenOffice-0.6.108.AppImage"
+                >下载 AppImage v0.6.108 <b>↓</b></a
               >
             </article>
           </div>

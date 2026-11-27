@@ -1,3 +1,5 @@
+import { decodeSymbolText } from '../../symbol-fonts.ts';
+
 // src/emf-color-helpers.ts
 function colorRefToHex(r, g, b) {
   const toHex = (v) => v.toString(16).padStart(2, "0");
@@ -4399,6 +4401,72 @@ function replayEmfRecords(view, ctx, bounds, canvasW, canvasH, dpiScale = 1, rep
 }
 
 // src/wmf-draw-handlers.ts
+// WMF formula previews commonly use TA_UPDATECP + TA_BASELINE and pass (0,0)
+// to ExtTextOut. That origin is ignored in GDI: MoveTo supplies the real baseline.
+function wmfEncoding(charset) {
+  return { 128: "shift_jis", 129: "euc-kr", 134: "gbk", 136: "big5",
+    161: "windows-1253", 162: "windows-1254", 177: "windows-1255",
+    178: "windows-1256", 204: "windows-1251", 238: "windows-1250" }[charset];
+}
+function decodeWmfBytes(text, charset) {
+  const encoding = wmfEncoding(charset);
+  if (!encoding) return text;
+  try { return new TextDecoder(encoding).decode(Uint8Array.from(text, ch => ch.charCodeAt(0))); }
+  catch { return text; }
+}
+
+function drawWmfText(wCtx, text, x, y, advances) {
+  const { ctx, state, coord } = wCtx;
+  const updateCP = (state.textAlign & 1) !== 0;
+  if (updateCP) { x = state.curX; y = state.curY; }
+  // DBCS character advances are recorded per source byte, not per Unicode glyph.
+  const byteText = text;
+  text = decodeWmfBytes(text, state.fontCharset);
+  if (advances && text.length !== byteText.length) {
+    const decoder = new TextDecoder(wmfEncoding(state.fontCharset));
+    const merged = [];
+    let pendingAdvance = 0;
+    for (let i = 0; i < byteText.length; i++) {
+      pendingAdvance += advances[i] ?? 0;
+      const decoded = decoder.decode(Uint8Array.of(byteText.charCodeAt(i)), { stream: true });
+      const glyphs = Array.from(decoded);
+      if (glyphs.length) {
+        merged.push(...glyphs.map(() => pendingAdvance / glyphs.length));
+        pendingAdvance = 0;
+      }
+    }
+    const tail = Array.from(decoder.decode());
+    if (tail.length) merged.push(...tail.map(() => pendingAdvance / tail.length));
+    advances = merged;
+  }
+  text = decodeSymbolText(state.fontFamily, text) ?? text;
+  applyFont(ctx, state, Math.abs(coord.mh(1)));
+  const widthScale = state.fontWidth > 0
+    ? Math.abs(coord.mw(state.fontWidth)) / (ctx.measureText("x").width || 1)
+    : 1;
+  ctx.save();
+  if (widthScale !== 1) ctx.scale(widthScale, 1);
+  ctx.fillStyle = state.textColor;
+  const vertical = state.textAlign & 24;
+  ctx.textBaseline = vertical === 24 ? "alphabetic" : vertical === 8 ? "bottom" : "top";
+  const horizontal = state.textAlign & 6;
+  ctx.textAlign = horizontal === 6 ? "center" : horizontal === 2 ? "right" : "left";
+  if (advances && advances.length === text.length) {
+    const total = advances.reduce((sum, value) => sum + value, 0);
+    let offset = horizontal === 6 ? -total / 2 : horizontal === 2 ? -total : 0;
+    ctx.textAlign = "left";
+    for (let i = 0; i < text.length; i++) {
+      ctx.fillText(text[i], coord.mx(x + offset) / widthScale, coord.my(y));
+      offset += advances[i];
+    }
+    if (updateCP) state.curX = x + total;
+  } else {
+    ctx.fillText(text, coord.mx(x) / widthScale, coord.my(y));
+    if (updateCP) state.curX = x + ctx.measureText(text).width * widthScale / Math.abs(coord.mw(1) || 1);
+  }
+  ctx.restore();
+}
+
 function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
   const { ctx, view, state, coord } = wCtx;
   const { mx, my, mw, mh } = coord;
@@ -4413,7 +4481,7 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
       if (recSize >= 10) {
         const ly = view.getInt16(dataOff, true);
         const lx = view.getInt16(dataOff + 2, true);
-        applyPen(ctx, state);
+        applyPen(ctx, { ...state, penWidth: Math.abs(mw(state.penWidth)) });
         ctx.beginPath();
         ctx.moveTo(mx(state.curX), my(state.curY));
         ctx.lineTo(mx(lx), my(ly));
@@ -4430,7 +4498,7 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
         const l = view.getInt16(dataOff + 6, true);
         applyBrush(ctx, state);
         ctx.fillRect(mx(l), my(t), mw(r - l), mh(b - t));
-        applyPen(ctx, state);
+        applyPen(ctx, { ...state, penWidth: Math.abs(mw(state.penWidth)) });
         ctx.strokeRect(mx(l), my(t), mw(r - l), mh(b - t));
       }
       return true;
@@ -4458,7 +4526,7 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
         ctx.closePath();
         applyBrush(ctx, state);
         ctx.fill();
-        applyPen(ctx, state);
+        applyPen(ctx, { ...state, penWidth: Math.abs(mw(state.penWidth)) });
         ctx.stroke();
       }
       return true;
@@ -4480,7 +4548,7 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
         );
         applyBrush(ctx, state);
         ctx.fill();
-        applyPen(ctx, state);
+        applyPen(ctx, { ...state, penWidth: Math.abs(mw(state.penWidth)) });
         ctx.stroke();
       }
       return true;
@@ -4523,7 +4591,7 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
           applyBrush(ctx, state);
           ctx.fill();
         }
-        applyPen(ctx, state);
+        applyPen(ctx, { ...state, penWidth: Math.abs(mw(state.penWidth)) });
         ctx.stroke();
       }
       return true;
@@ -4545,7 +4613,7 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
           ctx.closePath();
           applyBrush(ctx, state);
           ctx.fill(state.polyFillMode === 2 ? "nonzero" : "evenodd");
-          applyPen(ctx, state);
+          applyPen(ctx, { ...state, penWidth: Math.abs(mw(state.penWidth)) });
           ctx.stroke();
         }
       }
@@ -4564,7 +4632,7 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
               ctx.lineTo(mx(px), my(py));
             }
           }
-          applyPen(ctx, state);
+          applyPen(ctx, { ...state, penWidth: Math.abs(mw(state.penWidth)) });
           ctx.stroke();
         }
       }
@@ -4596,7 +4664,7 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
         }
         applyBrush(ctx, state);
         ctx.fill(state.polyFillMode === 2 ? "nonzero" : "evenodd");
-        applyPen(ctx, state);
+        applyPen(ctx, { ...state, penWidth: Math.abs(mw(state.penWidth)) });
         ctx.stroke();
       }
       return true;
@@ -4618,9 +4686,7 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
           if (txOff + 4 <= offset + recSize) {
             const ty2 = view.getInt16(txOff, true);
             const txCoord = view.getInt16(txOff + 2, true);
-            applyFont(ctx, state, Math.abs(mh(1)));
-            ctx.fillStyle = state.textColor;
-            ctx.fillText(text, mx(txCoord), my(ty2));
+            drawWmfText(wCtx, text, txCoord, ty2);
           }
         }
       }
@@ -4630,7 +4696,7 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
         const ty2 = view.getInt16(dataOff, true);
         const txCoord = view.getInt16(dataOff + 2, true);
         const nChars = view.getInt16(dataOff + 4, true);
-        const hasClipRect = (view.getUint16(dataOff + 6, true) & 4) !== 0;
+        const hasClipRect = (view.getUint16(dataOff + 6, true) & 6) !== 0;
         const stringOff = dataOff + 8 + (hasClipRect ? 8 : 0);
         if (nChars > 0 && stringOff + nChars <= offset + recSize) {
           let text = "";
@@ -4641,9 +4707,11 @@ function handleWmfDrawRecord(wCtx, recType, offset, dataOff, recSize) {
             }
             text += String.fromCharCode(ch);
           }
-          applyFont(ctx, state, Math.abs(mh(1)));
-          ctx.fillStyle = state.textColor;
-          ctx.fillText(text, mx(txCoord), my(ty2));
+          const dxOffset = stringOff + nChars + nChars % 2;
+          const advances = dxOffset + nChars * 2 <= offset + recSize
+            ? Array.from({ length: nChars }, (_, i) => view.getInt16(dxOffset + i * 2, true))
+            : undefined;
+          drawWmfText(wCtx, text, txCoord, ty2, advances);
         }
       }
       return true;
@@ -4775,8 +4843,8 @@ function replayWmfRecords(view, ctx, header, canvasW, canvasH, replayOptions = {
       case META_CREATEFONTINDIRECT:
         if (recSize >= 24) {
           let family = "";
-          for (let i = 0; i < 32 && dataOff + 14 + i < offset + recSize; i++) {
-            const ch = view.getUint8(dataOff + 14 + i);
+          for (let i = 0; i < 32 && dataOff + 18 + i < offset + recSize; i++) {
+            const ch = view.getUint8(dataOff + 18 + i);
             if (ch === 0) {
               break;
             }
@@ -4786,11 +4854,13 @@ function replayWmfRecords(view, ctx, header, canvasW, canvasH, replayOptions = {
           objectTable.set(slot, {
             kind: "font",
             height: Math.abs(view.getInt16(dataOff, true)),
+            width: Math.abs(view.getInt16(dataOff + 2, true)),
+            charset: view.getUint8(dataOff + 13),
             weight: view.getInt16(dataOff + 8, true),
             italic: view.getUint8(dataOff + 10) !== 0,
             underline: view.getUint8(dataOff + 11) !== 0,
             strikeOut: view.getUint8(dataOff + 12) !== 0,
-            family: family || "sans-serif"
+            family: decodeWmfBytes(family, view.getUint8(dataOff + 13)) || "sans-serif"
           });
         }
         break;
@@ -4810,6 +4880,8 @@ function replayWmfRecords(view, ctx, header, canvasW, canvasH, replayOptions = {
                 break;
               case "font":
                 state.fontHeight = obj.height;
+                state.fontWidth = obj.width;
+                state.fontCharset = obj.charset;
                 state.fontWeight = obj.weight;
                 state.fontItalic = obj.italic;
                 state.fontUnderline = obj.underline;
@@ -5019,8 +5091,13 @@ async function convertWmfToDataUrl(buffer, options, recursionDepth = 0) {
       emfLog("convertWmfToDataUrl: parseWmfHeader returned null");
       return null;
     }
-    const logicalW = header.boundsRight - header.boundsLeft;
-    const logicalH = header.boundsBottom - header.boundsTop;
+    // Non-placeable WMFs often have no physical bounds. Their OOXML shape
+    // supplies the intended aspect ratio; the old 800x600 fallback distorted equations.
+    const useDisplaySize = view.getUint32(0, true) !== 2596720087 &&
+      Number.isFinite(opts.displayWidthPx) && opts.displayWidthPx > 0 &&
+      Number.isFinite(opts.displayHeightPx) && opts.displayHeightPx > 0;
+    const logicalW = useDisplaySize ? opts.displayWidthPx : header.boundsRight - header.boundsLeft;
+    const logicalH = useDisplaySize ? opts.displayHeightPx : header.boundsBottom - header.boundsTop;
     emfLog(`convertWmfToDataUrl: logicalSize=${logicalW}\xD7${logicalH}`);
     if (logicalW <= 0 || logicalH <= 0) {
       emfLog("convertWmfToDataUrl: invalid dimensions \u2014 returning null");

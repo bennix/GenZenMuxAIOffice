@@ -62,6 +62,13 @@ describe('SmartArt / OLE visible degrade', () => {
     expect(block.imageDataUrl).toMatch(/^data:image\/png;base64,/)
   })
 
+  it('keeps the original small formula shape dimensions instead of the preview bitmap size', async () => {
+    const shape = OLE_P.replace('width:32pt;height:32pt', 'width:204pt;height:15pt')
+    const parsed = await parseDocx(await buildDocx({ bodyXml: shape, withImage: true }))
+    expect(parsed.blocks[0].imageWidthPx).toBe(272)
+    expect(parsed.blocks[0].imageHeightPx).toBe(20)
+  })
+
   it('a missing diagram part degrades to the bare label, not an error', async () => {
     const parsed = await parseDocx(await buildDocx({ bodyXml: SMARTART_P }))
     const block = parsed.blocks[0]

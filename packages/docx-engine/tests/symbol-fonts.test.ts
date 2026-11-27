@@ -11,6 +11,14 @@ import { buildDocx } from './helpers/build-docx'
 const XML_DECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n'
 
 describe('symbol font decoding helpers', () => {
+  it('decodes MathType split brackets and mixed Symbol punctuation without accented-letter garbage', () => {
+    expect(decodeSymbolText('Symbol', '\xe9\xf9')).toBe('⎡⎤')
+    expect(decodeSymbolText('Symbol', '\xea\xfa')).toBe('⎢⎥')
+    expect(decodeSymbolText('Symbol', '\xeb\xfb')).toBe('⎣⎦')
+    expect(decodeSymbolText('Symbol', '(a+b)')).toBe('(α+β)')
+    expect(decodeSymbolText('Times New Roman', '\xe9')).toBeNull()
+  })
+
   it('recognizes symbol-encoded fonts case-insensitively', () => {
     expect(isSymbolFont('Wingdings')).toBe(true)
     expect(isSymbolFont('symbol')).toBe(true)

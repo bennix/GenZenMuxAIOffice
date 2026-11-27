@@ -15,11 +15,18 @@ export function isMetafileMime(mime: string | undefined): mime is string {
 export async function metafileToDataUrl(
   bytes: ArrayBuffer | Uint8Array,
   mime: string,
+  displaySize?: { width: number; height: number },
 ): Promise<string | null> {
   const buffer = bytes instanceof Uint8Array ? bytes.slice().buffer : bytes
   try {
     if (EMF_MIMES.has(mime)) return await convertEmfToDataUrl(buffer, { dpiScale: 2 })
-    if (WMF_MIMES.has(mime)) return await convertWmfToDataUrl(buffer, { dpiScale: 2 })
+    if (WMF_MIMES.has(mime))
+      return await convertWmfToDataUrl(buffer, {
+        dpiScale: 2,
+        ...(displaySize
+          ? { displayWidthPx: displaySize.width, displayHeightPx: displaySize.height }
+          : {}),
+      })
     return null
   } catch {
     return null
