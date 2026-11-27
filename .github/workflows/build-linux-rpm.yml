@@ -18,7 +18,10 @@ permissions:
 jobs:
   build-rpm:
     runs-on: ubuntu-latest
-    container: rockylinux:9
+    container:
+      image: rockylinux:9
+      env:
+        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     timeout-minutes: 60
     steps:
       - name: Install build prerequisites
